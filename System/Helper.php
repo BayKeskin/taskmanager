@@ -3118,20 +3118,40 @@ CRITICAL ARCHITECTURAL RULES:
         if (!is_dir($ws . '/.git')) {
             @shell_exec("cd /d {$escapedWs} && git init && git branch -M main 2>&1");
         }
-        $branch = self::detectActiveBranch($ws);
 
-        $cmds = [
-            "cd /d {$escapedWs}",
-            "git config user.name " . escapeshellarg($creds['username']),
-            "git config user.email " . escapeshellarg($creds['username'] . "@users.noreply.github.com"),
-            "git remote remove origin 2>nul || ver >nul",
-            "git remote add origin " . escapeshellarg($cleanRemoteUrl),
-            "git add -A",
-            "git commit -m \"chore: initial repository setup via TaskManager\" 2>nul || ver >nul",
-            "git -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push -u origin {$branch}"
-        ];
-        $fullCmd = implode(" && ", $cmds) . " 2>&1";
-        $output  = (string)@shell_exec($fullCmd);
+        $runGit = function(string $cmd) use ($escapedWs): string {
+            return (string)@shell_exec("cd /d {$escapedWs} && {$cmd} 2>&1");
+        };
+
+        $runGit("git config user.name " . escapeshellarg($creds['username']));
+        $runGit("git config user.email " . escapeshellarg($creds['username'] . "@users.noreply.github.com"));
+        $runGit("git remote remove origin");
+        $runGit("git remote add origin " . escapeshellarg($cleanRemoteUrl));
+        $runGit("git add -A");
+        $runGit('git commit -m "chore: initial repository setup via TaskManager"');
+
+        $branch = self::detectActiveBranch($ws);
+        $output = $runGit("git -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push -u origin {$branch}");
+
+        // Eğer push edilen branch 'main' değilse (örn: 'master'), GitHub default branch'i otomatik güncelle ki repo boş görünmesin!
+        if (!empty($branch) && $branch !== 'main') {
+            $chBranch = curl_init("https://api.github.com/repos/{$owner}/{$repoName}");
+            curl_setopt_array($chBranch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST  => 'PATCH',
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: Bearer ' . $creds['token'],
+                    'User-Agent: TaskManager-DevOps',
+                    'Accept: application/vnd.github+json',
+                    'Content-Type: application/json'
+                ],
+                CURLOPT_POSTFIELDS     => json_encode(['default_branch' => $branch]),
+                CURLOPT_TIMEOUT        => 8,
+                CURLOPT_SSL_VERIFYPEER => false
+            ]);
+            curl_exec($chBranch);
+            curl_close($chBranch);
+        }
 
         $db->exec_query("UPDATE projects SET github_repo = ?, updated_at = NOW() WHERE id = ?", ["{$owner}/{$repoName}", $project->id]);
 
