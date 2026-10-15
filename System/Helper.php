@@ -2829,7 +2829,116 @@ CRITICAL ARCHITECTURAL RULES:
         }
         return $data;
     }
+
+    // =========================================================================
+    // 🐙 GITHUB DEVOPS & CERRAHİ ROLLBACK VERİTABANI MOTORU
+    // =========================================================================
+
+    /**
+     * Gerekli veritabanı sütunlarını (settings, projects, task_submissions) otomatik kontrol eder ve yoksa oluşturur.
+     */
+    public static function ensureGithubAndRollbackSchema(): void
+    {
+        global $db;
+        static $checked = false;
+        if ($checked) return;
+        $checked = true;
+
+        try {
+            if (!$db || empty($db->connect)) {
+                require_once __DIR__ . '/../Model/DataLayer.php';
+                $db = new Database();
+            }
+
+            // 1. settings tablosuna github_username ve github_token ekle
+            $colsSettings = $db->multi_record_query("SHOW COLUMNS FROM settings") ?: [];
+            $sNames = array_map(fn($c) => $c->Field, $colsSettings);
+            if (!in_array('github_username', $sNames)) {
+                $db->exec_query("ALTER TABLE settings ADD COLUMN github_username VARCHAR(120) NULL DEFAULT NULL");
+            }
+            if (!in_array('github_token', $sNames)) {
+                $db->exec_query("ALTER TABLE settings ADD COLUMN github_token VARCHAR(255) NULL DEFAULT NULL");
+            }
+
+            // 2. projects tablosuna github_repo ve db_name ekle
+            $colsProjects = $db->multi_record_query("SHOW COLUMNS FROM projects") ?: [];
+            $pNames = array_map(fn($c) => $c->Field, $colsProjects);
+            if (!in_array('github_repo', $pNames)) {
+                $db->exec_query("ALTER TABLE projects ADD COLUMN github_repo VARCHAR(180) NULL DEFAULT NULL");
+            }
+            if (!in_array('db_name', $pNames)) {
+                $db->exec_query("ALTER TABLE projects ADD COLUMN db_name VARCHAR(120) NULL DEFAULT NULL");
+            }
+
+            // 3. task_submissions tablosuna commit_hash, rollback_sql, schema_diff_summary, is_reverted ekle
+            $colsSub = $db->multi_record_query("SHOW COLUMNS FROM task_submissions") ?: [];
+            $subNames = array_map(fn($c) => $c->Field, $colsSub);
+            if (!in_array('commit_hash', $subNames)) {
+                $db->exec_query("ALTER TABLE task_submissions ADD COLUMN commit_hash VARCHAR(64) NULL DEFAULT NULL");
+            }
+            if (!in_array('rollback_sql', $subNames)) {
+                $db->exec_query("ALTER TABLE task_submissions ADD COLUMN rollback_sql LONGTEXT NULL DEFAULT NULL");
+            }
+            if (!in_array('schema_diff_summary', $subNames)) {
+                $db->exec_query("ALTER TABLE task_submissions ADD COLUMN schema_diff_summary TEXT NULL DEFAULT NULL");
+            }
+            if (!in_array('is_reverted', $subNames)) {
+                $db->exec_query("ALTER TABLE task_submissions ADD COLUMN is_reverted TINYINT(1) NOT NULL DEFAULT 0");
+            }
+        } catch (\Throwable $e) {
+            error_log("ensureGithubAndRollbackSchema error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * TaskManager'da kayıtlı projelerin çalışma dizinlerindeki mevcut Git remote origin adreslerini
+     * sisteme zarar vermeden otomatik keşfeder ve projects.github_repo alanına işler.
+     */
+    public static function discoverAndSyncExistingProjectRemotes(): array
+    {
+        global $db;
+        self::ensureGithubAndRollbackSchema();
+
+        $projects = $db->multi_record_query("SELECT id, project_code, title, workspace_path, github_repo FROM projects") ?: [];
+        $results = [];
+
+        foreach ($projects as $p) {
+            $ws = rtrim(str_replace('\\', '/', trim((string)($p->workspace_path ?? ''))), '/');
+            if (empty($ws) || !is_dir($ws) || !is_dir($ws . '/.git')) {
+                continue;
+            }
+
+            // Mevcut git remote url'sini oku (Asla remote silmez veya değiştirmez!)
+            $escapedWs = escapeshellarg($ws);
+            $remoteUrl = trim((string)@shell_exec("cd /d {$escapedWs} && git remote get-url origin 2>nul"));
+
+            if (!empty($remoteUrl)) {
+                // github.com/owner/repo veya git@github.com:owner/repo desenini yakala
+                if (preg_match('#github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$#i', $remoteUrl, $m)) {
+                    $repoSlug = trim($m[1]) . '/' . trim($m[2]);
+
+                    if (empty($p->github_repo) || $p->github_repo !== $repoSlug) {
+                        $db->exec_query("UPDATE projects SET github_repo = ?, updated_at = NOW() WHERE id = ?", [$repoSlug, $p->id]);
+                        $results[$p->project_code] = [
+                            'title'  => $p->title,
+                            'repo'   => $repoSlug,
+                            'status' => 'updated'
+                        ];
+                    } else {
+                        $results[$p->project_code] = [
+                            'title'  => $p->title,
+                            'repo'   => $repoSlug,
+                            'status' => 'already_synced'
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $results;
+    }
 }
+
 
 // Global Yardımcı Fonksiyonlar
 if (!function_exists('config')) {
