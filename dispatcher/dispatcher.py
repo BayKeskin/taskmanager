@@ -1,7 +1,10 @@
 """
-TaskManager -> Antigravity Central Multi-Agent Dispatcher (v5.0 - Connect-RPC Native Bypass)
-Windows UIPI / klavye / ekran odağına gerek kalmadan, doğrudan dahili StartCascade
-Connect-RPC servisi üzerinden 50ms'de sıfır dokunuşlu otonom sohbet başlatır.
+TaskManager -> Antigravity Central Multi-Agent Dispatcher (v6.0 - Connect-RPC Multi-Window Engine)
+1. Açık olmayan proje pencerelerini otomatik başlatır (Antigravity IDE -n <workspace_path>).
+2. Her açık pencerenin kendi Language Server sürecini ve Connect-RPC portunu bağımsız eşleştirir.
+3. StartCascade + SendUserCascadeMessage + SmartFocusConversation ile sıfır dokunuşlu,
+   başlıklı ve içi dolu olarak hedef pencerede canlı sohbet başlatır ve ekrana odaklar.
+4. Var olan sohbetleri haksız yere hayalet ilan edip silme döngüsüne girmez.
 """
 import http.server
 import json
@@ -102,43 +105,7 @@ ANTIGRAVITY_EXE = r"C:\Users\DELL\AppData\Local\Programs\Antigravity IDE\Antigra
 ANTIGRAVITY_CLI = r"C:\Users\DELL\AppData\Local\Programs\Antigravity IDE\bin\antigravity-ide.cmd"
 ANTIGRAVITY_CONV_DIR = r"C:\Users\DELL\.gemini\antigravity-ide\conversations"
 
-cached_ls_address = None
-cached_csrf_token = None
-
-def _save_ls_env(addr, token):
-    global cached_ls_address, cached_csrf_token
-    cached_ls_address = addr
-    cached_csrf_token = token
-    try:
-        with open(LS_ENV_FILE, 'w', encoding='utf-8') as f:
-            json.dump({"address": addr, "csrf_token": token or "", "updated_at": int(time.time())}, f, indent=2)
-        with open(LS_ADDRESS_FILE, 'w', encoding='utf-8') as f:
-            f.write(addr)
-        if token:
-            with open(CSRF_TOKEN_FILE, 'w', encoding='utf-8') as f:
-                f.write(token)
-    except Exception:
-        pass
-
-def verify_ls_env(addr, token=None):
-    if not addr or not os.path.exists(AGENTAPI_EXE):
-        return False
-    test_env = os.environ.copy()
-    test_env["ANTIGRAVITY_LS_ADDRESS"] = addr
-    if token:
-        test_env["ANTIGRAVITY_CSRF_TOKEN"] = token
-    try:
-        res = run_silent(
-            [AGENTAPI_EXE, "agentapi", "get-conversation-metadata", "__probe__"],
-            env=test_env, capture_output=True, text=True, timeout=2
-        )
-        out = ((res.stdout or '') + " " + (res.stderr or '')).lower()
-        if res.returncode == 0 or "trajectory not found" in out or "conversationmetadata" in out:
-            if "unavailable" not in out and "connection error" not in out and "invalid csrf" not in out:
-                return True
-    except Exception:
-        pass
-    return False
+SSL_CTX = ssl._create_unverified_context()
 
 def get_language_server_processes():
     ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
@@ -154,89 +121,120 @@ def get_language_server_processes():
         print(f"⚠️ LS süreçleri alınırken hata/zaman aşımı: {e}")
     return []
 
-def _is_workspace_ls_running(folder_name):
-    procs = get_language_server_processes()
-    for pr in procs:
-        cmd = (pr.get('CommandLine') or '').lower().replace('\\', '/')
-        if f"_{folder_name}" in cmd or f"/{folder_name}" in cmd:
-            return True
-    return False
+def get_workspace_folder(workspace_path):
+    if not workspace_path:
+        return ""
+    norm = workspace_path.replace('\\', '/').rstrip('/').lower()
+    return os.path.basename(norm)
+
+def is_workspace_match(cmd, workspace_path):
+    if not cmd or not workspace_path:
+        return False
+    folder = get_workspace_folder(workspace_path)
+    cmd_lower = cmd.replace('\\', '/').lower()
+    return f"_{folder}" in cmd_lower or f"/{folder}" in cmd_lower
+
+def find_workspace_ls_process(workspace_path):
+    if not workspace_path:
+        return None
+    for pr in get_language_server_processes():
+        cmd = pr.get('CommandLine') or ''
+        if is_workspace_match(cmd, workspace_path):
+            return pr
+    return None
 
 def ensure_workspace_window_open(workspace_path):
     """
     Hedef projenin klasörü için Antigravity IDE penceresi açık değilse,
-    resmi CLI (antigravity-ide.cmd -n) ile yeni pencereyi başlatır
-    ve Language Server'ın ayağa kalkmasını bekler.
+    yeni pencereyi başlatır ve Language Server'ın ayağa kalkmasını bekler.
     """
     if not workspace_path or not os.path.isdir(workspace_path):
-        return False
+        return None
 
-    folder_name = os.path.basename(workspace_path.rstrip('\\/')).lower()
-    if _is_workspace_ls_running(folder_name):
-        return True
+    proc = find_workspace_ls_process(workspace_path)
+    if proc:
+        return proc
 
-    # 1. Önce doğrudan Antigravity IDE uygulamasını başlat
-    if os.path.exists(ANTIGRAVITY_EXE):
-        print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder_name}] için Antigravity IDE açılıyor...")
-        try:
-            subprocess.Popen([ANTIGRAVITY_EXE, '-n', workspace_path], creationflags=NO_WINDOW_FLAG)
-        except Exception as e:
-            print(f"⚠️ IDE başlatma hatası: {e}")
-    elif os.path.exists(ANTIGRAVITY_CLI):
-        print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder_name}] için Antigravity CLI çağrılıyor...")
-        try:
-            subprocess.Popen([ANTIGRAVITY_CLI, '-n', workspace_path], creationflags=NO_WINDOW_FLAG, shell=True)
-        except Exception as e:
-            print(f"⚠️ CLI başlatma hatası: {e}")
-    else:
-        return False
+    folder = get_workspace_folder(workspace_path)
+    print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder}] için Antigravity penceresi açılıyor...")
 
-    # Language Server ayağa kalkana kadar (max 15 sn) bekle
-    for i in range(15):
+    if os.path.exists(ANTIGRAVITY_CLI):
+        run_silent(['cmd', '/c', 'call', ANTIGRAVITY_CLI, '-n', workspace_path], timeout=15)
+    elif os.path.exists(ANTIGRAVITY_EXE):
+        subprocess.Popen([ANTIGRAVITY_EXE, '-n', workspace_path], creationflags=NO_WINDOW_FLAG)
+
+    for i in range(20):
         time.sleep(1)
-        if _is_workspace_ls_running(folder_name):
-            print(f"✅ [IDE PENCERESİ HAZIR] [{folder_name}] Language Server ayağa kalktı! ({i+1} sn)")
+        proc = find_workspace_ls_process(workspace_path)
+        if proc:
+            print(f"✅ [IDE PENCERESİ HAZIR] [{folder}] Language Server ayağa kalktı! PID: {proc.get('ProcessId')} ({i+1} sn)")
             time.sleep(2)
-            return True
+            return proc
 
-    return False
+    print(f"❌ [HATA] [{folder}] için Antigravity IDE penceresi 20 saniye içinde açılamadı.")
+    return None
 
-def start_conversation_via_rpc(workspace_path, prompt=""):
+def get_workspace_rpc_env(workspace_path):
     """
-    Antigravity Language Server'ın dahili Connect-RPC /StartCascade servisine
-    doğrudan HTTPS üzerinden JSON isteği atarak 50 milisaniyede sıfır UI / sıfır klavye
-    ile hedef projeye mühürlü yeni bir sohbet (cascadeId) başlatır.
+    Hedef workspace'in açık penceresine ait Language Server'ın
+    Connect-RPC HTTPS portunu ve CSRF token'ını tespit eder.
     """
-    if not workspace_path:
-        return None
+    proc = ensure_workspace_window_open(workspace_path)
+    if not proc:
+        # Son çare açık olan herhangi bir LS sürecini dene
+        procs = get_language_server_processes()
+        proc = procs[0] if procs else None
+    if not proc:
+        return None, None
 
-    ensure_workspace_window_open(workspace_path)
-
-    folder_name = os.path.basename(workspace_path.rstrip('\\/')).lower()
-    norm_path = workspace_path.replace('\\', '/').rstrip('/')
-    if not norm_path.startswith('/'):
-        ws_uri = f"file:///{norm_path}"
-    else:
-        ws_uri = f"file://{norm_path}"
-
-    procs = get_language_server_processes()
-    if not procs:
-        print("⚠️ [CONNECT-RPC] language_server_windows_x64.exe süreci bulunamadı!")
-        return None
-
-    if folder_name:
-        procs.sort(
-            key=lambda pr: (
-                f"_{folder_name}" in (pr.get('CommandLine') or '').lower().replace('\\', '/') or
-                f"/{folder_name}" in (pr.get('CommandLine') or '').lower().replace('\\', '/')
-            ),
-            reverse=True
-        )
+    pid = str(proc.get('ProcessId', ''))
+    cmd = proc.get('CommandLine') or ''
+    token_m = re.search(r'--csrf_token\s+([a-zA-Z0-9\-]+)', cmd)
+    token = token_m.group(1) if token_m else ""
 
     netstat_res = run_silent(['netstat', '-ano'], capture_output=True, text=True, timeout=5)
     netstat = netstat_res.stdout or ''
 
-    ctx = ssl._create_unverified_context()
+    candidate_ports = []
+    for line in netstat.splitlines():
+        if 'LISTENING' in line and line.strip().endswith(pid):
+            m = re.search(r'127\.0\.0\.1:(\d+)', line)
+            if m and m.group(1) not in candidate_ports:
+                candidate_ports.append(m.group(1))
+
+    for port in candidate_ports:
+        url = f"https://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/Heartbeat"
+        req = urllib.request.Request(
+            url,
+            data=b'{}',
+            headers={
+                "Content-Type": "application/json",
+                "X-Codeium-Csrf-Token": token
+            },
+            method="POST"
+        )
+        try:
+            with urllib.request.urlopen(req, context=SSL_CTX, timeout=2) as resp:
+                if resp.status == 200:
+                    return port, token
+        except Exception:
+            continue
+
+    return None, None
+
+def start_cascade_conversation(workspace_path, prompt, title=""):
+    """
+    Connect-RPC üzerinden yeni bir cascade oturumu başlatır,
+    görev metnini (User Turn) doğrudan cascade içine ekler
+    ve SmartFocusConversation ile pencere ekranında aktif sekmeye getirir.
+    """
+    rpc_port, token = get_workspace_rpc_env(workspace_path)
+    if not rpc_port or not token:
+        print(f"❌ [CONNECT-RPC] [{get_workspace_folder(workspace_path)}] için RPC port/token bulunamadı!")
+        return None
+
+    norm_path = workspace_path.replace('\\', '/').rstrip('/')
+    ws_uri = f"file:///{norm_path}" if not norm_path.startswith('/') else f"file://{norm_path}"
 
     payload = {
         "active_workspaces": [{
@@ -248,92 +246,109 @@ def start_conversation_via_rpc(workspace_path, prompt=""):
     }
     body = json.dumps(payload).encode('utf-8')
 
-    for proc in procs:
-        pid = str(proc.get('ProcessId', ''))
-        cmd = proc.get('CommandLine') or ''
-        token_m = re.search(r'--csrf_token\s+([a-zA-Z0-9\-]+)', cmd)
-        token = token_m.group(1) if token_m else ""
-
-        candidate_ports = []
-        for line in netstat.splitlines():
-            if 'LISTENING' in line and line.strip().endswith(pid):
-                m = re.search(r'127\.0\.0\.1:(\d+)', line)
-                if m and m.group(1) not in candidate_ports:
-                    candidate_ports.append(m.group(1))
-
-        for port in candidate_ports:
-            url = f"https://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/StartCascade"
-            req = urllib.request.Request(
-                url,
-                data=body,
-                headers={
-                    "Content-Type": "application/json",
-                    "X-Codeium-Csrf-Token": token
-                },
-                method="POST"
-            )
-            try:
-                with urllib.request.urlopen(req, context=ctx, timeout=3) as resp:
-                    if resp.status == 200:
-                        data = json.loads(resp.read().decode('utf-8'))
-                        cid = data.get("cascadeId")
-                        if cid:
-                            print(f"🎉 [CONNECT-RPC BAŞARILI] StartCascade ile yeni sohbet başlatıldı! PID: {pid}, Port: {port}, ID: {cid}")
-                            return cid
-            except Exception:
-                continue
-
-    print("❌ [CONNECT-RPC] StartCascade çağrısı tüm portlarda denendi ancak yeni sohbet açılamadı.")
-    return None
-
-def get_antigravity_ls_env(workspace_path=None, force_refresh=False):
-    global cached_ls_address, cached_csrf_token
-
-    if workspace_path:
-        ensure_workspace_window_open(workspace_path)
-
-    folder_name = os.path.basename(workspace_path.rstrip('\\/')).lower() if workspace_path else None
-
-    if not force_refresh and not folder_name and cached_ls_address and verify_ls_env(cached_ls_address, cached_csrf_token):
-        return cached_ls_address, cached_csrf_token
+    url_start = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/StartCascade"
+    req_start = urllib.request.Request(
+        url_start,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "X-Codeium-Csrf-Token": token
+        },
+        method="POST"
+    )
 
     try:
-        procs = get_language_server_processes()
-        if procs:
-            if folder_name:
-                procs.sort(
-                    key=lambda pr: (
-                        f"_{folder_name}" in (pr.get('CommandLine') or '').lower().replace('\\', '/') or
-                        f"/{folder_name}" in (pr.get('CommandLine') or '').lower().replace('\\', '/')
-                    ),
-                    reverse=True
-                )
+        with urllib.request.urlopen(req_start, context=SSL_CTX, timeout=6) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode('utf-8'))
+                cid = data.get("cascadeId")
+                if cid:
+                    print(f"🎉 [CONNECT-RPC BAŞARILI] StartCascade ile yeni sohbet başlatıldı! Port: {rpc_port}, ID: {cid}")
+                    time.sleep(0.5)
 
-            netstat_res = run_silent(['netstat', '-ano'], capture_output=True, text=True, timeout=5)
-            netstat = netstat_res.stdout or ''
-            for proc in procs:
-                pid = str(proc.get('ProcessId', ''))
-                cmd = proc.get('CommandLine') or ''
-                token_m = re.search(r'--csrf_token\s+([a-zA-Z0-9\-]+)', cmd)
-                token = token_m.group(1) if token_m else None
+                    # 1. Kullanıcı mesaj turn'ünü (User Turn) kesin olarak ekle
+                    try:
+                        url_msg = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
+                        msg_payload = {
+                            "cascadeId": cid,
+                            "items": [{"text": prompt}]
+                        }
+                        req_msg = urllib.request.Request(
+                            url_msg,
+                            data=json.dumps(msg_payload).encode('utf-8'),
+                            headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
+                            method="POST"
+                        )
+                        with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as mresp:
+                            if mresp.status == 200:
+                                print(f"📝 [KULLANICI TURU EKLENDİ] SendUserCascadeMessage başarılı!")
+                    except Exception as e_msg:
+                        print(f"⚠️ SendUserCascadeMessage notu: {e_msg}")
 
-                candidate_ports = []
-                for line in netstat.splitlines():
-                    if 'LISTENING' in line and line.strip().endswith(pid):
-                        m = re.search(r'127\.0\.0\.1:(\d+)', line)
-                        if m and m.group(1) not in candidate_ports:
-                            candidate_ports.append(m.group(1))
+                    time.sleep(0.2)
+                    # 2. SmartFocusConversation ile arayüzde o sekmeyi öne getir ve ekrana yansıt
+                    try:
+                        url_focus = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
+                        focus_payload = {"cascadeId": cid}
+                        req_focus = urllib.request.Request(
+                            url_focus,
+                            data=json.dumps(focus_payload).encode('utf-8'),
+                            headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
+                            method="POST"
+                        )
+                        with urllib.request.urlopen(req_focus, context=SSL_CTX, timeout=4) as fresp:
+                            if fresp.status == 200:
+                                print(f"🎯 [EKRANA YANSITILDI] SmartFocusConversation ile sekme arayüzde açıldı!")
+                    except Exception as e_focus:
+                        print(f"⚠️ SmartFocusConversation notu: {e_focus}")
 
-                for port in candidate_ports:
-                    addr = f"127.0.0.1:{port}"
-                    if verify_ls_env(addr, token):
-                        if not folder_name:
-                            _save_ls_env(addr, token)
-                        return addr, token
+                    return cid
     except Exception as e:
-        print(f"⚠️ LS Port tespiti hatası: {e}")
+        print(f"❌ [CONNECT-RPC HATASI] StartCascade başarısız: {e}")
 
-    return None, None
+    return None
+
+def send_message_to_existing_cascade(workspace_path, cascade_id, message_text):
+    """
+    Halihazırda var olan açık bir cascade oturumuna yeni mesaj ekler ve arayüzde odaklar.
+    """
+    rpc_port, token = get_workspace_rpc_env(workspace_path)
+    if not rpc_port or not token:
+        return False
+
+    url_msg = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
+    msg_payload = {
+        "cascadeId": cascade_id,
+        "items": [{"text": message_text}]
+    }
+    req_msg = urllib.request.Request(
+        url_msg,
+        data=json.dumps(msg_payload).encode('utf-8'),
+        headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as resp:
+            if resp.status == 200:
+                print(f"✅ [MESAJ İLETİLDİ] Var olan sohbet güncellendi: {cascade_id}")
+                # Ekranda odakla
+                try:
+                    url_focus = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
+                    req_focus = urllib.request.Request(
+                        url_focus,
+                        data=json.dumps({"cascadeId": cascade_id}).encode('utf-8'),
+                        headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
+                        method="POST"
+                    )
+                    urllib.request.urlopen(req_focus, context=SSL_CTX, timeout=3)
+                except Exception:
+                    pass
+                return True
+    except Exception as e:
+        print(f"⚠️ Var olan sohbete mesaj gönderilemedi: {e}")
+
+    return False
 
 def load_workspaces_map():
     mapping = {
@@ -343,7 +358,8 @@ def load_workspaces_map():
         "TKMDEV-03": ["c:/wamp64/www/benimcarsim"],
         "TKMDEV-04": ["c:/wamp64/www/benimcarsim-depo"],
         "NKLYCM": ["d:/MobilProjeler/nakliyecim"],
-        "NETTAKIP": ["d:/MobilProjeler/sonuctakip", "d:/MobilProjeler/nettakip"]
+        "NETTAKIP": ["d:/MobilProjeler/sonuctakip", "d:/MobilProjeler/nettakip"],
+        "NEWJOBS": ["c:/wamp64/www/mvcproje"]
     }
     if os.path.exists(WORKSPACES_CONFIG):
         try:
@@ -362,6 +378,21 @@ def get_project_primary_dir(project_code, workspace_path=""):
         for p in ws_map[project_code]:
             if os.path.isdir(p):
                 return p
+    # Veritabanından workspace_path sorgula
+    try:
+        root_dir = os.path.dirname(BASE_DIR)
+        php_code = (
+            f"require_once 'Model/DataLayer.php'; "
+            f"$db = new Database(); "
+            f"$row = $db->row_query(\"SELECT workspace_path FROM projects WHERE project_code = '{project_code}' LIMIT 1\"); "
+            f"if ($row && !empty($row->workspace_path)) echo trim($row->workspace_path);"
+        )
+        res = run_silent(['php', '-r', php_code], cwd=root_dir, capture_output=True, timeout=5)
+        out = (res.stdout or '').strip()
+        if out and os.path.isdir(out):
+            return out
+    except Exception:
+        pass
     return os.path.dirname(BASE_DIR)
 
 def get_active_context_window(normalized_targets):
@@ -499,16 +530,23 @@ def process_webhook_async(payload, header_conv_id):
     agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
     project_dir = get_project_primary_dir(project_code, workspace_path)
 
-    ls_address, csrf_token = get_antigravity_ls_env(project_dir)
-    discovered_cid, matched_uri = discover_latest_conversation(project_code, project_title, workspace_path)
+    # 1. HEDEF SOHBET TESPİTİ (GHOST SİLME DÖNGÜSÜ ENGELLENDİ)
+    target_conv_id = None
+    if incoming_conv_id:
+        db_check = os.path.join(ANTIGRAVITY_CONV_DIR, f"{incoming_conv_id}.db")
+        if os.path.exists(db_check):
+            # Veritabanında kayıtlı olan sohbet diskte mevcut, ASLA silme!
+            target_conv_id = incoming_conv_id
 
-    if discovered_cid:
-        target_conv_id = discovered_cid
-    else:
-        target_conv_id = None
-        if incoming_conv_id:
-            print(f"🧹 [ESKİ/HAYALET SOHBET TEMİZLENDİ] {incoming_conv_id} artık aktif değil, yeni sekme açılacak.")
-            sync_conversation_id_to_db(project_code, "")
+    if not target_conv_id:
+        discovered_cid, _ = discover_latest_conversation(project_code, project_title, workspace_path)
+        if discovered_cid:
+            target_conv_id = discovered_cid
+
+    # Sadece ve sadece incoming_conv_id diskte gerçekten YOKSA temizle
+    if incoming_conv_id and not target_conv_id:
+        print(f"🧹 [ESKİ/HAYALET SOHBET TEMİZLENDİ] {incoming_conv_id} diskte bulunamadı, yeni pencerede sohbet açılacak.")
+        sync_conversation_id_to_db(project_code, "")
 
     is_resumed = bool(data.get('resumed', False))
 
@@ -529,16 +567,6 @@ def process_webhook_async(payload, header_conv_id):
 
     print(f"\n=======================================================")
     print(f"🔔 [GÖREV TETİKLENİYOR] -> Olay: {event} | Proje: [{project_code}] {project_title} | Görev: {task_code}")
-
-    # EĞER BU PROJE İÇİN HİÇ AKTİF SOHBET YOKSA: Doğrudan Connect-RPC (StartCascade) ile yeni sohbet oluştur!
-    if not target_conv_id:
-        rpc_cid = start_conversation_via_rpc(project_dir)
-        if rpc_cid:
-            target_conv_id = rpc_cid
-            discovered_cid = rpc_cid
-
-    if discovered_cid:
-        sync_conversation_id_to_db(project_code, discovered_cid)
 
     task_title = data.get('title', '').replace('🔄 [RESUMING TASK] ', '').replace('⚠️ [REVISION REQUEST] ', '')
     priority = data.get('priority', 'normal')
@@ -597,54 +625,34 @@ def process_webhook_async(payload, header_conv_id):
     else:
         return
 
-    env = os.environ.copy()
-    if ls_address:
-        env["ANTIGRAVITY_LS_ADDRESS"] = ls_address
-    if csrf_token:
-        env["ANTIGRAVITY_CSRF_TOKEN"] = csrf_token
+    # 2. GÖNDERİM AKIŞI:
+    success = False
 
-    if not target_conv_id:
-        target_conv_id = start_conversation_via_rpc(project_dir)
-        if target_conv_id:
-            sync_conversation_id_to_db(project_code, target_conv_id)
+    # A. Hedef sohbet varsa önce ona iletmeyi dene
+    if target_conv_id:
+        success = send_message_to_existing_cascade(project_dir, target_conv_id, message_text)
+        if not success:
+            print(f"⚠️ [MEVCUT SOHBETE İLETİLEMEDİ] ID: {target_conv_id} yanıt vermedi, yeni Connect-RPC oturumu açılıyor...")
 
-    if not target_conv_id:
-        print(f"❌ [HATA] [{project_code}] için hedef sohbet oluşturulamadı, görev gönderilemedi.")
-        return
+    # B. Hedef sohbet yoksa veya eskisine iletilemediyse: Connect-RPC StartCascade ile YENİ AÇ!
+    if not success:
+        new_cid = start_cascade_conversation(project_dir, message_text, title=title_header)
+        if new_cid:
+            target_conv_id = new_cid
+            sync_conversation_id_to_db(project_code, new_cid)
+            success = True
 
-    cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", target_conv_id, message_text]
-
-    try:
-        result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
-
-        if result.returncode != 0:
-            fresh_addr, fresh_token = get_antigravity_ls_env(project_dir, force_refresh=True)
-            if fresh_addr:
-                env["ANTIGRAVITY_LS_ADDRESS"] = fresh_addr
-                if fresh_token:
-                    env["ANTIGRAVITY_CSRF_TOKEN"] = fresh_token
-                result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
-
-        # Eğer hâlâ gönderilemediyse (örneğin eski sohbet silinmişse), Connect-RPC üzerinden yeni sohbet açıp tekrar gönder!
-        if result.returncode != 0:
-            print(f"⚠️ [HEDEF SOHBETE GÖNDERİLEMEDİ] Connect-RPC ile anında yeni sohbet açılıyor...")
-            new_rpc_cid = start_conversation_via_rpc(project_dir)
-            if new_rpc_cid:
-                target_conv_id = new_rpc_cid
-                sync_conversation_id_to_db(project_code, new_rpc_cid)
-                retry_cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", new_rpc_cid, message_text]
-                result = run_silent(retry_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
-
-        print(f"✅ Gönderim Sonucu ({target_conv_id}): ExitCode {result.returncode}")
-        if result.returncode == 0 and task_code:
+    if success and target_conv_id:
+        print(f"✅ Gönderim Başarılı! Hedef Sohbet: {target_conv_id}")
+        if task_code:
             with state_lock:
                 project_active_state[project_code] = {
                     'task_code': task_code,
                     'conv_id': target_conv_id,
                     'dispatched_at': time.time()
                 }
-    except Exception as err:
-        print(f"❌ Gönderim Hatası: {str(err)}")
+    else:
+        print(f"❌ [HATA] [{project_code}] için görev iletilemedi!")
 
 
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
@@ -684,7 +692,8 @@ def run_server():
         for i, a in enumerate(sys.argv):
             if a == '--probe' and i + 1 < len(sys.argv) and not sys.argv[i+1].startswith('-'):
                 ws = sys.argv[i+1]
-        addr, tok = get_antigravity_ls_env(workspace_path=ws, force_refresh=True)
+        port, tok = get_workspace_rpc_env(ws)
+        addr = f"127.0.0.1:{port}" if port else ""
         print(json.dumps({"address": addr, "csrf_token": tok or ""}))
         return
 
@@ -694,7 +703,7 @@ def run_server():
     server_address = ('', PORT)
     httpd = http.server.HTTPServer(server_address, WebhookHandler)
     print("=======================================================")
-    print("🤖 Antigravity Multi-Agent Dispatcher v5.0 (Connect-RPC Native Bypass) Başlatıldı!")
+    print("🤖 Antigravity Multi-Agent Dispatcher v6.0 (Connect-RPC Multi-Window) Başlatıldı!")
     print(f"📡 Dinleme Adresi : http://localhost:{PORT}/webhook")
     print("=======================================================")
     try:
