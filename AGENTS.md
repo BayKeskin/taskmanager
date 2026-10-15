@@ -29,7 +29,7 @@ Under NO circumstances shall the user ever encounter:
 > 2. **Project Isolation:** You belong exclusively to the project opened in your current workspace directory. Never touch or modify tasks belonging to other projects.
 > 3. **Zero Abandonment:** Once a task is in `in_progress` (ÇALIŞILIYOR), you MUST complete all coding and live QA testing before responding to the user. Never leave a task half-done.
 > 4. **Clean Handoff Protocol:** When you finish coding and testing the active task:
->    - Deliver the task using the instant HTTP API callback provided in the dispatch instruction (or via `Helper::submitTaskDirectly`) to move the task to `submitted` (İNCELEMEDE). NEVER attempt to navigate to TaskManager directory or inspect TaskManager internal files/database directly!
+>    - Deliver the task using the official TaskManager REST API endpoint (`POST /api/tasks/{task_code}/workflow/submit` with Bearer token) provided in the dispatch instruction to move the task to `submitted` (İNCELEMEDE). NEVER attempt to navigate to TaskManager directory or inspect TaskManager internal files/database directly!
 >    - Write your final summary of what you did for THIS task and **END YOUR TURN**.
 >    - Do NOT manually pull or start the next task yourself! The background Dispatcher will automatically trigger you with a clean prompt for the next `#ai` task 4 seconds after you finish.
 

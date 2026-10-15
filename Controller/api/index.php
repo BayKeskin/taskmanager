@@ -1337,50 +1337,33 @@ if ($resource === 'tasks') {
 
                 if (empty($notes)) apiError('Teslim notları (notes) zorunludur.', 400);
 
-                $db->exec_query("UPDATE tasks SET status = 'submitted', updated_at = NOW() WHERE id = ?", [$task->id]);
-                $db->exec_query("
-                    INSERT INTO task_submissions (task_id, submitted_by, notes, attachment_url, status, created_at)
-                    VALUES (?, ?, ?, ?, 'pending', NOW())
-                ", [$task->id, $currentUser->id, $notes, $attachmentUrl]);
+                // Merkezi teslimat fonksiyonunu çağır (SSE, Alt Görev Rollup ve Dispatcher 4sn Kuyruk Sinyalini otomatik yönetir)
+                $subRes = Helper::submitTaskDirectly((int)$task->id, $notes);
+                if (empty($subRes['success'])) {
+                    apiError($subRes['error'] ?? 'Görev teslim edilemedi.', 500);
+                }
 
-                $db->exec_query("
-                    INSERT INTO task_activities (task_id, user_id, action_type, comment, created_at)
-                    VALUES (?, ?, 'submitted', ?, NOW())
-                ", [$task->id, $currentUser->id, "{$currentUser->name} görevi yönetici onayına sundu."]);
+                // Eğer attachment_url gönderildiyse son teslimat kaydına işle
+                if (!empty($attachmentUrl)) {
+                    $db->exec_query("
+                        UPDATE task_submissions 
+                        SET attachment_url = ? 
+                        WHERE task_id = ? 
+                        ORDER BY id DESC LIMIT 1
+                    ", [$attachmentUrl, $task->id]);
+                }
 
                 // Yöneticilere bildirim oluştur
                 $adminRows = $db->multi_record_query("SELECT id FROM users WHERE role = 'admin'") ?: [];
-                $admins = array_map(fn($a) => $a->id, $adminRows);
-                foreach ($admins as $admId) {
+                foreach ($adminRows as $adm) {
                     $db->exec_query("
                         INSERT INTO notifications (user_id, title, message, link, is_read, created_at)
                         VALUES (?, 'Yeni Görev Teslimatı', ?, ?, 0, NOW())
-                    ", [$admId, "{$currentUser->name}, '{$task->title}' görevini teslim etti.", "/taskmanager/tasks"]);
+                    ", [$adm->id, "{$currentUser->name}, '{$task->title}' görevini API üzerinden teslim etti.", "/taskmanager/board?project_id={$task->project_id}"]);
                 }
 
                 $updated = resolveTask($db, $task->id);
-                Helper::triggerProjectWebhook((int)$task->project_id, 'task.submitted', [
-                    'task_code'      => $task->task_code,
-                    'title'          => $task->title,
-                    'notes'          => $notes,
-                    'attachment_url' => $attachmentUrl
-                ]);
-
-                // CANLI SSE YAYINI
-                Helper::broadcastLiveEvent('task_submitted', (int)$task->project_id, (int)$task->id, (int)$currentUser->id, [
-                    'task_id'    => (int)$task->id,
-                    'task_code'  => $task->task_code,
-                    'title'      => $task->title,
-                    'old_status' => $task->status,
-                    'new_status' => 'submitted',
-                    'notes'      => $notes,
-                    'user_name'  => $currentUser->name
-                ]);
-
-                // Otonom Kuyruk: Sıradaki '#ai' etiketli görevi otomatik başlat
-                Helper::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$task->id);
-
-                apiResponse(formatTaskDetail($db, $updated), 'Görev başarıyla teslim edildi. Yönetici incelemesine sunuldu.');
+                apiResponse(formatTaskDetail($db, $updated), 'Görev başarıyla teslim edildi. Sıradaki görev 4 saniye içinde otomatik tetiklenecektir.');
             }
 
             // F) YÖNETİCİ ONAY / RET (/workflow/review)

@@ -562,27 +562,35 @@ class Helper
     }
 
     /**
-     * Ajanın hangi proje dizininde veya hangi bilgisayarda olduğundan bağımsız olarak
-     * HTTP API üzerinden 0.1 saniyede görev teslim etmesini sağlayan evrensel komutu üretir.
+     * Ajanın hangi proje dizininde veya hangi sunucuda olduğundan bağımsız olarak
+     * TaskManager Enterprise REST API (/api/tasks/{code}/workflow/submit) üzerinden
+     * Bearer Token ile görev teslim etmesini sağlayan resmi komutu üretir.
      */
     public static function getAgentSubmitCommandBlock(string $taskCode): string
     {
         global $db;
         $baseUrl = 'http://localhost/taskmanager';
+        $apiToken = 'tm_admin_talha_keskin_token_2026';
+
         try {
             if ($db && !empty($db->connect)) {
                 $sUrl = $db->single_query("SELECT siteurl FROM settings WHERE id = 1");
                 if (!empty($sUrl)) {
                     $baseUrl = rtrim(trim((string)$sUrl), '/');
                 }
+                $dbToken = $db->single_query("SELECT api_token FROM users WHERE role = 'admin' AND status = 'active' AND api_token IS NOT NULL AND api_token != '' ORDER BY id ASC LIMIT 1");
+                if (!empty($dbToken)) {
+                    $apiToken = trim((string)$dbToken);
+                }
             }
         } catch (\Throwable $e) {}
 
-        $endpoint = $baseUrl . '/ajax?action=agent_submit_task';
+        $endpoint = "{$baseUrl}/api/tasks/{$taskCode}/workflow/submit";
 
         return "```powershell\n"
-             . "\$body = @{ task_code = '{$taskCode}'; notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' } | ConvertTo-Json -Compress\n"
-             . "Invoke-RestMethod -Uri '{$endpoint}' -Method Post -Body ([System.Text.Encoding]::UTF8.GetBytes(\$body)) -ContentType 'application/json; charset=utf-8'\n"
+             . "\$headers = @{ 'Authorization' = 'Bearer {$apiToken}'; 'Content-Type' = 'application/json; charset=utf-8' }\n"
+             . "\$body = @{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' } | ConvertTo-Json -Compress\n"
+             . "Invoke-RestMethod -Uri '{$endpoint}' -Method Post -Headers \$headers -Body ([System.Text.Encoding]::UTF8.GetBytes(\$body))\n"
              . "```";
     }
 
