@@ -126,8 +126,24 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 
 ---
 
+## 8. MANDATORY DATABASE MIGRATION & ROLLBACK DOCTRINE (.migrations/{task_code}_down.sql)
+
+> ### 🗄️ DATABASE ROLLBACK INTEGRITY DIRECTIVE:
+> **Whenever an agent creates or modifies database structures (CREATE TABLE, ALTER TABLE) or performs data mutations (INSERT, UPDATE, DELETE) during a task:**
+> **The agent is STRICTLY OBLIGATED to generate an inverse rollback SQL script inside the project directory: `.migrations/{task_code}_down.sql`.**
+
+### 🚫 STRICT PROHIBITIONS:
+1. **NO Unrecorded DB Migrations:** It is strictly prohibited to execute structural database modifications without documenting their exact reverse SQL statements in `.migrations/{task_code}_down.sql`.
+2. **NO Destructive Drop Without Verification:** Rollback scripts must use safe IF EXISTS clauses (e.g., `DROP TABLE IF EXISTS table_name;`, `ALTER TABLE table_name DROP COLUMN column_name;`).
+
+### 📋 DEVELOPER REQUIREMENTS FOR EVERY TASK:
+1. **Inverse SQL Mapping:** For every `CREATE TABLE`, the down script must specify `DROP TABLE IF EXISTS`. For every `ADD COLUMN`, `DROP COLUMN`. For test data insertions, `DELETE FROM`.
+2. **Commit Along with Code:** The `.migrations/{task_code}_down.sql` file must be committed and pushed to GitHub along with the task's code changes.
+
+---
+
 <!-- PROJECT_RULES_START -->
-## 8. PROJECT-SPECIFIC AGENT RULES (PROJEYE ÖZEL KURALLAR)
+## 9. PROJECT-SPECIFIC AGENT RULES (PROJEYE ÖZEL KURALLAR)
 
 > ### 📌 MANDATORY PROJECT-SPECIFIC CONSTRAINTS:
 > The following project-specific technical rules, styling constraints, and workflow directives must be strictly observed for project [01] Task Manager:
@@ -138,4 +154,5 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 - **QA Doktrini:** "Kullanıcı test elemanı değildir". Her buton, modal, AJAX çağrısı ve form canlı ortamda otonom test edilmeden teslim edilemez.
 - **Görev Teslimi:** İş tamamlandığında `Helper::submitTaskDirectly()` fonksiyonu ile 4 aşamalı DoD (Neler Yapıldı, Nereden Test Edilir, Nasıl Test Edilir, Test Kanıtı) formatında teslim edilmelidir.
 <!-- PROJECT_RULES_END -->
+
 

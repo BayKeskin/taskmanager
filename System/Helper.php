@@ -718,6 +718,8 @@ class Helper
                 . "3. **How to Test (Nasıl Test Edilir):** Step-by-step credentials, actions, buttons to click, and expected outcomes.\n"
                 . "4. **Autonomous Test Evidence (Otonom Test Kanıtı):** Summary of automated headless browser and CLI test results.\n\n"
                 . "🎯 **Directive:** This task is actively assigned and in progress. Focus EXCLUSIVELY on this specific task: [{$taskCode}]. Do NOT jump to older or previously completed tasks. If the user in the active chat gave a direct instruction or question, prioritize addressing the user.\n\n"
+                . "🗄️ **DATABASE MIGRATION & ROLLBACK RULE:**\n"
+                . "If your task introduces database modifications (CREATE TABLE, ALTER TABLE, INSERT, UPDATE, DROP), you MUST generate a reverse rollback SQL script inside the project directory: `.migrations/{$taskCode}_down.sql` so changes can be reverted if rejected. If no DB changes are made, do not create this file.\n\n"
                 . "⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\n"
                 . "When development and autonomous verification are 100% complete, deliver the task immediately from your current directory by running this HTTP POST command in your shell:\n"
                 . self::getAgentSubmitCommandBlock($taskCode);
@@ -1062,6 +1064,9 @@ class Helper
                 return ['sent' => false, 'reason' => 'Task not found'];
             }
 
+            // 0. Görev başlamadan önce 5 KB'lık DB tablo/sütun haritasını al (Rollback sigortası)
+            self::capturePreTaskSnapshot((int)$task->id);
+
             // 🔥 KRİTİK KURAL: Görevde 'ai' / otonom etiketi YOKSA bu bir insan görevidir; ajana webhook fırlatma!
             if (!self::isAiTask($task)) {
                 return ['sent' => false, 'reason' => 'Not an AI task (human task - no ai tag)'];
@@ -1238,11 +1243,24 @@ class Helper
                 error_log("autoCommitAndPushTask error: " . $e->getMessage());
             }
 
-            // 2. Teslimat kaydı (Commit hash ve GitHub diff linki ile)
+            // 1.3 [SCHEMA DIFF & ROLLBACK SQL]: Otomatik şema farkı ve ajanın .migrations/{task_code}_down.sql kaydı
+            $rollbackSql = null;
+            $schemaDiffSummary = null;
+            try {
+                if ($projectObj) {
+                    $diffRes = self::computePostTaskSchemaDiff($taskId, $projectObj, $task->task_code);
+                    $rollbackSql = !empty($diffRes['rollback_sql']) ? $diffRes['rollback_sql'] : null;
+                    $schemaDiffSummary = !empty($diffRes['summary']) ? $diffRes['summary'] : null;
+                }
+            } catch (\Throwable $e) {
+                error_log("computePostTaskSchemaDiff error: " . $e->getMessage());
+            }
+
+            // 2. Teslimat kaydı (Commit hash, GitHub diff linki ve Rollback SQL ile)
             $db->exec_query("
-                INSERT INTO task_submissions (task_id, submitted_by, notes, attachment_url, commit_hash, status, created_at)
-                VALUES (?, 1, ?, ?, ?, 'pending', NOW())
-            ", [$taskId, $notes, $attachmentUrl, $commitHash]);
+                INSERT INTO task_submissions (task_id, submitted_by, notes, attachment_url, commit_hash, rollback_sql, schema_diff_summary, status, created_at)
+                VALUES (?, 1, ?, ?, ?, ?, ?, 'pending', NOW())
+            ", [$taskId, $notes, $attachmentUrl, $commitHash, $rollbackSql, $schemaDiffSummary]);
 
             // 3. Aktivite kaydı
             $db->exec_query("
@@ -3177,6 +3195,182 @@ CRITICAL ARCHITECTURAL RULES:
             'commit_hash' => $hash,
             'commit_url'  => $commitUrl,
             'branch'      => $branch
+        ];
+    }
+
+    /**
+     * Hedef projenin kullandığı MySQL veritabanı adını otomatik keşfeder (veya projects.db_name'den okur).
+     */
+    public static function resolveProjectDatabaseName(object $project): ?string
+    {
+        self::ensureGithubAndRollbackSchema();
+        if (!empty($project->db_name)) {
+            return trim((string)$project->db_name);
+        }
+
+        $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
+        if (empty($ws) || !is_dir($ws)) {
+            return 'taskmanager';
+        }
+
+        // 1. .env dosyasından DB_DATABASE veya DB_NAME oku
+        if (file_exists($ws . '/.env')) {
+            $envContent = (string)@file_get_contents($ws . '/.env');
+            if (preg_match('/^\s*(?:DB_DATABASE|DB_NAME|database\.default\.database)\s*=\s*[\'"]?([a-zA-Z0-9_]+)[\'"]?/m', $envContent, $m)) {
+                return $m[1];
+            }
+        }
+
+        // 2. Model/DataLayer.php, config/database.php veya config.php tara
+        $candidates = [
+            $ws . '/config/database.php',
+            $ws . '/Config/database.php',
+            $ws . '/Model/DataLayer.php',
+            $ws . '/System/Database.php',
+            $ws . '/Config/Database.php',
+            $ws . '/config.php',
+            $ws . '/wp-config.php'
+        ];
+        foreach ($candidates as $file) {
+            if (file_exists($file)) {
+                $code = (string)@file_get_contents($file);
+                if (preg_match('/dbname\s*=\s*([a-zA-Z0-9_]+)/i', $code, $m)) return $m[1];
+                if (preg_match('/[\'"](?:database|db_name|dbname|DB_NAME)[\'"]\s*(?:=>|:|=)\s*[\'"]([a-zA-Z0-9_]+)[\'"]/i', $code, $m)) return $m[1];
+                if (preg_match('/\$[\'"]?(?:db_name|dbname|database)[\'"]?\s*=\s*[\'"]([a-zA-Z0-9_]+)[\'"]/i', $code, $m)) return $m[1];
+            }
+        }
+
+        if ((int)$project->id === 1 || $project->project_code === '01') {
+            return 'taskmanager';
+        }
+
+        return null;
+    }
+
+    /**
+     * Hedef projenin veritabanı tablo ve sütun iskeletini (Sadece ~5 KB!) JSON dizisi olarak çıkarır.
+     */
+    public static function getProjectSchemaMap(string $dbName): array
+    {
+        global $db;
+        $map = [];
+        if (empty($dbName)) return $map;
+
+        try {
+            if (!$db || empty($db->connect)) {
+                require_once __DIR__ . '/../Model/DataLayer.php';
+                $db = new Database();
+            }
+
+            $rows = $db->multi_record_query("
+                SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE 
+                FROM information_schema.COLUMNS 
+                WHERE TABLE_SCHEMA = ? 
+                ORDER BY TABLE_NAME, ORDINAL_POSITION
+            ", [$dbName]) ?: [];
+
+            foreach ($rows as $r) {
+                $t = $r->TABLE_NAME;
+                if (!isset($map[$t])) $map[$t] = [];
+                $map[$t][$r->COLUMN_NAME] = $r->COLUMN_TYPE;
+            }
+        } catch (\Throwable $e) {
+            error_log("getProjectSchemaMap error: " . $e->getMessage());
+        }
+
+        return $map;
+    }
+
+    /**
+     * Görev ÇALIŞILIYOR (in_progress) durumuna geçtiğinde 5 KB'lık şema özetini geçici belleğe kaydeder.
+     */
+    public static function capturePreTaskSnapshot(int $taskId): void
+    {
+        global $db;
+        try {
+            if (!$db || empty($db->connect)) {
+                require_once __DIR__ . '/../Model/DataLayer.php';
+                $db = new Database();
+            }
+
+            $task = $db->row_query("SELECT id, task_code, project_id FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
+            if (!$task) return;
+            $project = $db->row_query("SELECT * FROM projects WHERE id = ? LIMIT 1", [$task->project_id]);
+            if (!$project) return;
+
+            $dbName = self::resolveProjectDatabaseName($project);
+            if (!$dbName) return;
+
+            $schemaMap = self::getProjectSchemaMap($dbName);
+            if (empty($schemaMap)) return;
+
+            $snapDir = __DIR__ . '/../Public/uploads/schema_snapshots';
+            if (!is_dir($snapDir)) @mkdir($snapDir, 0777, true);
+
+            @file_put_contents($snapDir . '/snap_task_' . (int)$task->id . '.json', json_encode([
+                'db_name'    => $dbName,
+                'task_code'  => $task->task_code,
+                'created_at' => date('c'),
+                'schema'     => $schemaMap
+            ], JSON_UNESCAPED_UNICODE));
+        } catch (\Throwable $e) {
+            error_log("capturePreTaskSnapshot error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Görev tamamlandığında önceki şema ile yeni şemayı karşılaştırır, Rollback SQL üretir ve 5 KB'lık geçici dosyayı siler!
+     */
+    public static function computePostTaskSchemaDiff(int $taskId, object $project, string $taskCode): array
+    {
+        $sqlStatements = [];
+        $summaryParts  = [];
+
+        // 1. Ajanın kendi yazdığı .migrations/{task_code}_down.sql dosyası varsa oku
+        $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
+        if (!empty($ws) && is_dir($ws)) {
+            $agentDownFile = $ws . '/.migrations/' . $taskCode . '_down.sql';
+            if (file_exists($agentDownFile)) {
+                $customSql = trim((string)@file_get_contents($agentDownFile));
+                if ($customSql !== '') {
+                    $sqlStatements[] = "-- Agent Custom Rollback SQL:\n" . $customSql;
+                    $summaryParts[]  = "Ajan özel geri alma SQL'i (.migrations/{$taskCode}_down.sql)";
+                }
+            }
+        }
+
+        // 2. Otomatik 5 KB Şema Farkı (Diff)
+        $snapFile = __DIR__ . '/../Public/uploads/schema_snapshots/snap_task_' . $taskId . '.json';
+        if (file_exists($snapFile)) {
+            $snapData = json_decode((string)@file_get_contents($snapFile), true);
+            $dbName   = $snapData['db_name'] ?? self::resolveProjectDatabaseName($project);
+            $oldMap   = $snapData['schema'] ?? [];
+
+            if ($dbName && !empty($oldMap)) {
+                $newMap = self::getProjectSchemaMap($dbName);
+                foreach ($newMap as $tableName => $cols) {
+                    if (!isset($oldMap[$tableName])) {
+                        // Görev sırasında YENİ TABLO açılmış!
+                        $sqlStatements[] = "DROP TABLE IF EXISTS `{$dbName}`.`{$tableName}`;";
+                        $summaryParts[]  = "`{$tableName}` tablosu oluşturuldu";
+                    } else {
+                        // Mevcut tabloya YENİ SÜTUN eklenmiş mi?
+                        foreach ($cols as $colName => $colType) {
+                            if (!isset($oldMap[$tableName][$colName])) {
+                                $sqlStatements[] = "ALTER TABLE `{$dbName}`.`{$tableName}` DROP COLUMN `{$colName}`;";
+                                $summaryParts[]  = "`{$tableName}.{$colName}` sütunu eklendi";
+                            }
+                        }
+                    }
+                }
+            }
+            // Diskte 0 Byte yer kaplaması için geçici şema dosyasını hemen temizle!
+            @unlink($snapFile);
+        }
+
+        return [
+            'rollback_sql' => implode("\n", $sqlStatements),
+            'summary'      => !empty($summaryParts) ? implode(', ', $summaryParts) : 'Veritabanı şema değişikliği yok (Sadece Kod)'
         ];
     }
 }
