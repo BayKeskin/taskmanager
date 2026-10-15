@@ -1,6 +1,7 @@
 """
-TaskManager -> Antigravity Central Multi-Agent Dispatcher (v4.3 - Auto-Bootstrap & Multi-Window)
-Hiçbir siyah CMD penceresi açmadan arka planda çalışır; yeni projelerde otomatik pencere açar ve ilk sohbeti başlatır.
+TaskManager -> Antigravity Central Multi-Agent Dispatcher (v5.0 - Connect-RPC Native Bypass)
+Windows UIPI / klavye / ekran odağına gerek kalmadan, doğrudan dahili StartCascade
+Connect-RPC servisi üzerinden 50ms'de sıfır dokunuşlu otonom sohbet başlatır.
 """
 import http.server
 import json
@@ -12,6 +13,8 @@ import sqlite3
 import re
 import time
 import urllib.parse
+import urllib.request
+import ssl
 import threading
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -139,16 +142,16 @@ def verify_ls_env(addr, token=None):
 
 def get_language_server_processes():
     ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
-    res = run_silent(['powershell', '-NoProfile', '-Command', ps_cmd], capture_output=True, text=True, timeout=6)
-    if res.returncode == 0 and res.stdout.strip():
-        try:
+    try:
+        res = run_silent(['powershell', '-NoProfile', '-Command', ps_cmd], capture_output=True, text=True, timeout=12)
+        if res.returncode == 0 and res.stdout.strip():
             data = json.loads(res.stdout)
             if isinstance(data, dict):
                 return [data]
             elif isinstance(data, list):
                 return data
-        except Exception:
-            pass
+    except Exception as e:
+        print(f"⚠️ LS süreçleri alınırken hata/zaman aşımı: {e}")
     return []
 
 def _is_workspace_ls_running(folder_name):
@@ -172,14 +175,19 @@ def ensure_workspace_window_open(workspace_path):
     if _is_workspace_ls_running(folder_name):
         return True
 
-    # 1. Önce resmi Antigravity CLI köprüsünü çağır (pencere açık olsa bile öne getirir veya yeni açar)
-    if os.path.exists(ANTIGRAVITY_CLI):
-        print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder_name}] için Antigravity CLI çağrılıyor...")
-        run_silent(['cmd', '/c', 'call', ANTIGRAVITY_CLI, '-n', workspace_path], timeout=10)
-    elif os.path.exists(ANTIGRAVITY_EXE):
+    # 1. Önce doğrudan Antigravity IDE uygulamasını başlat
+    if os.path.exists(ANTIGRAVITY_EXE):
         print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder_name}] için Antigravity IDE açılıyor...")
-        ps_open = f'Start-Process -FilePath "{ANTIGRAVITY_EXE}" -ArgumentList \'-n "{workspace_path}"\''
-        run_silent(['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps_open], timeout=5)
+        try:
+            subprocess.Popen([ANTIGRAVITY_EXE, '-n', workspace_path], creationflags=NO_WINDOW_FLAG)
+        except Exception as e:
+            print(f"⚠️ IDE başlatma hatası: {e}")
+    elif os.path.exists(ANTIGRAVITY_CLI):
+        print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder_name}] için Antigravity CLI çağrılıyor...")
+        try:
+            subprocess.Popen([ANTIGRAVITY_CLI, '-n', workspace_path], creationflags=NO_WINDOW_FLAG, shell=True)
+        except Exception as e:
+            print(f"⚠️ CLI başlatma hatası: {e}")
     else:
         return False
 
@@ -193,68 +201,89 @@ def ensure_workspace_window_open(workspace_path):
 
     return False
 
-def bootstrap_new_chat_via_ui(workspace_path):
+def start_conversation_via_rpc(workspace_path, prompt=""):
     """
-    Yeni açılan veya sohbeti silinen Antigravity IDE penceresini öne getirir,
-    sohbet kutusuna odaklanır (Ctrl+L) ve otomatik '1' + Enter göndererek
-    Antigravity'nin .db dosyasını kendi project_id kimliğiyle oluşturmasını sağlar!
+    Antigravity Language Server'ın dahili Connect-RPC /StartCascade servisine
+    doğrudan HTTPS üzerinden JSON isteği atarak 50 milisaniyede sıfır UI / sıfır klavye
+    ile hedef projeye mühürlü yeni bir sohbet (cascadeId) başlatır.
     """
-    folder_name = os.path.basename(workspace_path.rstrip('\\/'))
-    print(f"✨ [OTOMATİK İLK MESAJ (1 + ENTER)] [{folder_name}] penceresinde yeni sohbet tetikleniyor...")
+    if not workspace_path:
+        return None
 
-    before_dbs = set(glob.glob(os.path.join(ANTIGRAVITY_CONV_DIR, '*.db')))
+    ensure_workspace_window_open(workspace_path)
 
-    ps_script = f"""
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-public class Win32Focus {{
-    [DllImport("user32.dll")]
-    public static extern bool SetForegroundWindow(IntPtr hWnd);
-    [DllImport("user32.dll")]
-    public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
-}}
-"@
-$wshell = New-Object -ComObject WScript.Shell
-$procs = Get-Process | Where-Object {{ $_.MainWindowTitle -like "*{folder_name}*" -and $_.MainWindowHandle -ne 0 }}
-if (-not $procs) {{
-    $procs = Get-Process | Where-Object {{ ($_.ProcessName -like "*Antigravity*" -or $_.MainWindowTitle -like "*Antigravity*") -and $_.MainWindowHandle -ne 0 }}
-}}
-if ($procs) {{
-    $hwnd = $procs[0].MainWindowHandle
-    [Win32Focus]::ShowWindowAsync($hwnd, 9) | Out-Null
-    [Win32Focus]::SetForegroundWindow($hwnd) | Out-Null
-    $wshell.AppActivate($procs[0].Id) | Out-Null
-    Start-Sleep -Milliseconds 600
-    # Önce sohbet panelini odakla (Ctrl+L)
-    $wshell.SendKeys("^l")
-    Start-Sleep -Milliseconds 500
-    # İlk kıvılcım mesajı olarak '1' yaz ve Enter'a bas
-    $wshell.SendKeys("1")
-    Start-Sleep -Milliseconds 200
-    $wshell.SendKeys("~")
-}}
-"""
-    try:
-        subprocess.run(
-            ['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps_script],
-            capture_output=True, text=True, timeout=8
+    folder_name = os.path.basename(workspace_path.rstrip('\\/')).lower()
+    norm_path = workspace_path.replace('\\', '/').rstrip('/')
+    if not norm_path.startswith('/'):
+        ws_uri = f"file:///{norm_path}"
+    else:
+        ws_uri = f"file://{norm_path}"
+
+    procs = get_language_server_processes()
+    if not procs:
+        print("⚠️ [CONNECT-RPC] language_server_windows_x64.exe süreci bulunamadı!")
+        return None
+
+    if folder_name:
+        procs.sort(
+            key=lambda pr: (
+                f"_{folder_name}" in (pr.get('CommandLine') or '').lower().replace('\\', '/') or
+                f"/{folder_name}" in (pr.get('CommandLine') or '').lower().replace('\\', '/')
+            ),
+            reverse=True
         )
-    except Exception as e:
-        print(f"⚠️ UI Bootstrap hatası: {e}")
 
-    # Yeni .db dosyasının oluşmasını bekle (maksimum 8 saniye)
-    for _ in range(16):
-        time.sleep(0.5)
-        after_dbs = set(glob.glob(os.path.join(ANTIGRAVITY_CONV_DIR, '*.db')))
-        new_files = list(after_dbs - before_dbs)
-        if new_files:
-            new_files.sort(key=os.path.getmtime, reverse=True)
-            new_cid = os.path.splitext(os.path.basename(new_files[0]))[0]
-            print(f"🎉 [YENİ SOHBET OLUŞTU] Otomatik '1' mesajı ile yeni Conversation ID yakalandı: {new_cid}")
-            time.sleep(1.5)
-            return new_cid
+    netstat_res = run_silent(['netstat', '-ano'], capture_output=True, text=True, timeout=5)
+    netstat = netstat_res.stdout or ''
 
+    ctx = ssl._create_unverified_context()
+
+    payload = {
+        "active_workspaces": [{
+            "workspace_folder_absolute_uri": ws_uri,
+            "git_root_absolute_uri": ws_uri
+        }],
+        "source": "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT",
+        "serialized_prompt": prompt
+    }
+    body = json.dumps(payload).encode('utf-8')
+
+    for proc in procs:
+        pid = str(proc.get('ProcessId', ''))
+        cmd = proc.get('CommandLine') or ''
+        token_m = re.search(r'--csrf_token\s+([a-zA-Z0-9\-]+)', cmd)
+        token = token_m.group(1) if token_m else ""
+
+        candidate_ports = []
+        for line in netstat.splitlines():
+            if 'LISTENING' in line and line.strip().endswith(pid):
+                m = re.search(r'127\.0\.0\.1:(\d+)', line)
+                if m and m.group(1) not in candidate_ports:
+                    candidate_ports.append(m.group(1))
+
+        for port in candidate_ports:
+            url = f"https://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/StartCascade"
+            req = urllib.request.Request(
+                url,
+                data=body,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Codeium-Csrf-Token": token
+                },
+                method="POST"
+            )
+            try:
+                with urllib.request.urlopen(req, context=ctx, timeout=3) as resp:
+                    if resp.status == 200:
+                        data = json.loads(resp.read().decode('utf-8'))
+                        cid = data.get("cascadeId")
+                        if cid:
+                            print(f"🎉 [CONNECT-RPC BAŞARILI] StartCascade ile yeni sohbet başlatıldı! PID: {pid}, Port: {port}, ID: {cid}")
+                            return cid
+            except Exception:
+                continue
+
+    print("❌ [CONNECT-RPC] StartCascade çağrısı tüm portlarda denendi ancak yeni sohbet açılamadı.")
     return None
 
 def get_antigravity_ls_env(workspace_path=None, force_refresh=False):
@@ -501,12 +530,12 @@ def process_webhook_async(payload, header_conv_id):
     print(f"\n=======================================================")
     print(f"🔔 [GÖREV TETİKLENİYOR] -> Olay: {event} | Proje: [{project_code}] {project_title} | Görev: {task_code}")
 
-    # EĞER BU PROJE İÇİN HİÇ AKTİF SOHBET YOKSA: Otomatik '1 + Enter' ile yeni sohbet oluştur!
+    # EĞER BU PROJE İÇİN HİÇ AKTİF SOHBET YOKSA: Doğrudan Connect-RPC (StartCascade) ile yeni sohbet oluştur!
     if not target_conv_id:
-        bootstrapped_cid = bootstrap_new_chat_via_ui(project_dir)
-        if bootstrapped_cid:
-            target_conv_id = bootstrapped_cid
-            discovered_cid = bootstrapped_cid
+        rpc_cid = start_conversation_via_rpc(project_dir)
+        if rpc_cid:
+            target_conv_id = rpc_cid
+            discovered_cid = rpc_cid
 
     if discovered_cid:
         sync_conversation_id_to_db(project_code, discovered_cid)
@@ -574,10 +603,16 @@ def process_webhook_async(payload, header_conv_id):
     if csrf_token:
         env["ANTIGRAVITY_CSRF_TOKEN"] = csrf_token
 
-    if target_conv_id:
-        cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", target_conv_id, message_text]
-    else:
-        cmd = [AGENTAPI_EXE, "agentapi", "new-conversation", f"--title={title_header}", message_text]
+    if not target_conv_id:
+        target_conv_id = start_conversation_via_rpc(project_dir)
+        if target_conv_id:
+            sync_conversation_id_to_db(project_code, target_conv_id)
+
+    if not target_conv_id:
+        print(f"❌ [HATA] [{project_code}] için hedef sohbet oluşturulamadı, görev gönderilemedi.")
+        return
+
+    cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", target_conv_id, message_text]
 
     try:
         result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
@@ -590,14 +625,14 @@ def process_webhook_async(payload, header_conv_id):
                     env["ANTIGRAVITY_CSRF_TOKEN"] = fresh_token
                 result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 
-        # Eğer hâlâ gönderilemediyse (örneğin eski sohbet silinmişse), UI üzerinden '1 + Enter' ile yeni sohbet açıp tekrar gönder!
+        # Eğer hâlâ gönderilemediyse (örneğin eski sohbet silinmişse), Connect-RPC üzerinden yeni sohbet açıp tekrar gönder!
         if result.returncode != 0:
-            print(f"⚠️ [HEDEF SOHBETE GÖNDERİLEMEDİ] UI üzerinden yeni sohbet ('1 + Enter') başlatılıyor...")
-            new_boot_cid = bootstrap_new_chat_via_ui(project_dir)
-            if new_boot_cid:
-                target_conv_id = new_boot_cid
-                sync_conversation_id_to_db(project_code, new_boot_cid)
-                retry_cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", new_boot_cid, message_text]
+            print(f"⚠️ [HEDEF SOHBETE GÖNDERİLEMEDİ] Connect-RPC ile anında yeni sohbet açılıyor...")
+            new_rpc_cid = start_conversation_via_rpc(project_dir)
+            if new_rpc_cid:
+                target_conv_id = new_rpc_cid
+                sync_conversation_id_to_db(project_code, new_rpc_cid)
+                retry_cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", new_rpc_cid, message_text]
                 result = run_silent(retry_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 
         print(f"✅ Gönderim Sonucu ({target_conv_id}): ExitCode {result.returncode}")
@@ -659,7 +694,7 @@ def run_server():
     server_address = ('', PORT)
     httpd = http.server.HTTPServer(server_address, WebhookHandler)
     print("=======================================================")
-    print("🤖 Antigravity Multi-Agent Dispatcher v4.3 (Auto-Bootstrap Modu) Başlatıldı!")
+    print("🤖 Antigravity Multi-Agent Dispatcher v5.0 (Connect-RPC Native Bypass) Başlatıldı!")
     print(f"📡 Dinleme Adresi : http://localhost:{PORT}/webhook")
     print("=======================================================")
     try:
