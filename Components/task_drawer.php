@@ -267,6 +267,7 @@
             <h4 id="drawerNotesTitle" style="font-size:12px; font-weight:700; color:#e67e22; margin-bottom:6px;"><?= __('tasks.notes_revision_title', 'Çalışanın Revizyon / Açıklama Gerekçesi:') ?></h4>
             <p id="drawerNotesContent" style="font-size:12.5px; color:var(--text-primary); line-height:1.5;"></p>
             <div id="drawerAttachmentLink" style="margin-top:8px;"></div>
+            <div id="drawerDevopsContainer" style="margin-top:10px;"></div>
         </div>
 
         <!-- TaskManager YORUMLAR & SORU-CEVAP (COMMENTS & DISCUSSION) -->

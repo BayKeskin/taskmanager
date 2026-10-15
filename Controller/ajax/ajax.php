@@ -2646,6 +2646,55 @@ switch ($action) {
         ]);
         break;
 
+    // =========================================================================
+    // 🐙 GITHUB DEVOPS & CERRAHİ ROLLBACK İŞLEMLERİ
+    // =========================================================================
+
+    // GITHUB DEVOPS: AYARLARI KAYDET
+    case 'save_github_settings':
+        Helper::ensureGithubAndRollbackSchema();
+        $ghUser  = trim($_POST['github_username'] ?? '');
+        $ghToken = trim($_POST['github_token'] ?? '');
+
+        if (empty($ghUser) || empty($ghToken)) {
+            jsonResponse(false, 'GitHub Kullanıcı Adı ve Personal Access Token (PAT) zorunludur.');
+        }
+
+        $db->exec_query("UPDATE settings SET github_username = ?, github_token = ? WHERE id = 1", [$ghUser, $ghToken]);
+        jsonResponse(true, 'GitHub hesabınız başarıyla bağlandı! Artık projeleriniz güvenle GitHub ile senkronize edilecek.');
+        break;
+
+    // GITHUB DEVOPS: PROJEYİ GITHUB İLE SENKRONİZE ET / MEVCUT REPOYU BAĞLA
+    case 'sync_project_github':
+        $projectId = (int)($_POST['project_id'] ?? 0);
+        if ($projectId <= 0) {
+            jsonResponse(false, 'Geçersiz proje ID.');
+        }
+
+        $res = Helper::initAndSyncProjectGithubRepo($projectId);
+        if (!empty($res['success'])) {
+            jsonResponse(true, $res['message'], $res);
+        } else {
+            jsonResponse(false, $res['error'] ?? 'GitHub senkronizasyonu başarısız oldu.', $res);
+        }
+        break;
+
+    // GITHUB DEVOPS: CERRAHİ GERİ ALMA (ROLLBACK) / AI CERRAH
+    case 'rollback_task':
+        $taskId = (int)($_POST['task_id'] ?? 0);
+        $mode   = trim($_POST['mode'] ?? 'safe'); // 'safe' veya 'ai_surgeon'
+        if ($taskId <= 0) {
+            jsonResponse(false, 'Geçersiz görev ID.');
+        }
+
+        $res = Helper::rollbackTaskChanges($taskId, $mode);
+        if (!empty($res['success'])) {
+            jsonResponse(true, $res['message'], $res);
+        } else {
+            jsonResponse(false, $res['error'] ?? 'Geri alma işlemi yapılamadı.', $res);
+        }
+        break;
+
     default:
         jsonResponse(false, 'Geçersiz AJAX işlemi.');
 }

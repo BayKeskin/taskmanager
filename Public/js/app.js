@@ -266,6 +266,8 @@ async function openTaskDrawer(taskId) {
     document.getElementById('drawerBtnGroup').innerHTML = `<span style="font-size:12px; color:var(--text-muted);">${i18n.loading || 'Yükleniyor...'}</span>`;
     document.getElementById('drawerTimeline').innerHTML = '';
     document.getElementById('drawerNotesBox').style.display = 'none';
+    const devopsBox = document.getElementById('drawerDevopsContainer');
+    if (devopsBox) devopsBox.innerHTML = '';
     document.getElementById('drawerCommentsList').innerHTML = `<span style="font-size:12px; color:var(--text-muted);">${i18n.comments_loading || 'Yorumlar yükleniyor...'}</span>`;
 
     try {
@@ -392,6 +394,50 @@ async function openTaskDrawer(taskId) {
                 `;
             } else {
                 document.getElementById('drawerAttachmentLink').innerHTML = '';
+            }
+        }
+
+        if (submission && (submission.commit_hash || submission.attachment_url)) {
+            notesBox.style.display = 'block';
+            const devopsBox = document.getElementById('drawerDevopsContainer');
+            if (devopsBox) {
+                const shortCommit = submission.commit_hash ? submission.commit_hash.substring(0, 7) : '';
+                const repoUrl = submission.attachment_url || '';
+                const isReverted = parseInt(submission.is_reverted || 0) === 1;
+                const schemaDiff = submission.schema_diff_summary || 'Veritabanı şema değişikliği yok (Sadece Kod)';
+
+                devopsBox.innerHTML = `
+                    <div style="background:var(--bg-main); border:1px solid var(--border-subtle); border-radius:6px; padding:12px; margin-top:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size:16px;">🐙</span>
+                                <strong style="font-size:12px; color:var(--text-white);">GitHub & DevOps Durumu</strong>
+                                ${shortCommit ? `<span style="font-size:11px; background:rgba(123,104,238,0.2); color:#a29bfe; padding:2px 6px; border-radius:4px; font-family:monospace;">#${shortCommit}</span>` : ''}
+                            </div>
+                            ${isReverted ? 
+                                `<span style="font-size:11px; color:#ff7675; background:rgba(255,118,117,0.15); padding:2px 8px; border-radius:4px; font-weight:600;">⏪ Geri Alındı (Reverted)</span>` : 
+                                `<span style="font-size:11px; color:#55efc4; background:rgba(85,239,196,0.15); padding:2px 8px; border-radius:4px; font-weight:600;">🚀 Senkronize</span>`
+                            }
+                        </div>
+                        
+                        <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px; line-height:1.4;">
+                            <div style="margin-bottom:4px;"><strong>🗄️ Veritabanı Etkisi:</strong> ${escapeHtml(schemaDiff)}</div>
+                        </div>
+
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            ${repoUrl ? `
+                                <a href="${repoUrl}" target="_blank" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:var(--text-white); font-size:11px; text-decoration:none; padding:4px 8px; border-radius:4px;">
+                                    <span>🔗</span> GitHub'da İncele (Diff)
+                                </a>
+                            ` : ''}
+                            ${!isReverted && submission.commit_hash ? `
+                                <button type="button" class="cu-btn-sm" onclick="rollbackTask(${task.id}, 'safe')" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,71,87,0.15); border:1px solid rgba(255,71,87,0.4); color:#ff4757; font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer;" title="Bu görevin Git commit ve veritabanı değişikliklerini cerrahi olarak geri al">
+                                    <span>⏪</span> Değişiklikleri Geri Al (Rollback)
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
             }
         }
 
@@ -4135,6 +4181,102 @@ async function submitAiArchitectTree() {
         }
     }
 }
+
+// ======================================================================
+// 🐙 GITHUB DEVOPS & SURGICAL ROLLBACK ENTEGRASYONU
+// ======================================================================
+window.openGithubSettingsModal = function() {
+    openModal('modalGithubSettings');
+};
+
+window.saveGithubSettings = async function() {
+    const username = document.getElementById('ghUsernameInput')?.value?.trim() || '';
+    const token = document.getElementById('ghTokenInput')?.value?.trim() || '';
+    if (!username || !token) {
+        showToast('Lütfen GitHub kullanıcı adı ve PAT token giriniz.', 'warning');
+        return;
+    }
+    try {
+        const fd = new FormData();
+        fd.append('github_username', username);
+        fd.append('github_token', token);
+        const res = await fetch('/taskmanager/ajax?action=save_github_settings', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            closeModal('modalGithubSettings');
+            setTimeout(() => window.location.reload(), 500);
+        } else {
+            showToast(data.message || 'Hata oluştu', 'error');
+        }
+    } catch (e) {
+        console.error('saveGithubSettings error:', e);
+        showToast('Sunucu hatası', 'error');
+    }
+};
+
+window.syncProjectToGithub = async function(projectId) {
+    if (!projectId) return;
+    if (!confirm('Bu projenin GitHub reposunu kontrol edip eksikse oluşturmak ve senkronize etmek istiyor musunuz?')) return;
+    try {
+        showToast('GitHub ile senkronize ediliyor...', 'info');
+        const fd = new FormData();
+        fd.append('project_id', projectId);
+        const res = await fetch('/taskmanager/ajax?action=sync_project_github', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message + (data.data?.repo_name ? ' (' + data.data.repo_name + ')' : ''), 'success');
+        } else {
+            showToast(data.message || 'Senkronizasyon başarısız', 'error');
+        }
+    } catch (e) {
+        console.error('syncProjectToGithub error:', e);
+        showToast('Sunucu hatası', 'error');
+    }
+};
+
+window.rollbackTask = async function(taskId, mode = 'safe') {
+    if (!taskId) return;
+    if (mode === 'safe') {
+        if (!confirm('Bu görevin Git commit değişikliklerini ve veritabanı etkilerini geri almak istediğinize emin misiniz?')) {
+            return;
+        }
+    }
+
+    try {
+        showToast(mode === 'ai_surgeon' ? '🤖 AI Cerrah çakışmaları analiz edip temizliyor...' : '⏪ Geri alma işlemi yürütülüyor...', 'info');
+        const fd = new FormData();
+        fd.append('task_id', taskId);
+        fd.append('mode', mode);
+
+        const res = await fetch('/taskmanager/ajax?action=rollback_task', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            // Çekmeceyi tazele
+            if (typeof openTaskDrawer === 'function') {
+                openTaskDrawer(taskId);
+            }
+        } else {
+            if (data.data && data.data.has_conflict) {
+                const runSurgeon = confirm(
+                    (data.message || 'Otomatik geri almada Git çakışması tespit edildi!') +
+                    '\n\n🤖 AI Cerrah Modunu (AI Surgeon) devreye alıp çakışmayı otomatik analiz edip çözerek geri alma işlemini tamamlamak ister misiniz?'
+                );
+                if (runSurgeon) {
+                    rollbackTask(taskId, 'ai_surgeon');
+                }
+            } else {
+                showToast(data.message || 'Geri alma işlemi başarısız oldu.', 'error');
+            }
+        }
+    } catch (e) {
+        console.error('rollbackTask error:', e);
+        showToast('Sunucu bağlantı hatası oluştu', 'error');
+    }
+};
+
 
 
 
