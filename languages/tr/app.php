@@ -443,7 +443,7 @@ return array (
   'ai_arch_show_details' => 'Detay',
   'ai_arch_hide_details' => 'Gizle',
   'btn_cancel' => 'İptal',
-  'modal_conv_id_hint' => 'Boş bırakırsanız, Antigravity ilk çalıştığında bu projeye ait conversation ID\'yi otomatik algılayıp eşleştirecektir.',
+  'modal_conv_id_hint' => 'Antigravity IDE açık pencereniz veya yeni sekmeniz çalışma alanına göre dinamik olarak yönetilir. Manuel ID gerekmez.',
   'btn_connect_github' => 'GitHub Bağla',
   'btn_sync_github' => 'GitHub Sync',
   'modal_github_title' => 'GitHub DevOps & Hesap Ayarları',

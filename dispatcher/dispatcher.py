@@ -228,8 +228,57 @@ def get_project_primary_dir(project_code, workspace_path=""):
                 return p
     return os.path.dirname(BASE_DIR)
 
+def get_active_context_window(normalized_targets):
+    """
+    Antigravity IDE'nin state.vscdb veritabanından kullanıcının o an EKRANDA ODAKLANDIĞI
+    aktif sohbet penceresinin ID'sini okur.
+    ÇOKLU PROJE KORUMASI: Bu pencerenin çalışma alanının (workspace_path), 
+    görev tetiklenen projenin klasörüyle eşleştiğini doğrular.
+    Eğer eşleşmezse (kullanıcı başka bir projedeyse) None döner!
+    """
+    try:
+        vscdb_path = os.path.expandvars(r'%APPDATA%\Antigravity IDE\User\globalStorage\state.vscdb')
+        if not os.path.exists(vscdb_path):
+            return None
+        
+        con = sqlite3.connect(f'file:{vscdb_path}?mode=ro', uri=True)
+        cur = con.cursor()
+        cur.execute("SELECT value FROM ItemTable WHERE key = 'erennyuksell.ag-multi-account-switchboard'")
+        row = cur.fetchone()
+        con.close()
+        
+        if not row or not row[0]:
+            return None
+            
+        val = row[0].decode('utf-8', errors='ignore') if isinstance(row[0], bytes) else row[0]
+        data = json.loads(val)
+        last_win = data.get('ag.lastContextWindow', {})
+        active_cid = last_win.get('conversationId')
+        if not active_cid:
+            return None
+            
+        # Çoklu Proje Doğrulaması: Bu aktif pencere GERÇEKTEN bu projeye mi ait?
+        conv_db = os.path.join(ANTIGRAVITY_CONV_DIR, f"{active_cid}.db")
+        if not os.path.exists(conv_db):
+            return None
+            
+        con_conv = sqlite3.connect(f'file:{conv_db}?mode=ro', uri=True)
+        cur_conv = con_conv.cursor()
+        cur_conv.execute("SELECT data FROM trajectory_metadata_blob WHERE id='main'")
+        blob = cur_conv.fetchone()
+        con_conv.close()
+        
+        if blob and blob[0]:
+            decoded = urllib.parse.unquote(blob[0].decode('utf-8', errors='ignore')).replace('\\', '/').lower()
+            for target in normalized_targets:
+                pattern = rf"(?:^|[^\w\-\.]){re.escape(target)}(?:[/?#\"\'\s,\x00-\x1f\\]|$)"
+                if re.search(pattern, decoded):
+                    return active_cid
+    except Exception:
+        pass
+    return None
+
 def discover_latest_conversation(project_code, project_title="", workspace_path=""):
-    ls_address, csrf_token = get_antigravity_ls_env()
     workspaces_map = load_workspaces_map()
     target_paths = []
     if workspace_path:
@@ -240,13 +289,24 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
     normalized_targets = list(dict.fromkeys([p.replace('\\', '/').lower().rstrip('/') for p in target_paths if p]))
     normalized_targets.sort(key=len, reverse=True)
 
-    if not os.path.exists(ANTIGRAVITY_CONV_DIR):
+    if not normalized_targets or not os.path.exists(ANTIGRAVITY_CONV_DIR):
         return None, None
 
+    # 1. ÖNCELİK: Canlı Kullanıcı Odağı (Active Context Window) + Çoklu Proje Koruması
+    active_cid = get_active_context_window(normalized_targets)
+    if active_cid:
+        return active_cid, f"file:///{normalized_targets[0]}"
+
+    # 2. İKİNCİ AŞAMA: Kullanıcı o an başka projeye bakıyorsa, bu projeye ait son 4 saat içinde
+    # işlem görmüş geçerli bir .db oturumu var mı kontrol et
     db_files = glob.glob(os.path.join(ANTIGRAVITY_CONV_DIR, '*.db'))
     db_files.sort(key=os.path.getmtime, reverse=True)
 
+    now = time.time()
     for db_path in db_files:
+        if (now - os.path.getmtime(db_path)) > 14400:
+            continue
+
         cid = os.path.splitext(os.path.basename(db_path))[0]
         try:
             con = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
@@ -259,8 +319,6 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
                 for target in normalized_targets:
                     pattern = rf"(?:^|[^\w\-\.]){re.escape(target)}(?:[/?#\"\'\s,\x00-\x1f\\]|$)"
                     if re.search(pattern, decoded_text):
-                        if ls_address and not is_conversation_active(cid, ls_address, csrf_token):
-                            continue
                         return cid, f"file:///{target}"
         except Exception:
             continue
@@ -319,10 +377,24 @@ def process_webhook_async(payload, header_conv_id):
     ls_address, csrf_token = get_antigravity_ls_env()
     discovered_cid, matched_uri = discover_latest_conversation(project_code, project_title, workspace_path)
 
-    if incoming_conv_id and ls_address and not is_conversation_active(incoming_conv_id, ls_address, csrf_token):
-        incoming_conv_id = None
-
-    target_conv_id = discovered_cid or incoming_conv_id
+    # 1. Eğer dinamik olarak aktif/geçerli bir pencere bulunduysa onu kullan
+    if discovered_cid:
+        target_conv_id = discovered_cid
+    else:
+        # Dinamik aktif pencere yoksa, DB'den gelen incoming_conv_id gerçekten geçerli mi kontrol et
+        is_incoming_valid = False
+        if incoming_conv_id:
+            inc_db = os.path.join(ANTIGRAVITY_CONV_DIR, f"{incoming_conv_id}.db")
+            if os.path.exists(inc_db) and (time.time() - os.path.getmtime(inc_db)) < 14400:
+                is_incoming_valid = True
+        
+        if is_incoming_valid:
+            target_conv_id = incoming_conv_id
+        else:
+            if incoming_conv_id:
+                print(f"🧹 [ESKİ/HAYALET SOHBET TEMİZLENDİ] {incoming_conv_id} artık aktif değil, yeni sekme açılacak.")
+                sync_conversation_id_to_db(project_code, "")
+            target_conv_id = None
     is_resumed = bool(data.get('resumed', False))
 
     # 2. ANTI-SPAM & HESAP/SOHBET DEĞİŞİM KONTROLÜ
@@ -426,8 +498,8 @@ def process_webhook_async(payload, header_conv_id):
                     env["ANTIGRAVITY_CSRF_TOKEN"] = fresh_token
                 result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 
-        combined_err = ((result.stdout or '') + ' ' + (result.stderr or '')).lower()
-        if result.returncode != 0 and ('trajectory not found' in combined_err or not target_conv_id):
+        if result.returncode != 0:
+            print(f"⚠️ [HEDEF SOHBETE GÖNDERİLEMEDİ] ExitCode: {result.returncode}. Doğrudan yeni sohbet açılıyor...")
             fallback_cmd = [AGENTAPI_EXE, "agentapi", "new-conversation", f"--title={title_header}", message_text]
             result = run_silent(fallback_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 

@@ -537,10 +537,51 @@ class Helper
         $targets = array_values(array_unique(array_filter($targets)));
         usort($targets, fn($a, $b) => strlen($b) - strlen($a));
 
+        if (empty($targets)) {
+            return null;
+        }
+
+        // 1. ÖNCELİK: Antigravity IDE'nin state.vscdb dosyasından canlı odaklanılan pencereyi al + Çoklu Proje Koruması
+        $vscdb = 'C:/Users/DELL/AppData/Roaming/Antigravity IDE/User/globalStorage/state.vscdb';
+        if (file_exists($vscdb)) {
+            try {
+                $sdb = new \SQLite3($vscdb, SQLITE3_OPEN_READONLY);
+                $val = $sdb->querySingle("SELECT value FROM ItemTable WHERE key = 'erennyuksell.ag-multi-account-switchboard'");
+                $sdb->close();
+                if ($val) {
+                    $swData = json_decode((string)$val, true);
+                    $activeCid = $swData['ag.lastContextWindow']['conversationId'] ?? null;
+                    if ($activeCid) {
+                        $activeDb = $convDir . '/' . $activeCid . '.db';
+                        if (file_exists($activeDb)) {
+                            $adb = new \SQLite3($activeDb, SQLITE3_OPEN_READONLY);
+                            $blob = $adb->querySingle("SELECT data FROM trajectory_metadata_blob WHERE id='main'");
+                            $adb->close();
+                            if ($blob) {
+                                $decoded = strtolower(str_replace('\\', '/', rawurldecode((string)$blob)));
+                                foreach ($targets as $target) {
+                                    $pattern = '~(?:^|[^\w\-\.])' . preg_quote($target, '~') . '(?:[/?#\"\'\s,\x00-\x1f\\\\]|$)~i';
+                                    if (preg_match($pattern, $decoded)) {
+                                        return $activeCid;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // 2. İKİNCİ AŞAMA: Kullanıcı o an başka projeye bakıyorsa, bu projeye ait son 4 saat içinde işlem görmüş oturum
         $files = glob($convDir . '/*.db') ?: [];
         usort($files, fn($a, $b) => filemtime($b) - filemtime($a));
 
+        $now = time();
         foreach ($files as $file) {
+            if (($now - filemtime($file)) > 14400) {
+                continue;
+            }
+
             $cid = basename($file, '.db');
             try {
                 $sdb = new \SQLite3($file, SQLITE3_OPEN_READONLY);
@@ -550,7 +591,6 @@ class Helper
                     $decoded = rawurldecode((string)$res);
                     $decoded = strtolower(str_replace('\\', '/', $decoded));
                     foreach ($targets as $target) {
-                        // Strict boundary: hedef klasör sonrasında - veya harf/rakam gelmemeli (örn. ufkayolculuk -> ufkayolculuk-kitap-okuma engeli)
                         $pattern = '~(?:^|[^\w\-\.])' . preg_quote($target, '~') . '(?:[/?#\"\'\s,\x00-\x1f\\\\]|$)~i';
                         if (preg_match($pattern, $decoded)) {
                             return $cid;
@@ -801,10 +841,6 @@ class Helper
         $discoveredCid = self::discoverLatestConversation($workspacePath, $projectCode);
         $targetCid     = $discoveredCid ?: ($project->agent_conversation_id ?? '');
 
-        if (empty($targetCid)) {
-            return ['sent' => false, 'error' => 'No active conversation window or Conversation ID found.'];
-        }
-
         // Yeni pencere keşfedildiyse veritabanını eşitle
         if (!empty($discoveredCid) && $discoveredCid !== ($project->agent_conversation_id ?? '')) {
             global $db;
@@ -816,8 +852,13 @@ class Helper
         // 2. Mesaj metnini hazırla
         [$titleHeader, $messageText] = self::formatAgentMessage($event, $project, $data);
 
-        // 3. proc_open ile komut çalıştır (Dinamik LS Adresi ile)
-        $cmd = [$agentExe, 'agentapi', 'send-message', '--title=' . $titleHeader, $targetCid, $messageText];
+        // 3. proc_open ile komut çalıştır (Hedef ID varsa send-message, yoksa doğrudan new-conversation)
+        if (!empty($targetCid)) {
+            $cmd = [$agentExe, 'agentapi', 'send-message', '--title=' . $titleHeader, $targetCid, $messageText];
+        } else {
+            $cmd = [$agentExe, 'agentapi', 'new-conversation', '--title=' . $titleHeader, $messageText];
+        }
+
         $descriptors = [
             0 => ['pipe', 'r'],
             1 => ['pipe', 'w'],
@@ -833,7 +874,9 @@ class Helper
         if ($csrfToken) {
             $envVars['ANTIGRAVITY_CSRF_TOKEN'] = $csrfToken;
         }
-        $process = proc_open($cmd, $descriptors, $pipes, null, $envVars);
+
+        $cwd = (!empty($workspacePath) && is_dir($workspacePath)) ? $workspacePath : dirname(__DIR__);
+        $process = proc_open($cmd, $descriptors, $pipes, $cwd, $envVars);
         if (!is_resource($process)) {
             return ['sent' => false, 'error' => 'proc_open failed to launch language_server'];
         }
@@ -845,11 +888,23 @@ class Helper
         fclose($pipes[2]);
         $exitCode = proc_close($process);
 
-        // Eğer hedef sohbet silinmişse (trajectory not found), doğrudan yeni bir sohbet başlat
-        $combinedErr = strtolower((string)$stdout . ' ' . (string)$stderr);
-        if ($exitCode !== 0 && str_contains($combinedErr, 'trajectory not found')) {
+        // Eğer ilk komut yeni sohbet açtıysa ID'yi kaydet
+        if ($exitCode === 0 && empty($targetCid) && !empty($stdout)) {
+            $resJson = json_decode((string)$stdout, true);
+            $newCid = $resJson['response']['newConversation']['conversationId'] ?? null;
+            if ($newCid) {
+                $targetCid = $newCid;
+                global $db;
+                if ($db && !empty($db->connect)) {
+                    $db->exec_query("UPDATE projects SET agent_conversation_id = ? WHERE id = ?", [$newCid, $project->id]);
+                }
+            }
+        }
+
+        // Eğer hedef sohbete gönderim başarısız olduysa, otomatik olarak yeni bir sohbet sekmesi aç
+        if ($exitCode !== 0) {
             $cmdFallback = [$agentExe, 'agentapi', 'new-conversation', '--title=' . $titleHeader, $messageText];
-            $pFallback = proc_open($cmdFallback, $descriptors, $pipes, null, $envVars);
+            $pFallback = proc_open($cmdFallback, $descriptors, $pipes, $cwd, $envVars);
             if (is_resource($pFallback)) {
                 fclose($pipes[0]);
                 $stdout = stream_get_contents($pipes[1]);

@@ -443,7 +443,7 @@ return array (
   'ai_arch_show_details' => 'Details',
   'ai_arch_hide_details' => 'Hide',
   'btn_cancel' => 'Cancel',
-  'modal_conv_id_hint' => 'If left blank, Antigravity will automatically detect and match the conversation ID on first run.',
+  'modal_conv_id_hint' => 'Antigravity IDE active window or new tab is dynamically managed based on the workspace. No manual ID needed.',
   'btn_connect_github' => 'Connect GitHub',
   'btn_sync_github' => 'GitHub Sync',
   'modal_github_title' => 'GitHub DevOps & Account Settings',

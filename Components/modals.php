@@ -191,14 +191,13 @@ $canUseAiTasks = ($currentUser && $currentUser->role === 'admin') || ($currentUs
                         <input type="url" name="webhook_url" class="cu-form-control" placeholder="<?= htmlspecialchars(__('app.modal_webhook_url_ph')) ?>">
                     </div>
                     <div class="cu-form-group">
-                        <label style="font-size:11.5px; display:flex; justify-content:space-between;">
-                            <span><?= __('app.modal_conv_id') ?></span>
-                            <span style="color:#00b894; font-weight:700;">⚡ <?= __('app.modal_auto_detect_supported') ?></span>
-                        </label>
-                        <input type="text" name="agent_conversation_id" class="cu-form-control" placeholder="<?= htmlspecialchars(__('app.modal_conv_id_ph')) ?>">
-                        <small style="font-size:10.5px; color:var(--text-muted); display:block; margin-top:3px;">
-                            💡 <b><?= __('app.modal_zero_config') ?></b> <?= __('app.modal_conv_id_hint') ?>
-                        </small>
+                        <input type="hidden" name="agent_conversation_id" value="">
+                        <div style="background:rgba(0,184,148,0.08); border:1px solid rgba(0,184,148,0.25); border-radius:6px; padding:10px 14px; display:flex; align-items:center; gap:10px; font-size:12px; color:var(--text-primary); margin-top:4px;">
+                            <span style="font-size:18px; line-height:1;">⚡</span>
+                            <div>
+                                <b style="color:#00b894;"><?= __('app.modal_zero_config') ?>:</b> <?= __('app.modal_conv_id_hint') ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -288,14 +287,13 @@ $canUseAiTasks = ($currentUser && $currentUser->role === 'admin') || ($currentUs
                         <input type="url" name="webhook_url" id="editProjWebhookUrl" class="cu-form-control" placeholder="<?= htmlspecialchars(__('app.modal_webhook_url_ph')) ?>">
                     </div>
                     <div class="cu-form-group">
-                        <label style="font-size:11.5px; display:flex; justify-content:space-between;">
-                            <span><?= __('app.modal_conv_id') ?></span>
-                            <span style="color:#00b894; font-weight:700;">⚡ <?= __('app.modal_auto_detect_supported') ?></span>
-                        </label>
-                        <input type="text" name="agent_conversation_id" id="editProjConvId" class="cu-form-control" placeholder="<?= htmlspecialchars(__('app.modal_conv_id_ph')) ?>">
-                        <small style="font-size:10.5px; color:var(--text-muted); display:block; margin-top:3px;">
-                            💡 <b><?= __('app.modal_zero_config') ?></b> <?= __('app.modal_conv_id_hint') ?>
-                        </small>
+                        <input type="hidden" name="agent_conversation_id" id="editProjConvId" value="">
+                        <div style="background:rgba(0,184,148,0.08); border:1px solid rgba(0,184,148,0.25); border-radius:6px; padding:10px 14px; display:flex; align-items:center; gap:10px; font-size:12px; color:var(--text-primary); margin-top:4px;">
+                            <span style="font-size:18px; line-height:1;">⚡</span>
+                            <div>
+                                <b style="color:#00b894;"><?= __('app.modal_zero_config') ?>:</b> <?= __('app.modal_conv_id_hint') ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
