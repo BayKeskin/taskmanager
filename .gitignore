@@ -1,0 +1,28 @@
+# Scratch / Temporary Scripts
+scratch/
+taskmanager.zip
+*.zip
+*.tar.gz
+*.rar
+
+# Backup Files
+*.bak
+*.bak*
+
+# Dispatcher Runtime & Local Environment
+dispatcher/__pycache__/
+dispatcher/*.log
+dispatcher/csrf_token.txt
+dispatcher/ls_address.txt
+dispatcher/ls_env.json
+
+# Uploaded logs
+Public/uploads/webhook_logs.json
+*.log
+
+# OS & IDE Metadata
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

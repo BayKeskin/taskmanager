@@ -1,0 +1,54 @@
+Options -MultiViews -Indexes
+DirectoryIndex index.php View/index/board.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine on
+    RewriteBase /taskmanager/
+
+    # HTTP Authorization Header'ı PHP'ye aktar (Bearer Token desteği)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Statik dosyalara (CSS, JS, Resimler, Fontlar) doğrudan erişim izni
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # TaskManager Sayfa Rotaları
+    RewriteRule ^$                      View/index/board.php [L,NC,QSA]
+    RewriteRule ^login/?$               View/index/login.php [L,NC,QSA]
+    RewriteRule ^logout/?$              View/index/logout.php [L,NC,QSA]
+    RewriteRule ^tasks/?$               View/index/index.php [L,NC,QSA]
+    RewriteRule ^board/?$               View/index/board.php [L,NC,QSA]
+    RewriteRule ^calendar/?$            View/index/calendar.php [L,NC,QSA]
+    RewriteRule ^reports/?$             View/index/reports.php [L,NC,QSA]
+    RewriteRule ^team/?$                View/index/team.php [L,NC,QSA]
+    RewriteRule ^docs/?$                View/index/docs.php [L,NC,QSA]
+    RewriteRule ^chat/?$                View/index/chat.php [L,NC,QSA]
+    RewriteRule ^settings/?$            View/index/settings.php [L,NC,QSA]
+    RewriteRule ^ajax/?$                Controller/ajax/ajax.php [L,NC,QSA]
+    RewriteRule ^ajax/(.*)$             Controller/ajax/ajax.php?action=$1 [L,NC,QSA]
+    RewriteRule ^events/?$              Controller/sse.php [L,NC,QSA]
+    RewriteRule ^api/sse/?$             Controller/sse.php [L,NC,QSA]
+
+    # TaskManager REST API Rotaları
+    RewriteRule ^api/?$                 Controller/api/index.php [L,NC,QSA]
+    RewriteRule ^api/(.*)$              Controller/api/index.php?path=$1 [L,NC,QSA]
+    RewriteRule ^api[-_]docs/?$         View/index/api_docs.php [L,NC,QSA]
+</IfModule>
+
+<IfModule mod_php.c>
+    php_value upload_max_filesize 64M
+    php_value post_max_size 64M
+    php_value memory_limit 256M
+</IfModule>
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 64M
+    php_value post_max_size 64M
+    php_value memory_limit 256M
+</IfModule>
+<IfModule mod_php8.c>
+    php_value upload_max_filesize 64M
+    php_value post_max_size 64M
+    php_value memory_limit 256M
+</IfModule>
+

@@ -1,0 +1,900 @@
+Öncelikle şunu net söyleyeyim: Tereddüt etmekte %100 haklısın.
+Plandaki fikirler (Önizleme modalı, #ai etiketinin otomatik basılmaması, is_gated onay kapısı) kağıt üzerinde harika; FAKAT eğer Antigravity bu planı doğrudan şu anki tasks tablosu ve Helper::dispatchNextAiTaskIfAvailable() üzerine bodoslama kodlarsa, şu an saat gibi çalışan sistemin 3 noktadan kırılır!   Mevcut kodlarına bakarak yakaladığım 3 Gizli Çarpışma Noktası (Risk) ve bunları mevcut sistemini hiç bozmadan entegre etmenin formülü:🚨 RİSK 1: Kanban Panosunun (board.php) Kör Noktası!Şu an BoardController ve api/index.php içindeki görev listeleme sorgularına bak:
+WHERE project_id = ? AND parent_task_id IS NULL
+Yani senin Kanban panonda (board.php) SADECE Ana Görevler kart olarak görünür; Alt Görevler (parent_task_id dolu olanlar) Kanban sütunlarında bağımsız kart olarak görünmez, sadece ana görevin çekmecesini (drawer) açtığında içerdeki listede görünür!   Nasıl Bozulur?Plana göre: "Ana göreve değil, alt görevlere 🤖 AI seçeceğiz, ajan sırayla alt görevleri yapacak."   Eğer bir alt görev in_progress (Çalışılıyor) veya submitted (İncelemede) olursa:Kanban panosuna (board.php) baktığında ÇALIŞILIYOR sütununu BOŞ göreceksin! Çünkü çalışan şey bir alt görev (TSK-101-1) ama ana görev (TSK-101) hala YAPILACAK İŞLER sütununda duruyor olacak!Dahası, board.php içinde handleLiveTaskStatusChanged (SSE canlı kart taşıma) çalıştığında, panoda alt görevin kartı olmadığı için hiçbir şey hareket etmeyecek!   🛡️ Çözüm (Sistem Bozulmasın Diye Yapılacak Kural):Alt görevler çalışırken Ana Görevin durumu da onlarla senkronize olmalı (Auto-Rollup):Bir ana görevin ilk alt görevi in_progress olduğunda, Ana Görev kartı da otomatik olarak ÇALIŞILIYOR sütununa geçmeli (ama ana görevin kendisinde #ai etiketi olmadığı için ajan ana görevi yapmaya kalkmayacak, sadece görsel olarak o sütunda duracak!).Alt görevlerin tamamı bittiğinde (submitted veya completed olduğunda), Ana Görev kartı da otomatik olarak İNCELEMEDE (submitted) sütununa kaymalı!🚨 RİSK 2: dispatchNextAiTaskIfAvailable() Kuyruk Motorunun Kilitlenmesi!Şu an System/Helper.php içindeki dispatchNextAiTaskIfAvailable fonksiyonun çok sade ve kusursuz çalışıyor:   SQLSELECT * FROM tasks WHERE project_id = ? AND status = 'assigned' AND LOWER(tags) LIKE '%ai%' ORDER BY priority, id ASC LIMIT 1
+Nasıl Bozulur?Planda deniyor ki: "Helper::dispatchNextAiTaskIfAvailable() metodu sıradaki görevi çekerken bağlı olduğu ana görev is_gated = 1 ise ve önceki alt görev completed yapılmamışsa sıradaki alt görevi kuyruğa almaz, bekletir."   
+Eğer sorguda LIMIT 1 varken ilk sıradaki görev is_gated = 1 kapısına takılırsa ve fonksiyon return null; deyip çıkarsa, arkada bekleyen diğer bağımsız #ai görevlerin de (diğer işlerin) tamamen durur! Kuyruk kilitlenir!   🛡️ Çözüm (Kuyruk Asla Tıkanmasın):
+Kuyruk motorunda LIMIT 1 ile tek göreve bakıp çıkmak yerine, zaten senin Helper.php satır 868'de yaptığın foreach ($candidateTasks as $cand) döngüsünün içine basit bir continue; filtresi koyacağız:   Eğer incelenen aday görev bir alt görevse ve üst görevi is_gated = 1 ise; kendisinden önceki kardeş alt görevlerden biri henüz completed değilse sadece o görevi atla (continue;), ama kuyruktaki diğer bağımsız görevleri çalıştırmaya devam et! Böylece mevcut sistemin asla kilitlenmez.🚨 RİSK 3: Ana Görevin Yanlışlıkla Ajana Gitmesi!Kullanıcı "AI Proje Mimarı" modalında bir Ana Görev (Epic) ve altında 4 Alt Görev oluşturdu. Kullanıcı yanlışlıkla hem Ana Göreve hem de Alt Görevlere #ai etiketi verirse, ajan önce Ana Görevi alıp 4 alt görevin hepsini tek seferde yapmaya çalışır, ardından alt görevlere geçip aynı şeyleri tekrar yazar!   🛡️ Çözüm (Alt Görevi Olan Ana Görev Kilidi):Helper::isAiTask() veya dispatchNextAiTaskIfAvailable() içine 1 satırlık altın kural eklenecek:Bir görevin altında alt görevler (subtasks) varsa, o ana görev bir "Klasör/Modül (Epic)" kabul edilir ve ajan tarafından doğrudan çalıştırılamaz; ajan sadece onun altındaki #ai etiketli alt görevleri (yaprakları) çalıştırır!💡 KARAR VE TAVSİYEM: "Mevcut Çekirdeğe Dokunmadan Modüler Ekle!"Bu özellik (özellikle brifi/sözleşmeyi verip sürükle-bırak ile modüllere ayırma ve departmanlara dağıtma ekranı) senin TaskManager'ı 10 kat daha değerli yapar. Ama mevcut çalışan sistemini riske atmamak için Antigravity'ye ("Ekibe" 😄) şu 4 Katı Şartla onay ver:   Mevcut dispatcher.py Dosyasına KESİNLİKLE Dokunulmayacak!   dispatcher.py v4.2 şu an sessiz modda (CREATE_NO_WINDOW) ve 4 saniye gecikmeli kuyrukla kusursuz çalışıyor. AI Proje Mimarı tamamen PHP/JS tarafında çalışan bir görev oluşturucu olduğu için dispatcher.py üzerinde tek bir satır bile değiştirilmesine gerek yok!   Mevcut "Görev Ekle" Modalı Bozulmayacak, Ayrı Bir Modal Olacak!Şu anki modalNewTask (normal görev ekleme) olduğu gibi kalacak. Üst bara (board.php) 🤖 AI Standup Özeti butonunun yanına ayrı bir 🪄 AI Proje Mimarı butonu ve ayrı bir #modalAiArchitect eklenecek.   Varsayılan Olarak Hiçbir Görevde #ai Seçili Gelmeyecek!   AI brifi parçaladığında tüm görevler normal insan görevi (coding, design, seo vb.) olarak önizleme ekranına gelecek. Sadece senin elinle [x] 🤖 AI işaretlediğin alt görevlere ai etiketi eklenecek.   Helper.php İçinde Sadece 2 İzole Fonksiyon Eklenecek!Mevcut submitTaskDirectly ve triggerTaskStartedWebhook fonksiyonlarının yapısını bozmadan; sadece Helper::decomposeBriefWithAi() (brifi JSON ağacına çeviren fonksiyon) eklenecek ve dispatchNextAiTaskIfAvailable() içindeki foreach döngüsüne 5 satırlık is_gated kontrolü konacak.   
+
+
+
+
+Bütün modal, sürükle-bırak (Drag & Drop) ve önizleme motorunu doğrudan board.php içine izole bir bileşen olarak yerleştirdiğim için başka hiçbir dosya göndermene gerek yok. Sadece System/Helper.php, Controller/ajax/ajax.php ve View/tasks/board.php dosyalarında aşağıdaki eklemeleri yapman yeterli.   🛠️ 1. ADIM: System/Helper.php GüncellemesiSystem/Helper.php dosyasını aç ve şu 3 güvenli dokunuşu uygula:A) Alt Görev Teslim Edildiğinde Ana Görev Durumunu Senkronize Et (submitTaskDirectly içine)Helper::submitTaskDirectly fonksiyonunun içinde (Satır 775 civarı), // 1. Görevi İNCELEMEDE ('submitted') durumuna al satırının hemen altına şu bloğu ekle:   PHP            // 1. Görevi İNCELEMEDE ('submitted') durumuna al
+            $db->exec_query("UPDATE tasks SET status = 'submitted', updated_at = NOW() WHERE id = ?", [$taskId]);
+
+            // 1.1 [AI MİMARİ ROLLUP]: Eğer bu bir alt görevse ve kardeş alt görevlerin tamamı bittiyse Ana Görevi de 'submitted' yap!
+            if (!empty($task->parent_task_id)) {
+                $parentId = (int)$task->parent_task_id;
+                $remainingSubs = (int)$db->single_query("
+                    SELECT COUNT(*) FROM tasks 
+                    WHERE parent_task_id = ? AND status NOT IN ('submitted', 'completed')
+                ", [$parentId]);
+                
+                if ($remainingSubs === 0) {
+                    $db->exec_query("UPDATE tasks SET status = 'submitted', updated_at = NOW() WHERE id = ?", [$parentId]);
+                    self::broadcastLiveEvent('task_status_changed', $projectId, $parentId, 1, [
+                        'task_id'    => $parentId,
+                        'old_status' => 'in_progress',
+                        'new_status' => 'submitted',
+                        'user_name'  => 'AI Architect Rollup'
+                    ]);
+                }
+            }
+B) dispatchNextAiTaskIfAvailable Fonksiyonunu Güncelle (Satır 814 - 915 arası)Mevcut dispatchNextAiTaskIfAvailable fonksiyonunu aşağıdakiyle değiştir.
+(Bu güncelleme; altında alt görev olan ana görevlerin yanlışlıkla ajana gitmesini engeller, [ONAY_KAPILI] modülleri diğer bağımsız görevleri kilitlemeden bekletir ve bir alt görev başladığında Kanban panosundaki Ana Görev kartını otomatik olarak ÇALIŞILIYOR sütununa taşır):   PHP    public static function dispatchNextAiTaskIfAvailable(int $projectId, ?int $justFinishedTaskId = null): ?array
+    {
+        global $db;
+        try {
+            if (!$db || empty($db->connect)) {
+                require_once __DIR__ . '/../Model/DataLayer.php';
+                $db = new Database();
+            }
+
+            // AŞAMA 1: ÇALIŞILIYOR ('in_progress') sütununda bekleyen / yarım kalan AI görevi var mı?
+            $inProgressSql = "
+                SELECT * FROM tasks 
+                WHERE project_id = ? 
+                  AND status = 'in_progress'
+                  AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = tasks.id)
+                  AND (
+                      LOWER(tags) LIKE '%ai%' 
+                      OR LOWER(tags) LIKE '%otonom%' 
+                      OR LOWER(tags) LIKE '%agent%'
+                      OR LOWER(tags) LIKE '%yapay zeka%'
+                      OR LOWER(tags) LIKE '%antigravity%'
+                  )
+            ";
+            $inProgressParams = [$projectId];
+            if ($justFinishedTaskId) {
+                $inProgressSql .= " AND id != ?";
+                $inProgressParams[] = $justFinishedTaskId;
+            }
+            $inProgressSql .= "
+                ORDER BY 
+                    CASE priority 
+                        WHEN 'urgent' THEN 1 
+                        WHEN 'high' THEN 2 
+                        WHEN 'normal' THEN 3 
+                        WHEN 'low' THEN 4 
+                        ELSE 5 
+                    END ASC, 
+                    id ASC 
+                LIMIT 1
+            ";
+            $activeTask = $db->row_query($inProgressSql, $inProgressParams);
+
+            if ($activeTask && self::isAiTask($activeTask)) {
+                $res = self::triggerTaskStartedWebhook((int)$activeTask->id, 'in_progress', [
+                    'resumed'         => true,
+                    'auto_dispatched' => true,
+                    'source'          => 'auto_ai_resume'
+                ]);
+                return [
+                    'dispatched' => true,
+                    'resumed'    => true,
+                    'task_id'    => $activeTask->id,
+                    'task_code'  => $activeTask->task_code,
+                    'title'      => $activeTask->title,
+                    'webhook'    => $res
+                ];
+            }
+
+            // AŞAMA 2: YAPILACAK İŞLER ('assigned') sütunundaki sıradaki 'ai' etiketli görevi bul (Aday Havuzu)
+            $sqlParams = [$projectId];
+            $sql = "
+                SELECT * FROM tasks 
+                WHERE project_id = ? 
+                  AND status = 'assigned'
+                  AND (
+                      LOWER(tags) LIKE '%ai%' 
+                      OR LOWER(tags) LIKE '%otonom%' 
+                      OR LOWER(tags) LIKE '%agent%'
+                      OR LOWER(tags) LIKE '%yapay zeka%'
+                      OR LOWER(tags) LIKE '%antigravity%'
+                  )
+            ";
+            if ($justFinishedTaskId) {
+                $sql .= " AND id != ?";
+                $sqlParams[] = $justFinishedTaskId;
+            }
+            $sql .= "
+                ORDER BY 
+                    CASE priority 
+                        WHEN 'urgent' THEN 1 
+                        WHEN 'high' THEN 2 
+                        WHEN 'normal' THEN 3 
+                        WHEN 'low' THEN 4 
+                        ELSE 5 
+                    END ASC, 
+                    id ASC 
+                LIMIT 30
+            ";
+
+            $candidateTasks = $db->multi_record_query($sql, $sqlParams) ?: [];
+            $nextTask = null;
+
+            foreach ($candidateTasks as $cand) {
+                if (!self::isAiTask($cand)) {
+                    continue;
+                }
+
+                // KURAL 1: Eğer bu görevin altında alt görevler varsa bu bir Klasör/Ana Görevdir (Epic), doğrudan ajana gönderilmez!
+                $subCount = (int)$db->single_query("SELECT COUNT(*) FROM tasks WHERE parent_task_id = ?", [(int)$cand->id]);
+                if ($subCount > 0) {
+                    continue;
+                }
+
+                // KURAL 2: Eğer bu bir alt görevse ve bağlı olduğu Ana Görev "Onay Kapılı" (is_gated / chain_gated) ise:
+                if (!empty($cand->parent_task_id)) {
+                    $parentTask = $db->row_query("SELECT * FROM tasks WHERE id = ?", [(int)$cand->parent_task_id]);
+                    if ($parentTask) {
+                        $isGated = !empty($parentTask->is_gated) 
+                            || str_contains(strtolower($parentTask->tags ?? ''), 'chain_gated') 
+                            || str_contains($parentTask->description ?? '', '[ONAY_KAPILI]');
+                        
+                        if ($isGated) {
+                            // Kendisinden önceki (ID'si daha küçük) kardeş alt görevlerden henüz 'completed' olmayan var mı?
+                            $unapprovedPrev = (int)$db->single_query("
+                                SELECT COUNT(*) FROM tasks 
+                                WHERE parent_task_id = ? AND id < ? AND status != 'completed'
+                            ", [(int)$parentTask->id, (int)$cand->id]);
+
+                            if ($unapprovedPrev > 0) {
+                                // Önceki adım henüz yönetici/müşteri tarafından onaylanmamış! Bu görevi atla, kuyruktaki diğer işlere bak!
+                                continue;
+                            }
+                        }
+                    }
+                }
+
+                $nextTask = $cand;
+                break;
+            }
+
+            if (!$nextTask) {
+                return null;
+            }
+
+            // Görevi 'in_progress' (ÇALIŞILIYOR) durumuna al
+            $db->exec_query("UPDATE tasks SET status = 'in_progress', updated_at = NOW() WHERE id = ?", [$nextTask->id]);
+
+            // KURAL 3 (KANBAN GÖRÜNÜRLÜĞÜ): Eğer başlayan görev bir alt görevse, bağlı olduğu Ana Görevi de Kanban panosunda 'in_progress' sütununa taşı!
+            if (!empty($nextTask->parent_task_id)) {
+                $pId = (int)$nextTask->parent_task_id;
+                $parentRow = $db->row_query("SELECT id, task_code, title, status FROM tasks WHERE id = ?", [$pId]);
+                if ($parentRow && $parentRow->status === 'assigned') {
+                    $db->exec_query("UPDATE tasks SET status = 'in_progress', updated_at = NOW() WHERE id = ?", [$pId]);
+                    self::broadcastLiveEvent('task_status_changed', (int)$projectId, $pId, 1, [
+                        'task_id'    => $pId,
+                        'task_code'  => $parentRow->task_code,
+                        'title'      => $parentRow->title,
+                        'old_status' => 'assigned',
+                        'new_status' => 'in_progress',
+                        'user_name'  => 'AI Architect'
+                    ]);
+                }
+            }
+
+            $db->exec_query("
+                INSERT INTO task_activities (task_id, user_id, action_type, old_value, new_value, comment, created_at)
+                VALUES (?, 1, 'status_change', 'assigned', 'in_progress', ?, NOW())
+            ", [
+                $nextTask->id,
+                "🤖 Otonom Kuyruk: Sıradaki 'ai' etiketli görev otomatik olarak 'Çalışılıyor' sütununa alındı."
+            ]);
+
+            self::broadcastLiveEvent('task_status_changed', (int)$projectId, (int)$nextTask->id, 1, [
+                'task_id'    => (int)$nextTask->id,
+                'task_code'  => $nextTask->task_code,
+                'title'      => $nextTask->title,
+                'old_status' => 'assigned',
+                'new_status' => 'in_progress'
+            ]);
+
+            $res = self::triggerTaskStartedWebhook((int)$nextTask->id, 'assigned', [
+                'auto_dispatched' => true,
+                'source'          => 'auto_ai_queue'
+            ]);
+
+            return [
+                'dispatched' => true,
+                'task_id'    => $nextTask->id,
+                'task_code'  => $nextTask->task_code,
+                'title'      => $nextTask->title,
+                'webhook'    => $res
+            ];
+        } catch (\Throwable $e) {
+            error_log("dispatchNextAiTaskIfAvailable error: " . $e->getMessage());
+            return null;
+        }
+    }
+C) Helper Sınıfının En Sonuna (sendDailyStandupEmail fonksiyonunun altına) AI Ayrıştırma Motorunu EkleSystem/Helper.php içinde class Helper kapanış süslü parantezinden (}) hemen önce şu 2 metodu ekle:   PHP    /**
+     * AI Proje Mimarı (Task Decomposer):
+     * Kullanıcının girdiği proje brifini, sözleşme metnini veya özellik listesini
+     * Ana Görevler (Modüller/Epics) ve Alt Görevler (Subtasks) ağacına ayrıştırır.
+     * DİKKAT: Güvenlik gereği hiçbir göreve otomatik '#ai' etiketi EKLEMEZ!
+     */
+    public static function decomposeBriefWithAi(string $brief, int $projectId = 1): array
+    {
+        global $db;
+        $brief = trim($brief);
+        if (empty($brief)) {
+            return ['success' => false, 'error' => 'Lütfen ayrıştırılacak proje brifini, sözleşme maddelerini veya özellik listesini girin.'];
+        }
+
+        try {
+            if (!$db || empty($db->connect)) {
+                require_once __DIR__ . '/../Model/DataLayer.php';
+                $db = new Database();
+            }
+            $project = $db->row_query("SELECT project_code, title, agent_rules FROM projects WHERE id = ?", [$projectId]);
+            $settings = $db->row_query("SELECT active_ai_provider, default_ai_model, gemini_api_key, openai_api_key FROM settings LIMIT 1");
+        } catch (\Throwable $e) {
+            $project = null;
+            $settings = null;
+        }
+
+        $projTitle = $project->title ?? 'Proje';
+        $projCode  = $project->project_code ?? 'PRJ';
+
+        $systemPrompt = "Sen kıdemli bir Yazılım ve Proje Mimarısın. Kullanıcının verdiği proje brifini, sözleşme metnini veya özellik isteğini fonksiyonel Ana Görevlere (Epics/Modüller) ve bunların altındaki somut, tekil Alt Görevlere (Subtasks) ayırmalısın.
+
+KRİTİK KURALLAR:
+1. Sadece 'Yazılım' diye tek bir ana görev açma! İşi mantıklı modüllere böl (Örn: 'Ana Sayfa & UI Tasarımı', 'Sepet & Ödeme Modülü', 'Yönetim Paneli & CRUD', 'Teknik SEO & Performans', 'Kurumsal & Yasal Sayfalar').
+2. Her ana görevin altında 2 ila 6 adet net, tek seferde yapılabilecek alt görev (subtask) olsun.
+3. Kategori etiketleri ('category') sadece şunlardan biri olabilir: 'coding', 'design', 'seo', 'marketing', 'legal', 'content'. ASLA 'ai' etiketi koyma!
+4. 'execution_mode': Eğer modül saf kodlama/altyapı ise 'auto' (Tam Otonom Gece Modu), eğer tasarım/SEO/hukuk gibi müşteri veya yönetici onayı gerektiriyorsa 'gated' (Onay Kapılı) olarak işaretle.
+5. Çıktıyı SADECE aşağıdaki geçerli JSON formatında ver, başka hiçbir açıklama veya markdown bloğu yazma:
+{
+  \"epics\": [
+    {
+      \"title\": \"Modül / Ana Görev Başlığı\",
+      \"description\": \"Modülün genel amacı ve mimari kapsamı\",
+      \"priority\": \"high\",
+      \"execution_mode\": \"auto\",
+      \"subtasks\": [
+        {
+          \"title\": \"Somut alt görev başlığı\",
+          \"description\": \"Teknik veya operasyonel detaylı açıklama\",
+          \"category\": \"coding\",
+          \"priority\": \"normal\",
+          \"time_estimate\": \"2h\"
+        }
+      ]
+    }
+  ]
+}";
+
+        $userPrompt = "Proje: [{$projCode}] {$projTitle}\n\nKullanıcı Brifi / İsterler:\n{$brief}\n\nLütfen yukarıdaki isterleri JSON formatında modüler ana görev ve alt görev ağacına dönüştür:";
+
+        // 1. Gemini API Denemesi
+        $apiKey = trim($settings->gemini_api_key ?? '');
+        if (!empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
+            $model = !empty($settings->default_ai_model) && str_contains($settings->default_ai_model, 'gemini')
+                ? $settings->default_ai_model
+                : 'gemini-1.5-flash';
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
+            $payload = [
+                'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
+                'contents'          => [['role' => 'user', 'parts' => [['text' => $userPrompt]]]],
+                'generationConfig'  => [
+                    'temperature'      => 0.25,
+                    'maxOutputTokens'  => 4096,
+                    'responseMimeType' => 'application/json'
+                ]
+            ];
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                CURLOPT_TIMEOUT        => 20,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200 && $response) {
+                $data = json_decode($response, true);
+                $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                $cleaned = trim(preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($text)));
+                $parsed = json_decode($cleaned, true);
+                if (!empty($parsed['epics']) && is_array($parsed['epics'])) {
+                    return ['success' => true, 'epics' => $parsed['epics'], 'engine' => 'gemini'];
+                }
+            }
+        }
+
+        // 2. OpenAI API Denemesi
+        $openAiKey = trim($settings->openai_api_key ?? '');
+        if (!empty($openAiKey) && !str_contains($openAiKey, 'test_')) {
+            $url = "https://api.openai.com/v1/chat/completions";
+            $payload = [
+                'model'           => 'gpt-4o-mini',
+                'messages'        => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => $userPrompt]
+                ],
+                'temperature'     => 0.25,
+                'response_format' => ['type' => 'json_object']
+            ];
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $openAiKey
+                ],
+                CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                CURLOPT_TIMEOUT        => 20,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200 && $response) {
+                $data = json_decode($response, true);
+                $text = $data['choices'][0]['message']['content'] ?? '';
+                $parsed = json_decode(trim($text), true);
+                if (!empty($parsed['epics']) && is_array($parsed['epics'])) {
+                    return ['success' => true, 'epics' => $parsed['epics'], 'engine' => 'openai'];
+                }
+            }
+        }
+
+        // 3. Dahili Akıllı Mimari Ayrıştırıcı (Offline / Heuristic Fallback - API anahtarı olmasa bile %100 çalışır!)
+        return [
+            'success' => true,
+            'epics'   => self::decomposeBriefHeuristic($brief, $projTitle),
+            'engine'  => 'heuristic'
+        ];
+    }
+
+    /**
+     * API Anahtarı olmadığında veya çevrimdışı modda brifi analiz edip
+     * modüler Ana Görev ve Alt Görev ağacı üreten uzman motor.
+     */
+    public static function decomposeBriefHeuristic(string $brief, string $projTitle = 'Proje'): array
+    {
+        $lower = mb_strtolower($brief, 'UTF-8');
+        $epics = [];
+
+        // Kullanıcının maddeler halinde yazdığı satırları yakala
+        $lines = array_values(array_filter(array_map('trim', preg_split('/[\r\n]+/', $brief)), fn($l) => mb_strlen($l) > 3));
+
+        // 1. E-Ticaret / Sepet / Ödeme Tespiti
+        if (str_contains($lower, 'sepet') || str_contains($lower, 'ödeme') || str_contains($lower, 'kupon') || str_contains($lower, 'iyzico') || str_contains($lower, 'stripe') || str_contains($lower, 'ticaret') || str_contains($lower, 'ürün')) {
+            $epics[] = [
+                'title'          => 'Sepet, Kupon ve Ödeme Modülü',
+                'description'    => 'Kullanıcıların sepete ürün eklemesi, indirim kuponu uygulaması ve ödeme entegrasyonu akışı.',
+                'priority'       => 'high',
+                'execution_mode' => 'auto',
+                'subtasks'       => [
+                    ['title' => 'Veritabanı sepet, sipariş ve kupon tablolarının oluşturulması', 'description' => 'Cart, orders ve coupons tablolarının şema kurulumu.', 'category' => 'coding', 'priority' => 'high', 'time_estimate' => '2h'],
+                    ['title' => 'Sepete ekle, adet güncelle ve sil AJAX servislerinin kodlanması', 'description' => 'Dinamik sepet hesaplama ve stok kontrolü.', 'category' => 'coding', 'priority' => 'high', 'time_estimate' => '3h'],
+                    ['title' => 'İndirim kuponu doğrulama ve sepet tutarına yansıtma motoru', 'description' => 'Yüzdelik ve sabit tutarlı kuponların sepette uygulanması.', 'category' => 'coding', 'priority' => 'normal', 'time_estimate' => '2h'],
+                    ['title' => 'Ödeme geçidi (Payment Gateway) API ve Callback entegrasyonu', 'description' => '3D Secure ödeme başlatma ve sipariş onay webhook doğrulaması.', 'category' => 'coding', 'priority' => 'urgent', 'time_estimate' => '4h'],
+                ]
+            ];
+        }
+
+        // 2. Arayüz / Ana Sayfa / Tasarım Tespiti
+        if (str_contains($lower, 'ana sayfa') || str_contains($lower, 'tasarım') || str_contains($lower, 'vitrin') || str_contains($lower, 'slider') || str_contains($lower, 'mobil') || empty($epics)) {
+            $epics[] = [
+                'title'          => 'Önyüz (Frontend) & Ana Sayfa Geliştirmesi',
+                'description'    => 'Kullanıcı karşılama ekranları, responsive tasarım uyumu ve etkileşimli bileşenler.',
+                'priority'       => 'high',
+                'execution_mode' => 'gated',
+                'subtasks'       => [
+                    ['title' => 'Ana sayfa Hero alanı, navigasyon ve üst bar (Header) tasarımı', 'description' => 'Masaüstü ve mobil uyumlu modern üst menü ve karşılama alanı.', 'category' => 'design', 'priority' => 'high', 'time_estimate' => '3h'],
+                    ['title' => 'Dinamik vitrin / içerik kartları grid yapısının kodlanması', 'description' => 'Filtrelenebilir ve hızlı yüklenen içerik listeleme bileşenleri.', 'category' => 'coding', 'priority' => 'normal', 'time_estimate' => '3h'],
+                    ['title' => 'Mobil görünüm (Responsive) ve etkileşim testlerinin yapılması', 'description' => 'Farklı ekran çözünürlüklerinde taşma ve hizalama kontrolü.', 'category' => 'design', 'priority' => 'normal', 'time_estimate' => '2h'],
+                ]
+            ];
+        }
+
+        // 3. SEO & Pazarlama Tespiti
+        if (str_contains($lower, 'seo') || str_contains($lower, 'google') || str_contains($lower, 'sitemap') || str_contains($lower, 'blog') || str_contains($lower, 'analitik')) {
+            $epics[] = [
+                'title'          => 'Teknik SEO ve İçerik Altyapısı',
+                'description'    => 'Arama motoru optimizasyonu, meta etiketler ve site haritası yapılandırması.',
+                'priority'       => 'normal',
+                'execution_mode' => 'gated',
+                'subtasks'       => [
+                    ['title' => 'Dinamik Sitemap.xml ve Robots.txt servislerinin oluşturulması', 'description' => 'Yeni eklenen içeriklerin otomatik olarak site haritasına yansıması.', 'category' => 'seo', 'priority' => 'normal', 'time_estimate' => '2h'],
+                    ['title' => 'Sayfa bazlı dinamik Meta Title, Description ve OpenGraph etiketleri', 'description' => 'Sosyal medya paylaşım önizlemeleri ve SEO uyumlu URL (Slug) yapısı.', 'category' => 'seo', 'priority' => 'normal', 'time_estimate' => '2h'],
+                ]
+            ];
+        }
+
+        // 4. Yasal / Sözleşme / KVKK Tespiti
+        if (str_contains($lower, 'kvkk') || str_contains($lower, 'sözleşme') || str_contains($lower, 'yasal') || str_contains($lower, 'gizlilik') || str_contains($lower, 'iade') || str_contains($lower, 'çerez')) {
+            $epics[] = [
+                'title'          => 'Yasal Metinler, KVKK ve Kurumsal Sayfalar',
+                'description'    => 'Yasal uyumluluk sayfaları, onay kutucukları ve çerez politikası bildirimleri.',
+                'priority'       => 'normal',
+                'execution_mode' => 'gated',
+                'subtasks'       => [
+                    ['title' => 'KVKK Aydınlatma Metni ve Gizlilik Politikası sayfalarının hazırlanması', 'description' => 'Kurumsal içeriklerin sisteme girilmesi ve footer bağlantıları.', 'category' => 'legal', 'priority' => 'normal', 'time_estimate' => '2h'],
+                    ['title' => 'Kayıt ve ödeme formlarına zorunlu sözleşme onay checkboxlarının eklenmesi', 'description' => 'Kullanıcı onaylarının tarih/IP loglarıyla veritabanında saklanması.', 'category' => 'coding', 'priority' => 'high', 'time_estimate' => '2h'],
+                ]
+            ];
+        }
+
+        // Eğer kullanıcı satır satır özel maddeler girdiyse onları da "Özel Brif Maddeleri" modülüne ekle
+        if (count($lines) >= 2) {
+            $customSubs = [];
+            foreach (array_slice($lines, 0, 8) as $line) {
+                $cleanLine = preg_replace('/^[\-\*\d\.\)\s]+/', '', $line);
+                if (mb_strlen($cleanLine) > 4) {
+                    $customSubs[] = [
+                        'title'         => mb_substr($cleanLine, 0, 110),
+                        'description'   => $cleanLine,
+                        'category'      => 'coding',
+                        'priority'      => 'normal',
+                        'time_estimate' => '2h'
+                    ];
+                }
+            }
+            if (!empty($customSubs)) {
+                $epics[] = [
+                    'title'          => $projTitle . ' - Brif Özel Geliştirme Maddeleri',
+                    'description'    => 'Kullanıcı brifinde doğrudan belirtilen özel maddeler.',
+                    'priority'       => 'high',
+                    'execution_mode' => 'auto',
+                    'subtasks'       => $customSubs
+                ];
+            }
+        }
+
+        return $epics;
+    }
+🛠️ 2. ADIM: Controller/ajax/ajax.php GüncellemesiController/ajax/ajax.php dosyasının en sonundaki case 'send_standup_email': ... break; bloğunun hemen altına (default: satırından önce, Satır 1375 civarı) şu 2 yeni AJAX aksiyonunu ekle:   PHP    // 28. AI PROJE MİMARI: BRİFİ MODÜLER GÖREV AĞACINA AYRIŞTIR (ÖNİZLEME İÇİN)
+    case 'decompose_brief_with_ai':
+        if ($currentUser->role === 'client') {
+            jsonResponse(false, 'Yetkisiz erişim.');
+        }
+        $brief = trim($_POST['brief'] ?? '');
+        $projectId = (int)($_POST['project_id'] ?? 1);
+
+        $res = Helper::decomposeBriefWithAi($brief, $projectId);
+        if (!empty($res['success'])) {
+            jsonResponse(true, 'Proje brifi başarıyla modüllere ve alt görevlere ayrıştırıldı!', $res);
+        } else {
+            jsonResponse(false, $res['error'] ?? 'Ayrıştırma sırasında hata oluştu.');
+        }
+        break;
+
+    // 29. AI PROJE MİMARI: DÜZENLENMİŞ GÖREV AĞACINI TOPLU OLARAK VERİTABANINA İŞLE
+    case 'bulk_create_hierarchical_tasks':
+        if ($currentUser->role === 'client') {
+            jsonResponse(false, 'Yetkisiz erişim.');
+        }
+        $projectId = (int)($_POST['project_id'] ?? 1);
+        $treeJson  = $_POST['tree_json'] ?? '';
+        $epics     = json_decode($treeJson, true);
+
+        if (empty($epics) || !is_array($epics)) {
+            jsonResponse(false, 'Kaydedilecek geçerli bir görev ağacı bulunamadı.');
+        }
+
+        $createdEpicsCount = 0;
+        $createdSubtasksCount = 0;
+        $defaultDeadline = date('Y-m-d', strtotime('+7 days'));
+
+        foreach ($epics as $epic) {
+            $epicTitle = trim($epic['title'] ?? '');
+            if (empty($epicTitle)) continue;
+
+            $epicDesc     = trim($epic['description'] ?? '');
+            $epicPriority = in_array($epic['priority'] ?? '', ['urgent', 'high', 'normal', 'low']) ? $epic['priority'] : 'high';
+            $execMode     = ($epic['execution_mode'] ?? 'auto') === 'gated' ? 'gated' : 'auto';
+
+            // Onay kapılı mı yoksa tam otonom mu etiket ve açıklama işaretini ekle (Ajan asla Ana Görevi doğrudan çalıştırmaz!)
+            $epicTags = ($execMode === 'gated') ? 'Epic, chain_gated' : 'Epic, chain_auto';
+            if ($execMode === 'gated') {
+                $epicDesc = "[ONAY_KAPILI] (Bu modüldeki alt görevler yönetici onayıyla adım adım ilerler)\n\n" . $epicDesc;
+            }
+
+            $lastId = (int)$db->single_query("SELECT MAX(id) FROM tasks") ?: 0;
+            $epicCode = 'TSK-' . str_pad($lastId + 1, 3, '0', STR_PAD_LEFT);
+
+            $insEpic = $db->insert("tasks", [
+                'project_id', 'task_code', 'title', 'description', 'tags', 'priority',
+                'status', 'deadline', 'created_by', 'assigned_to'
+            ], [
+                $projectId, $epicCode, $epicTitle, $epicDesc, $epicTags, $epicPriority,
+                'assigned', $defaultDeadline, $currentUser->id, $currentUser->id
+            ]);
+
+            if ($insEpic) {
+                $epicId = (int)$db->last_insert_id();
+                $createdEpicsCount++;
+                $db->exec_query("INSERT IGNORE INTO task_assignees (task_id, user_id) VALUES (?, ?)", [$epicId, $currentUser->id]);
+
+                $subtasks = $epic['subtasks'] ?? [];
+                $subIndex = 0;
+                foreach ($subtasks as $sub) {
+                    $subTitle = trim($sub['title'] ?? '');
+                    if (empty($subTitle)) continue;
+
+                    $subIndex++;
+                    $subCode     = $epicCode . '-' . $subIndex;
+                    $subDesc     = trim($sub['description'] ?? $subTitle);
+                    $subCategory = trim($sub['category'] ?? 'coding');
+                    $subPriority = in_array($sub['priority'] ?? '', ['urgent', 'high', 'normal', 'low']) ? $sub['priority'] : 'normal';
+                    $subEstimate = trim($sub['time_estimate'] ?? '2h');
+                    $subAssignee = (int)($sub['assigned_to'] ?? $currentUser->id) ?: (int)$currentUser->id;
+                    $useAi       = !empty($sub['is_ai']);
+
+                    // SADECE kullanıcı önizleme ekranında '🤖 AI' kutucuğunu işaretlediyse 'ai' etiketi eklenir!
+                    $subTagsArr = ['Subtask', $subCategory];
+                    if ($useAi) {
+                        $subTagsArr[] = 'ai';
+                    }
+                    $subTagsStr = implode(', ', array_unique(array_filter($subTagsArr)));
+
+                    $insSub = $db->insert("tasks", [
+                        'project_id', 'parent_task_id', 'task_code', 'title', 'description', 'priority',
+                        'status', 'deadline', 'created_by', 'assigned_to', 'tags', 'time_estimate', 'time_spent'
+                    ], [
+                        $projectId, $epicId, $subCode, $subTitle, $subDesc, $subPriority,
+                        'assigned', $defaultDeadline, $currentUser->id, $subAssignee, $subTagsStr, $subEstimate, '0m'
+                    ]);
+
+                    if ($insSub) {
+                        $newSubId = (int)$db->last_insert_id();
+                        $createdSubtasksCount++;
+                        $db->exec_query("INSERT IGNORE INTO task_assignees (task_id, user_id) VALUES (?, ?)", [$newSubId, $subAssignee]);
+                    }
+                }
+
+                // Canlı SSE yayını
+                Helper::broadcastLiveEvent('task_created', $projectId, $epicId, (int)$currentUser->id, [
+                    'task_id'   => $epicId,
+                    'task_code' => $epicCode,
+                    'title'     => $epicTitle,
+                    'status'    => 'assigned',
+                    'user_name' => $currentUser->name
+                ]);
+            }
+        }
+
+        jsonResponse(true, "✅ {$createdEpicsCount} Ana Modül ve {$createdSubtasksCount} Alt Görev başarıyla projeye işlendi!", [
+            'epics_count'    => $createdEpicsCount,
+            'subtasks_count' => $createdSubtasksCount
+        ]);
+        break;
+🛠️ 3. ADIM: View/tasks/board.php Güncellemesi (Buton + Sürükle-Bırak Önizleme Modalı)A) Üst Bara 🪄 AI Proje Mimarı Butonunu EkleView/tasks/board.php içinde (Satır 73 civarı) openAiStandupModal() butonunun hemen yanına şu butonu ekle:   PHP    <div class="cu-filter-bar">
+        <?php if (!$isClient): ?>
+            <button type="button" class="cu-btn-sm" onclick="openAiArchitectModal()" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, #7B68EE, #e056fd); border:none; color:#ffffff; font-weight:700; padding:6px 14px; border-radius:6px; cursor:pointer; box-shadow:0 4px 12px rgba(123,104,238,0.35);">
+                <span>🪄</span> <span>AI Proje Mimarı</span>
+            </button>
+        <?php endif; ?>
+        <button type="button" class="cu-btn-sm" onclick="openAiStandupModal()" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(123,104,238,0.2), rgba(0,184,148,0.2)); border:1px solid rgba(123,104,238,0.4); color:var(--text-white); font-weight:600; padding:6px 12px; border-radius:6px; cursor:pointer;" title="<?= htmlspecialchars(__('tasks.tooltip_ai_standup', 'Son 24 saatin LLM özetini ve standup bültenini görüntüle')) ?>">
+            <span>🤖</span> <span><?= __('tasks.btn_ai_standup', 'AI Standup Özeti') ?></span>
+        </button>
+B) View/tasks/board.php En Altına (include __DIR__ . '/../../Components/footer.php'; satırından hemen önce) Modal ve Sürükle-Bırak Motorunu Ekle:PHP<!-- 🪄 AI PROJE MİMARI & SÜRÜKLE-BIRAK GÖREV AYRIŞTIRMA MODALI -->
+<div class="cu-modal-overlay" id="modalAiArchitect" onclick="if(event.target === this) closeModal('modalAiArchitect')">
+    <div class="cu-modal" style="max-width:960px; width:95%; max-height:92vh; display:flex; flex-direction:column;">
+        <div class="cu-modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding:16px 22px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:22px;">🪄</span>
+                <div>
+                    <h3 style="font-size:16px; font-weight:800; color:var(--text-white); margin:0;">AI Proje Mimarı & Modüler Görev Ayrıştırıcı</h3>
+                    <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Brifi veya sözleşmeyi girin -> Sürükle-Bırak ile düzenleyin -> İnsan veya 🤖 AI seçip tek tıkla panoya aktarın</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeModal('modalAiArchitect')" style="background:none; border:none; color:var(--text-muted); font-size:22px; cursor:pointer;">&times;</button>
+        </div>
+
+        <div class="cu-modal-body" style="flex:1; overflow-y:auto; padding:20px;">
+            <!-- ADIM 1: BRİF GİRİŞ EKRANI -->
+            <div id="aiArchStep1">
+                <div style="display:grid; grid-template-columns: 1fr 260px; gap:14px; margin-bottom:14px;">
+                    <div>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">📌 Proje Brifi, Sözleşme Maddeleri veya Özellik Listesi</label>
+                        <textarea id="aiArchBriefInput" rows="7" style="width:100%; background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:8px; color:var(--text-white); padding:12px; font-size:13px; line-height:1.5; resize:vertical;" placeholder="Örn: Bize e-ticaret sepet modülü, indirim kuponu sistemi, iyzico ödeme entegrasyonu, teknik SEO (sitemap/meta) altyapısı ve KVKK sözleşme onay sayfaları lazım..."></textarea>
+                    </div>
+                    <div style="background:rgba(123,104,238,0.06); border:1px solid rgba(123,104,238,0.25); border-radius:8px; padding:14px; display:flex; flex-direction:column; justify-content:space-between;">
+                        <div>
+                            <label style="font-size:12px; font-weight:700; color:var(--text-white); display:block; margin-bottom:6px;">📁 Hedef Proje</label>
+                            <select id="aiArchProjectSelect" style="width:100%; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-white); padding:8px; font-size:12.5px; margin-bottom:12px;">
+                                <?php foreach (($projects ?? []) as $p): ?>
+                                    <option value="<?= $p->id ?>" <?= ($activeProjectId ==$p->id) ? 'selected' : '' ?>>
+                                        [<?= htmlspecialchars($p->project_code) ?>] <?= htmlspecialchars($p->title) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div style="font-size:11.5px; color:var(--text-secondary); line-height:1.45;">
+                                🛡️ <b>Güvenli Mimari Garantisi:</b><br>
+                                • Hiçbir göreve otomatik <code>#ai</code> etiketi basılmaz.<br>
+                                • Alt görevleri kutular arasında sürükleyip bırakabilirsiniz.<br>
+                                • Gece Modu (Otonom) veya Onay Kapılı akış seçebilirsiniz.
+                            </div>
+                        </div>
+                        <button type="button" id="btnRunAiDecompose" onclick="runAiBriefDecomposition()" style="width:100%; background:linear-gradient(135deg, #7B68EE, #e056fd); color:#fff; border:none; border-radius:8px; padding:10px; font-size:13px; font-weight:700; cursor:pointer; margin-top:12px;">
+                            ✨ AI ile Modüllere Parçala
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADIM 2: SÜRÜKLE-BIRAK İNTERAKTİF AĞAÇ ÖNİZLEME EKRANI -->
+            <div id="aiArchStep2" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; background:rgba(0,184,148,0.08); border:1px solid rgba(0,184,148,0.3); padding:10px 14px; border-radius:8px;">
+                    <div style="font-size:12.5px; color:var(--text-white);">
+                        💡 <b>İpucu:</b> Alt görevleri solundaki <code>⠿</code> tutamacından tutup başka bir Ana Görevin içine <b>Sürükleyip Bırakabilirsiniz!</b> Otonom yapılmasını istediğiniz alt görevlerde <b>🤖 AI</b> kutusunu işaretleyin.
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" onclick="addNewBlankEpic()" class="cu-btn-sm" style="background:rgba(123,104,238,0.2); border:1px solid #7B68EE; color:#fff; font-size:11.5px; padding:5px 10px; border-radius:6px; cursor:pointer;">
+                            ➕ Yeni Ana Modül Ekle
+                        </button>
+                        <button type="button" onclick="document.getElementById('aiArchStep2').style.display='none'; document.getElementById('aiArchStep1').style.display='block';" class="cu-btn-sm" style="background:rgba(255,255,255,0.08); border:1px solid var(--border-subtle); color:var(--text-secondary); font-size:11.5px; padding:5px 10px; border-radius:6px; cursor:pointer;">
+                            ↩️ Brife Dön
+                        </button>
+                    </div>
+                </div>
+
+                <div id="aiArchEpicsContainer" style="display:flex; flex-direction:column; gap:16px;"></div>
+            </div>
+        </div>
+
+        <div class="cu-modal-footer" style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px; border-top:1px solid var(--border-subtle);">
+            <span id="aiArchSummaryBadge" style="font-size:12px; color:var(--text-muted); font-weight:600;"></span>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="cu-btn-sm" onclick="closeModal('modalAiArchitect')" style="background:rgba(255,255,255,0.06); color:var(--text-secondary);">İptal</button>
+                <button type="button" id="btnApproveAiArch" onclick="submitAiArchitectTree()" style="display:none; background:#00b894; color:#fff; border:none; border-radius:6px; padding:8px 18px; font-size:13px; font-weight:700; cursor:pointer;">
+                    ✅ Onayla ve Projeye İşle
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let aiArchTreeData = [];
+let draggedSubtaskRef = null; // { epicIdx, subIdx }
+
+function openAiArchitectModal() {
+    openModal('modalAiArchitect');
+    document.getElementById('aiArchStep1').style.display = 'block';
+    document.getElementById('aiArchStep2').style.display = 'none';
+    document.getElementById('btnApproveAiArch').style.display = 'none';
+    document.getElementById('aiArchSummaryBadge').innerText = '';
+}
+
+async function runAiBriefDecomposition() {
+    const brief = document.getElementById('aiArchBriefInput').value.trim();
+    const projId = document.getElementById('aiArchProjectSelect').value;
+    if (!brief) {
+        showToast('Lütfen önce proje brifini veya özellik listesini yazın.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btnRunAiDecompose');
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ AI Mimarı Görev Ağacını Kuruyor...';
+
+    try {
+        const fd = new FormData();
+        fd.append('brief', brief);
+        fd.append('project_id', projId);
+
+        const res = await fetch('/taskmanager/ajax?action=decompose_brief_with_ai', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.success && data.epics) {
+            aiArchTreeData = data.epics.map(ep => ({
+                title: ep.title || 'Modül',
+                description: ep.description || '',
+                priority: ep.priority || 'high',
+                execution_mode: ep.execution_mode === 'gated' ? 'gated' : 'auto',
+                subtasks: (ep.subtasks || []).map(st => ({
+                    title: st.title || '',
+                    description: st.description || '',
+                    category: st.category || 'coding',
+                    priority: st.priority || 'normal',
+                    time_estimate: st.time_estimate || '2h',
+                    assigned_to: (window.CURRENT_USER_ID || 1),
+                    is_ai: false // Varsayılan olarak ASLA otomatik AI seçili gelmez!
+                }))
+            }));
+
+            document.getElementById('aiArchStep1').style.display = 'none';
+            document.getElementById('aiArchStep2').style.display = 'block';
+            document.getElementById('btnApproveAiArch').style.display = 'inline-block';
+            renderAiArchitectTree();
+            showToast('✨ Görev ağacı hazır! Sürükle-bırak ile düzenleyebilirsiniz.', 'success');
+        } else {
+            showToast(data.message || 'Ayrıştırma başarısız oldu', 'error');
+        }
+    } catch (e) {
+        showToast('Sunucu bağlantı hatası', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+    }
+}
+
+function renderAiArchitectTree() {
+    const container = document.getElementById('aiArchEpicsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const teamUsers = window.ALL_TEAM_USERS || [{ id: 1, name: 'Yönetici' }];
+    let totalSubs = 0;
+    let totalAiSubs = 0;
+
+    aiArchTreeData.forEach((epic, eIdx) => {
+        const epicBox = document.createElement('div');
+        epicBox.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; padding:14px; transition:all 0.2s;';
+        
+        // Dropzone Events (Alt görevi başka bir ana göreve sürükleyip bırakma)
+        epicBox.ondragover = (ev) => {
+            ev.preventDefault();
+            epicBox.style.borderColor = '#7B68EE';
+            epicBox.style.boxShadow = '0 0 0 2px rgba(123,104,238,0.25)';
+        };
+        epicBox.ondragleave = () => {
+            epicBox.style.borderColor = 'var(--border-subtle)';
+            epicBox.style.boxShadow = 'none';
+        };
+        epicBox.ondrop = (ev) => {
+            ev.preventDefault();
+            epicBox.style.borderColor = 'var(--border-subtle)';
+            epicBox.style.boxShadow = 'none';
+            if (!draggedSubtaskRef) return;
+            const { epicIdx: fromE, subIdx: fromS } = draggedSubtaskRef;
+            if (fromE === eIdx) return;
+
+            const movedItem = aiArchTreeData[fromE].subtasks.splice(fromS, 1)[0];
+            if (movedItem) {
+                aiArchTreeData[eIdx].subtasks.push(movedItem);
+                draggedSubtaskRef = null;
+                renderAiArchitectTree();
+                showToast('Alt görev yeni modüle taşındı!', 'info');
+            }
+        };
+
+        const isGated = (epic.execution_mode === 'gated');
+
+        let subtasksHtml = '';
+        (epic.subtasks || []).forEach((sub, sIdx) => {
+            totalSubs++;
+            if (sub.is_ai) totalAiSubs++;
+
+            const userOptions = teamUsers.map(u => `<option value="${u.id}" ${sub.assigned_to == u.id ? 'selected' : ''}>👤 ${escapeHtml(u.name)}</option>`).join('');
+
+            subtasksHtml += `
+                <div draggable="true"
+                     ondragstart="draggedSubtaskRef = { epicIdx: ${eIdx}, subIdx: ${sIdx} }; this.style.opacity='0.4';"
+                     ondragend="this.style.opacity='1'; draggedSubtaskRef = null;"
+                     style="display:grid; grid-template-columns: 24px 1fr 110px 140px 95px 30px; gap:8px; align-items:center; background:var(--bg-base); border:1px solid ${sub.is_ai ? 'rgba(224,86,253,0.5)' : 'var(--border-subtle)'}; border-radius:6px; padding:8px 10px; margin-bottom:6px; cursor:grab;">
+                    <span style="color:var(--text-muted); font-size:15px; user-select:none;" title="Sürükle ve başka modüle bırak">⠿</span>
+                    <input type="text" value="${escapeHtml(sub.title)}" oninput="aiArchTreeData[${eIdx}].subtasks[${sIdx}].title = this.value" style="background:transparent; border:none; color:var(--text-white); font-size:12.5px; font-weight:500; outline:none; width:100%;">
+                    <select onchange="aiArchTreeData[${eIdx}].subtasks[${sIdx}].category = this.value" style="background:var(--bg-card); border:1px solid var(--border-subtle); color:var(--text-secondary); font-size:11px; padding:4px 6px; border-radius:4px;">
+                        <option value="coding" ${sub.category === 'coding' ? 'selected' : ''}>💻 Yazılım</option>
+                        <option value="design" ${sub.category === 'design' ? 'selected' : ''}>🎨 Tasarım</option>
+                        <option value="seo" ${sub.category === 'seo' ? 'selected' : ''}>🔍 SEO</option>
+                        <option value="marketing" ${sub.category === 'marketing' ? 'selected' : ''}>📢 Pazarlama</option>
+                        <option value="legal" ${sub.category === 'legal' ? 'selected' : ''}>⚖️ Yasal/KVKK</option>
+                        <option value="content" ${sub.category === 'content' ? 'selected' : ''}>📝 İçerik</option>
+                    </select>
+                    <select onchange="aiArchTreeData[${eIdx}].subtasks[${sIdx}].assigned_to = parseInt(this.value)" style="background:var(--bg-card); border:1px solid var(--border-subtle); color:var(--text-secondary); font-size:11px; padding:4px 6px; border-radius:4px;">
+                        ${userOptions}
+                    </select>
+                    <label style="display:inline-flex; align-items:center; justify-content:center; gap:5px; font-size:11.5px; font-weight:700; padding:4px 8px; border-radius:5px; cursor:pointer; background:${sub.is_ai ? 'linear-gradient(135deg, #7B68EE, #e056fd)' : 'rgba(255,255,255,0.05)'}; color:${sub.is_ai ? '#fff' : 'var(--text-muted)'}; border:1px solid ${sub.is_ai ? '#e056fd' : 'var(--border-subtle)'};">
+                        <input type="checkbox" ${sub.is_ai ? 'checked' : ''} onchange="aiArchTreeData[${eIdx}].subtasks[${sIdx}].is_ai = this.checked; renderAiArchitectTree();" style="display:none;">
+                        <span>🤖 AI</span>
+                    </label>
+                    <button type="button" onclick="aiArchTreeData[${eIdx}].subtasks.splice(${sIdx}, 1); renderAiArchitectTree();" style="background:none; border:none; color:#ff4757; cursor:pointer; font-size:13px;" title="Alt Görevi Sil">🗑️</button>
+                </div>
+            `;
+        });
+
+        epicBox.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border-subtle);">
+                <div style="display:flex; align-items:center; gap:8px; flex:1;">
+                    <span style="font-size:16px;">📂</span>
+                    <input type="text" value="${escapeHtml(epic.title)}" oninput="aiArchTreeData[${eIdx}].title = this.value" style="background:transparent; border:1px dashed transparent; color:var(--text-white); font-size:14px; font-weight:800; width:100%; padding:2px 6px; border-radius:4px;" onfocus="this.style.borderColor='var(--brand-primary)'" onblur="this.style.borderColor='transparent'">
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <select onchange="aiArchTreeData[${eIdx}].execution_mode = this.value; renderAiArchitectTree();" style="background:${isGated ? 'rgba(230,126,34,0.18)' : 'rgba(0,184,148,0.18)'}; border:1px solid ${isGated ? '#e67e22' : '#00b894'}; color:${isGated ? '#e67e22' : '#00b894'}; font-size:11px; font-weight:700; padding:4px 8px; border-radius:6px; cursor:pointer;">
+                        <option value="auto" ${!isGated ? 'selected' : ''}>🚀 Tam Otonom Akış (Gece Modu)</option>
+                        <option value="gated" ${isGated ? 'selected' : ''}>🛑 Onay Kapılı (Adım Adım Onaylı)</option>
+                    </select>
+                    <button type="button" onclick="addSubtaskToEpic(${eIdx})" style="background:rgba(123,104,238,0.15); border:1px solid rgba(123,104,238,0.4); color:#d8b4fe; font-size:11px; font-weight:700; padding:4px 8px; border-radius:5px; cursor:pointer;">+ Alt Görev</button>
+                    <button type="button" onclick="aiArchTreeData.splice(${eIdx}, 1); renderAiArchitectTree();" style="background:rgba(255,71,87,0.12); border:1px solid rgba(255,71,87,0.3); color:#ff4757; font-size:11px; padding:4px 8px; border-radius:5px; cursor:pointer;" title="Modülü Sil">✕</button>
+                </div>
+            </div>
+            <div>${subtasksHtml || '<div style="font-size:12px; color:var(--text-muted); padding:8px; text-align:center; border:1px dashed var(--border-subtle); border-radius:6px;">Bu modülde alt görev yok. Buraya alt görev sürükleyebilir veya "+ Alt Görev" butonuna basabilirsiniz.</div>'}</div>
+        `;
+        container.appendChild(epicBox);
+    });
+
+    document.getElementById('aiArchSummaryBadge').innerHTML = `📊 Toplam <b>${aiArchTreeData.length} Ana Modül</b>, <b>${totalSubs} Alt Görev</b> (<b>${totalAiSubs} tanesi 🤖 AI Otonom</b> olarak işaretlendi)`;
+}
+
+function addNewBlankEpic() {
+    aiArchTreeData.push({
+        title: 'Yeni Modül / Ana Görev',
+        description: '',
+        priority: 'normal',
+        execution_mode: 'auto',
+        subtasks: [
+            { title: 'Yeni alt görev 1', description: '', category: 'coding', priority: 'normal', time_estimate: '2h', assigned_to: (window.CURRENT_USER_ID || 1), is_ai: false }
+        ]
+    });
+    renderAiArchitectTree();
+}
+
+function addSubtaskToEpic(epicIdx) {
+    aiArchTreeData[epicIdx].subtasks.push({
+        title: 'Yeni alt görev adımı',
+        description: '',
+        category: 'coding',
+        priority: 'normal',
+        time_estimate: '2h',
+        assigned_to: (window.CURRENT_USER_ID || 1),
+        is_ai: false
+    });
+    renderAiArchitectTree();
+}
+
+async function submitAiArchitectTree() {
+    if (aiArchTreeData.length === 0) {
+        showToast('Kaydedilecek modül bulunamadı.', 'error');
+        return;
+    }
+
+    const projId = document.getElementById('aiArchProjectSelect').value;
+    const btn = document.getElementById('btnApproveAiArch');
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Projeye İşleniyor...';
+
+    try {
+        const fd = new FormData();
+        fd.append('project_id', projId);
+        fd.append('tree_json', JSON.stringify(aiArchTreeData));
+
+        const res = await fetch('/taskmanager/ajax?action=bulk_create_hierarchical_tasks', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            closeModal('modalAiArchitect');
+            setTimeout(() => window.location.reload(), 800);
+        } else {
+            showToast(data.message || 'Kaydedilemedi', 'error');
+        }
+    } catch (e) {
+        showToast('Sunucu bağlantı hatası', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+    }
+}
+</script>
+
+
+
+🎯 Bu Yapı Sana Ne Kazandırdı?Mevcut Sistemin %100 Korundu: dispatcher.py ve normal görev ekleme akışına (create_task) hiç dokunulmadı.   Sürükle-Bırak ve İnsan/AI Kontrolü: Brifi girdiğinde AI modülleri ve alt görevleri çıkarır; istediğin alt görevi fareyle tutup başka bir ana görevin altına sürükleyebilirsin. Sadece senin elinle 🤖 AI kutusuna tıkladığın görevlere ai etiketi verilir.   Gece Modu (🚀 Tam Otonom) vs Onay Kapılı (🛑 Onay Kapılı): Sepet gibi kodlama modüllerinde ajan alt görevleri gece boyu peş peşe bitirir; Tasarım/SEO gibi Onay Kapılı seçtiğin modüllerde ise ilk alt görev biter ve sen "Onayla" diyene kadar 2. alt göreve geçmez (ama kuyruktaki diğer bağımsız görevleri de kilitlemez!).   Bu 3 adımdaki kodları ilgili yerlere yapıştırıp panoda 🪄 AI Proje Mimarı butonuna basarak hemen test edebilirsin! Takıldığın tek bir satır olursa söyle, anında bakalım.

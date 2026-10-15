@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Viewport Capture</title>
+    <script src="http://localhost/taskmanager/Public/js/html2canvas.min.js"></script>
+    <style>
+        body { margin: 0; font-family: sans-serif; height: 3000px; background: #0f111a; color: white; }
+        .box { padding: 40px; margin: 20px; border-radius: 8px; }
+        #top-box { background: #b71540; height: 250px; }
+        #middle-box { background: #0a3d62; margin-top: 800px; height: 350px; cursor: pointer; }
+        #status-bar { position: fixed; top: 10px; left: 10px; z-index: 99999; background: rgba(0,0,0,0.85); padding: 10px 20px; border-radius: 6px; font-size: 14px; }
+        #output-canvas-container { position: fixed; right: 20px; top: 20px; z-index: 99999; border: 3px solid #7b68ee; background: #1a1a24; padding: 10px; border-radius: 8px; width: 320px; }
+        #output-canvas-container img { width: 100%; border: 1px solid #444; border-radius: 4px; display: block; }
+    </style>
+</head>
+<body>
+    <div id="status-bar">Status: Sayfayı aşağı kaydırıp mavi kutunun herhangi bir yerine tıklayın.</div>
+
+    <div id="top-box" class="box">
+        <h1>1. ÜST ALAN (Burası ekran görüntüsünde OLMAMALI)</h1>
+    </div>
+
+    <div id="middle-box" class="box">
+        <h2>2. HEDEF ORTA ALAN (Burası ekran görüntüsünde OLMALI)</h2>
+        <p>Aşağı kaydırıp bu mavi kutunun herhangi bir yerine tıklayın. Tıkladığınız tam koordinata mor pin yerleşecektir!</p>
+        <div style="background:#f39c12; color:#000; padding:15px; border-radius:6px; font-weight:bold; display:inline-block;">
+            🎯 Hedef Noktası (Tıklayın)
+        </div>
+    </div>
+
+    <div id="output-canvas-container">
+        <h4 style="margin:0 0 8px; color:#7b68ee; font-size:13px;">📸 Alınan Ekran Görüntüsü:</h4>
+        <img id="result-img" src="" alt="Önizleme Bekleniyor" />
+        <div id="coord-info" style="font-size:11px; color:#aaa; margin-top:6px;"></div>
+    </div>
+
+    <script>
+    document.addEventListener('click', async (e) => {
+        if (e.target.closest('#output-canvas-container, #status-bar')) return;
+
+        const statusBar = document.getElementById('status-bar');
+        statusBar.textContent = '⏳ Ekran görüntüsü alınıyor... Lütfen bekleyin.';
+
+        const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+
+        const coordInfo = document.getElementById('coord-info');
+        coordInfo.textContent = `Tıklanan: client(${clientX}, ${clientY}) | scrollY: ${scrollY}px`;
+
+        try {
+            const canvas = await html2canvas(document.documentElement, {
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                scale: 1,
+                scrollX: 0,
+                scrollY: 0,
+                x: scrollX,
+                y: scrollY,
+                width: window.innerWidth,
+                height: window.innerHeight,
+                windowWidth: document.documentElement.clientWidth || window.innerWidth,
+                windowHeight: document.documentElement.clientHeight || window.innerHeight
+            });
+
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                // Pin Damgala
+                ctx.beginPath();
+                ctx.arc(clientX, clientY, 20, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(123, 104, 238, 0.45)';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(clientX, clientY, 13, 0, Math.PI * 2);
+                ctx.fillStyle = '#7b68ee';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('1', clientX, clientY);
+            }
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            document.getElementById('result-img').src = dataUrl;
+            statusBar.textContent = '✅ Başarılı! Sağ üstteki küçük resimde mor pini kontrol edin.';
+        } catch (err) {
+            statusBar.textContent = '❌ Hata: ' + err.message;
+        }
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1079 @@
+Güzel ancak, düzeltilmesi gereken şeyler var. Öncelikle döküman yüklenmiyor. sadece yazı alanı var. Word dosyasında resimler falan olabilir. İkincisi görevlerin açıklamaları nasıl yapılacakları yazmıyor. Sadece başlıklar var. Bunlarında olması gerekiyor. Mevcut sistemi bozmadan yapmamız gerek.
+
+İki çok kritik eksiği tam isabetle yakaladın. Bir şartname veya müşteri brifi geldiğinde içinde tablolar, ekran görüntüleri, akış şemaları olan bir Word (.docx) veya PDF/Görsel dosyası olabilir. Ayrıca bir alt görevin sadece başlığının olması yetmez; o görevin nasıl yapılacağı, teknik adımları, kabul kriterleri ve varsa dökümandan çıkan ilgili görseller doğrudan alt görevin içinde yer almalı ki hem sen çekmeceyi açtığında görebilesin hem de ajan (#ai) o görevi aldığında neyi nasıl kodlayacağını tam olarak bilsin.   
+MD
++ 3
+
+Mevcut çalışan sistemine (dispatcher.py, normal görev ekleme, mevcut kuyruk yapısı) hiç dokunmadan, yaptığımız AI Proje Mimarı modülünü şu 3 büyük yetenekle güncelledim:   
+PY
++ 2
+
+📄 Word (.docx), PDF, TXT/MD ve Görsel Yükleme + Resim Çıkarma Motoru:
+
+Word (.docx) dosyaları aslında birer ZIP arşividir ve içindeki tüm metinler word/document.xml'de, resimler ise word/media/ klasöründe durur!
+
+PHP'nin yerleşik ZipArchive sınıfıyla harici hiçbir kütüphaneye ihtiyaç duymadan yüklediğin .docx dosyasının içindeki tüm metinleri okuyan ve içindeki tüm resimleri otomatik çıkarıp Public/uploads/tasks/ klasörüne kaydeden yerel bir ayrıştırıcı yazdım.
+
+Çıkarılan bu resimler ve yüklediğin orijinal Word/PDF dökümanı, oluşturulan görevlerin task_attachments (Görev Ekleri ve Görselleri) tablosuna otomatik bağlanır!   
+PHP
+
+📝 Detaylı "Nasıl Yapılacak?" (Uygulama Adımları & Teknik Açıklama) Alanı:
+
+Önizleme ekranında artık sadece başlık yok! Her Ana Modülün (Epic) kendi açıklama kutusu var.
+
+Her Alt Görevin sağında 📝 Detay butonu (ve altında açılır/kapanır geniş teknik açıklama editörü) var. AI her alt görev için "1. Nasıl Yapılacak, 2. Teknik Gereksinimler, 3. Test & Kabul Kriterleri" şeklinde detaylı açıklama üretir. Sen de önizleme ekranında bu açıklamaları dilediğin gibi düzenleyebilirsin.
+
+🖼️ Görsel Önizleme ve Otomatik Görev Eşleştirme:
+
+Word dosyasından çıkan resimler önizleme ekranının üstünde küçük resimler (thumbnail) olarak listelenir ve onayladığında doğrudan görevlerin ek dosyalarına (task_attachments) ve açıklamalarına gömülür.   
+PHP
++ 1
+
+Aşağıdaki 3 adımı önceki eklediğimiz AI Mimarı kodlarının üzerine (değiştirerek) uygulaman yeterli:
+
+🛠️ 1. ADIM: System/Helper.php İçindeki Ayrıştırıcıyı Döküman & Görsel Destekli Hale Getir
+System/Helper.php dosyasının en sonuna eklediğimiz decomposeBriefWithAi ve decomposeBriefDynamicParser fonksiyonlarını silip yerine Word/PDF/Görsel okuma ve detaylı teknik açıklama üretme yeteneğine sahip şu güncel bloğu yapıştır:
+
+PHP
+    /**
+     * Yüklenen Dökümandan (.docx, .pdf, .txt, .md, görsel) Metin ve Gömülü Resimleri Çıkarır.
+     * Word (.docx) içindeki 'word/media/*' resimlerini otomatik olarak Public/uploads/tasks/ altına kaydeder!
+     */
+    public static function extractContentAndImagesFromDocument(array $file): array
+    {
+        $result = [
+            'text'           => '',
+            'extracted_imgs' => [], // [['file_name' => ..., 'file_path' => ..., 'file_type' => ..., 'file_size' => ...]]
+            'original_doc'   => null
+        ];
+
+        if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            return $result;
+        }
+
+        $origName = $file['name'] ?? 'document';
+        $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+        $uploadDir = dirname(__DIR__) . '/Public/uploads/tasks';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0777, true);
+        }
+
+        // 1. Orijinal dosyayı da görevlere bağlamak üzere kaydet
+        $safeOrigName = 'brief_' . time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $origName);
+        $origDestPath = $uploadDir . '/' . $safeOrigName;
+        if (@copy($file['tmp_name'], $origDestPath)) {
+            $result['original_doc'] = [
+                'file_name' => $origName,
+                'file_path' => '/taskmanager/Public/uploads/tasks/' . $safeOrigName,
+                'file_type' => $file['type'] ?? 'application/octet-stream',
+                'file_size' => (int)($file['size'] ?? filesize($origDestPath))
+            ];
+        }
+
+        // 2. Doğrudan Görsel Yüklendiyse (PNG, JPG, WEBP)
+        if (in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'gif'], true)) {
+            if ($result['original_doc']) {
+                $result['extracted_imgs'][] = $result['original_doc'];
+            }
+            return $result;
+        }
+
+        // 3. Düz MetinDosyaları (.txt, .md, .json, .csv, .html)
+        if (in_array($ext, ['txt', 'md', 'markdown', 'csv', 'json', 'html', 'htm'], true)) {
+            $raw = (string)@file_get_contents($file['tmp_name']);
+            $result['text'] = strip_tags($raw);
+            return $result;
+        }
+
+        // 4. WORD (.DOCX) DOSYASI: Metinleri (Paragraflar + Tablolar) ve Gömülü Resimleri (word/media/*) Çıkar!
+        if ($ext === 'docx' && class_exists('ZipArchive')) {
+            $zip = new \ZipArchive();
+            if ($zip->open($file['tmp_name']) === true) {
+                // A) Metinleri Çıkar (word/document.xml)
+                $xmlIndex = $zip->locateName('word/document.xml');
+                if ($xmlIndex !== false) {
+                    $xmlData = $zip->getFromIndex($xmlIndex);
+                    // Paragraf ve tablo satır sonlarını koru
+                    $xmlData = str_replace(['</w:p>', '</w:tr>', '<w:br/>', '<w:cr/>'], ["\n", "\n", "\n", "\n"], $xmlData);
+                    $xmlData = str_replace(['</w:tc>'], ["\t"], $xmlData);
+                    $cleanText = html_entity_decode(strip_tags($xmlData), ENT_QUOTES | ENT_XML1, 'UTF-8');
+                    $result['text'] = trim(preg_replace("/\n{3,}/", "\n\n", $cleanText));
+                }
+
+                // B) Word İçindeki Resimleri Çıkar (word/media/*)
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $entryName = $zip->getNameIndex($i);
+                    if (str_starts_with($entryName, 'word/media/')) {
+                        $imgExt = strtolower(pathinfo($entryName, PATHINFO_EXTENSION));
+                        if (in_array($imgExt, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'], true)) {
+                            $imgBuffer = $zip->getFromIndex($i);
+                            if ($imgBuffer && strlen($imgBuffer) > 512) { // Çok küçük ikon/çizgileri atla (>512 byte)
+                                $savedImgName = 'docx_img_' . time() . '_' . ($i + 1) . '.' . $imgExt;
+                                $savedFullPath = $uploadDir . '/' . $savedImgName;
+                                if (@file_put_contents($savedFullPath, $imgBuffer)) {
+                                    $result['extracted_imgs'][] = [
+                                        'file_name' => basename($entryName),
+                                        'file_path' => '/taskmanager/Public/uploads/tasks/' . $savedImgName,
+                                        'file_type' => 'image/' . ($imgExt === 'jpg' ? 'jpeg' : $imgExt),
+                                        'file_size' => strlen($imgBuffer)
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+                $zip->close();
+            }
+            return $result;
+        }
+
+        // 5. PDF Dosyası (Basit Metin Çıkarma)
+        if ($ext === 'pdf') {
+            $rawPdf = (string)@file_get_contents($file['tmp_name']);
+            $extracted = '';
+            if (preg_match_all('/\(([^\)]+)\)\s*Tj/s', $rawPdf, $matches)) {
+                $extracted = implode(' ', $matches[1]);
+            }
+            if (mb_strlen(trim($extracted)) < 20 && preg_match_all('/\[([^\]]+)\]\s*TJ/s', $rawPdf, $matches2)) {
+                $extracted .= ' ' . preg_replace('/[\(\)\-\d\.]+/', ' ', implode(' ', $matches2[1]));
+            }
+            $result['text'] = trim($extracted);
+        }
+
+        return $result;
+    }
+
+    /**
+     * AI Proje Mimarı (Task Decomposer - Döküman, Görsel ve Detaylı Uygulama Rehberi Destekli):
+     * Kullanıcının girdiği brifi ve/veya yüklediği Word/PDF dökümanını analiz edip
+     * her görev için "Nasıl Yapılacak, Teknik Adımlar ve Kabul Kriterleri" içeren detaylı ağaç üretir.
+     */
+    public static function decomposeBriefWithAi(string $brief, int $projectId = 1, array $docInfo = []): array
+    {
+        global $db;
+        $docText = trim($docInfo['text'] ?? '');
+        $combinedBrief = trim($brief . ($docText ? "\n\n--- YÜKLENEN DÖKÜMAN İÇERİĞİ ---\n" . $docText : ''));
+
+        if (empty($combinedBrief) && empty($docInfo['extracted_imgs'])) {
+            return ['success' => false, 'error' => 'Lütfen proje brifini yazın veya bir Word (.docx) / metin dökümanı yükleyin.'];
+        }
+
+        if (empty($combinedBrief) && !empty($docInfo['extracted_imgs'])) {
+            $combinedBrief = "Yüklenen görsel tasarım ve ekran görüntülerini analiz ederek gerekli önyüz ve altyapı geliştirmelerini oluştur.";
+        }
+
+        try {
+            if (!$db || empty($db->connect)) {
+                require_once __DIR__ . '/../Model/DataLayer.php';
+                $db = new Database();
+            }
+            $project = $db->row_query("SELECT project_code, title, description, agent_rules FROM projects WHERE id = ?", [$projectId]);
+            $settings = $db->row_query("SELECT active_ai_provider, default_ai_model, gemini_api_key, openai_api_key, deepseek_api_key FROM settings LIMIT 1");
+        } catch (\Throwable $e) {
+            $project = null;
+            $settings = null;
+        }
+
+        $projTitle = $project->title ?? 'Proje';
+        $projCode  = $project->project_code ?? 'PRJ';
+        $projDesc  = $project->description ?? '';
+        $projRules = $project->agent_rules ?? '';
+        $imgCount  = count($docInfo['extracted_imgs'] ?? []);
+
+        $systemPrompt = "Sen kıdemli bir Yazılım ve Sistem Mimarısın. Kullanıcının verdiği brifi veya yüklediği şartname dökümanını analiz edip, TAMAMEN İSTERLERE SADIK KALARAK fonksiyonel Ana Modüllere (Epics) ve bunların altındaki somut, uygulanabilir Alt Görevlere (Subtasks) ayırmalısın.
+
+KRİTİK KURALLAR:
+1. ASLA sadece başlık yazıp bırakma! Her ana görevin ('description') ve her alt görevin ('description') içinde mutlaka o işin **NASIL YAPILACAĞI, TEKNİK UYGULAMA ADIMLARI, DİKKAT EDİLECEK NOKTALAR ve TEST/KABUL KRİTERLERİ** detaylı ve maddeli olarak yazılmalıdır!
+2. ASLA kullanıcının metninde geçmeyen ezbere modüller uydurma! Metindeki tüm gereksinimleri eksiksiz kapsa.
+3. Kategori etiketleri ('category') şunlardan biri olmalıdır: 'coding', 'design', 'seo', 'marketing', 'legal', 'content'. ASLA 'ai' etiketi koyma!
+4. 'execution_mode': Teknik kodlama/altyapı modülleri için 'auto', tasarım/onay/içerik modülleri için 'gated' seç.
+5. Çıktıyı SADECE aşağıdaki geçerli JSON formatında ver:
+{
+  \"epics\": [
+    {
+      \"title\": \"Ana Modül Başlığı\",
+      \"description\": \"Bu modülün genel mimari amacı, kapsamı ve çalışma prensibi\",
+      \"priority\": \"high\",
+      \"execution_mode\": \"auto\",
+      \"subtasks\": [
+        {
+          \"title\": \"Somut alt görev başlığı\",
+          \"description\": \"🛠️ NASIL YAPILACAK (Uygulama Adımları):\\n1. ...\\n2. ...\\n\\n✅ KABUL VE TEST KRİTERLERİ:\\n- ...\",
+          \"category\": \"coding\",
+          \"priority\": \"normal\",
+          \"time_estimate\": \"2h\"
+        }
+      ]
+    }
+  ]
+}";
+
+        $userPrompt = "Proje: [{$projCode}] {$projTitle}\n"
+            . ($projDesc ? "Proje Tanımı: {$projDesc}\n" : "")
+            . ($projRules ? "Proje Kuralları / Teknolojisi: {$projRules}\n" : "")
+            . ($imgCount > 0 ? "Not: Yüklenen dökümandan {$imgCount} adet referans görsel/şema çıkarıldı ve görevlere eklenecek.\n" : "")
+            . "\nKullanıcı Brifi ve Döküman İçeriği:\n" . mb_substr($combinedBrief, 0, 18000) . "\n\n"
+            . "Yukarıdaki içeriği analiz et; her alt görevin 'description' alanına o görevin NASIL YAPILACAĞINI adım adım detaylıca yazarak JSON görev ağacını oluştur:";
+
+        // 1. Gemini API Denemesi
+        $apiKey = trim($settings->gemini_api_key ?? '');
+        if (!empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
+            $model = !empty($settings->default_ai_model) && str_contains($settings->default_ai_model, 'gemini')
+                ? $settings->default_ai_model
+                : 'gemini-1.5-flash';
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
+            $payload = [
+                'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
+                'contents'          => [['role' => 'user', 'parts' => [['text' => $userPrompt]]]],
+                'generationConfig'  => [
+                    'temperature'      => 0.2,
+                    'maxOutputTokens'  => 8192,
+                    'responseMimeType' => 'application/json'
+                ]
+            ];
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                CURLOPT_TIMEOUT        => 30,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200 && $response) {
+                $data = json_decode($response, true);
+                $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                $cleaned = trim(preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($text)));
+                $parsed = json_decode($cleaned, true);
+                if (!empty($parsed['epics']) && is_array($parsed['epics'])) {
+                    return [
+                        'success'        => true,
+                        'epics'          => $parsed['epics'],
+                        'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],
+                        'original_doc'   => $docInfo['original_doc'] ?? null,
+                        'engine'         => 'gemini'
+                    ];
+                }
+            }
+        }
+
+        // 2. OpenAI / DeepSeek API Denemesi
+        $openAiKey = trim($settings->openai_api_key ?? '');
+        $deepSeekKey = trim($settings->deepseek_api_key ?? '');
+        if ((!empty($openAiKey) && !str_contains($openAiKey, 'test_')) || (!empty($deepSeekKey) && !str_contains($deepSeekKey, 'test_'))) {
+            $useDeepSeek = empty($openAiKey) || ($settings->active_ai_provider ?? '') === 'deepseek';
+            $url = $useDeepSeek ? "https://api.deepseek.com/chat/completions" : "https://api.openai.com/v1/chat/completions";
+            $key = $useDeepSeek ? $deepSeekKey : $openAiKey;
+            $model = $useDeepSeek ? 'deepseek-chat' : 'gpt-4o-mini';
+
+            $payload = [
+                'model'           => $model,
+                'messages'        => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => $userPrompt]
+                ],
+                'temperature'     => 0.2,
+                'response_format' => ['type' => 'json_object']
+            ];
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $key
+                ],
+                CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                CURLOPT_TIMEOUT        => 30,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200 && $response) {
+                $data = json_decode($response, true);
+                $text = $data['choices'][0]['message']['content'] ?? '';
+                $cleaned = trim(preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($text)));
+                $parsed = json_decode($cleaned, true);
+                if (!empty($parsed['epics']) && is_array($parsed['epics'])) {
+                    return [
+                        'success'        => true,
+                        'epics'          => $parsed['epics'],
+                        'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],
+                        'original_doc'   => $docInfo['original_doc'] ?? null,
+                        'engine'         => $useDeepSeek ? 'deepseek' : 'openai'
+                    ];
+                }
+            }
+        }
+
+        // 3. Dinamik Metin & Döküman Ayrıştırıcısı (Detaylı "Nasıl Yapılacak" Rehberi Üretir)
+        return [
+            'success'        => true,
+            'epics'          => self::decomposeBriefDynamicParser($combinedBrief, $projTitle, $projRules),
+            'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],
+            'original_doc'   => $docInfo['original_doc'] ?? null,
+            'engine'         => 'dynamic_parser'
+        ];
+    }
+
+    /**
+     * Harici API anahtarı olmadığında devreye giren, kullanıcının girdiği metni veya
+     * yüklediği Word (.docx) dökümanındaki başlıkları/paragrafları analiz edip her alt görev için
+     * detaylı "Nasıl Yapılacak & Uygulama Adımları" açıklaması üreten dinamik motor.
+     */
+    public static function decomposeBriefDynamicParser(string $brief, string $projTitle = 'Proje', string $projRules = ''): array
+    {
+        $epics = [];
+        $cleanBrief = str_replace("--- YÜKLENEN DÖKÜMAN İÇERİĞİ ---", "\n", $brief);
+        $rawLines = preg_split('/[\r\n]+/', trim($cleanBrief));
+        $currentEpic = null;
+
+        $detectCategory = function(string $text): string {
+            $l = mb_strtolower($text, 'UTF-8');
+            if (preg_match('/(tasarım|ui|ux|renk|ikon|css|görsel|tema|buton|responsive|mobil görünüm|figma|font|ekran)/u', $l)) return 'design';
+            if (preg_match('/(seo|sitemap|meta|google|anahtar kelime|canonical|index|robots|arama motoru)/u', $l)) return 'seo';
+            if (preg_match('/(reklam|kampanya|pazarlama|sosyal medya|instagram|bülten|mail|bildirim|analitik)/u', $l)) return 'marketing';
+            if (preg_match('/(sözleşme|kvkk|yasal|hukuk|gizlilik|iade|şartname|çerez|aydınlatma)/u', $l)) return 'legal';
+            if (preg_match('/(yazı|makale|içerik|metin|blog|açıklama|çeviri|dil)/u', $l)) return 'content';
+            return 'coding';
+        };
+
+        // Kategoriye göre otomatik "Nasıl Yapılacak" uygulama şablonu zenginleştirici
+        $buildDetailedHowTo = function(string $taskTitle, string $rawContext, string $cat) use ($projTitle, $projRules): string {
+            $steps = "📌 **GÖREV AMACI VE KAPSAMI:**\n{$rawContext}\n\n🛠️ **NASIL YAPILACAK (UYGULAMA ADIMLARI):**\n";
+            if ($cat === 'design') {
+                $steps .= "1. Mevcut sayfa/bileşen yapısını inceleyerek tasarım ve UI/UX gereksinimlerini belirle.\n"
+                        . "2. Masaüstü ve mobil (responsive) görünümlerde taşma, hizalama veya okunabilirlik sorunu olmayacak şekilde CSS/HTML yapısını uygula.\n"
+                        . "3. Farklı ekran boyutlarında (mobil, tablet, masaüstü) görsel bütünlüğü doğrula.\n";
+            } elseif ($cat === 'seo') {
+                $steps .= "1. İlgili sayfaların URL, başlık (Title), Meta Description ve başlık hiyerarşisini (H1-H3) kontrol et.\n"
+                        . "2. Arama motoru standartlarına uygun teknik yapılandırmayı (Canonical, Schema/OpenGraph veya Sitemap) kodla.\n"
+                        . "3. Sayfa kaynak kodundan ve canlı URL üzerinden çıktıları test et.\n";
+            } elseif ($cat === 'legal' || $cat === 'content') {
+                $steps .= "1. İlgili metin ve içerik yapısını kurumsal/yasal standartlara uygun şekilde hazırla.\n"
+                        . "2. Sayfa veya form bağlantısını oluşturup kullanıcı erişimine aç.\n"
+                        . "3. İçeriğin tüm cihazlarda düzgün görüntülendiğini doğrula.\n";
+            } else {
+                $steps .= "1. **Veri & Altyapı:** Gerekli veritabanı tablosu, sütunlar veya model sorgularını kontrol et ve hazırla.\n"
+                        . "2. **Backend & İş Mantığı:** Controller/AJAX servis uçlarını güvenlik ve doğrulama (validation) kurallarıyla kodla.\n"
+                        . "3. **Önyüz (UI) Entegrasyonu:** Kullanıcı arayüzündeki form, buton ve dinamik bildirim (Toast/Modal) bağlantılarını tamamla.\n";
+            }
+
+            $steps .= "\n✅ **KABUL VE TEST KRİTERLERİ (DoD):**\n"
+                    . "- İşlem sırasında hiçbir PHP/SQL veya JavaScript konsol hatası oluşmamalıdır.\n"
+                    . "- Canlı ortamda (`{$projTitle}`) uçtan uca test edilerek çalıştığı kanıtlanmalıdır.";
+
+            if (!empty($projRules)) {
+                $steps .= "\n- Proje özel kurallarına (AGENTS.md) %100 uyulmalıdır.";
+            }
+            return $steps;
+        };
+
+        foreach ($rawLines as $line) {
+            $line = trim($line);
+            if ($line === '') continue;
+
+            // Başlık / Bölüm tespiti
+            $isHeader = preg_match('/^(#+|\d+[\.\)]|\*+|\b(?:modül|bölüm|aşama|faz|grup|ana görev|ekran)\b)[\s\:\-]*(.+)$/iu', $line)
+                        || (str_ends_with($line, ':') && mb_strlen($line) < 90);
+
+            if ($isHeader && mb_strlen($line) < 95 && !str_starts_with($line, '-') && !str_starts_with($line, '•')) {
+                if ($currentEpic && !empty($currentEpic['subtasks'])) {
+                    $epics[] = $currentEpic;
+                }
+                $cleanHeader = rtrim(preg_replace('/^(#+|\d+[\.\)]|\*+)\s*/', '', $line), ': ');
+                $cat =$detectCategory($cleanHeader);$currentEpic = [
+                    'title'          => $cleanHeader,
+                    'description'    => "{$cleanHeader} modülü kapsamındaki tüm teknik, arayüz ve doğrulama geliştirmeleri.",
+                    'priority'       => 'high',
+                    'execution_mode' => in_array($cat, ['design', 'seo', 'legal', 'marketing'], true) ? 'gated' : 'auto',
+                    'subtasks'       => []
+                ];
+                continue;
+            }
+
+            // Eğer yeni eklenen satır bir önceki alt görevin devamı/açıklaması niteliğindeyse (Örn: "Nasıl yapılacak:", "Not:", "Detay:")
+            if ($currentEpic && !empty($currentEpic['subtasks']) && preg_match('/^(?:açıklama|detay|not|nasıl|adım|kriter)[\s\:]/iu', $line)) {
+                $lastIdx = count($currentEpic['subtasks']) - 1;
+                $currentEpic['subtasks'][$lastIdx]['description'] .= "\n📌 **Ek Detay:** " . $line;
+                continue;
+            }
+
+            $subParts = (mb_strlen($line) > 120 && preg_match('/[;\.]/',$line))
+                ? preg_split('/[;\.]\s+/', $line, -1, PREG_SPLIT_NO_EMPTY)
+                : [$line];
+
+            foreach ($subParts as $part) {$cleanSub = trim(preg_replace('/^[\-\•\*\>\+\d\.\)\s]+/', '', trim($part)));
+                if (mb_strlen($cleanSub) < 3) continue;
+
+                if (!$currentEpic) {$firstTitle = mb_strlen($cleanSub) <= 55 ?$cleanSub : (mb_substr($cleanSub, 0, 50) . '...');$currentEpic = [
+                        'title'          => count($rawLines) === 1 ? ($projTitle . ' - ' . $firstTitle) : ($projTitle . ' Geliştirme Modülü'),
+                        'description'    => mb_substr($cleanBrief, 0, 500),
+                        'priority'       => 'high',
+                        'execution_mode' => 'auto',
+                        'subtasks'       => []
+                    ];
+                }
+
+                $cat = $detectCategory($cleanSub);
+                if (count($rawLines) === 1 && count($subParts) === 1) {$currentEpic['title'] = mb_substr($cleanSub, 0, 75);$currentEpic['subtasks'][] = [
+                        'title'         => $cleanSub . ' - Backend / Veri ve Servis Altyapısı',
+                        'description'   => $buildDetailedHowTo($cleanSub . ' (Altyapı)', "İster: {$cleanSub}\nVeritabanı şeması, model metodları ve API/AJAX uçlarının oluşturulması.", 'coding'),
+                        'category'      => 'coding',
+                        'priority'      => 'high',
+                        'time_estimate' => '2h'
+                    ];
+                    $currentEpic['subtasks'][] = [
+                        'title'         => $cleanSub . ' - Arayüz (UI) ve Etkileşim Entegrasyonu',
+                        'description'   => $buildDetailedHowTo($cleanSub . ' (Arayüz)', "İster: {$cleanSub}\nKullanıcı arayüzü bileşenlerinin, form doğrulamalarının ve etkileşimlerin kodlanması.", $cat),
+                        'category'      => $cat,
+                        'priority'      => 'normal',
+                        'time_estimate' => '2h'
+                    ];
+                    $currentEpic['subtasks'][] = [
+                        'title'         => $cleanSub . ' - Canlı Ortam Doğrulama ve QA Testi',
+                        'description'   => $buildDetailedHowTo($cleanSub . ' (Test)', "İster: {$cleanSub}\nGeliştirilen özelliğin tüm uç durumlarının canlı ortamda test edilip doğrulanması.", 'coding'),
+                        'category'      => 'coding',
+                        'priority'      => 'normal',
+                        'time_estimate' => '1h'
+                    ];
+                } else {
+                    $shortTitle = mb_strlen($cleanSub) > 95 ? (mb_substr($cleanSub, 0, 92) . '...') :$cleanSub;
+                    $currentEpic['subtasks'][] = [
+                        'title'         => $shortTitle,
+                        'description'   => $buildDetailedHowTo($shortTitle, $cleanSub,$cat),
+                        'category'      => $cat,
+                        'priority'      => 'normal',
+                        'time_estimate' => '2h'
+                    ];
+                }
+            }
+        }
+
+        if ($currentEpic && !empty($currentEpic['subtasks'])) {
+            $epics[] =$currentEpic;
+        }
+
+        return $epics;
+    }
+🛠️ 2. ADIM: Controller/ajax/ajax.php İçindeki 28 ve 29. Case'leri Güncelle
+Controller/ajax/ajax.php içinde az önce eklediğimiz case 'decompose_brief_with_ai': ve case 'bulk_create_hierarchical_tasks': bloklarını aşağıdakilerle değiştir (Bu sayede yüklenen Word/PDF dosyası işlenir ve çıkarılan resimler doğrudan görevlerin eklerine task_attachments olarak kaydedilir):   
+PHP
+
+PHP
+    // 28. AI PROJE MİMARI: BRİFİ VE YÜKLENEN DÖKÜMANI (.DOCX, .PDF, .TXT, GÖRSEL) AYRIŞTIR
+    case 'decompose_brief_with_ai':
+        if ($currentUser->role === 'client') {
+            jsonResponse(false, 'Yetkisiz erişim.');
+        }
+        $brief = trim($_POST['brief'] ?? '');
+        $projectId = (int)($_POST['project_id'] ?? 1);
+
+        // Eğer Word (.docx), PDF, TXT veya Görsel dosyası yüklendiyse metnini ve içindeki resimleri çıkar!
+        $docInfo = ['text' => '', 'extracted_imgs' => [], 'original_doc' => null];
+        if (!empty($_FILES['brief_file']) && $_FILES['brief_file']['error'] === UPLOAD_ERR_OK) {
+            $docInfo = Helper::extractContentAndImagesFromDocument($_FILES['brief_file']);
+        }
+
+        $res = Helper::decomposeBriefWithAi($brief, $projectId, $docInfo);
+        if (!empty($res['success'])) {
+            jsonResponse(true, 'Proje brifi ve döküman başarıyla modüllere, uygulama adımlarına ve görsellere ayrıştırıldı!', $res);
+        } else {
+            jsonResponse(false, $res['error'] ?? 'Ayrıştırma sırasında hata oluştu.');
+        }
+        break;
+
+    // 29. AI PROJE MİMARI: DÜZENLENMİŞ GÖREV AĞACINI, AÇIKLAMALARI VE GÖRSELLERİ VERİTABANINA İŞLE
+    case 'bulk_create_hierarchical_tasks':
+        if ($currentUser->role === 'client') {
+            jsonResponse(false, 'Yetkisiz erişim.');
+        }
+        $projectId = (int)($_POST['project_id'] ?? 1);
+        $treeJson  = $_POST['tree_json'] ?? '';
+        $imgsJson  = $_POST['extracted_imgs_json'] ?? '[]';
+        $origDocJson = $_POST['original_doc_json'] ?? 'null';
+
+        $epics         = json_decode($treeJson, true);
+        $extractedImgs = json_decode($imgsJson, true) ?: [];
+        $originalDoc   = json_decode($origDocJson, true) ?: null;
+
+        if (empty($epics) || !is_array($epics)) {
+            jsonResponse(false, 'Kaydedilecek geçerli bir görev ağacı bulunamadı.');
+        }
+
+        $createdEpicsCount = 0;
+        $createdSubtasksCount = 0;
+        $defaultDeadline = date('Y-m-d', strtotime('+7 days'));
+
+        foreach ($epics as $epic) {
+            $epicTitle = trim($epic['title'] ?? '');
+            if (empty($epicTitle)) continue;
+
+            $epicDesc     = trim($epic['description'] ?? '');
+            $epicPriority = in_array($epic['priority'] ?? '', ['urgent', 'high', 'normal', 'low']) ? $epic['priority'] : 'high';
+            $execMode     = ($epic['execution_mode'] ?? 'auto') === 'gated' ? 'gated' : 'auto';
+
+            $epicTags = ($execMode === 'gated') ? 'Epic, chain_gated' : 'Epic, chain_auto';
+            if ($execMode === 'gated') {
+                $epicDesc = "[ONAY_KAPILI] (Bu modüldeki alt görevler yönetici onayıyla adım adım ilerler)\n\n" . $epicDesc;
+            }
+
+            // Eğer dökümandan çıkarılan görseller varsa Ana Görev açıklamasına da referans ekle
+            if (!empty($extractedImgs)) {
+                $epicDesc .= "\n\n---\n📎 **Dökümandan Çıkarılan Referans Görseller:**\n";
+                foreach ($extractedImgs as $imgItem) {
+                    $epicDesc .= "- ![" . ($imgItem['file_name'] ?? 'Görsel') . "](" . ($imgItem['file_path'] ?? '') . ")\n";
+                }
+            }
+
+            $lastId = (int)$db->single_query("SELECT MAX(id) FROM tasks") ?: 0;
+            $epicCode = 'TSK-' . str_pad($lastId + 1, 3, '0', STR_PAD_LEFT);
+
+            $insEpic = $db->insert("tasks", [
+                'project_id', 'task_code', 'title', 'description', 'tags', 'priority',
+                'status', 'deadline', 'created_by', 'assigned_to'
+            ], [
+                $projectId, $epicCode, $epicTitle, $epicDesc, $epicTags, $epicPriority,
+                'assigned', $defaultDeadline, $currentUser->id, $currentUser->id
+            ]);
+
+            if ($insEpic) {
+                $epicId = (int)$db->last_insert_id();
+                $createdEpicsCount++;
+                $db->exec_query("INSERT IGNORE INTO task_assignees (task_id, user_id) VALUES (?, ?)", [$epicId, $currentUser->id]);
+
+                // Orijinal Word/PDF dökümanını ve çıkarılan tüm resimleri Ana Göreve ek dosya (attachment) olarak bağla!
+                if ($originalDoc && !empty($originalDoc['file_path'])) {
+                    $db->exec_query("
+                        INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, NOW())
+                    ", [$epicId, $currentUser->id, $originalDoc['file_name'], $originalDoc['file_path'], $originalDoc['file_type'], (int)$originalDoc['file_size']]);
+                }
+                foreach ($extractedImgs as $imgItem) {
+                    if (!empty($imgItem['file_path'])) {
+                        $db->exec_query("
+                            INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?, NOW())
+                        ", [$epicId, $currentUser->id, $imgItem['file_name'], $imgItem['file_path'], $imgItem['file_type'], (int)$imgItem['file_size']]);
+                    }
+                }
+
+                $subtasks = $epic['subtasks'] ?? [];
+                $subIndex = 0;
+                foreach ($subtasks as $sub) {
+                    $subTitle = trim($sub['title'] ?? '');
+                    if (empty($subTitle)) continue;
+
+                    $subIndex++;
+                    $subCode     = $epicCode . '-' . $subIndex;
+                    $subDesc     = trim($sub['description'] ?? $subTitle);
+                    $subCategory = trim($sub['category'] ?? 'coding');
+                    $subPriority = in_array($sub['priority'] ?? '', ['urgent', 'high', 'normal', 'low']) ? $sub['priority'] : 'normal';
+                    $subEstimate = trim($sub['time_estimate'] ?? '2h');
+                    $subAssignee = (int)($sub['assigned_to'] ?? $currentUser->id) ?: (int)$currentUser->id;
+                    $useAi       = !empty($sub['is_ai']);
+
+                    $subTagsArr = ['Subtask', $subCategory];
+                    if ($useAi) {
+                        $subTagsArr[] = 'ai';
+                    }
+                    $subTagsStr = implode(', ', array_unique(array_filter($subTagsArr)));
+
+                    $insSub = $db->insert("tasks", [
+                        'project_id', 'parent_task_id', 'task_code', 'title', 'description', 'priority',
+                        'status', 'deadline', 'created_by', 'assigned_to', 'tags', 'time_estimate', 'time_spent'
+                    ], [
+                        $projectId, $epicId, $subCode, $subTitle, $subDesc, $subPriority,
+                        'assigned', $defaultDeadline, $currentUser->id, $subAssignee, $subTagsStr, $subEstimate, '0m'
+                    ]);
+
+                    if ($insSub) {
+                        $newSubId = (int)$db->last_insert_id();
+                        $createdSubtasksCount++;
+                        $db->exec_query("INSERT IGNORE INTO task_assignees (task_id, user_id) VALUES (?, ?)", [$newSubId, $subAssignee]);
+
+                        // Çıkarılan resimleri alt görevlere de bağla ki çekmecede veya AI'da doğrudan görünsün
+                        foreach ($extractedImgs as $imgItem) {
+                            if (!empty($imgItem['file_path'])) {
+                                $db->exec_query("
+                                    INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
+                                    VALUES (?, ?, ?, ?, ?, ?, NOW())
+                                ", [$newSubId, $currentUser->id, $imgItem['file_name'], $imgItem['file_path'], $imgItem['file_type'], (int)$imgItem['file_size']]);
+                            }
+                        }
+                    }
+                }
+
+                Helper::broadcastLiveEvent('task_created', $projectId, $epicId, (int)$currentUser->id, [
+                    'task_id'   => $epicId,
+                    'task_code' => $epicCode,
+                    'title'     => $epicTitle,
+                    'status'    => 'assigned',
+                    'user_name' => $currentUser->name
+                ]);
+            }
+        }
+
+        jsonResponse(true, "✅ {$createdEpicsCount} Ana Modül ve {$createdSubtasksCount} Detaylı Alt Görev (açıklamaları ve döküman görselleriyle birlikte) başarıyla projeye işlendi!", [
+            'epics_count'    => $createdEpicsCount,
+            'subtasks_count' => $createdSubtasksCount
+        ]);
+        break;
+🛠️ 3. ADIM: View/tasks/board.php İçindeki Modalı Döküman Yükleme + "Nasıl Yapılacak" Açıklama Editörü İle Güncelle
+View/tasks/board.php dosyasının en altına eklediğimiz <!-- 🪄 AI PROJE MİMARI ... --> modalını ve <script> bloğunu aşağıdakiyle değiştir:   
+PHP
+
+PHP
+<!-- 🪄 AI PROJE MİMARI & DÖKÜMAN/GÖRSEL DESTEKLİ GÖREV AYRIŞTIRMA MODALI -->
+<div class="cu-modal-overlay" id="modalAiArchitect" onclick="if(event.target === this) closeModal('modalAiArchitect')">
+    <div class="cu-modal" style="max-width:1020px; width:96%; max-height:92vh; display:flex; flex-direction:column;">
+        <div class="cu-modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding:16px 22px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:22px;">🪄</span>
+                <div>
+                    <h3 style="font-size:16px; font-weight:800; color:var(--text-white); margin:0;">AI Proje Mimarı & Şartname/Döküman Ayrıştırıcı</h3>
+                    <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Word (.docx), PDF veya Brif Yükleyin -> İçindeki Resimleri ve "Nasıl Yapılacak" Adımlarını Düzenleyin -> Projeye Aktarın</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeModal('modalAiArchitect')" style="background:none; border:none; color:var(--text-muted); font-size:22px; cursor:pointer;">&times;</button>
+        </div>
+
+        <div class="cu-modal-body" style="flex:1; overflow-y:auto; padding:20px;">
+            <!-- ADIM 1: BRİF METNİ VE WORD/DÖKÜMAN YÜKLEME EKRANI -->
+            <div id="aiArchStep1">
+                <div style="display:grid; grid-template-columns: 1fr 300px; gap:16px; margin-bottom:14px;">
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div>
+                            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">📌 1. Proje Brifi, Yapılacak İşler veya Ek Notlar</label>
+                            <textarea id="aiArchBriefInput" rows="6" style="width:100%; background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:8px; color:var(--text-white); padding:12px; font-size:13px; line-height:1.5; resize:vertical;" placeholder="Yapılacak işi buraya yazabilir VEYA sağ taraftan doğrudan Word (.docx), PDF, TXT dosyası yükleyebilirsiniz..."></textarea>
+                        </div>
+
+                        <!-- SÜRÜKLE BIRAK WORD / DÖKÜMAN YÜKLEME ALANI -->
+                        <div id="aiArchDropzone"
+                             onclick="document.getElementById('aiArchFileInput').click()"
+                             ondragover="event.preventDefault(); this.style.borderColor='#7B68EE'; this.style.background='rgba(123,104,238,0.1)';"
+                             ondragleave="this.style.borderColor='var(--border-subtle)'; this.style.background='rgba(255,255,255,0.02)';"
+                             ondrop="handleAiArchFileDrop(event)"
+                             style="border:2px dashed var(--border-subtle); border-radius:8px; padding:14px; text-align:center; background:rgba(255,255,255,0.02); cursor:pointer; transition:all 0.2s;">
+                            <input type="file" id="aiArchFileInput" accept=".docx,.pdf,.txt,.md,.png,.jpg,.jpeg,.webp" style="display:none;" onchange="handleAiArchFileSelect(this)">
+                            <div id="aiArchFilePrompt">
+                                <span style="font-size:20px;">📄 🖼️</span>
+                                <div style="font-size:12.5px; font-weight:700; color:var(--text-white); margin-top:4px;">Word (.docx), PDF, Metin veya Görsel Dosyası Yükle (Sürükle & Bırak)</div>
+                                <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Word dosyasının içindeki metinler, tablolar ve <b>gömülü resimler</b> otomatik çıkarılır ve görevlere bağlanır!</div>
+                            </div>
+                            <div id="aiArchFileSelected" style="display:none; align-items:center; justify-content:space-between; background:rgba(0,184,148,0.12); border:1px solid rgba(0,184,148,0.35); padding:8px 12px; border-radius:6px;">
+                                <div style="display:flex; align-items:center; gap:8px; text-align:left;">
+                                    <span style="font-size:18px;">📎</span>
+                                    <div>
+                                        <div id="aiArchFileName" style="font-size:12px; font-weight:700; color:var(--text-white);">dosya.docx</div>
+                                        <div id="aiArchFileSize" style="font-size:10.5px; color:#00b894;">Hazır</div>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="clearAiArchFile(event)" style="background:rgba(255,71,87,0.2); border:none; color:#ff4757; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:700; cursor:pointer;">✕ Kaldır</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background:rgba(123,104,238,0.06); border:1px solid rgba(123,104,238,0.25); border-radius:8px; padding:14px; display:flex; flex-direction:column; justify-content:space-between;">
+                        <div>
+                            <label style="font-size:12px; font-weight:700; color:var(--text-white); display:block; margin-bottom:6px;">📁 Hedef Proje</label>
+                            <select id="aiArchProjectSelect" style="width:100%; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-white); padding:8px; font-size:12.5px; margin-bottom:12px;">
+                                <?php foreach (($projects ?? []) as $p): ?>
+                                    <option value="<?= $p->id ?>" <?= ($activeProjectId ==$p->id) ? 'selected' : '' ?>>
+                                        [<?= htmlspecialchars($p->project_code) ?>] <?= htmlspecialchars($p->title) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div style="font-size:11.5px; color:var(--text-secondary); line-height:1.5;">
+                                🛡️ <b>Neler Yapılır?</b><br>
+                                • Yüklediğiniz <b>Word (.docx)</b> dosyasındaki tüm yazılar ve <b>resimler</b> ayıklanır.<br>
+                                • Her alt görev için <b>"Nasıl Yapılacak & Kabul Kriterleri"</b> açıklaması oluşturulur.<br>
+                                • Önizleme ekranında tüm açıklamaları görebilir, düzenleyebilir ve kutular arası sürükleyebilirsiniz.
+                            </div>
+                        </div>
+                        <button type="button" id="btnRunAiDecompose" onclick="runAiBriefDecomposition()" style="width:100%; background:linear-gradient(135deg, #7B68EE, #e056fd); color:#fff; border:none; border-radius:8px; padding:11px; font-size:13px; font-weight:700; cursor:pointer; margin-top:12px;">
+                            ✨ Analiz Et & Görev Ağacını Kur
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADIM 2: SÜRÜKLE-BIRAK VE DETAYLI AÇIKLAMA DÜZENLEME EKRANI -->
+            <div id="aiArchStep2" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; background:rgba(0,184,148,0.08); border:1px solid rgba(0,184,148,0.3); padding:10px 14px; border-radius:8px; flex-wrap:wrap; gap:8px;">
+                    <div style="font-size:12px; color:var(--text-white);">
+                        💡 Her görevin altındaki <b>"🛠️ Nasıl Yapılacak / Teknik Açıklama"</b> kutusundan adımları inceleyip düzenleyebilirsiniz. Tutamaçtan (<code>⠿</code>) tutup başka modüle sürükleyebilirsiniz.
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" onclick="toggleAllSubtaskDetails()" class="cu-btn-sm" style="background:rgba(255,255,255,0.08); border:1px solid var(--border-subtle); color:var(--text-white); font-size:11px; padding:5px 10px; border-radius:6px; cursor:pointer;">
+                            📝 Tüm Açıklamaları Aç/Kapat
+                        </button>
+                        <button type="button" onclick="addNewBlankEpic()" class="cu-btn-sm" style="background:rgba(123,104,238,0.2); border:1px solid #7B68EE; color:#fff; font-size:11px; padding:5px 10px; border-radius:6px; cursor:pointer;">
+                            ➕ Yeni Ana Modül
+                        </button>
+                        <button type="button" onclick="document.getElementById('aiArchStep2').style.display='none'; document.getElementById('aiArchStep1').style.display='block';" class="cu-btn-sm" style="background:rgba(255,255,255,0.08); border:1px solid var(--border-subtle); color:var(--text-secondary); font-size:11px; padding:5px 10px; border-radius:6px; cursor:pointer;">
+                            ↩️ Geri Dön
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DÖKÜMANDAN ÇIKARILAN GÖRSELLER ÖNİZLEME BARI -->
+                <div id="aiArchExtractedImagesBar" style="display:none; margin-bottom:14px; background:var(--bg-card); border:1px solid rgba(123,104,238,0.35); border-radius:8px; padding:10px 14px;">
+                    <div style="font-size:11.5px; font-weight:700; color:#d8b4fe; margin-bottom:8px;">🖼️ Dökümandan Çıkarılan ve Görevlere Bağlanacak Görseller:</div>
+                    <div id="aiArchExtractedImagesList" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;"></div>
+                </div>
+
+                <div id="aiArchEpicsContainer" style="display:flex; flex-direction:column; gap:16px;"></div>
+            </div>
+        </div>
+
+        <div class="cu-modal-footer" style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px; border-top:1px solid var(--border-subtle);">
+            <span id="aiArchSummaryBadge" style="font-size:12px; color:var(--text-muted); font-weight:600;"></span>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="cu-btn-sm" onclick="closeModal('modalAiArchitect')" style="background:rgba(255,255,255,0.06); color:var(--text-secondary);">İptal</button>
+                <button type="button" id="btnApproveAiArch" onclick="submitAiArchitectTree()" style="display:none; background:#00b894; color:#fff; border:none; border-radius:6px; padding:8px 18px; font-size:13px; font-weight:700; cursor:pointer;">
+                    ✅ Onayla ve Projeye İşle
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let aiArchTreeData = [];
+let aiArchExtractedImgs = [];
+let aiArchOriginalDoc = null;
+let selectedAiArchFile = null;
+let draggedSubtaskRef = null;
+let allSubtaskDetailsOpen = true;
+
+function openAiArchitectModal() {
+    openModal('modalAiArchitect');
+    document.getElementById('aiArchStep1').style.display = 'block';
+    document.getElementById('aiArchStep2').style.display = 'none';
+    document.getElementById('btnApproveAiArch').style.display = 'none';
+    document.getElementById('aiArchSummaryBadge').innerText = '';
+}
+
+function handleAiArchFileDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dz = document.getElementById('aiArchDropzone');
+    dz.style.borderColor = 'var(--border-subtle)';
+    dz.style.background = 'rgba(255,255,255,0.02)';
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        setAiArchFile(e.dataTransfer.files[0]);
+    }
+}
+
+function handleAiArchFileSelect(input) {
+    if (input.files && input.files.length > 0) {
+        setAiArchFile(input.files[0]);
+    }
+}
+
+function setAiArchFile(file) {
+    selectedAiArchFile = file;
+    document.getElementById('aiArchFilePrompt').style.display = 'none';
+    document.getElementById('aiArchFileSelected').style.display = 'flex';
+    document.getElementById('aiArchFileName').innerText = file.name;
+    document.getElementById('aiArchFileSize').innerText = Math.round(file.size / 1024) + ' KB • İçeriği ve görselleri analiz edilmeye hazır';
+}
+
+function clearAiArchFile(e) {
+    if (e) e.stopPropagation();
+    selectedAiArchFile = null;
+    document.getElementById('aiArchFileInput').value = '';
+    document.getElementById('aiArchFilePrompt').style.display = 'block';
+    document.getElementById('aiArchFileSelected').style.display = 'none';
+}
+
+function toggleAllSubtaskDetails() {
+    allSubtaskDetailsOpen = !allSubtaskDetailsOpen;
+    aiArchTreeData.forEach(ep => {
+        (ep.subtasks || []).forEach(st => { st.show_desc = allSubtaskDetailsOpen; });
+    });
+    renderAiArchitectTree();
+}
+
+async function runAiBriefDecomposition() {
+    const brief = document.getElementById('aiArchBriefInput').value.trim();
+    const projId = document.getElementById('aiArchProjectSelect').value;
+    if (!brief && !selectedAiArchFile) {
+        showToast('Lütfen proje brifini yazın veya bir Word (.docx) / döküman dosyası yükleyin.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btnRunAiDecompose');
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Döküman & Görev Adımları Analiz Ediliyor...';
+
+    try {
+        const fd = new FormData();
+        fd.append('brief', brief);
+        fd.append('project_id', projId);
+        if (selectedAiArchFile) {
+            fd.append('brief_file', selectedAiArchFile);
+        }
+
+        const res = await fetch('/taskmanager/ajax?action=decompose_brief_with_ai', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.success && data.epics) {
+            aiArchExtractedImgs = data.extracted_imgs || [];
+            aiArchOriginalDoc = data.original_doc || null;
+
+            aiArchTreeData = data.epics.map(ep => ({
+                title: ep.title || 'Modül',
+                description: ep.description || '',
+                priority: ep.priority || 'high',
+                execution_mode: ep.execution_mode === 'gated' ? 'gated' : 'auto',
+                subtasks: (ep.subtasks || []).map(st => ({
+                    title: st.title || '',
+                    description: st.description || '🛠️ NASIL YAPILACAK:\n1. İlgili geliştirmeyi tamamla ve canlı ortamda test et.',
+                    category: st.category || 'coding',
+                    priority: st.priority || 'normal',
+                    time_estimate: st.time_estimate || '2h',
+                    assigned_to: (window.CURRENT_USER_ID || 1),
+                    is_ai: false,
+                    show_desc: true // Açıklamalar varsayılan olarak açık ve görünür gelir!
+                }))
+            }));
+
+            // Çıkarılan resimler varsa önizleme barını doldur
+            const imgBar = document.getElementById('aiArchExtractedImagesBar');
+            const imgList = document.getElementById('aiArchExtractedImagesList');
+            if (aiArchExtractedImgs.length > 0 && imgBar && imgList) {
+                imgBar.style.display = 'block';
+                imgList.innerHTML = aiArchExtractedImgs.map((img, idx) => `
+                    <div style="position:relative; flex-shrink:0; width:90px; background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:6px; overflow:hidden; text-align:center;">
+                        <img src="${img.file_path}" style="width:90px; height:60px; object-fit:cover; display:block; cursor:pointer;" onclick="if(typeof openImageLightbox==='function') openImageLightbox('${img.file_path}', '${escapeHtml(img.file_name)}')">
+                        <div style="font-size:9.5px; color:var(--text-muted); padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(img.file_name)}</div>
+                    </div>
+                `).join('');
+            } else if (imgBar) {
+                imgBar.style.display = 'none';
+            }
+
+            document.getElementById('aiArchStep1').style.display = 'none';
+            document.getElementById('aiArchStep2').style.display = 'block';
+            document.getElementById('btnApproveAiArch').style.display = 'inline-block';
+            renderAiArchitectTree();
+            showToast('✨ Görev ağacı, uygulama adımları ve döküman görselleri hazır!', 'success');
+        } else {
+            showToast(data.message || 'Ayrıştırma başarısız oldu', 'error');
+        }
+    } catch (e) {
+        showToast('Sunucu bağlantı hatası', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+    }
+}
+
+function renderAiArchitectTree() {
+    const container = document.getElementById('aiArchEpicsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const teamUsers = window.ALL_TEAM_USERS || [{ id: 1, name: 'Yönetici' }];
+    let totalSubs = 0;
+    let totalAiSubs = 0;
+
+    aiArchTreeData.forEach((epic, eIdx) => {
+        const epicBox = document.createElement('div');
+        epicBox.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; padding:14px; transition:all 0.2s;';
+        
+        epicBox.ondragover = (ev) => {
+            ev.preventDefault();
+            epicBox.style.borderColor = '#7B68EE';
+            epicBox.style.boxShadow = '0 0 0 2px rgba(123,104,238,0.25)';
+        };
+        epicBox.ondragleave = () => {
+            epicBox.style.borderColor = 'var(--border-subtle)';
+            epicBox.style.boxShadow = 'none';
+        };
+        epicBox.ondrop = (ev) => {
+            ev.preventDefault();
+            epicBox.style.borderColor = 'var(--border-subtle)';
+            epicBox.style.boxShadow = 'none';
+            if (!draggedSubtaskRef) return;
+            const { epicIdx: fromE, subIdx: fromS } = draggedSubtaskRef;
+            if (fromE === eIdx) return;
+
+            const movedItem = aiArchTreeData[fromE].subtasks.splice(fromS, 1)[0];
+            if (movedItem) {
+                aiArchTreeData[eIdx].subtasks.push(movedItem);
+                draggedSubtaskRef = null;
+                renderAiArchitectTree();
+                showToast('Alt görev yeni modüle taşındı!', 'info');
+            }
+        };
+
+        const isGated = (epic.execution_mode === 'gated');
+
+        let subtasksHtml = '';
+        (epic.subtasks || []).forEach((sub, sIdx) => {
+            totalSubs++;
+            if (sub.is_ai) totalAiSubs++;
+
+            const userOptions = teamUsers.map(u => `<option value="${u.id}" ${sub.assigned_to == u.id ? 'selected' : ''}>👤 ${escapeHtml(u.name)}</option>`).join('');
+            const showDesc = sub.show_desc !== false;
+
+            subtasksHtml += `
+                <div draggable="true"
+                     ondragstart="draggedSubtaskRef = { epicIdx: ${eIdx}, subIdx: ${sIdx} }; this.style.opacity='0.4';"
+                     ondragend="this.style.opacity='1'; draggedSubtaskRef = null;"
+                     style="background:var(--bg-base); border:1px solid ${sub.is_ai ? 'rgba(224,86,253,0.5)' : 'var(--border-subtle)'}; border-radius:8px; padding:10px; margin-bottom:8px;">
+                    <div style="display:grid; grid-template-columns: 22px 1fr 110px 135px 80px 85px 28px; gap:8px; align-items:center;">
+                        <span style="color:var(--text-muted); font-size:15px; cursor:grab; user-select:none;" title="Sürükle ve başka modüle bırak">⠿</span>
+                        <input type="text" value="${escapeHtml(sub.title)}" oninput="aiArchTreeData[${eIdx}].subtasks[${sIdx}].title = this.value" placeholder="Alt görev başlığı..." style="background:transparent; border:none; color:var(--text-white); font-size:13px; font-weight:700; outline:none; width:100%;">
+                        <select onchange="aiArchTreeData[${eIdx}].subtasks[${sIdx}].category = this.value" style="background:var(--bg-card); border:1px solid var(--border-subtle); color:var(--text-secondary); font-size:11px; padding:4px 6px; border-radius:4px;">
+                            <option value="coding" ${sub.category === 'coding' ? 'selected' : ''}>💻 Yazılım</option>
+                            <option value="design" ${sub.category === 'design' ? 'selected' : ''}>🎨 Tasarım</option>
+                            <option value="seo" ${sub.category === 'seo' ? 'selected' : ''}>🔍 SEO</option>
+                            <option value="marketing" ${sub.category === 'marketing' ? 'selected' : ''}>📢 Pazarlama</option>
+                            <option value="legal" ${sub.category === 'legal' ? 'selected' : ''}>⚖️ Yasal/KVKK</option>
+                            <option value="content" ${sub.category === 'content' ? 'selected' : ''}>📝 İçerik</option>
+                        </select>
+                        <select onchange="aiArchTreeData[${eIdx}].subtasks[${sIdx}].assigned_to = parseInt(this.value)" style="background:var(--bg-card); border:1px solid var(--border-subtle); color:var(--text-secondary); font-size:11px; padding:4px 6px; border-radius:4px;">
+                            ${userOptions}
+                        </select>
+                        <button type="button" onclick="aiArchTreeData[${eIdx}].subtasks[${sIdx}].show_desc = !aiArchTreeData[${eIdx}].subtasks[${sIdx}].show_desc; renderAiArchitectTree();" style="background:rgba(123,104,238,0.12); border:1px solid rgba(123,104,238,0.3); color:#c4b5fd; font-size:10.5px; font-weight:600; padding:4px 6px; border-radius:4px; cursor:pointer;" title="Nasıl Yapılacak Açıklamasını Göster/Gizle">
+                            📝 ${showDesc ? 'Gizle' : 'Detay'}
+                        </button>
+                        <label style="display:inline-flex; align-items:center; justify-content:center; gap:4px; font-size:11px; font-weight:700; padding:4px 6px; border-radius:5px; cursor:pointer; background:${sub.is_ai ? 'linear-gradient(135deg, #7B68EE, #e056fd)' : 'rgba(255,255,255,0.05)'}; color:${sub.is_ai ? '#fff' : 'var(--text-muted)'}; border:1px solid ${sub.is_ai ? '#e056fd' : 'var(--border-subtle)'};">
+                            <input type="checkbox" ${sub.is_ai ? 'checked' : ''} onchange="aiArchTreeData[${eIdx}].subtasks[${sIdx}].is_ai = this.checked; renderAiArchitectTree();" style="display:none;">
+                            <span>🤖 AI</span>
+                        </label>
+                        <button type="button" onclick="aiArchTreeData[${eIdx}].subtasks.splice(${sIdx}, 1); renderAiArchitectTree();" style="background:none; border:none; color:#ff4757; cursor:pointer; font-size:13px;" title="Alt Görevi Sil">🗑️</button>
+                    </div>
+                    <!-- NASIL YAPILACAK / TEKNİK UYGULAMA AÇIKLAMASI ALANI -->
+                    <div style="display:${showDesc ? 'block' : 'none'}; margin-top:8px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.08); padding-left:30px;">
+                        <div style="font-size:10.5px; font-weight:700; color:#a4b0be; margin-bottom:4px;">🛠️ Nasıl Yapılacak? (Uygulama Adımları, Teknik Detaylar & Test Kriterleri):</div>
+                        <textarea rows="3" oninput="aiArchTreeData[${eIdx}].subtasks[${sIdx}].description = this.value" placeholder="Bu alt görevin nasıl yapılacağını, teknik gereksinimlerini ve kabul kriterlerini buraya yazın..." style="width:100%; background:rgba(0,0,0,0.25); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-secondary); font-size:12px; line-height:1.45; padding:8px; resize:vertical; box-sizing:border-box;">${escapeHtml(sub.description || '')}</textarea>
+                    </div>
+                </div>
+            `;
+        });
+
+        epicBox.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:8px; flex:1;">
+                    <span style="font-size:16px;">📂</span>
+                    <input type="text" value="${escapeHtml(epic.title)}" oninput="aiArchTreeData[${eIdx}].title = this.value" style="background:transparent; border:1px dashed transparent; color:var(--text-white); font-size:14px; font-weight:800; width:100%; padding:2px 6px; border-radius:4px;" onfocus="this.style.borderColor='var(--brand-primary)'" onblur="this.style.borderColor='transparent'">
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <select onchange="aiArchTreeData[${eIdx}].execution_mode = this.value; renderAiArchitectTree();" style="background:${isGated ? 'rgba(230,126,34,0.18)' : 'rgba(0,184,148,0.18)'}; border:1px solid ${isGated ? '#e67e22' : '#00b894'}; color:${isGated ? '#e67e22' : '#00b894'}; font-size:11px; font-weight:700; padding:4px 8px; border-radius:6px; cursor:pointer;">
+                        <option value="auto" ${!isGated ? 'selected' : ''}>🚀 Tam Otonom Akış (Gece Modu)</option>
+                        <option value="gated" ${isGated ? 'selected' : ''}>🛑 Onay Kapılı (Adım Adım Onaylı)</option>
+                    </select>
+                    <button type="button" onclick="addSubtaskToEpic(${eIdx})" style="background:rgba(123,104,238,0.15); border:1px solid rgba(123,104,238,0.4); color:#d8b4fe; font-size:11px; font-weight:700; padding:4px 8px; border-radius:5px; cursor:pointer;">+ Alt Görev</button>
+                    <button type="button" onclick="aiArchTreeData.splice(${eIdx}, 1); renderAiArchitectTree();" style="background:rgba(255,71,87,0.12); border:1px solid rgba(255,71,87,0.3); color:#ff4757; font-size:11px; padding:4px 8px; border-radius:5px; cursor:pointer;" title="Modülü Sil">✕</button>
+                </div>
+            </div>
+            <!-- ANA MODÜL AÇIKLAMASI -->
+            <div style="margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border-subtle);">
+                <input type="text" value="${escapeHtml(epic.description || '')}" oninput="aiArchTreeData[${eIdx}].description = this.value" placeholder="Ana modülün genel amacı ve kapsam açıklaması..." style="width:100%; background:rgba(0,0,0,0.18); border:1px solid var(--border-subtle); border-radius:5px; color:var(--text-muted); font-size:11.5px; padding:5px 8px; box-sizing:border-box;">
+            </div>
+            <div>${subtasksHtml || '<div style="font-size:12px; color:var(--text-muted); padding:8px; text-align:center; border:1px dashed var(--border-subtle); border-radius:6px;">Bu modülde alt görev yok. Buraya alt görev sürükleyebilir veya "+ Alt Görev" butonuna basabilirsiniz.</div>'}</div>
+        `;
+        container.appendChild(epicBox);
+    });
+
+    const imgNote = aiArchExtractedImgs.length > 0 ? ` • 🖼️ <b>${aiArchExtractedImgs.length} Döküman Görseli</b> eklenecek` : '';
+    document.getElementById('aiArchSummaryBadge').innerHTML = `📊 Toplam <b>${aiArchTreeData.length} Ana Modül</b>, <b>${totalSubs} Detaylı Alt Görev</b> (<b>${totalAiSubs} tanesi 🤖 AI Otonom</b>)${imgNote}`;
+}
+
+function addNewBlankEpic() {
+    aiArchTreeData.push({
+        title: 'Yeni Modül / Ana Görev',
+        description: 'Bu modül kapsamında yapılacak geliştirmeler.',
+        priority: 'normal',
+        execution_mode: 'auto',
+        subtasks: [
+            {
+                title: 'Yeni alt görev 1',
+                description: '🛠️ NASIL YAPILACAK (Uygulama Adımları):\n1. ...\n\n✅ KABUL KRİTERLERİ:\n- Canlı ortamda test edilmelidir.',
+                category: 'coding',
+                priority: 'normal',
+                time_estimate: '2h',
+                assigned_to: (window.CURRENT_USER_ID || 1),
+                is_ai: false,
+                show_desc: true
+            }
+        ]
+    });
+    renderAiArchitectTree();
+}
+
+function addSubtaskToEpic(epicIdx) {
+    aiArchTreeData[epicIdx].subtasks.push({
+        title: 'Yeni alt görev adımı',
+        description: '🛠️ NASIL YAPILACAK (Uygulama Adımları):\n1. ...\n\n✅ KABUL KRİTERLERİ:\n- Canlı ortamda test edilmelidir.',
+        category: 'coding',
+        priority: 'normal',
+        time_estimate: '2h',
+        assigned_to: (window.CURRENT_USER_ID || 1),
+        is_ai: false,
+        show_desc: true
+    });
+    renderAiArchitectTree();
+}
+
+async function submitAiArchitectTree() {
+    if (aiArchTreeData.length === 0) {
+        showToast('Kaydedilecek modül bulunamadı.', 'error');
+        return;
+    }
+
+    const projId = document.getElementById('aiArchProjectSelect').value;
+    const btn = document.getElementById('btnApproveAiArch');
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Projeye İşleniyor...';
+
+    try {
+        const fd = new FormData();
+        fd.append('project_id', projId);
+        fd.append('tree_json', JSON.stringify(aiArchTreeData));
+        fd.append('extracted_imgs_json', JSON.stringify(aiArchExtractedImgs));
+        fd.append('original_doc_json', JSON.stringify(aiArchOriginalDoc));
+
+        const res = await fetch('/taskmanager/ajax?action=bulk_create_hierarchical_tasks', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            closeModal('modalAiArchitect');
+            setTimeout(() => window.location.reload(), 800);
+        } else {
+            showToast(data.message || 'Kaydedilemedi', 'error');
+        }
+    } catch (e) {
+        showToast('Sunucu bağlantı hatası', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+    }
+}
+</script>
+🎉 Şimdi Neler Değişti?
+Word (.docx) İçindeki Yazılar ve Resimler Otomatik Çıkıyor: Bir Word dosyası sürükleyip bıraktığında sistem içindeki tüm metinleri ve word/media/ altındaki gömülü resimleri çıkarır; önizleme ekranında sana resimleri gösterir ve onayladığında görevlerin Ek Dosyalar / Görseller (task_attachments) bölümüne otomatik olarak bağlar!   
+PHP
++ 1
+
+Her Alt Görevin Altında "🛠️ Nasıl Yapılacak?" Açıklama Kutusu Var: Artık sadece kuru bir başlık yok; her alt görevin altında o işin Uygulama Adımları, Teknik Detayları ve Kabul/Test Kriterleri açık olarak gelir ve istediğin gibi değiştirebilirsin.
+
+Ajan Tam Bağlamla Çalışır: Alt göreve 🤖 AI seçtiğinde, ajan hem Ana Modülün açıklamasını, hem alt görevin adım adım nasıl yapılacağını, hem de Word dosyasından çıkan görselleri görerek işi tek seferde eksiksiz teslim eder!   
+PHP
++ 1

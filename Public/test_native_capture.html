@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Native Display Media Capture</title>
+    <style>
+        body { font-family: sans-serif; padding: 30px; background: #f0f4f8; }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #eff6ff;
+            color: #2563eb;
+            font-weight: 600;
+            border-radius: 9999px;
+            border: 1px solid #bfdbfe;
+        }
+        #btn-capture {
+            margin: 20px 0;
+            padding: 12px 24px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #result-container {
+            margin-top: 20px;
+            border: 2px solid #2563eb;
+            display: inline-block;
+        }
+        #result-container img {
+            max-width: 600px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-badge">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        <span>Kariyer, Gelişim & İşe Alım Dünyası</span>
+    </div>
+
+    <h1>NewJoobs Kariyer Blogu</h1>
+    <p>İş arama süreçlerinde öne çıkmanızı sağlayacak taktikler, etkileyici CV örnekleri...</p>
+
+    <button id="btn-capture">📸 Birebir GPU Ekran Görüntüsü Al</button>
+
+    <div id="result-container">
+        <img id="result-img" src="" alt="Önizleme" />
+    </div>
+
+    <script>
+    async function captureNativeGPU() {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: {
+                    displaySurface: 'browser'
+                },
+                audio: false,
+                preferCurrentTab: true
+            });
+
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Akışı durdur
+            stream.getTracks().forEach(track => track.stop());
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            document.getElementById('result-img').src = dataUrl;
+            console.log('GPU Capture Success! Dimensions:', canvas.width, canvas.height);
+        } catch (err) {
+            console.error('Capture error:', err);
+            alert('Hata: ' + err.message);
+        }
+    }
+
+    document.getElementById('btn-capture').addEventListener('click', captureNativeGPU);
+    </script>
+</body>
+</html>
