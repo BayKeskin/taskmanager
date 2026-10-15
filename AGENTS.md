@@ -108,8 +108,26 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 2. **Dedicated Models:** All database interactions must be abstracted into Model classes extending `Model` (e.g., `TaskModel`, `ProjectModel`, `UserModel`, `ReportModel`, `DocModel`, `SettingsModel`).
 3. **Clean Variable Injection:** Controllers must pass clean, typed arrays or objects to Views (e.g., via Controller methods returning structured data extracted into the template).
 
+---
+
+## 7. MANDATORY GIT REPOSITORY SYNCHRONIZATION (GITHUB PUSH DOCTRINE)
+
+> ### 🚨 STRICT GIT PUSH DIRECTIVE:
+> **After every modification, completed feature, bugfix, or task execution, the agent is STRICTLY OBLIGATED to immediately stage, commit with a descriptive message, and push all changed code to the remote GitHub repository (`origin main` or active branch).**
+
+### 🚫 STRICT PROHIBITIONS:
+1. **NO Unpushed or Lingering Commits:** It is strictly prohibited to leave code changes uncommitted or unpushed in the local repository after completing work or marking a task as done.
+2. **NO Work Submission Without Push:** Under NO circumstances should `Helper::submitTaskDirectly()`, task workflow API submission, or a user response declaring completion be executed before verifying that `git push` succeeded without errors.
+
+### 📋 DEVELOPER REQUIREMENTS FOR EVERY TASK:
+1. **Atomic & Descriptive Commits:** Every task or logical change must be committed using standard conventional commit formatting (e.g., `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`).
+2. **Immediate Push to Remote:** Execute `git push origin <branch>` immediately after committing changes.
+3. **Verification of Remote State:** Confirm that `git status` reports `Your branch is up to date with 'origin/...'` and the working tree is completely clean.
+
+---
+
 <!-- PROJECT_RULES_START -->
-## 7. PROJECT-SPECIFIC AGENT RULES (PROJEYE ÖZEL KURALLAR)
+## 8. PROJECT-SPECIFIC AGENT RULES (PROJEYE ÖZEL KURALLAR)
 
 > ### 📌 MANDATORY PROJECT-SPECIFIC CONSTRAINTS:
 > The following project-specific technical rules, styling constraints, and workflow directives must be strictly observed for project [01] Task Manager:
@@ -120,3 +138,4 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 - **QA Doktrini:** "Kullanıcı test elemanı değildir". Her buton, modal, AJAX çağrısı ve form canlı ortamda otonom test edilmeden teslim edilemez.
 - **Görev Teslimi:** İş tamamlandığında `Helper::submitTaskDirectly()` fonksiyonu ile 4 aşamalı DoD (Neler Yapıldı, Nereden Test Edilir, Nasıl Test Edilir, Test Kanıtı) formatında teslim edilmelidir.
 <!-- PROJECT_RULES_END -->
+
