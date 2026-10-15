@@ -18,29 +18,11 @@ extract($docData);
 <script src="/taskmanager/Public/js/marked.min.js"></script>
 <script src="/taskmanager/Public/js/quill.min.js"></script>
 
-<!-- ÜST GÖRÜNÜM SEÇİM ÇUBUĞU (VIEW HEADER) -->
+<!-- ÜST GÖRÜNÜM ÇUBUĞU (VIEW HEADER) -->
 <div class="cu-view-header">
-    <div class="cu-view-tabs">
-        <a href="/taskmanager/board<?= $activeProjectId ? '?project_id='.$activeProjectId : '' ?>" class="cu-view-tab">
-            <span>📌</span>
-            <span><?= __('app.docs_tab_board', 'Kanban Board') ?></span>
-        </a>
-        <a href="/taskmanager/tasks<?= $activeProjectId ? '?project_id='.$activeProjectId : '' ?>" class="cu-view-tab">
-            <span>📋</span>
-            <span><?= __('app.docs_tab_list', 'Liste Görünümü') ?></span>
-        </a>
-        <a href="/taskmanager/calendar<?= $activeProjectId ? '?project_id='.$activeProjectId : '' ?>" class="cu-view-tab">
-            <span>📅</span>
-            <span><?= __('app.docs_tab_calendar', 'Takvim') ?></span>
-        </a>
-        <a href="/taskmanager/docs<?= $activeProjectId ? '?project_id='.$activeProjectId : '' ?>" class="cu-view-tab active">
-            <span>📄</span>
-            <span><?= __('app.docs_tab_docs', 'Dökümanlar (Docs)') ?></span>
-        </a>
-        <a href="/taskmanager/reports" class="cu-view-tab">
-            <span>📊</span>
-            <span><?= __('app.docs_tab_reports', 'Analitik & SLA') ?></span>
-        </a>
+    <div class="cu-view-title-wrap" style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:16px;">📄</span>
+        <span style="font-weight:700; font-size:14px; color:var(--text-white);"><?= $isClient ? __('tasks.view_client_docs', 'Proje Dökümanları') : __('tasks.view_docs', 'Dökümanlar (Docs)') ?></span>
     </div>
 
     <div class="cu-filter-bar" style="display:flex; align-items:center; gap:8px;">

@@ -7,6 +7,7 @@ $sbData = $layoutCtrl->getSidebarData($_SESSION['user'] ?? null);
 extract($sbData);
 
 $activeProjectId = $_GET['project_id'] ?? null;
+$projQuery = !empty($activeProjectId) ? '?project_id=' . (int)$activeProjectId : '';
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
 ?>
 <aside class="cu-sidebar">
@@ -88,7 +89,7 @@ if ($currentPath === '/taskmanager/tasks') {
                     <span style="font-size:10px; color:var(--brand-primary); font-weight:600;"><?= __('app.sidebar_quick_select') ?></span>
                 </div>
                 
-                <a href="/taskmanager/board" class="cu-nav-item <?= ($currentPath === '/taskmanager/' || $currentPath === '/taskmanager/board') ? 'active' : '' ?>">
+                <a href="/taskmanager/board<?= $projQuery ?>" class="cu-nav-item <?= ($currentPath === '/taskmanager/' || $currentPath === '/taskmanager/board') ? 'active' : '' ?>">
                     <div class="cu-nav-item-left">
                         <span>📌</span>
                         <span><?= ($currentUser->role === 'client') ? __('app.sidebar_client_board') : __('app.sidebar_board') ?></span>
@@ -97,13 +98,13 @@ if ($currentPath === '/taskmanager/tasks') {
                 </a>
 
                 <?php if ($currentUser->role !== 'client'): ?>
-                    <a href="/taskmanager/tasks" class="cu-nav-item <?= ($currentPath === '/taskmanager/tasks') ? 'active' : '' ?>">
+                    <a href="/taskmanager/tasks<?= $projQuery ?>" class="cu-nav-item <?= ($currentPath === '/taskmanager/tasks') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>📋</span>
                             <span><?= __('app.sidebar_list') ?></span>
                         </div>
                     </a>
-                    <a href="/taskmanager/calendar" class="cu-nav-item <?= ($currentPath === '/taskmanager/calendar') ? 'active' : '' ?>">
+                    <a href="/taskmanager/calendar<?= $projQuery ?>" class="cu-nav-item <?= ($currentPath === '/taskmanager/calendar') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>📅</span>
                             <span><?= __('app.sidebar_calendar') ?></span>
@@ -117,7 +118,7 @@ if ($currentPath === '/taskmanager/tasks') {
                     </a>
                 <?php endif; ?>
 
-                <a href="/taskmanager/docs" class="cu-nav-item <?= ($currentPath === '/taskmanager/docs') ? 'active' : '' ?>">
+                <a href="/taskmanager/docs<?= $projQuery ?>" class="cu-nav-item <?= ($currentPath === '/taskmanager/docs') ? 'active' : '' ?>">
                     <div class="cu-nav-item-left">
                         <span>📄</span>
                         <span><?= __('app.sidebar_docs') ?></span>

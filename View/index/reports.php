@@ -11,19 +11,9 @@ extract($reportData);
 ?>
 
 <div class="cu-view-header">
-    <div class="cu-view-tabs">
-        <a href="/taskmanager/board" class="cu-view-tab">
-            <span>📌</span>
-            <span><?= __('tasks.view_board') ?></span>
-        </a>
-        <a href="/taskmanager/tasks" class="cu-view-tab">
-            <span>📋</span>
-            <span><?= __('tasks.view_list') ?></span>
-        </a>
-        <a href="/taskmanager/reports" class="cu-view-tab active">
-            <span>📊</span>
-            <span><?= __('tasks.view_analytics') ?></span>
-        </a>
+    <div class="cu-view-title-wrap" style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:16px;">📊</span>
+        <span style="font-weight:700; font-size:14px; color:var(--text-white);"><?= __('tasks.view_analytics', 'Analitik & SLA') ?></span>
     </div>
 </div>
 

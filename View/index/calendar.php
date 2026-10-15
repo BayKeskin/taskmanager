@@ -33,31 +33,9 @@ if ($nextMonth > 12) {
 ?>
 
 <div class="cu-view-header">
-    <div class="cu-view-tabs">
-        <a href="/taskmanager/board<?= $activeProjectId ? '?project_id='.$activeProjectId : '' ?>" class="cu-view-tab">
-            <span>📌</span>
-            <span><?= $isClient ? __('tasks.view_client_portal', 'Müşteri Portalı (Panom)') : __('tasks.view_board', 'Kanban Board') ?></span>
-        </a>
-        <?php if (!$isClient): ?>
-            <a href="/taskmanager/tasks<?= $activeProjectId ? '?project_id='.$activeProjectId : '' ?>" class="cu-view-tab">
-                <span>📋</span>
-                <span><?= __('tasks.view_list', 'Liste Görünümü') ?></span>
-            </a>
-            <a href="/taskmanager/calendar<?= $activeProjectId ? '?project_id='.$activeProjectId : '' ?>" class="cu-view-tab active">
-                <span>📅</span>
-                <span><?= __('tasks.view_calendar', 'Takvim') ?></span>
-            </a>
-        <?php endif; ?>
-        <a href="/taskmanager/docs<?= $activeProjectId ? '?project_id='.$activeProjectId : '' ?>" class="cu-view-tab">
-            <span>📄</span>
-            <span><?= $isClient ? __('tasks.view_client_docs', 'Proje Dökümanları') : __('tasks.view_docs', 'Dökümanlar (Docs)') ?></span>
-        </a>
-        <?php if (!$isClient): ?>
-            <a href="/taskmanager/reports" class="cu-view-tab">
-                <span>📊</span>
-                <span><?= __('tasks.view_analytics', 'Analitik & SLA') ?></span>
-            </a>
-        <?php endif; ?>
+    <div class="cu-view-title-wrap" style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:16px;">📅</span>
+        <span style="font-weight:700; font-size:14px; color:var(--text-white);"><?= __('tasks.view_calendar', 'Takvim') ?></span>
     </div>
 
     <!-- Ay Navigasyonu -->
