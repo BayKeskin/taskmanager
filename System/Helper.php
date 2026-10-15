@@ -1222,11 +1222,27 @@ class Helper
                 }
             }
 
-            // 2. Teslimat kaydı
+            // 1.2 [GITHUB DEVOPS & AUTO-PUSH]: Görev tesliminde otomatik commit & push ve commit url üretimi
+            $commitHash = null;
+            $attachmentUrl = '';
+            try {
+                $projectObj = $db->row_query("SELECT * FROM projects WHERE id = ? LIMIT 1", [$projectId]);
+                if ($projectObj) {
+                    $gitRes = self::autoCommitAndPushTask($projectObj, $task);
+                    if (!empty($gitRes['success'])) {
+                        $commitHash = $gitRes['commit_hash'] ?? null;
+                        $attachmentUrl = $gitRes['commit_url'] ?? '';
+                    }
+                }
+            } catch (\Throwable $e) {
+                error_log("autoCommitAndPushTask error: " . $e->getMessage());
+            }
+
+            // 2. Teslimat kaydı (Commit hash ve GitHub diff linki ile)
             $db->exec_query("
-                INSERT INTO task_submissions (task_id, submitted_by, notes, attachment_url, status, created_at)
-                VALUES (?, 1, ?, '', 'pending', NOW())
-            ", [$taskId, $notes]);
+                INSERT INTO task_submissions (task_id, submitted_by, notes, attachment_url, commit_hash, status, created_at)
+                VALUES (?, 1, ?, ?, ?, 'pending', NOW())
+            ", [$taskId, $notes, $attachmentUrl, $commitHash]);
 
             // 3. Aktivite kaydı
             $db->exec_query("
@@ -2936,6 +2952,232 @@ CRITICAL ARCHITECTURAL RULES:
         }
 
         return $results;
+    }
+
+    /**
+     * Sistem Ayarlarındaki GitHub Kimlik Bilgilerini döndürür.
+     */
+    public static function getGithubCredentials(): array
+    {
+        global $db;
+        self::ensureGithubAndRollbackSchema();
+        $row = $db->row_query("SELECT github_username, github_token FROM settings WHERE id = 1 LIMIT 1");
+        return [
+            'username' => trim((string)($row->github_username ?? '')),
+            'token'    => trim((string)($row->github_token ?? ''))
+        ];
+    }
+
+    /**
+     * Projenin çalışma dizinindeki aktif Git branch'ini dinamik olarak tespit eder.
+     * Sabit 'main' varsaymaz; master, dev vb. tüm branch adlarına tam uyum sağlar.
+     */
+    public static function detectActiveBranch(string $workspacePath): string
+    {
+        $ws = rtrim(str_replace('\\', '/', trim($workspacePath)), '/');
+        if (empty($ws) || !is_dir($ws . '/.git')) {
+            return 'main';
+        }
+        $escapedWs = escapeshellarg($ws);
+        $branch = trim((string)@shell_exec("cd /d {$escapedWs} && git rev-parse --abbrev-ref HEAD 2>nul"));
+        if (empty($branch) || $branch === 'HEAD') {
+            return 'main';
+        }
+        return $branch;
+    }
+
+    /**
+     * Projeyi GitHub'a bağlar:
+     * - Eğer projede zaten .git ve remote origin varsa MEVCUT REPOYU KORUR, asla ezmez veya silmez!
+     * - Sadece dizinde hiç .git veya remote yoksa GitHub API ile yeni Private Repo açar ve .gitignore oluşturur.
+     */
+    public static function initAndSyncProjectGithubRepo(int $projectId): array
+    {
+        global $db;
+        self::ensureGithubAndRollbackSchema();
+
+        $project = $db->row_query("SELECT * FROM projects WHERE id = ? LIMIT 1", [$projectId]);
+        if (!$project) return ['success' => false, 'error' => 'Proje bulunamadı.'];
+
+        $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
+        if (empty($ws) || !is_dir($ws)) {
+            return ['success' => false, 'error' => 'Projenin yerel çalışma dizini (workspace_path) tanımlı değil veya klasör bulunamadı.'];
+        }
+
+        $escapedWs = escapeshellarg($ws);
+
+        // 1. Önce mevcut bir remote origin var mı kontrol et (MEVCUTLARI ASLA BOZMA!)
+        if (is_dir($ws . '/.git')) {
+            $existingRemote = trim((string)@shell_exec("cd /d {$escapedWs} && git remote get-url origin 2>nul"));
+            if (!empty($existingRemote)) {
+                if (preg_match('#github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$#i', $existingRemote, $m)) {
+                    $repoSlug = trim($m[1]) . '/' . trim($m[2]);
+                    $db->exec_query("UPDATE projects SET github_repo = ?, updated_at = NOW() WHERE id = ?", [$repoSlug, $project->id]);
+                    return [
+                        'success'     => true,
+                        'github_repo' => $repoSlug,
+                        'repo_url'    => "https://github.com/{$repoSlug}",
+                        'message'     => "Mevcut GitHub deposu korundu ve projeye bağlandı ({$repoSlug})!"
+                    ];
+                }
+            }
+        }
+
+        $creds = self::getGithubCredentials();
+        if (empty($creds['username']) || empty($creds['token'])) {
+            return ['success' => false, 'error' => 'Lütfen önce Sistem Ayarları ekranından GitHub Kullanıcı Adı ve Personal Access Token (PAT) bilgilerinizi kaydedin.'];
+        }
+
+        // 2. Repo adını belirle (Örn: ufka-yolculuk)
+        $repoSlug = trim((string)($project->github_repo ?? ''));
+        if (empty($repoSlug)) {
+            $slug = strtolower(preg_replace('/[^a-zA-Z0-9\-]/', '-', str_replace(['ı','ğ','ü','ş','ö','ç','İ','Ğ','Ü','Ş','Ö','Ç'], ['i','g','u','s','o','c','i','g','u','s','o','c'], $project->title)));
+            $slug = trim(preg_replace('/-+/', '-', $slug), '-');
+            if (empty($slug)) $slug = strtolower($project->project_code);
+            $repoSlug = $creds['username'] . '/' . $slug;
+        } elseif (strpos($repoSlug, '/') === false) {
+            $repoSlug = $creds['username'] . '/' . $repoSlug;
+        }
+
+        [$owner, $repoName] = explode('/', $repoSlug, 2);
+
+        // 3. GitHub API üzerinden Private Repository oluştur (Zaten varsa 422 döner, sorun değil)
+        $ch = curl_init('https://api.github.com/user/repos');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $creds['token'],
+                'User-Agent: TaskManager-DevOps-Engine',
+                'Accept: application/vnd.github+json',
+                'Content-Type: application/json'
+            ],
+            CURLOPT_POSTFIELDS     => json_encode([
+                'name'        => $repoName,
+                'description' => $project->title . ' - Managed by TaskManager AI DevOps',
+                'private'     => true,
+                'auto_init'   => false
+            ]),
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => false
+        ]);
+        $resp = curl_exec($ch);
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 201 && $httpCode !== 422 && $httpCode !== 200) {
+            $errJson = json_decode((string)$resp, true);
+            $errMsg  = $errJson['message'] ?? 'HTTP ' . $httpCode;
+            return ['success' => false, 'error' => "GitHub API Hatası: {$errMsg}"];
+        }
+
+        // 4. .gitignore yoksa oluştur
+        $gitignorePath = $ws . '/.gitignore';
+        if (!file_exists($gitignorePath)) {
+            $ignoreContent = ".env\n/vendor/\n/node_modules/\n/Public/uploads/\n*.sql\n*.zip\n*.log\n.DS_Store\nThumbs.db\n";
+            @file_put_contents($gitignorePath, $ignoreContent);
+        }
+
+        // 5. Git init, clean remote add ve dinamik branch ile ilk push
+        $cleanRemoteUrl = "https://github.com/{$owner}/{$repoName}.git";
+        $authHeader = base64_encode("{$creds['username']}:{$creds['token']}");
+
+        if (!is_dir($ws . '/.git')) {
+            @shell_exec("cd /d {$escapedWs} && git init && git branch -M main 2>&1");
+        }
+        $branch = self::detectActiveBranch($ws);
+
+        $cmds = [
+            "cd /d {$escapedWs}",
+            "git config user.name " . escapeshellarg($creds['username']),
+            "git config user.email " . escapeshellarg($creds['username'] . "@users.noreply.github.com"),
+            "git remote remove origin 2>nul || ver >nul",
+            "git remote add origin " . escapeshellarg($cleanRemoteUrl),
+            "git add -A",
+            "git commit -m \"chore: initial repository setup via TaskManager\" 2>nul || ver >nul",
+            "git -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push -u origin {$branch}"
+        ];
+        $fullCmd = implode(" && ", $cmds) . " 2>&1";
+        $output  = (string)@shell_exec($fullCmd);
+
+        $db->exec_query("UPDATE projects SET github_repo = ?, updated_at = NOW() WHERE id = ?", ["{$owner}/{$repoName}", $project->id]);
+
+        return [
+            'success'     => true,
+            'github_repo' => "{$owner}/{$repoName}",
+            'repo_url'    => "https://github.com/{$owner}/{$repoName}",
+            'message'     => "Proje başarıyla GitHub'a ({$owner}/{$repoName}) bağlandı ve senkronize edildi!",
+            'git_output'  => $output
+        ];
+    }
+
+    /**
+     * Görev teslim edildiğinde (submitTaskDirectly) otomatik Git Commit & Güvenli GitHub Push yapar.
+     * Token asla diskteki remote URL içine yazılmaz; http.extraheader ile anlık iletilir.
+     * Aktif branch dinamik tespit edilir (main/master).
+     */
+    public static function autoCommitAndPushTask(object $project, object $task): array
+    {
+        self::ensureGithubAndRollbackSchema();
+
+        $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
+        if (empty($ws) || !is_dir($ws)) {
+            return ['success' => false, 'error' => 'Workspace dizini yok.'];
+        }
+
+        $escapedWs = escapeshellarg($ws);
+
+        if (!is_dir($ws . '/.git')) {
+            return ['success' => false, 'error' => 'Git deposu (.git) bulunamadı.'];
+        }
+
+        $commitMsg = "feat({$task->task_code}): " . str_replace(['"', '`', '$'], '', $task->title);
+
+        // Değişiklikleri ekle ve commit at
+        $commitCmd = "cd /d {$escapedWs} && git add -A && git commit -m " . escapeshellarg($commitMsg) . " 2>&1";
+        @shell_exec($commitCmd);
+
+        // Son commit hash'ini al
+        $hash = trim((string)@shell_exec("cd /d {$escapedWs} && git rev-parse HEAD 2>nul"));
+        if (empty($hash) || strlen($hash) < 7) {
+            return ['success' => false, 'error' => 'Commit oluşturulamadı veya dosya değişikliği yok.'];
+        }
+
+        // Aktif branch'i dinamik bul (main/master)
+        $branch = self::detectActiveBranch($ws);
+
+        // Projede github_repo tanımlı mı? Yoksa mevcut remote'u oku
+        $repoSlug = trim((string)($project->github_repo ?? ''));
+        if (empty($repoSlug)) {
+            $existingRemote = trim((string)@shell_exec("cd /d {$escapedWs} && git remote get-url origin 2>nul"));
+            if (!empty($existingRemote) && preg_match('#github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$#i', $existingRemote, $m)) {
+                $repoSlug = trim($m[1]) . '/' . trim($m[2]);
+            }
+        }
+
+        $commitUrl = '';
+        $creds = self::getGithubCredentials();
+
+        if (!empty($repoSlug)) {
+            $commitUrl = "https://github.com/{$repoSlug}/commit/{$hash}";
+
+            // Güvenli push: Token varsa http.extraheader ile gönder
+            if (!empty($creds['token']) && !empty($creds['username'])) {
+                $authHeader = base64_encode("{$creds['username']}:{$creds['token']}");
+                $pushCmd = "cd /d {$escapedWs} && git -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1";
+                @shell_exec($pushCmd);
+            } else {
+                // Token yoksa mevcut sistem git kimliğiyle push dene
+                @shell_exec("cd /d {$escapedWs} && git push origin {$branch} 2>&1");
+            }
+        }
+
+        return [
+            'success'     => true,
+            'commit_hash' => $hash,
+            'commit_url'  => $commitUrl,
+            'branch'      => $branch
+        ];
     }
 }
 
