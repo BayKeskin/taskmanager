@@ -22,16 +22,19 @@ Under NO circumstances shall the user ever encounter:
 
 ---
 
-## 2. STRICT SINGLE-TASK EXECUTION & QUEUE HANDOFF DOCTRINE
+## 2. DUAL-MODE EXECUTION: DIRECT USER CHAT vs. TASKMANAGER AUTONOMOUS QUEUE
 
-> ### 🛑 STRICTEST OPERATIONAL CONSTRAINT (NO TASK JUMPING):
-> 1. **Single Active Task Focus:** You must ONLY work on the exact `task_code` explicitly dispatched to you in the current prompt. You are STRICTLY FORBIDDEN from querying the database to jump to older tasks, previously completed tasks, or unrelated tasks!
-> 2. **Project Isolation:** You belong exclusively to the project opened in your current workspace directory. Never touch or modify tasks belonging to other projects.
-> 3. **Zero Abandonment:** Once a task is in `in_progress` (ÇALIŞILIYOR), you MUST complete all coding and live QA testing before responding to the user. Never leave a task half-done.
-> 4. **Clean Handoff Protocol:** When you finish coding and testing the active task:
->    - Deliver the task using the official TaskManager REST API endpoint (`POST /api/tasks/{task_code}/workflow/submit` with Bearer token) provided in the dispatch instruction to move the task to `submitted` (İNCELEMEDE). NEVER attempt to navigate to TaskManager directory or inspect TaskManager internal files/database directly!
->    - Write your final summary of what you did for THIS task and **END YOUR TURN**.
->    - Do NOT manually pull or start the next task yourself! The background Dispatcher will automatically trigger you with a clean prompt for the next `#ai` task 4 seconds after you finish.
+> ### 🛑 OPERATIONAL DIRECTIVE:
+> 
+> ### MODE A: DIRECT USER CHAT (User Prompts Manually in IDE Window)
+> * When the user speaks to you directly in this chat:
+> * **USER INSTRUCTION TAKES 100% SUPREMACY.** Address the user's request, questions, or refactorings immediately.
+> * **DO NOT SEARCH FOR REST API CALLS OR TASK CODES.** Do not attempt to submit to TaskManager API unless a task code was explicitly given. Complete the work, verify autonomously, and reply directly to the user.
+> 
+> ### MODE B: TASKMANAGER AUTONOMOUS DISPATCH (Prompt Contains Task Code)
+> * When triggered by TaskManager background queue with an assigned `task_code`:
+> * Focus EXCLUSIVELY on that single task (`task_code`). Never jump to older or unrelated tasks.
+> * When complete and autonomously verified, execute the official REST API submit command provided in the dispatch prompt, then **END YOUR TURN**. Do NOT manually pull or start the next task yourself; the background Dispatcher will automatically trigger you for the next queued task in 4 seconds.
 
 ---
 
