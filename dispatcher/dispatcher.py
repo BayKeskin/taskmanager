@@ -1,6 +1,6 @@
 """
-TaskManager -> Antigravity Central Multi-Agent Dispatcher (v4.2 - Sıfır Pencere / No-Window Modu)
-Hiçbir CMD/PowerShell penceresi açmadan arka planda %100 sessiz çalışır.
+TaskManager -> Antigravity Central Multi-Agent Dispatcher (v4.3 - Auto-Bootstrap & Multi-Window)
+Hiçbir siyah CMD penceresi açmadan arka planda çalışır; yeni projelerde otomatik pencere açar ve ilk sohbeti başlatır.
 """
 import http.server
 import json
@@ -21,7 +21,6 @@ LS_ENV_FILE = os.path.join(BASE_DIR, 'ls_env.json')
 LS_ADDRESS_FILE = os.path.join(BASE_DIR, 'ls_address.txt')
 CSRF_TOKEN_FILE = os.path.join(BASE_DIR, 'csrf_token.txt')
 
-# WINDOWS'TA SİYAH CMD EKRANI ÇIKMASINI VE 0xc0000142 HATASINI ENGELLEYEN BAYRAK:
 NO_WINDOW_FLAG = subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
 
 project_active_state = {}
@@ -38,6 +37,9 @@ def run_silent(cmd, **kwargs):
     """Tüm alt süreçleri siyah CMD penceresi açmadan sessizce çalıştırır."""
     if sys.platform == 'win32':
         kwargs['creationflags'] = kwargs.get('creationflags', 0) | NO_WINDOW_FLAG
+    if kwargs.get('text') and 'encoding' not in kwargs:
+        kwargs['encoding'] = 'utf-8'
+        kwargs['errors'] = 'replace'
     return subprocess.run(cmd, **kwargs)
 
 def watchdog_loop():
@@ -93,6 +95,8 @@ sys.stderr = logger
 
 PORT = 4000
 AGENTAPI_EXE = r"c:\Users\DELL\AppData\Local\Programs\Antigravity IDE\resources\app\extensions\antigravity\bin\language_server_windows_x64.exe"
+ANTIGRAVITY_EXE = r"C:\Users\DELL\AppData\Local\Programs\Antigravity IDE\Antigravity IDE.exe"
+ANTIGRAVITY_CLI = r"C:\Users\DELL\AppData\Local\Programs\Antigravity IDE\bin\antigravity-ide.cmd"
 ANTIGRAVITY_CONV_DIR = r"C:\Users\DELL\.gemini\antigravity-ide\conversations"
 
 cached_ls_address = None
@@ -133,30 +137,148 @@ def verify_ls_env(addr, token=None):
         pass
     return False
 
-def get_antigravity_ls_env(force_refresh=False):
-    global cached_ls_address, cached_csrf_token
-
-    if not force_refresh and cached_ls_address and verify_ls_env(cached_ls_address, cached_csrf_token):
-        return cached_ls_address, cached_csrf_token
-
-    if not force_refresh and os.path.exists(LS_ENV_FILE):
+def get_language_server_processes():
+    ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
+    res = run_silent(['powershell', '-NoProfile', '-Command', ps_cmd], capture_output=True, text=True, timeout=6)
+    if res.returncode == 0 and res.stdout.strip():
         try:
-            with open(LS_ENV_FILE, 'r', encoding='utf-8') as f:
-                f_data = json.load(f)
-                if f_data.get('address') and verify_ls_env(f_data.get('address'), f_data.get('csrf_token')):
-                    cached_ls_address = f_data.get('address')
-                    cached_csrf_token = f_data.get('csrf_token')
-                    return cached_ls_address, cached_csrf_token
+            data = json.loads(res.stdout)
+            if isinstance(data, dict):
+                return [data]
+            elif isinstance(data, list):
+                return data
         except Exception:
             pass
+    return []
+
+def _is_workspace_ls_running(folder_name):
+    procs = get_language_server_processes()
+    for pr in procs:
+        cmd = (pr.get('CommandLine') or '').lower().replace('\\', '/')
+        if f"_{folder_name}" in cmd or f"/{folder_name}" in cmd:
+            return True
+    return False
+
+def ensure_workspace_window_open(workspace_path):
+    """
+    Hedef projenin klasörü için Antigravity IDE penceresi açık değilse,
+    resmi CLI (antigravity-ide.cmd -n) ile yeni pencereyi başlatır
+    ve Language Server'ın ayağa kalkmasını bekler.
+    """
+    if not workspace_path or not os.path.isdir(workspace_path):
+        return False
+
+    folder_name = os.path.basename(workspace_path.rstrip('\\/')).lower()
+    if _is_workspace_ls_running(folder_name):
+        return True
+
+    # 1. Önce resmi Antigravity CLI köprüsünü çağır (pencere açık olsa bile öne getirir veya yeni açar)
+    if os.path.exists(ANTIGRAVITY_CLI):
+        print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder_name}] için Antigravity CLI çağrılıyor...")
+        run_silent(['cmd', '/c', 'call', ANTIGRAVITY_CLI, '-n', workspace_path], timeout=10)
+    elif os.path.exists(ANTIGRAVITY_EXE):
+        print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder_name}] için Antigravity IDE açılıyor...")
+        ps_open = f'Start-Process -FilePath "{ANTIGRAVITY_EXE}" -ArgumentList \'-n "{workspace_path}"\''
+        run_silent(['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps_open], timeout=5)
+    else:
+        return False
+
+    # Language Server ayağa kalkana kadar (max 15 sn) bekle
+    for i in range(15):
+        time.sleep(1)
+        if _is_workspace_ls_running(folder_name):
+            print(f"✅ [IDE PENCERESİ HAZIR] [{folder_name}] Language Server ayağa kalktı! ({i+1} sn)")
+            time.sleep(2)
+            return True
+
+    return False
+
+def bootstrap_new_chat_via_ui(workspace_path):
+    """
+    Yeni açılan veya sohbeti silinen Antigravity IDE penceresini öne getirir,
+    sohbet kutusuna odaklanır (Ctrl+L) ve otomatik '1' + Enter göndererek
+    Antigravity'nin .db dosyasını kendi project_id kimliğiyle oluşturmasını sağlar!
+    """
+    folder_name = os.path.basename(workspace_path.rstrip('\\/'))
+    print(f"✨ [OTOMATİK İLK MESAJ (1 + ENTER)] [{folder_name}] penceresinde yeni sohbet tetikleniyor...")
+
+    before_dbs = set(glob.glob(os.path.join(ANTIGRAVITY_CONV_DIR, '*.db')))
+
+    ps_script = f"""
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32Focus {{
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")]
+    public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+}}
+"@
+$wshell = New-Object -ComObject WScript.Shell
+$procs = Get-Process | Where-Object {{ $_.MainWindowTitle -like "*{folder_name}*" -and $_.MainWindowHandle -ne 0 }}
+if (-not $procs) {{
+    $procs = Get-Process | Where-Object {{ ($_.ProcessName -like "*Antigravity*" -or $_.MainWindowTitle -like "*Antigravity*") -and $_.MainWindowHandle -ne 0 }}
+}}
+if ($procs) {{
+    $hwnd = $procs[0].MainWindowHandle
+    [Win32Focus]::ShowWindowAsync($hwnd, 9) | Out-Null
+    [Win32Focus]::SetForegroundWindow($hwnd) | Out-Null
+    $wshell.AppActivate($procs[0].Id) | Out-Null
+    Start-Sleep -Milliseconds 600
+    # Önce sohbet panelini odakla (Ctrl+L)
+    $wshell.SendKeys("^l")
+    Start-Sleep -Milliseconds 500
+    # İlk kıvılcım mesajı olarak '1' yaz ve Enter'a bas
+    $wshell.SendKeys("1")
+    Start-Sleep -Milliseconds 200
+    $wshell.SendKeys("~")
+}}
+"""
+    try:
+        subprocess.run(
+            ['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps_script],
+            capture_output=True, text=True, timeout=8
+        )
+    except Exception as e:
+        print(f"⚠️ UI Bootstrap hatası: {e}")
+
+    # Yeni .db dosyasının oluşmasını bekle (maksimum 8 saniye)
+    for _ in range(16):
+        time.sleep(0.5)
+        after_dbs = set(glob.glob(os.path.join(ANTIGRAVITY_CONV_DIR, '*.db')))
+        new_files = list(after_dbs - before_dbs)
+        if new_files:
+            new_files.sort(key=os.path.getmtime, reverse=True)
+            new_cid = os.path.splitext(os.path.basename(new_files[0]))[0]
+            print(f"🎉 [YENİ SOHBET OLUŞTU] Otomatik '1' mesajı ile yeni Conversation ID yakalandı: {new_cid}")
+            time.sleep(1.5)
+            return new_cid
+
+    return None
+
+def get_antigravity_ls_env(workspace_path=None, force_refresh=False):
+    global cached_ls_address, cached_csrf_token
+
+    if workspace_path:
+        ensure_workspace_window_open(workspace_path)
+
+    folder_name = os.path.basename(workspace_path.rstrip('\\/')).lower() if workspace_path else None
+
+    if not force_refresh and not folder_name and cached_ls_address and verify_ls_env(cached_ls_address, cached_csrf_token):
+        return cached_ls_address, cached_csrf_token
 
     try:
-        ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
-        ps_res = run_silent(['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps_cmd], capture_output=True, text=True, timeout=5)
-        if ps_res.returncode == 0 and ps_res.stdout.strip():
-            procs = json.loads(ps_res.stdout)
-            if isinstance(procs, dict):
-                procs = [procs]
+        procs = get_language_server_processes()
+        if procs:
+            if folder_name:
+                procs.sort(
+                    key=lambda pr: (
+                        f"_{folder_name}" in (pr.get('CommandLine') or '').lower().replace('\\', '/') or
+                        f"/{folder_name}" in (pr.get('CommandLine') or '').lower().replace('\\', '/')
+                    ),
+                    reverse=True
+                )
 
             netstat_res = run_silent(['netstat', '-ano'], capture_output=True, text=True, timeout=5)
             netstat = netstat_res.stdout or ''
@@ -176,28 +298,13 @@ def get_antigravity_ls_env(force_refresh=False):
                 for port in candidate_ports:
                     addr = f"127.0.0.1:{port}"
                     if verify_ls_env(addr, token):
-                        _save_ls_env(addr, token)
+                        if not folder_name:
+                            _save_ls_env(addr, token)
                         return addr, token
     except Exception as e:
         print(f"⚠️ LS Port tespiti hatası: {e}")
 
     return None, None
-
-def is_conversation_active(cid, ls_address, csrf_token=None):
-    if not cid or not ls_address or not os.path.exists(AGENTAPI_EXE):
-        return False
-    env = os.environ.copy()
-    env["ANTIGRAVITY_LS_ADDRESS"] = ls_address
-    if csrf_token:
-        env["ANTIGRAVITY_CSRF_TOKEN"] = csrf_token
-    try:
-        res = run_silent(
-            [AGENTAPI_EXE, "agentapi", "get-conversation-metadata", cid],
-            env=env, capture_output=True, text=True, timeout=3
-        )
-        return (res.returncode == 0)
-    except Exception:
-        return False
 
 def load_workspaces_map():
     mapping = {
@@ -229,45 +336,37 @@ def get_project_primary_dir(project_code, workspace_path=""):
     return os.path.dirname(BASE_DIR)
 
 def get_active_context_window(normalized_targets):
-    """
-    Antigravity IDE'nin state.vscdb veritabanından kullanıcının o an EKRANDA ODAKLANDIĞI
-    aktif sohbet penceresinin ID'sini okur.
-    ÇOKLU PROJE KORUMASI: Bu pencerenin çalışma alanının (workspace_path), 
-    görev tetiklenen projenin klasörüyle eşleştiğini doğrular.
-    Eğer eşleşmezse (kullanıcı başka bir projedeyse) None döner!
-    """
     try:
         vscdb_path = os.path.expandvars(r'%APPDATA%\Antigravity IDE\User\globalStorage\state.vscdb')
         if not os.path.exists(vscdb_path):
             return None
-        
+
         con = sqlite3.connect(f'file:{vscdb_path}?mode=ro', uri=True)
         cur = con.cursor()
         cur.execute("SELECT value FROM ItemTable WHERE key = 'erennyuksell.ag-multi-account-switchboard'")
         row = cur.fetchone()
         con.close()
-        
+
         if not row or not row[0]:
             return None
-            
+
         val = row[0].decode('utf-8', errors='ignore') if isinstance(row[0], bytes) else row[0]
         data = json.loads(val)
         last_win = data.get('ag.lastContextWindow', {})
         active_cid = last_win.get('conversationId')
         if not active_cid:
             return None
-            
-        # Çoklu Proje Doğrulaması: Bu aktif pencere GERÇEKTEN bu projeye mi ait?
+
         conv_db = os.path.join(ANTIGRAVITY_CONV_DIR, f"{active_cid}.db")
         if not os.path.exists(conv_db):
             return None
-            
+
         con_conv = sqlite3.connect(f'file:{conv_db}?mode=ro', uri=True)
         cur_conv = con_conv.cursor()
         cur_conv.execute("SELECT data FROM trajectory_metadata_blob WHERE id='main'")
         blob = cur_conv.fetchone()
         con_conv.close()
-        
+
         if blob and blob[0]:
             decoded = urllib.parse.unquote(blob[0].decode('utf-8', errors='ignore')).replace('\\', '/').lower()
             for target in normalized_targets:
@@ -292,13 +391,12 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
     if not normalized_targets or not os.path.exists(ANTIGRAVITY_CONV_DIR):
         return None, None
 
-    # 1. ÖNCELİK: Canlı Kullanıcı Odağı (Active Context Window) + Çoklu Proje Koruması
+    # 1. ÖNCELİK: Canlı Kullanıcı Odağı (Active Context Window)
     active_cid = get_active_context_window(normalized_targets)
     if active_cid:
         return active_cid, f"file:///{normalized_targets[0]}"
 
-    # 2. İKİNCİ AŞAMA: Kullanıcı o an başka projeye bakıyorsa, bu projeye ait son 4 saat içinde
-    # işlem görmüş geçerli bir .db oturumu var mı kontrol et
+    # 2. İKİNCİ AŞAMA: Bu projeye ait son 4 saat içinde işlem görmüş geçerli bir .db oturumu
     db_files = glob.glob(os.path.join(ANTIGRAVITY_CONV_DIR, '*.db'))
     db_files.sort(key=os.path.getmtime, reverse=True)
 
@@ -331,7 +429,7 @@ def sync_conversation_id_to_db(project_code, conv_id):
         php_code = (
             f"require_once 'Model/DataLayer.php'; "
             f"$db = new Database(); "
-            f"$stmt =$db->connect->prepare('UPDATE projects SET agent_conversation_id = :cid WHERE project_code = :pcode'); "
+            f"$stmt = $db->connect->prepare('UPDATE projects SET agent_conversation_id = :cid WHERE project_code = :pcode'); "
             f"$stmt->execute([':cid' => '{conv_id}', ':pcode' => '{project_code}']);"
         )
         run_silent(['php', '-r', php_code], cwd=root_dir, capture_output=True, timeout=5)
@@ -350,11 +448,9 @@ def process_webhook_async(payload, header_conv_id):
 
     task_code = str(data.get('task_code', ''))
     task_id = data.get('task_id')
-    is_watchdog_check = bool(data.get('watchdog_check', False))
     api_base_url = (payload.get('api_base_url') or 'http://localhost/taskmanager').rstrip('/')
     api_token = str(payload.get('api_token') or '').strip()
 
-    # 1. GÖREV TESLİM EDİLDİĞİNDE: Kilidi temizle, 4 saniye bekle (ajan cevabını tamamlasın), sonra sıradaki görevi başlat!
     if event == 'task.submitted':
         with state_lock:
             project_active_state.pop(project_code, None)
@@ -374,30 +470,19 @@ def process_webhook_async(payload, header_conv_id):
     agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
     project_dir = get_project_primary_dir(project_code, workspace_path)
 
-    ls_address, csrf_token = get_antigravity_ls_env()
+    ls_address, csrf_token = get_antigravity_ls_env(project_dir)
     discovered_cid, matched_uri = discover_latest_conversation(project_code, project_title, workspace_path)
 
-    # 1. Eğer dinamik olarak aktif/geçerli bir pencere bulunduysa onu kullan
     if discovered_cid:
         target_conv_id = discovered_cid
     else:
-        # Dinamik aktif pencere yoksa, DB'den gelen incoming_conv_id gerçekten geçerli mi kontrol et
-        is_incoming_valid = False
+        target_conv_id = None
         if incoming_conv_id:
-            inc_db = os.path.join(ANTIGRAVITY_CONV_DIR, f"{incoming_conv_id}.db")
-            if os.path.exists(inc_db) and (time.time() - os.path.getmtime(inc_db)) < 14400:
-                is_incoming_valid = True
-        
-        if is_incoming_valid:
-            target_conv_id = incoming_conv_id
-        else:
-            if incoming_conv_id:
-                print(f"🧹 [ESKİ/HAYALET SOHBET TEMİZLENDİ] {incoming_conv_id} artık aktif değil, yeni sekme açılacak.")
-                sync_conversation_id_to_db(project_code, "")
-            target_conv_id = None
+            print(f"🧹 [ESKİ/HAYALET SOHBET TEMİZLENDİ] {incoming_conv_id} artık aktif değil, yeni sekme açılacak.")
+            sync_conversation_id_to_db(project_code, "")
+
     is_resumed = bool(data.get('resumed', False))
 
-    # 2. ANTI-SPAM & HESAP/SOHBET DEĞİŞİM KONTROLÜ
     with state_lock:
         prev_state = project_active_state.get(project_code)
         if prev_state and prev_state.get('task_code') == task_code and event in ('task.started', 'task.in_progress'):
@@ -415,6 +500,13 @@ def process_webhook_async(payload, header_conv_id):
 
     print(f"\n=======================================================")
     print(f"🔔 [GÖREV TETİKLENİYOR] -> Olay: {event} | Proje: [{project_code}] {project_title} | Görev: {task_code}")
+
+    # EĞER BU PROJE İÇİN HİÇ AKTİF SOHBET YOKSA: Otomatik '1 + Enter' ile yeni sohbet oluştur!
+    if not target_conv_id:
+        bootstrapped_cid = bootstrap_new_chat_via_ui(project_dir)
+        if bootstrapped_cid:
+            target_conv_id = bootstrapped_cid
+            discovered_cid = bootstrapped_cid
 
     if discovered_cid:
         sync_conversation_id_to_db(project_code, discovered_cid)
@@ -491,27 +583,22 @@ def process_webhook_async(payload, header_conv_id):
         result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 
         if result.returncode != 0:
-            fresh_addr, fresh_token = get_antigravity_ls_env(force_refresh=True)
+            fresh_addr, fresh_token = get_antigravity_ls_env(project_dir, force_refresh=True)
             if fresh_addr:
                 env["ANTIGRAVITY_LS_ADDRESS"] = fresh_addr
                 if fresh_token:
                     env["ANTIGRAVITY_CSRF_TOKEN"] = fresh_token
                 result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 
+        # Eğer hâlâ gönderilemediyse (örneğin eski sohbet silinmişse), UI üzerinden '1 + Enter' ile yeni sohbet açıp tekrar gönder!
         if result.returncode != 0:
-            print(f"⚠️ [HEDEF SOHBETE GÖNDERİLEMEDİ] ExitCode: {result.returncode}. Doğrudan yeni sohbet açılıyor...")
-            fallback_cmd = [AGENTAPI_EXE, "agentapi", "new-conversation", f"--title={title_header}", message_text]
-            result = run_silent(fallback_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
-
-        if result.returncode == 0 and result.stdout:
-            try:
-                out_json = json.loads(result.stdout)
-                new_cid = out_json.get('response', {}).get('newConversation', {}).get('conversationId')
-                if new_cid:
-                    target_conv_id = new_cid
-                    sync_conversation_id_to_db(project_code, new_cid)
-            except Exception:
-                pass
+            print(f"⚠️ [HEDEF SOHBETE GÖNDERİLEMEDİ] UI üzerinden yeni sohbet ('1 + Enter') başlatılıyor...")
+            new_boot_cid = bootstrap_new_chat_via_ui(project_dir)
+            if new_boot_cid:
+                target_conv_id = new_boot_cid
+                sync_conversation_id_to_db(project_code, new_boot_cid)
+                retry_cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", new_boot_cid, message_text]
+                result = run_silent(retry_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 
         print(f"✅ Gönderim Sonucu ({target_conv_id}): ExitCode {result.returncode}")
         if result.returncode == 0 and task_code:
@@ -558,7 +645,11 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
 def run_server():
     if '--probe' in sys.argv:
-        addr, tok = get_antigravity_ls_env(force_refresh=True)
+        ws = None
+        for i, a in enumerate(sys.argv):
+            if a == '--probe' and i + 1 < len(sys.argv) and not sys.argv[i+1].startswith('-'):
+                ws = sys.argv[i+1]
+        addr, tok = get_antigravity_ls_env(workspace_path=ws, force_refresh=True)
         print(json.dumps({"address": addr, "csrf_token": tok or ""}))
         return
 
@@ -568,7 +659,7 @@ def run_server():
     server_address = ('', PORT)
     httpd = http.server.HTTPServer(server_address, WebhookHandler)
     print("=======================================================")
-    print("🤖 Antigravity Multi-Agent Dispatcher v4.2 (Sessiz Mod) Başlatıldı!")
+    print("🤖 Antigravity Multi-Agent Dispatcher v4.3 (Auto-Bootstrap Modu) Başlatıldı!")
     print(f"📡 Dinleme Adresi : http://localhost:{PORT}/webhook")
     print("=======================================================")
     try:

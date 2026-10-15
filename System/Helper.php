@@ -864,7 +864,7 @@ class Helper
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w']
         ];
-        $lsEnv = self::getAntigravityLsEnv();
+        $lsEnv = self::getAntigravityLsEnv($workspacePath);
         $lsAddress = $lsEnv['address'] ?? null;
         $csrfToken = $lsEnv['csrf_token'] ?? null;
         $envVars = array_merge($_SERVER, $_ENV);
@@ -945,8 +945,25 @@ class Helper
     /**
      * Antigravity Language Server portunu ve CSRF token'ını dinamik tespit eder
      */
-    public static function getAntigravityLsEnv(): array
+    public static function getAntigravityLsEnv(?string $workspacePath = null): array
     {
+        // Python probe ile workspace'e özel dinamik tespit
+        $python = 'C:/Users/DELL/AppData/Local/Programs/Python/Python311/python.exe';
+        $script = dirname(__DIR__) . '/dispatcher/dispatcher.py';
+        if (file_exists($python) && file_exists($script)) {
+            $wsArg = $workspacePath ? ' "' . addslashes($workspacePath) . '"' : '';
+            $probeJson = @shell_exec("\"{$python}\" \"{$script}\" --probe{$wsArg}");
+            if ($probeJson) {
+                $probeData = json_decode(trim($probeJson), true);
+                if (!empty($probeData['address'])) {
+                    return [
+                        'address'    => $probeData['address'],
+                        'csrf_token' => $probeData['csrf_token'] ?? ''
+                    ];
+                }
+            }
+        }
+
         $lsEnvFile = dirname(__DIR__) . '/dispatcher/ls_env.json';
         if (file_exists($lsEnvFile)) {
             $data = json_decode((string)file_get_contents($lsEnvFile), true) ?: [];
@@ -957,22 +974,6 @@ class Helper
                 if ($fp) {
                     fclose($fp);
                     return ['address' => $addr, 'csrf_token' => $token];
-                }
-            }
-        }
-
-        // Python probe ile dinamik yenile
-        $python = 'C:/Users/DELL/AppData/Local/Programs/Python/Python311/python.exe';
-        $script = dirname(__DIR__) . '/dispatcher/dispatcher.py';
-        if (file_exists($python) && file_exists($script)) {
-            $probeJson = @shell_exec("\"{$python}\" \"{$script}\" --probe");
-            if ($probeJson) {
-                $probeData = json_decode(trim($probeJson), true);
-                if (!empty($probeData['address'])) {
-                    return [
-                        'address'    => $probeData['address'],
-                        'csrf_token' => $probeData['csrf_token'] ?? ''
-                    ];
                 }
             }
         }
