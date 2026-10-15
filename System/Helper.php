@@ -3373,6 +3373,139 @@ CRITICAL ARCHITECTURAL RULES:
             'summary'      => !empty($summaryParts) ? implode(', ', $summaryParts) : 'Veritabanı şema değişikliği yok (Sadece Kod)'
         ];
     }
+
+    /**
+     * CERRAHİ GERİ ALMA (ROLLBACK):
+     * 1. Önce git revert --no-commit ile sonraki görevlerle çakışma (conflict) var mı test eder.
+     * 2. Çakışma varsa sistemi bozmaz, abort eder, 'has_conflict' döner ve kullanıcıya AI Cerrah seçeneği sunar.
+     * 3. Çakışma yoksa sadece o görevin DB tablosunu/sütununu geri alır ve commit'ini revert edip GitHub'a pushlar!
+     * 4. AI Cerrah modunda ($mode === 'ai_surgeon'): Görevi revizyona alıp AI ajanına diğer görevleri koruyarak sadece bu görevi temizleme talimatı verir.
+     */
+    public static function rollbackTaskChanges(int $taskId, string $mode = 'safe'): array
+    {
+        global $db;
+        self::ensureGithubAndRollbackSchema();
+
+        if (!$db || empty($db->connect)) {
+            require_once __DIR__ . '/../Model/DataLayer.php';
+            $db = new Database();
+        }
+
+        $task = $db->row_query("SELECT * FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
+        if (!$task) return ['success' => false, 'error' => 'Görev bulunamadı.'];
+
+        $project = $db->row_query("SELECT * FROM projects WHERE id = ? LIMIT 1", [$task->project_id]);
+        if (!$project) return ['success' => false, 'error' => 'Proje bulunamadı.'];
+
+        $sub = $db->row_query("SELECT * FROM task_submissions WHERE task_id = ? ORDER BY id DESC LIMIT 1", [$taskId]);
+        if (!$sub || empty($sub->commit_hash)) {
+            return ['success' => false, 'error' => 'Bu göreve ait kayıtlı bir Git Commit Hash bulunamadı.'];
+        }
+        if ((int)($sub->is_reverted ?? 0) === 1) {
+            return ['success' => false, 'error' => 'Bu görevin değişiklikleri zaten daha önce geri alınmış.'];
+        }
+
+        $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
+        if (empty($ws) || !is_dir($ws . '/.git')) {
+            return ['success' => false, 'error' => 'Proje dizininde Git deposu (.git) bulunamadı.'];
+        }
+
+        $hash      = trim($sub->commit_hash);
+        $escapedWs = escapeshellarg($ws);
+
+        // =========================================================================
+        // AŞAMA 2: EĞER KULLANICI "AI CERRAH İLE AYIKLA" MODUNU SEÇTİYSE
+        // =========================================================================
+        if ($mode === 'ai_surgeon') {
+            $reason = "⚠️ CERRAHİ GERİ ALMA (ROLLBACK) TALEBİ:\n"
+                . "`{$task->task_code}` ({$task->title}) görevinde yapılan değişiklikler geri alınmak isteniyor ancak bu commit (`{$hash}`) sonrasında başka bağımlı görevler tamamlandığı için doğrudan `git revert` çakışma (conflict) üretiyor.\n\n"
+                . "GÖREVİN:\n"
+                . "1. `git show {$hash}` komutuyla bu görevde hangi dosya ve satırların değiştiğini dikkatle incele.\n"
+                . "2. Bu görevden SONRA yapılan diğer görevlerin kodlarına ve özelliklerine KESİNLİKLE ZARAR VERMEDEN, sadece `{$task->task_code}` görevinde eklenen/değiştirilen kodları ve veritabanı yapılarını (" . ($sub->schema_diff_summary ?: 'varsa tabloları') . ") cımbızla sistemden temizle.\n"
+                . "3. Sistemi canlı ortamda test et, çalıştığını kanıtla ve tekrar teslim et!";
+
+            $db->exec_query("UPDATE tasks SET status = 'modification_requested', updated_at = NOW() WHERE id = ?", [$task->id]);
+            $db->exec_query("INSERT INTO task_modifications (task_id, requested_by, reason, status, created_at) VALUES (?, ?, ?, 'pending', NOW())", [
+                $task->id, $_SESSION['user']->id ?? 1, $reason
+            ]);
+            self::triggerTaskRevisionWebhook((int)$task->id, $reason);
+
+            return [
+                'success' => true,
+                'mode'    => 'ai_surgeon',
+                'message' => "🤖 AI Cerrah görevlendirildi! Sonraki görevlere dokunmadan sadece {$task->task_code} görevinin kodlarını ve DB değişikliklerini ayıklayacak."
+            ];
+        }
+
+        // =========================================================================
+        // AŞAMA 1: GÜVENLİ KURU TEST (DRY-RUN / ÇAKIŞMA TESTİ)
+        // =========================================================================
+        $testRevert = (string)@shell_exec("cd /d {$escapedWs} && git revert --no-commit " . escapeshellarg($hash) . " 2>&1");
+        $statusCheck = (string)@shell_exec("cd /d {$escapedWs} && git status --porcelain 2>&1");
+
+        // Unmerged / Conflict (UU, AA, DD, DU, UD) veya error/conflict mesajı var mı kontrol et
+        if (preg_match('/^(UU|AA|DD|DU|UD)\s/m', $statusCheck) || stripos($testRevert, 'conflict') !== false || stripos($testRevert, 'error:') !== false) {
+            // Hemen işlemden vazgeç ve çalışma dizinini ilk haline getirerek tertemiz bırak!
+            @shell_exec("cd /d {$escapedWs} && git revert --abort 2>nul || git reset --hard HEAD 2>nul");
+
+            return [
+                'success'      => false,
+                'has_conflict' => true,
+                'commit_hash'  => substr($hash, 0, 7),
+                'error'        => "Bağımlılık / Çakışma Tespit Edildi! {$task->task_code} görevinden sonra yapılan bazı görevler bu görevin yazdığı kodların üstüne inşa edilmiş.",
+                'details'      => $testRevert
+            ];
+        }
+
+        // =========================================================================
+        // AŞAMA 3: ÇAKIŞMA YOK! SADECE BU GÖREVİN DEĞİŞİKLİKLERİNİ GERİ AL
+        // =========================================================================
+        $revertMsg = "Revert \"{$task->task_code}: {$task->title}\" (Commit {$hash})";
+        @shell_exec("cd /d {$escapedWs} && git commit -m " . escapeshellarg($revertMsg) . " 2>&1");
+
+        // Dinamik branch ve güvenli token ile push et
+        $branch = self::detectActiveBranch($ws);
+        $creds = self::getGithubCredentials();
+        if (!empty($creds['username']) && !empty($creds['token'])) {
+            $authHeader = base64_encode("{$creds['username']}:{$creds['token']}");
+            @shell_exec("cd /d {$escapedWs} && git -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1");
+        } else {
+            @shell_exec("cd /d {$escapedWs} && git push origin {$branch} 2>&1");
+        }
+
+        // VERİTABANI DEĞİŞİKLİKLERİNİ GERİ AL (Varsa sadece bu görevin açtığı tablo/sütun/satırları sil)
+        $dbRolledBack = false;
+        if (!empty($sub->rollback_sql)) {
+            $statements = array_filter(array_map('trim', explode(';', $sub->rollback_sql)));
+            foreach ($statements as $sqlStmt) {
+                $cleanSql = trim(preg_replace('/^--.*$/m', '', $sqlStmt));
+                if ($cleanSql !== '') {
+                    try {
+                        $db->exec_query($cleanSql);
+                        $dbRolledBack = true;
+                    } catch (\Throwable $e) {
+                        error_log("Rollback SQL error: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+
+        // Teslimat kaydını 'is_reverted = 1' olarak işaretle ve aktivite ekle
+        $db->exec_query("UPDATE task_submissions SET is_reverted = 1 WHERE id = ?", [$sub->id]);
+        $db->exec_query("
+            INSERT INTO task_activities (task_id, user_id, action_type, comment, created_at)
+            VALUES (?, ?, 'task_reverted', ?, NOW())
+        ", [
+            $task->id, $_SESSION['user']->id ?? 1,
+            "⏪ Görev değişiklikleri GitHub'dan" . ($dbRolledBack ? " ve Veritabanından ({$sub->schema_diff_summary})" : "") . " cerrahi olarak geri alındı (Commit: " . substr($hash, 0, 7) . ")."
+        ]);
+
+        return [
+            'success'        => true,
+            'db_rolled_back' => $dbRolledBack,
+            'message'        => "✅ {$task->task_code} görevinin kodları GitHub'dan" . ($dbRolledBack ? " ve açtığı veritabanı yapıları MySQL'den" : "") . " diğer görevlere dokunulmadan cerrahi olarak geri alındı!"
+        ];
+    }
 }
 
 
