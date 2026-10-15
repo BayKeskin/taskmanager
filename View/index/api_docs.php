@@ -259,7 +259,8 @@ $system->title = $t['page_title'];
 include __DIR__ . '/../../Components/header.php';
 
 $currentUser = $_SESSION['user'] ?? null;
-$userToken = $currentUser->api_token ?? 'tm_admin_talha_keskin_token_2026';
+$dynCfg = Helper::getDynamicApiConfig();
+$userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dynCfg['api_token'] ?: 'tm_live_demo_token');
 ?>
 
 <div class="cu-view-header" style="border-bottom:1px solid var(--border-subtle); padding:16px 24px; background:var(--bg-card); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">

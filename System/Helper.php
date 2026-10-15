@@ -345,6 +345,8 @@ class Helper
 
         $targetUrl = !empty($project->webhook_url) ? trim($project->webhook_url) : 'http://localhost:4000/webhook';
 
+        $apiCfg = self::getDynamicApiConfig();
+
         $payload = [
             'event'                 => $event,
             'project_id'            => (int)$project->id,
@@ -353,6 +355,8 @@ class Helper
             'workspace_path'        => $project->workspace_path ?: null,
             'agent_rules'           => $project->agent_rules ?: null,
             'agent_conversation_id' => $project->agent_conversation_id ?: null,
+            'api_base_url'          => $apiCfg['base_url'],
+            'api_token'             => $apiCfg['api_token'],
             'timestamp'             => date('c'),
             'data'                  => $data
         ];
@@ -562,33 +566,67 @@ class Helper
     }
 
     /**
-     * Ajanın hangi proje dizininde veya hangi sunucuda olduğundan bağımsız olarak
-     * TaskManager Enterprise REST API (/api/tasks/{code}/workflow/submit) üzerinden
-     * Bearer Token ile görev teslim etmesini sağlayan resmi komutu üretir.
+     * Sistemin güncel Site URL'sini ve aktif Admin API Token'ını veritabanından dinamik çeker.
+     * Eğer sistem yeni kurulmuşsa veya token henüz oluşturulmamışsa otomatik üretip kaydeder!
      */
-    public static function getAgentSubmitCommandBlock(string $taskCode): string
+    public static function getDynamicApiConfig(): array
     {
         global $db;
         $baseUrl = 'http://localhost/taskmanager';
-        $apiToken = 'tm_admin_talha_keskin_token_2026';
+        $apiToken = '';
 
         try {
-            if ($db && !empty($db->connect)) {
-                $sUrl = $db->single_query("SELECT siteurl FROM settings WHERE id = 1");
-                if (!empty($sUrl)) {
-                    $baseUrl = rtrim(trim((string)$sUrl), '/');
-                }
-                $dbToken = $db->single_query("SELECT api_token FROM users WHERE role = 'admin' AND status = 'active' AND api_token IS NOT NULL AND api_token != '' ORDER BY id ASC LIMIT 1");
-                if (!empty($dbToken)) {
-                    $apiToken = trim((string)$dbToken);
+            if (!$db || empty($db->connect)) {
+                require_once __DIR__ . '/../Model/DataLayer.php';
+                $db = new Database();
+            }
+
+            // 1. Sistemin güncel URL'sini settings tablosundan al
+            $sUrl = $db->single_query("SELECT siteurl FROM settings WHERE id = 1");
+            if (!empty($sUrl)) {
+                $baseUrl = rtrim(trim((string)$sUrl), '/');
+            } elseif (!empty($_SERVER['HTTP_HOST'])) {
+                $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+                $baseUrl = $protocol . $_SERVER['HTTP_HOST'] . '/taskmanager';
+            }
+
+            // 2. Aktif yöneticinin güncel api_token değerini al
+            $adminUser = $db->row_query("
+                SELECT id, api_token 
+                FROM users 
+                WHERE role = 'admin' AND status = 'active' 
+                ORDER BY id ASC LIMIT 1
+            ");
+
+            if ($adminUser) {
+                if (!empty($adminUser->api_token)) {
+                    $apiToken = trim((string)$adminUser->api_token);
+                } else {
+                    // Sistem yeni kurulduysa ve adminin henüz token'ı yoksa otomatik üret!
+                    $apiToken = 'tm_live_' . bin2hex(random_bytes(16));
+                    $db->exec_query("UPDATE users SET api_token = ? WHERE id = ?", [$apiToken, $adminUser->id]);
                 }
             }
         } catch (\Throwable $e) {}
 
-        $endpoint = "{$baseUrl}/api/tasks/{$taskCode}/workflow/submit";
+        return [
+            'base_url'  => $baseUrl,
+            'api_token' => $apiToken
+        ];
+    }
+
+    /**
+     * Ajanın hangi dizinde veya kimin sunucusunda çalıştığından bağımsız olarak
+     * dinamik URL ve dinamik Bearer Token ile görev teslim komutunu üretir.
+     */
+    public static function getAgentSubmitCommandBlock(string $taskCode): string
+    {
+        $cfg = self::getDynamicApiConfig();
+        $endpoint = "{$cfg['base_url']}/api/tasks/{$taskCode}/workflow/submit";
+        $token    = $cfg['api_token'];
 
         return "```powershell\n"
-             . "\$headers = @{ 'Authorization' = 'Bearer {$apiToken}'; 'Content-Type' = 'application/json; charset=utf-8' }\n"
+             . "\$headers = @{ 'Authorization' = 'Bearer {$token}'; 'Content-Type' = 'application/json; charset=utf-8' }\n"
              . "\$body = @{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' } | ConvertTo-Json -Compress\n"
              . "Invoke-RestMethod -Uri '{$endpoint}' -Method Post -Headers \$headers -Body ([System.Text.Encoding]::UTF8.GetBytes(\$body))\n"
              . "```";
