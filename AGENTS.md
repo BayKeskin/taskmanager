@@ -143,16 +143,16 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 ---
 
 <!-- PROJECT_RULES_START -->
-## 9. PROJECT-SPECIFIC AGENT RULES (PROJEYE ÖZEL KURALLAR)
+## 9. PROJECT-SPECIFIC AGENT RULES
 
 > ### 📌 MANDATORY PROJECT-SPECIFIC CONSTRAINTS:
 > The following project-specific technical rules, styling constraints, and workflow directives must be strictly observed for project [01] Task Manager:
 
-### [01] Task Manager Proje Kuralları
-- **Mimari:** Strict MVC mimarisi zorunludur. View (`View/**/*.php`) veya bileşenler (`Components/**/*.php`) içinde doğrudan SQL / `$db` sorguları yazmak kesinlikle yasaktır. Tüm veri erişimi `Model` sınıflarında, akış `Controller` sınıflarında olmalıdır.
-- **Çok Dilli Standart (i18n):** Tüm arayüz metinleri, hata/başarı mesajları ve bildirimler 3 dilde (TR, EN, DE) `languages/{lang}/app.php` sözlükleri üzerinden yönetilmeli; hardcoded metin yazılmamalıdır.
-- **QA Doktrini:** "Kullanıcı test elemanı değildir". Her buton, modal, AJAX çağrısı ve form canlı ortamda otonom test edilmeden teslim edilemez.
-- **Görev Teslimi:** İş tamamlandığında `Helper::submitTaskDirectly()` fonksiyonu ile 4 aşamalı DoD (Neler Yapıldı, Nereden Test Edilir, Nasıl Test Edilir, Test Kanıtı) formatında teslim edilmelidir.
+### [01] Task Manager Project Rules
+- **Strict MVC Architecture:** Direct SQL execution or calling `$db` inside any View (`View/**/*.php`) or UI Component (`Components/**/*.php`) is strictly forbidden. All data queries must reside in dedicated `Model` classes, and request coordination must remain within `Controller` classes.
+- **Universal Tri-Lingual Standard (i18n):** All UI texts, error/success messages, and system notifications must be managed via `languages/{lang}/app.php` dictionaries across all 3 languages (TR, EN, DE) and `Config/ajax_translations.php`. Hardcoded single-language strings are strictly prohibited.
+- **QA Doctrine:** "The User Is Not a QA Tester". Every button, modal, form input, state transition, and AJAX call must be autonomously verified in the live environment using headless browser, curl, and CLI scripts before task completion.
+- **Task Delivery Protocol:** Tasks must be delivered via `Helper::submitTaskDirectly()` following the 4-stage Definition of Done (DoD) format (What Was Done, Where to Test, How to Test, Autonomous Test Evidence).
 <!-- PROJECT_RULES_END -->
 
 

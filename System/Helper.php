@@ -1545,11 +1545,19 @@ class Helper
 
         $rules = trim($project->agent_rules ?? '');
         $projectCode = $project->project_code ?? '';
-        $projectTitle = $project->title ?? '';
+        $ruleNumber = 7;
+        $targetFile = $wsPath . '/AGENTS.md';
+        if (file_exists($targetFile)) {
+            $existing = file_get_contents($targetFile);
+            if (preg_match('/##\s*(\d+)\.\s*PROJECT-SPECIFIC\s+AGENT\s+RULES/i', $existing, $m)) {
+                $ruleNumber = (int)$m[1];
+            }
+        }
 
-        $sectionHeader = "<!-- PROJECT_RULES_START -->\n## 7. PROJECT-SPECIFIC AGENT RULES (PROJEYE ÖZEL KURALLAR)\n\n> ### 📌 MANDATORY PROJECT-SPECIFIC CONSTRAINTS:\n> The following project-specific technical rules, styling constraints, and workflow directives must be strictly observed for project [{$projectCode}] {$projectTitle}:\n\n";
+        $projectTitle = $project->title ?? '';
+        $sectionHeader = "<!-- PROJECT_RULES_START -->\n## {$ruleNumber}. PROJECT-SPECIFIC AGENT RULES\n\n> ### 📌 MANDATORY PROJECT-SPECIFIC CONSTRAINTS:\n> The following project-specific technical rules, styling constraints, and workflow directives must be strictly observed for project [{$projectCode}] {$projectTitle}:\n\n";
         $sectionFooter = "\n<!-- PROJECT_RULES_END -->";
-        $customSection = $sectionHeader . ($rules ?: "*(Henüz projeye özel kural tanımlanmadı / No project-specific rules defined yet)*") . $sectionFooter;
+        $customSection = $sectionHeader . ($rules ?: "*(No project-specific rules defined yet)*") . $sectionFooter;
 
         $targetFiles = ['AGENTS.md'];
         if (file_exists($wsPath . '/GEMINI.md')) {
