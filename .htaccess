@@ -30,10 +30,10 @@ DirectoryIndex index.php View/index/board.php
     RewriteRule ^events/?$              Controller/sse.php [L,NC,QSA]
     RewriteRule ^api/sse/?$             Controller/sse.php [L,NC,QSA]
 
-    # TaskManager REST API Rotaları
     RewriteRule ^api/?$                 Controller/api/index.php [L,NC,QSA]
     RewriteRule ^api/(.*)$              Controller/api/index.php?path=$1 [L,NC,QSA]
     RewriteRule ^api[-_]docs/?$         View/index/api_docs.php [L,NC,QSA]
+    RewriteRule ^api[-_]test/?$         View/index/api_test.php [L,NC,QSA]
 </IfModule>
 
 <IfModule mod_php.c>

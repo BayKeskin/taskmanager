@@ -281,6 +281,10 @@ $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dyn
             <a href="?lang=en" class="cu-btn-sm" style="text-decoration:none; padding:4px 8px; font-size:11px; font-weight:700; border-radius:4px; <?= $loc === 'en' ? 'background:var(--brand-primary); color:#fff;' : 'color:var(--text-muted);' ?>">🇬🇧 EN</a>
             <a href="?lang=de" class="cu-btn-sm" style="text-decoration:none; padding:4px 8px; font-size:11px; font-weight:700; border-radius:4px; <?= $loc === 'de' ? 'background:var(--brand-primary); color:#fff;' : 'color:var(--text-muted);' ?>">🇩🇪 DE</a>
         </div>
+        <a href="/taskmanager/api-test" class="cu-btn-sm" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); color:#fff; text-decoration:none; font-weight:700; display:flex; align-items:center; gap:6px; box-shadow: 0 2px 10px rgba(16,185,129,0.35);">
+            <span>🧪</span>
+            <span>Canlı API Test Konsolu</span>
+        </a>
         <a href="/taskmanager/API_DOCUMENTATION.md" target="_blank" class="cu-btn-sm" style="background:rgba(255,255,255,0.06); color:var(--text-white); text-decoration:none; display:flex; align-items:center; gap:6px;">
             <span>📄</span>
             <span><?= htmlspecialchars($t['btn_markdown']) ?></span>
@@ -295,7 +299,7 @@ $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dyn
 <div class="cu-content-scroll" style="padding:24px; max-width:1400px; margin:0 auto;">
     
     <!-- API ERİŞİM & TOKEN KARTI -->
-    <div style="background:linear-gradient(135deg, rgba(123, 104, 238, 0.12), rgba(15, 17, 26, 0.6)); border:1px solid rgba(123, 104, 238, 0.3); border-radius:var(--radius-md); padding:20px; margin-bottom:24px;">
+    <div style="background:linear-gradient(135deg, rgba(123, 104, 238, 0.12), rgba(15, 17, 26, 0.6)); border:1px solid rgba(123, 104, 238, 0.3); border-radius:var(--radius-md); padding:20px; margin-bottom:20px;">
         <div style="display:grid; grid-template-columns:1.2fr 2fr; gap:20px; align-items:center;">
             <div>
                 <span style="font-size:11px; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.5px;"><?= htmlspecialchars($t['token_label']) ?></span>
@@ -320,6 +324,25 @@ $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dyn
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- 🧪 CANLI API TEST LABORATUVARI TANITIM BANNERI -->
+    <div style="background:linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(15, 23, 42, 0.7)); border:1px solid rgba(16, 185, 129, 0.35); border-radius:var(--radius-md); padding:16px 20px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:42px; height:42px; border-radius:8px; background:rgba(16, 185, 129, 0.2); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+                🧪
+            </div>
+            <div>
+                <h4 style="font-size:14.5px; font-weight:800; color:var(--text-white); margin:0;">Canlı REST API Test & Explorer Laboratuvarı Yayında!</h4>
+                <p style="font-size:12px; color:var(--text-secondary); margin:3px 0 0 0;">
+                    Postman veya Swagger arayüzü gibi tüm uç noktaları canlı parametrelerle test edebilir, JSON yanıtlarını izleyebilir ve anında cURL / PowerShell komutları üretebilirsiniz.
+                </p>
+            </div>
+        </div>
+        <a href="/taskmanager/api-test" class="cu-btn-sm" style="background:#10b981; color:#000; text-decoration:none; font-weight:800; padding:8px 16px; border-radius:6px; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(16, 185, 129, 0.3);">
+            <span>Konsolu Başlat</span>
+            <i class="fa-solid fa-arrow-right" style="font-size:12px;"></i>
+        </a>
     </div>
 
     <!-- 🌐 ÇOK DİLLİ API DESTEĞİ KARTI -->

@@ -560,7 +560,7 @@ TaskManager canlı bir sunucuya (örneğin `https://siteniz.com` veya VPS) taş�
 
 ---
 
-## 🌐 Etkileşimli Dokümantasyon Arayüzü
-Sistemin arayüzünden doğrudan API testleri yapmak ve kod parçacıklarını kopyalamak için:  
-👉 **[http://localhost/taskmanager/api-docs](http://localhost/taskmanager/api-docs)** sayfasını ziyaret edebilirsiniz.
+## 🌐 Etkileşimli Dokümantasyon & Canlı Test Konsolu
+* 📖 **Ayrıntılı REST API & Parametre Dokümanı:** [http://localhost/taskmanager/api-docs](http://localhost/taskmanager/api-docs)
+* 🧪 **Canlı API Test & Explorer Laboratuvarı (Swagger/Postman Tarzı):** [http://localhost/taskmanager/api-test](http://localhost/taskmanager/api-test) (Tarayıcınızdan tüm uç noktaları canlı test edebilir, JSON yanıtlarını izleyebilir ve cURL/PowerShell komutları üretebilirsiniz).
 
