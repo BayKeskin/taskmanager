@@ -562,6 +562,31 @@ class Helper
     }
 
     /**
+     * Ajanın hangi proje dizininde veya hangi bilgisayarda olduğundan bağımsız olarak
+     * HTTP API üzerinden 0.1 saniyede görev teslim etmesini sağlayan evrensel komutu üretir.
+     */
+    public static function getAgentSubmitCommandBlock(string $taskCode): string
+    {
+        global $db;
+        $baseUrl = 'http://localhost/taskmanager';
+        try {
+            if ($db && !empty($db->connect)) {
+                $sUrl = $db->single_query("SELECT siteurl FROM settings WHERE id = 1");
+                if (!empty($sUrl)) {
+                    $baseUrl = rtrim(trim((string)$sUrl), '/');
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        $endpoint = $baseUrl . '/ajax?action=agent_submit_task';
+
+        return "```powershell\n"
+             . "\$body = @{ task_code = '{$taskCode}'; notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' } | ConvertTo-Json -Compress\n"
+             . "Invoke-RestMethod -Uri '{$endpoint}' -Method Post -Body ([System.Text.Encoding]::UTF8.GetBytes(\$body)) -ContentType 'application/json; charset=utf-8'\n"
+             . "```";
+    }
+
+    /**
      * Olay tipine göre Antigravity penceresine gidecek bildirim başlığı ve markdown içeriğini oluşturur.
      */
     public static function formatAgentMessage(string $event, object $project, array $data): array
@@ -647,11 +672,9 @@ class Helper
                 . "3. **How to Test (Nasıl Test Edilir):** Step-by-step credentials, actions, buttons to click, and expected outcomes.\n"
                 . "4. **Autonomous Test Evidence (Otonom Test Kanıtı):** Summary of automated headless browser and CLI test results.\n\n"
                 . "🎯 **Directive:** This task is actively assigned and in progress. Focus EXCLUSIVELY on this specific task: [{$taskCode}]. Do NOT jump to older or previously completed tasks. If the user in the active chat gave a direct instruction or question, prioritize addressing the user.\n\n"
-                . "⚡ **AUTONOMOUS COMPLETION INSTRUCTION:**\n"
-                . "When development and autonomous verification are 100% complete, you MUST deliver the task by running this command in the shell:\n"
-                . "```powershell\n"
-                . "php -r \"require 'System/System.php'; Helper::submitTaskDirectly('{$taskCode}', 'Detailed delivery notes and autonomous test evidence in task language...');\"\n"
-                . "```";
+                . "⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\n"
+                . "When development and autonomous verification are 100% complete, deliver the task immediately from your current directory by running this HTTP POST command in your shell:\n"
+                . self::getAgentSubmitCommandBlock($taskCode);
         } elseif ($event === 'task.revision_requested' || $event === 'task.modification_requested') {
             $titleHeader = "⚠️ [REVISION REQUEST] {$taskCode}: {$taskTitle}";
             $revReason = $data['revision_reason'] ?? '*(No reason specified)*';
@@ -669,11 +692,9 @@ class Helper
                 . "> Before an engineer or AI agent tells the user \"It's done, please check\", \"Try it now\", or marks any task as completed:\n"
                 . "> **The agent is STRICTLY OBLIGATED to autonomously test and verify all screens, every button, every form step, UI visual flaws, and all state transitions in the LIVE ENVIRONMENT using headless browser, curl, PHP/CLI scripts, and API tests.**\n\n"
                 . "🎯 **Directive:** Review the requested revision items and apply all necessary corrections and autonomous tests.\n\n"
-                . "⚡ **AUTONOMOUS COMPLETION INSTRUCTION:**\n"
-                . "When revision fixes and autonomous verification are complete, you MUST deliver the task by running this command in the shell:\n"
-                . "```powershell\n"
-                . "php -r \"require 'System/System.php'; Helper::submitTaskDirectly('{$taskCode}', 'Detailed revision delivery notes and test evidence in task language...');\"\n"
-                . "```";
+                . "⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\n"
+                . "When revision fixes and autonomous verification are complete, deliver the task immediately from your current directory by running this HTTP POST command in your shell:\n"
+                . self::getAgentSubmitCommandBlock($taskCode);
         } elseif ($event === 'task.created') {
             $titleHeader = "🔔 New Task: [{$taskCode}] {$taskTitle}";
             $messageText = "🔔 **TaskManager New Task Notification**\n\n"
@@ -1035,7 +1056,7 @@ class Helper
             if ($isResumed) {
                 $desc = "🔄 **Previous priority/revision task was completed! Resumed this pending task autonomously.**\n\n" . $desc;
             }
-            $desc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION:**\nWhen development and autonomous verification are 100% complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task by running this command in the shell:\n```powershell\nphp -r \"require 'System/System.php'; Helper::submitTaskDirectly('{$task->task_code}', 'Detailed delivery notes and autonomous test evidence in task language...');\"\n```";
+            $desc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen development and autonomous verification are 100% complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . self::getAgentSubmitCommandBlock($task->task_code);
 
             $payloadData = array_merge([
                 'task_id'       => (int)$task->id,
@@ -1081,7 +1102,7 @@ class Helper
 
             $checklists = $db->multi_record_query("SELECT id, title, is_completed FROM task_checklists WHERE task_id = ? ORDER BY id ASC", [$taskId]) ?: [];
 
-            $revDesc = ($task->description ?: '') . "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION:**\nWhen revision fixes and autonomous verification are complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task by running this command in the shell:\n```powershell\nphp -r \"require 'System/System.php'; Helper::submitTaskDirectly('{$task->task_code}', 'Detailed revision delivery notes and test evidence in task language...');\"\n```";
+            $revDesc = ($task->description ?: '') . "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen revision fixes and autonomous verification are complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . self::getAgentSubmitCommandBlock($task->task_code);
 
             $payloadData = array_merge([
                 'task_id'         => (int)$task->id,

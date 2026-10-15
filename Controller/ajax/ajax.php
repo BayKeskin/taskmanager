@@ -2646,6 +2646,31 @@ switch ($action) {
         ]);
         break;
 
+    // 30. UZAK VEYA YEREL AI AJANLAR İÇİN HTTP ÜZERİNDEN DOĞRUDAN GÖREV TESLİM API'Sİ (DİZİN BAĞIMSIZ)
+    case 'agent_submit_task':
+        // JSON body veya standart POST verisini oku
+        $rawBody = file_get_contents('php://input');
+        $jsonInput = json_decode($rawBody, true);
+        if (!is_array($jsonInput)) {
+            $jsonInput = [];
+        }
+
+        $taskCode = trim($jsonInput['task_code'] ?? ($_POST['task_code'] ?? ($_GET['task_code'] ?? '')));
+        $notes    = trim($jsonInput['notes'] ?? ($_POST['notes'] ?? 'Görev tamamlandı ve test edildi.'));
+
+        if (empty($taskCode)) {
+            jsonResponse(false, 'task_code parametresi zorunludur.');
+        }
+
+        // Mevcut submitTaskDirectly fonksiyonunu çağır
+        $res = Helper::submitTaskDirectly($taskCode, $notes);
+        if (!empty($res['success'])) {
+            jsonResponse(true, $res['message'] ?? 'Görev başarıyla İNCELEMEDE sütununa taşındı.', $res);
+        } else {
+            jsonResponse(false, $res['error'] ?? 'Görev teslim edilemedi.', $res);
+        }
+        break;
+
     default:
         jsonResponse(false, 'Geçersiz AJAX işlemi.');
 }

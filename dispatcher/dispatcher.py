@@ -389,9 +389,10 @@ def process_webhook_async(payload, header_conv_id):
             f"🛑 **STRICT OPERATIONAL GUARDRAILS:**\n"
             f"1. **SINGLE ACTIVE TASK FOCUS:** Work EXCLUSIVELY on `{task_code}` in project `[{project_code}]`. NEVER jump to older or other tasks!\n"
             f"2. **ZERO ABANDONMENT & AUTONOMOUS QA:** Complete 100% of implementation and live automated verification before responding to the user. The user is NOT a QA tester.\n"
-            f"3. **SUBMIT AND STOP:** When completed and verified, execute the following command in your terminal to move the task to `submitted` (REVIEW) and summarize your delivery notes in the task's language, then **END YOUR TURN** (The next queued task will be automatically dispatched in 4 seconds):\n\n"
+            f"3. **SUBMIT AND STOP (INSTANT HTTP API - NEVER SEARCH FOR TASKMANAGER DIRECTORY OR DB):** When completed and verified, execute the following HTTP POST command directly in your terminal from your current workspace to move the task to `submitted` (REVIEW), then **END YOUR TURN** (The next queued task will be automatically dispatched in 4 seconds):\n\n"
             f"```powershell\n"
-            f"php -r \"require 'c:/wamp64/www/taskmanager/System/System.php'; Helper::submitTaskDirectly('{task_code}', '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...');\"\n"
+            f"$body = @{{ task_code = '{task_code}'; notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' }} | ConvertTo-Json -Compress\n"
+            f"Invoke-RestMethod -Uri 'http://localhost/taskmanager/ajax?action=agent_submit_task' -Method Post -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -ContentType 'application/json; charset=utf-8'\n"
             f"```"
         )
     elif event == 'project.webhook_test':
