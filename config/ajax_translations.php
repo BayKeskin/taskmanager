@@ -146,6 +146,9 @@ return array (
     'GitHub hesabınız başarıyla bağlandı! Artık projeleriniz güvenle GitHub ile senkronize edilecek.' => 'Your GitHub account has been successfully connected! Your projects will now be securely synced with GitHub.',
     'GitHub senkronizasyonu başarısız oldu.' => 'GitHub synchronization failed.',
     'Geri alma işlemi yapılamadı.' => 'Rollback could not be performed.',
+    'MCP ayarları kaydedilemedi.' => 'Could not save MCP settings.',
+    'MCP ayarları başarıyla kaydedildi.' => 'MCP settings saved successfully.',
+    'Durum güncellenemedi.' => 'Status could not be updated.',
     'Geçersiz AJAX işlemi.' => 'Invalid AJAX action.',
   ),
   'de' => 
@@ -292,6 +295,9 @@ return array (
     'GitHub hesabınız başarıyla bağlandı! Artık projeleriniz güvenle GitHub ile senkronize edilecek.' => 'Ihr GitHub-Konto wurde erfolgreich verbunden! Ihre Projekte werden nun sicher mit GitHub synchronisiert.',
     'GitHub senkronizasyonu başarısız oldu.' => 'GitHub-Synchronisierung fehlgeschlagen.',
     'Geri alma işlemi yapılamadı.' => 'Rollback konnte nicht durchgeführt werden.',
+    'MCP ayarları kaydedilemedi.' => 'MCP-Einstellungen konnten nicht gespeichert werden.',
+    'MCP ayarları başarıyla kaydedildi.' => 'MCP-Einstellungen erfolgreich gespeichert.',
+    'Durum güncellenemedi.' => 'Status konnte nicht aktualisiert werden.',
     'Geçersiz AJAX işlemi.' => 'Ungültige AJAX-Aktion.',
   ),
 );

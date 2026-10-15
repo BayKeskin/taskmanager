@@ -73,6 +73,9 @@ foreach ($allTasks as $t) {
                 <button type="button" class="cu-btn-sm" onclick="syncProjectToGithub(<?= (int)$activeProjectId ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(46,160,67,0.15); border:1px solid rgba(46,160,67,0.4); color:#3fb950; font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.btn_sync_github', 'Bu Projeyi GitHub ile Eşitle')) ?>">
                     <span>🚀</span> <span><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
                 </button>
+                <button type="button" id="btnOpenProjectMcp" class="cu-btn-sm" onclick="openProjectMcpModal(<?= (int)$activeProjectId ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(230,126,34,0.15), rgba(243,156,18,0.25)); border:1px solid rgba(243,156,18,0.45); color:#f39c12; font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.mcp_marketplace_desc')) ?>">
+                    <span>🧩</span> <span><?= __('app.mcp_btn_open') ?></span>
+                </button>
             <?php endif; ?>
         <?php endif; ?>
         <?php if ($canCreateTask): ?>

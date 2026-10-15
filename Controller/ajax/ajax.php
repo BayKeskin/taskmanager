@@ -2695,6 +2695,66 @@ switch ($action) {
         }
         break;
 
+    // ==========================================
+    // ANTIGRAVITY MCP MARKETPLACE ENDPOINTS
+    // ==========================================
+    case 'get_project_mcps':
+        require_once __DIR__ . '/../McpController.php';
+        $mcpCtrl = new McpController();
+        $pId = (int)($_GET['project_id'] ?? ($_POST['project_id'] ?? 0));
+        $res = $mcpCtrl->getProjectMcps($pId);
+        if (!empty($res['success'])) {
+            jsonResponse(true, 'MCP listesi getirildi.', $res);
+        } else {
+            jsonResponse(false, $res['error'] ?? 'Hata oluştu.');
+        }
+        break;
+
+    case 'save_project_mcp':
+        require_once __DIR__ . '/../McpController.php';
+        $mcpCtrl = new McpController();
+        $pId = (int)($_POST['project_id'] ?? 0);
+        $catalogId = (int)($_POST['mcp_catalog_id'] ?? 0);
+        $isEnabled = !empty($_POST['is_enabled']);
+        $envValues = is_array($_POST['env_values'] ?? null) ? $_POST['env_values'] : (json_decode($_POST['env_values'] ?? '{}', true) ?: []);
+        $customArgs = is_array($_POST['custom_args'] ?? null) ? $_POST['custom_args'] : (json_decode($_POST['custom_args'] ?? '[]', true) ?: []);
+
+        $res = $mcpCtrl->saveProjectMcp($pId, $catalogId, $isEnabled, $envValues, $customArgs);
+        if (!empty($res['success'])) {
+            jsonResponse(true, $res['message'] ?? 'MCP kaydedildi.', $res);
+        } else {
+            jsonResponse(false, $res['error'] ?? 'Kaydedilemedi.');
+        }
+        break;
+
+    case 'toggle_project_mcp':
+        require_once __DIR__ . '/../McpController.php';
+        $mcpCtrl = new McpController();
+        $pId = (int)($_POST['project_id'] ?? 0);
+        $catalogId = (int)($_POST['mcp_catalog_id'] ?? 0);
+        $isEnabled = !empty($_POST['is_enabled']);
+
+        $res = $mcpCtrl->toggleProjectMcp($pId, $catalogId, $isEnabled);
+        if (!empty($res['success'])) {
+            jsonResponse(true, 'MCP durumu güncellendi.', $res);
+        } else {
+            jsonResponse(false, $res['error'] ?? 'Güncellenemedi.');
+        }
+        break;
+
+    case 'sync_project_mcps':
+        require_once __DIR__ . '/../McpController.php';
+        $mcpCtrl = new McpController();
+        $pId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
+
+        $res = $mcpCtrl->syncFiles($pId);
+        if (!empty($res['success'])) {
+            jsonResponse(true, 'MCP dosyaları başarıyla senkronize edildi.', $res);
+        } else {
+            jsonResponse(false, $res['result']['error'] ?? 'Senkronizasyon başarısız.');
+        }
+        break;
+
     default:
         jsonResponse(false, 'Geçersiz AJAX işlemi.');
 }
