@@ -29,7 +29,7 @@ extract($docData);
         <button type="button" class="cu-btn-sm cu-mobile-docs-toggle" onclick="toggleDocsSidebar()" style="display:none; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:var(--text-white); font-size:12px; height:32px; padding:0 12px; border-radius:var(--radius-sm); cursor:pointer;">
             <span>📂</span> <span><?= __('app.docs_mobile_btn', 'Belgeler') ?></span>
         </button>
-        <button class="cu-btn-quick-task" onclick="openNewDocPrompt()">
+        <button type="button" class="cu-btn-quick-task" onclick="openNewDocPrompt()" style="height:32px; padding:0 14px; font-size:12.5px; display:inline-flex; align-items:center; gap:6px; box-sizing:border-box;">
             <span>➕</span> <?= __('app.docs_new_doc', 'Yeni Döküman') ?>
         </button>
     </div>

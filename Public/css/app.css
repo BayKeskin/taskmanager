@@ -895,7 +895,17 @@ body {
 .cu-filter-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+}
+
+.cu-view-header .cu-filter-bar button,
+.cu-view-header .cu-filter-bar .cu-btn-sm,
+.cu-view-header .cu-filter-bar .cu-btn-quick-task {
+    height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
 }
 
 .cu-filter-select {

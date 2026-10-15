@@ -55,28 +55,28 @@ foreach ($allTasks as $t) {
 
     <div class="cu-filter-bar">
         <?php if ($canCreateTask && !$isClient): ?>
-            <button type="button" class="cu-btn-sm" onclick="openAiArchitectModal()" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, #7B68EE, #e056fd); border:none; color:#ffffff; font-weight:700; padding:6px 14px; border-radius:6px; cursor:pointer; box-shadow:0 4px 12px rgba(123,104,238,0.35);" title="<?= htmlspecialchars(__('app.tooltip_ai_architect')) ?>">
+            <button type="button" class="cu-btn-sm" onclick="openAiArchitectModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, #7B68EE, #e056fd); border:none; color:#ffffff; font-weight:700; padding:0 14px; font-size:12px; border-radius:6px; cursor:pointer; box-shadow:0 4px 12px rgba(123,104,238,0.35); box-sizing:border-box;" title="<?= htmlspecialchars(__('app.tooltip_ai_architect')) ?>">
                 <span>🪄</span> <span><?= __('app.btn_ai_architect') ?></span>
             </button>
         <?php endif; ?>
-        <button type="button" class="cu-btn-sm" onclick="openAiStandupModal()" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(123,104,238,0.2), rgba(0,184,148,0.2)); border:1px solid rgba(123,104,238,0.4); color:var(--text-white); font-weight:600; padding:6px 12px; border-radius:6px; cursor:pointer;" title="<?= htmlspecialchars(__('tasks.tooltip_ai_standup', 'Son 24 saatin LLM özetini ve standup bültenini görüntüle')) ?>">
+        <button type="button" class="cu-btn-sm" onclick="openAiStandupModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(123,104,238,0.2), rgba(0,184,148,0.2)); border:1px solid rgba(123,104,238,0.4); color:var(--text-white); font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('tasks.tooltip_ai_standup', 'Son 24 saatin LLM özetini ve standup bültenini görüntüle')) ?>">
             <span>🤖</span> <span><?= __('tasks.btn_ai_standup', 'AI Standup Özeti') ?></span>
         </button>
         <?php if (!$isClient): 
             Helper::ensureGithubAndRollbackSchema();
             $ghCreds = Helper::getGithubCredentials();
         ?>
-            <button type="button" class="cu-btn-sm" onclick="openGithubSettingsModal()" style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); color:var(--text-white); font-weight:600; padding:6px 12px; border-radius:6px; cursor:pointer;" title="<?= htmlspecialchars(__('app.modal_github_title', 'GitHub Otomasyon & Hesap Ayarları')) ?>">
+            <button type="button" class="cu-btn-sm" onclick="openGithubSettingsModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); color:var(--text-white); font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.modal_github_title', 'GitHub Otomasyon & Hesap Ayarları')) ?>">
                 <span>🐙</span> <span><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : __('app.btn_connect_github', 'GitHub Bağla') ?></span>
             </button>
             <?php if (!empty($activeProjectId)): ?>
-                <button type="button" class="cu-btn-sm" onclick="syncProjectToGithub(<?= (int)$activeProjectId ?>)" style="display:inline-flex; align-items:center; gap:6px; background:rgba(46,160,67,0.15); border:1px solid rgba(46,160,67,0.4); color:#3fb950; font-weight:600; padding:6px 12px; border-radius:6px; cursor:pointer;" title="<?= htmlspecialchars(__('app.btn_sync_github', 'Bu Projeyi GitHub ile Eşitle')) ?>">
+                <button type="button" class="cu-btn-sm" onclick="syncProjectToGithub(<?= (int)$activeProjectId ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(46,160,67,0.15); border:1px solid rgba(46,160,67,0.4); color:#3fb950; font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.btn_sync_github', 'Bu Projeyi GitHub ile Eşitle')) ?>">
                     <span>🚀</span> <span><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
                 </button>
             <?php endif; ?>
         <?php endif; ?>
         <?php if ($canCreateTask): ?>
-            <button class="cu-btn-quick-task" onclick="openNewTaskModal()">
+            <button type="button" class="cu-btn-quick-task" onclick="openNewTaskModal()" style="height:32px; padding:0 14px; font-size:12.5px; display:inline-flex; align-items:center; gap:6px; box-sizing:border-box;">
                 <span>➕</span> <?= __('tasks.btn_add_task', 'Görev Ekle') ?>
             </button>
         <?php endif; ?>

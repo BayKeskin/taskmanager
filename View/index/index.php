@@ -39,7 +39,7 @@ foreach ($allTasks as $t) {
 
     <div class="cu-filter-bar">
         <?php if ($currentUser->role === 'admin'): ?>
-            <button class="cu-btn-quick-task" onclick="openNewTaskModal()">
+            <button type="button" class="cu-btn-quick-task" onclick="openNewTaskModal()" style="height:32px; padding:0 14px; font-size:12.5px; display:inline-flex; align-items:center; gap:6px; box-sizing:border-box;">
                 <span>➕</span> <?= __('tasks.btn_add_task', 'Görev Ekle') ?>
             </button>
         <?php endif; ?>
