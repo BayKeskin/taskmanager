@@ -88,12 +88,12 @@ foreach ($allTasks as $t) {
             Helper::ensureGithubAndRollbackSchema();
             $ghCreds = Helper::getGithubCredentials();
         ?>
-            <button type="button" class="cu-btn-sm" onclick="openGithubSettingsModal()" style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); color:var(--text-white); font-weight:600; padding:6px 12px; border-radius:6px; cursor:pointer;" title="GitHub Otomasyon & Hesap Ayarları">
-                <span>🐙</span> <span><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : 'GitHub Bağla' ?></span>
+            <button type="button" class="cu-btn-sm" onclick="openGithubSettingsModal()" style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); color:var(--text-white); font-weight:600; padding:6px 12px; border-radius:6px; cursor:pointer;" title="<?= htmlspecialchars(__('app.modal_github_title', 'GitHub Otomasyon & Hesap Ayarları')) ?>">
+                <span>🐙</span> <span><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : __('app.btn_connect_github', 'GitHub Bağla') ?></span>
             </button>
             <?php if (!empty($activeProjectId)): ?>
-                <button type="button" class="cu-btn-sm" onclick="syncProjectToGithub(<?= (int)$activeProjectId ?>)" style="display:inline-flex; align-items:center; gap:6px; background:rgba(46,160,67,0.15); border:1px solid rgba(46,160,67,0.4); color:#3fb950; font-weight:600; padding:6px 12px; border-radius:6px; cursor:pointer;" title="Bu Projeyi GitHub ile Eşitle">
-                    <span>🚀</span> <span>GitHub Sync</span>
+                <button type="button" class="cu-btn-sm" onclick="syncProjectToGithub(<?= (int)$activeProjectId ?>)" style="display:inline-flex; align-items:center; gap:6px; background:rgba(46,160,67,0.15); border:1px solid rgba(46,160,67,0.4); color:#3fb950; font-weight:600; padding:6px 12px; border-radius:6px; cursor:pointer;" title="<?= htmlspecialchars(__('app.btn_sync_github', 'Bu Projeyi GitHub ile Eşitle')) ?>">
+                    <span>🚀</span> <span><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
                 </button>
             <?php endif; ?>
         <?php endif; ?>
@@ -459,26 +459,26 @@ function sendStandupEmail() {
         <div class="cu-modal-header" style="display:flex; justify-content:space-between; align-items:center;">
             <div style="display:flex; align-items:center; gap:10px;">
                 <span style="font-size:20px;">🐙</span>
-                <h3 style="font-size:16px; font-weight:700; color:var(--text-white); margin:0;">GitHub DevOps & Hesap Ayarları</h3>
+                <h3 style="font-size:16px; font-weight:700; color:var(--text-white); margin:0;"><?= __('app.modal_github_title', 'GitHub DevOps & Hesap Ayarları') ?></h3>
             </div>
             <button type="button" onclick="closeModal('modalGithubSettings')" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer;">&times;</button>
         </div>
         <div class="cu-modal-body" style="padding:20px;">
             <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px; line-height:1.5;">
-                GitHub hesabınızı bağlayarak yeni projeler için otomatik <strong>Private Repository</strong> açılmasını, görevler teslim edildikçe güvenli (http.extraheader) push yapılmasını ve tek tıkla cerrahi geri alma (Rollback) imkanını aktif edebilirsiniz.
+                <?= __('app.modal_github_desc', 'GitHub hesabınızı bağlayarak yeni projeler için otomatik Private Repository açılmasını, görevler teslim edildikçe güvenli (http.extraheader) push yapılmasını ve tek tıkla cerrahi geri alma (Rollback) imkanını aktif edebilirsiniz.') ?>
             </p>
             <div class="form-group" style="margin-bottom:14px;">
-                <label style="display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px;">GitHub Kullanıcı Adı veya Organizasyon</label>
-                <input type="text" id="ghUsernameInput" class="cu-input" placeholder="Örn: BayKeskin" value="<?= htmlspecialchars($ghCreds['username'] ?? '') ?>" style="width:100%; padding:8px 12px; background:var(--bg-main); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-white);">
+                <label style="display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px;"><?= __('app.modal_github_user_label', 'GitHub Kullanıcı Adı veya Organizasyon') ?></label>
+                <input type="text" id="ghUsernameInput" class="cu-input" placeholder="<?= htmlspecialchars(__('app.modal_github_user_ph', 'Örn: BayKeskin')) ?>" value="<?= htmlspecialchars($ghCreds['username'] ?? '') ?>" style="width:100%; padding:8px 12px; background:var(--bg-main); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-white);">
             </div>
             <div class="form-group" style="margin-bottom:14px;">
-                <label style="display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px;">GitHub Personal Access Token (PAT - `repo` yetkili)</label>
-                <input type="password" id="ghTokenInput" class="cu-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" value="<?= htmlspecialchars($ghCreds['token'] ?? '') ?>" style="width:100%; padding:8px 12px; background:var(--bg-main); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-white);">
+                <label style="display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px;"><?= __('app.modal_github_token_label', 'GitHub Personal Access Token (PAT - repo yetkili)') ?></label>
+                <input type="password" id="ghTokenInput" class="cu-input" placeholder="<?= htmlspecialchars(__('app.modal_github_token_ph', 'ghp_xxxxxxxxxxxxxxxxxxxx')) ?>" value="<?= htmlspecialchars($ghCreds['token'] ?? '') ?>" style="width:100%; padding:8px 12px; background:var(--bg-main); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-white);">
             </div>
         </div>
         <div class="cu-modal-footer" style="display:flex; justify-content:flex-end; gap:10px; padding:14px 20px; border-top:1px solid var(--border-subtle);">
-            <button type="button" class="cu-btn-sm cu-btn-secondary" onclick="closeModal('modalGithubSettings')">İptal</button>
-            <button type="button" class="cu-btn-sm" style="background:#2ea043; color:#fff;" onclick="saveGithubSettings()">💾 Kaydet ve Bağla</button>
+            <button type="button" class="cu-btn-sm cu-btn-secondary" onclick="closeModal('modalGithubSettings')"><?= __('app.btn_cancel', 'İptal') ?></button>
+            <button type="button" class="cu-btn-sm" style="background:#2ea043; color:#fff;" onclick="saveGithubSettings()"><?= __('app.modal_github_save_btn', '💾 Kaydet ve Bağla') ?></button>
         </div>
     </div>
 </div>

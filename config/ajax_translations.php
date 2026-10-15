@@ -142,6 +142,11 @@ return array (
     'Yapay Zeka (AI Agent) test pini başarıyla gönderildi.' => 'AI Agent test ping sent successfully.',
     'Kurallar yapay zeka ile başarıyla derlendi ve yapılandırıldı!' => 'Rules successfully refined and standardized with AI!',
     'Proje kural dosyaları (AGENTS.md) başarıyla güncellendi!' => 'Project rule files (AGENTS.md) successfully updated!',
+    'GitHub Kullanıcı Adı ve Personal Access Token (PAT) zorunludur.' => 'GitHub Username and Personal Access Token (PAT) are required.',
+    'GitHub hesabınız başarıyla bağlandı! Artık projeleriniz güvenle GitHub ile senkronize edilecek.' => 'Your GitHub account has been successfully connected! Your projects will now be securely synced with GitHub.',
+    'GitHub senkronizasyonu başarısız oldu.' => 'GitHub synchronization failed.',
+    'Geri alma işlemi yapılamadı.' => 'Rollback could not be performed.',
+    'Geçersiz AJAX işlemi.' => 'Invalid AJAX action.',
   ),
   'de' => 
   array (
@@ -283,5 +288,10 @@ return array (
     'Yapay Zeka (AI Agent) test pini başarıyla gönderildi.' => 'KI-Agent-Test-Ping erfolgreich gesendet.',
     'Kurallar yapay zeka ile başarıyla derlendi ve yapılandırıldı!' => 'Regeln erfolgreich mit KI verfeinert und standardisiert!',
     'Proje kural dosyaları (AGENTS.md) başarıyla güncellendi!' => 'Projektregeldateien (AGENTS.md) erfolgreich aktualisiert!',
+    'GitHub Kullanıcı Adı ve Personal Access Token (PAT) zorunludur.' => 'GitHub-Benutzername und Personal Access Token (PAT) sind erforderlich.',
+    'GitHub hesabınız başarıyla bağlandı! Artık projeleriniz güvenle GitHub ile senkronize edilecek.' => 'Ihr GitHub-Konto wurde erfolgreich verbunden! Ihre Projekte werden nun sicher mit GitHub synchronisiert.',
+    'GitHub senkronizasyonu başarısız oldu.' => 'GitHub-Synchronisierung fehlgeschlagen.',
+    'Geri alma işlemi yapılamadı.' => 'Rollback konnte nicht durchgeführt werden.',
+    'Geçersiz AJAX işlemi.' => 'Ungültige AJAX-Aktion.',
   ),
 );

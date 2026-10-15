@@ -384,6 +384,19 @@ window.TASK_I18N = {
         high: '<?= addslashes(__('tasks.priority_high_badge', '🟡 Yüksek')) ?>',
         normal: '<?= addslashes(__('tasks.priority_normal_badge', '🔵 Normal')) ?>',
         low: '<?= addslashes(__('tasks.priority_low_badge', '⚪ Düşük')) ?>'
+    },
+    devops: {
+        status_title: '<?= addslashes(__('app.devops_status_title', 'GitHub & DevOps Durumu')) ?>',
+        reverted: '<?= addslashes(__('app.devops_reverted', '⏪ Geri Alındı (Reverted)')) ?>',
+        synced: '<?= addslashes(__('app.devops_synced', '🚀 Senkronize')) ?>',
+        db_impact: '<?= addslashes(__('app.devops_db_impact', '🗄️ Veritabanı Etkisi:')) ?>',
+        no_db_changes: '<?= addslashes(__('app.devops_no_db_changes', 'Veritabanı şema değişikliği yok (Sadece Kod)')) ?>',
+        view_diff: '<?= addslashes(__('app.devops_view_diff', '🔗 GitHub\'da İncele (Diff)')) ?>',
+        btn_rollback: '<?= addslashes(__('app.devops_btn_rollback', '⏪ Değişiklikleri Geri Al (Rollback)')) ?>',
+        rollback_confirm: '<?= addslashes(__('app.devops_rollback_confirm', 'Bu görevin Git commit değişikliklerini ve veritabanı etkilerini geri almak istediğinize emin misiniz?')) ?>',
+        rollback_running: '<?= addslashes(__('app.devops_rollback_running', '⏪ Geri alma işlemi yürütülüyor...')) ?>',
+        ai_surgeon_running: '<?= addslashes(__('app.devops_ai_surgeon_running', '🤖 AI Cerrah çakışmaları analiz edip temizliyor...')) ?>',
+        ai_surgeon_prompt: '<?= addslashes(__('app.devops_ai_surgeon_prompt', '🤖 AI Cerrah Modunu (AI Surgeon) devreye alıp çakışmayı otomatik analiz edip çözerek geri alma işlemini tamamlamak ister misiniz?')) ?>'
     }
 };
 </script>

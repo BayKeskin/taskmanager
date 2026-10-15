@@ -404,35 +404,36 @@ async function openTaskDrawer(taskId) {
                 const shortCommit = submission.commit_hash ? submission.commit_hash.substring(0, 7) : '';
                 const repoUrl = submission.attachment_url || '';
                 const isReverted = parseInt(submission.is_reverted || 0) === 1;
-                const schemaDiff = submission.schema_diff_summary || 'Veritabanı şema değişikliği yok (Sadece Kod)';
+                const dI18n = i18n.devops || {};
+                const schemaDiff = submission.schema_diff_summary || (dI18n.no_db_changes || 'Veritabanı şema değişikliği yok (Sadece Kod)');
 
                 devopsBox.innerHTML = `
                     <div style="background:var(--bg-main); border:1px solid var(--border-subtle); border-radius:6px; padding:12px; margin-top:10px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <span style="font-size:16px;">🐙</span>
-                                <strong style="font-size:12px; color:var(--text-white);">GitHub & DevOps Durumu</strong>
+                                <strong style="font-size:12px; color:var(--text-white);">${escapeHtml(dI18n.status_title || 'GitHub & DevOps Durumu')}</strong>
                                 ${shortCommit ? `<span style="font-size:11px; background:rgba(123,104,238,0.2); color:#a29bfe; padding:2px 6px; border-radius:4px; font-family:monospace;">#${shortCommit}</span>` : ''}
                             </div>
                             ${isReverted ? 
-                                `<span style="font-size:11px; color:#ff7675; background:rgba(255,118,117,0.15); padding:2px 8px; border-radius:4px; font-weight:600;">⏪ Geri Alındı (Reverted)</span>` : 
-                                `<span style="font-size:11px; color:#55efc4; background:rgba(85,239,196,0.15); padding:2px 8px; border-radius:4px; font-weight:600;">🚀 Senkronize</span>`
+                                `<span style="font-size:11px; color:#ff7675; background:rgba(255,118,117,0.15); padding:2px 8px; border-radius:4px; font-weight:600;">${escapeHtml(dI18n.reverted || '⏪ Geri Alındı (Reverted)')}</span>` : 
+                                `<span style="font-size:11px; color:#55efc4; background:rgba(85,239,196,0.15); padding:2px 8px; border-radius:4px; font-weight:600;">${escapeHtml(dI18n.synced || '🚀 Senkronize')}</span>`
                             }
                         </div>
                         
                         <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px; line-height:1.4;">
-                            <div style="margin-bottom:4px;"><strong>🗄️ Veritabanı Etkisi:</strong> ${escapeHtml(schemaDiff)}</div>
+                            <div style="margin-bottom:4px;"><strong>${escapeHtml(dI18n.db_impact || '🗄️ Veritabanı Etkisi:')}</strong> ${escapeHtml(schemaDiff)}</div>
                         </div>
 
                         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                             ${repoUrl ? `
                                 <a href="${repoUrl}" target="_blank" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:var(--text-white); font-size:11px; text-decoration:none; padding:4px 8px; border-radius:4px;">
-                                    <span>🔗</span> GitHub'da İncele (Diff)
+                                    <span>🔗</span> ${escapeHtml(dI18n.view_diff || "GitHub'da İncele (Diff)")}
                                 </a>
                             ` : ''}
                             ${!isReverted && submission.commit_hash ? `
-                                <button type="button" class="cu-btn-sm" onclick="rollbackTask(${task.id}, 'safe')" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,71,87,0.15); border:1px solid rgba(255,71,87,0.4); color:#ff4757; font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer;" title="Bu görevin Git commit ve veritabanı değişikliklerini cerrahi olarak geri al">
-                                    <span>⏪</span> Değişiklikleri Geri Al (Rollback)
+                                <button type="button" class="cu-btn-sm" onclick="rollbackTask(${task.id}, 'safe')" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,71,87,0.15); border:1px solid rgba(255,71,87,0.4); color:#ff4757; font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer;" title="${escapeHtml(dI18n.btn_rollback || 'Değişiklikleri Geri Al (Rollback)')}">
+                                    <span>⏪</span> ${escapeHtml(dI18n.btn_rollback || 'Değişiklikleri Geri Al (Rollback)')}
                                 </button>
                             ` : ''}
                         </div>
@@ -4237,14 +4238,20 @@ window.syncProjectToGithub = async function(projectId) {
 
 window.rollbackTask = async function(taskId, mode = 'safe') {
     if (!taskId) return;
+    const dI18n = window.TASK_I18N?.devops || {};
     if (mode === 'safe') {
-        if (!confirm('Bu görevin Git commit değişikliklerini ve veritabanı etkilerini geri almak istediğinize emin misiniz?')) {
+        const confirmMsg = dI18n.rollback_confirm || 'Bu görevin Git commit değişikliklerini ve veritabanı etkilerini geri almak istediğinize emin misiniz?';
+        if (!confirm(confirmMsg)) {
             return;
         }
     }
 
     try {
-        showToast(mode === 'ai_surgeon' ? '🤖 AI Cerrah çakışmaları analiz edip temizliyor...' : '⏪ Geri alma işlemi yürütülüyor...', 'info');
+        const runningMsg = (mode === 'ai_surgeon') 
+            ? (dI18n.ai_surgeon_running || '🤖 AI Cerrah çakışmaları analiz edip temizliyor...') 
+            : (dI18n.rollback_running || '⏪ Geri alma işlemi yürütülüyor...');
+        showToast(runningMsg, 'info');
+
         const fd = new FormData();
         fd.append('task_id', taskId);
         fd.append('mode', mode);
@@ -4260,10 +4267,9 @@ window.rollbackTask = async function(taskId, mode = 'safe') {
             }
         } else {
             if (data.data && data.data.has_conflict) {
-                const runSurgeon = confirm(
-                    (data.message || 'Otomatik geri almada Git çakışması tespit edildi!') +
-                    '\n\n🤖 AI Cerrah Modunu (AI Surgeon) devreye alıp çakışmayı otomatik analiz edip çözerek geri alma işlemini tamamlamak ister misiniz?'
-                );
+                const surgeonPrompt = (data.message || 'Otomatik geri almada Git çakışması tespit edildi!') +
+                    '\n\n' + (dI18n.ai_surgeon_prompt || '🤖 AI Cerrah Modunu (AI Surgeon) devreye alıp çakışmayı otomatik analiz edip çözerek geri alma işlemini tamamlamak ister misiniz?');
+                const runSurgeon = confirm(surgeonPrompt);
                 if (runSurgeon) {
                     rollbackTask(taskId, 'ai_surgeon');
                 }

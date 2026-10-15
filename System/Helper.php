@@ -1647,6 +1647,21 @@ Every completed task must provide an exhaustive summary formatted as follows:
 3. **How to Test (Nasıl Test Edilir):** Step-by-step credentials, actions, buttons to click, and expected outcomes.
 4. **Autonomous Test Evidence (Otonom Test Kanıtı):** Summary of automated headless browser, curl, or CLI test results.
 
+---
+
+## 5. MANDATORY GIT REPOSITORY SYNCHRONIZATION (GITHUB PUSH DOCTRINE)
+
+> ### 🚨 STRICT GIT PUSH DIRECTIVE:
+> **After every modification, completed feature, bugfix, or task execution, the agent is STRICTLY OBLIGATED to immediately stage, commit with a descriptive message, and push all changed code to the remote repository (`origin <active-branch>`).**
+
+---
+
+## 6. MANDATORY DATABASE MIGRATION & ROLLBACK DOCTRINE (.migrations/{task_code}_down.sql)
+
+> ### 🗄️ DATABASE ROLLBACK INTEGRITY DIRECTIVE:
+> **Whenever an agent creates or modifies database structures (CREATE TABLE, ALTER TABLE) or performs data mutations (INSERT, UPDATE, DELETE) during a task:**
+> **The agent is STRICTLY OBLIGATED to generate an inverse rollback SQL script inside the project directory: `.migrations/{task_code}_down.sql`.**
+
 <!-- PROJECT_RULES_START -->
 MARKDOWN;
     }
