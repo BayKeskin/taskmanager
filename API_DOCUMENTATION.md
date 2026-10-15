@@ -28,19 +28,20 @@ graph TD
 
 ---
 
-## 🔐 Kimlik Doğrulama (Authentication)
+## 🔐 Kimlik Doğrulama (Authentication & Zero-Config Architecture)
 
 API çağrılarında kimlik doğrulama için **Bearer Token** kullanılır:
 
 ```http
-Authorization: Bearer tm_admin_talha_keskin_token_2026
+Authorization: Bearer <API_BEARER_TOKEN>
 ```
-Alternatif olarak `X-API-Key: tm_admin_talha_keskin_token_2026` başlığı veya URL sorgu parametresi `?api_token=tm_admin_talha_keskin_token_2026` kullanılabilir.
+Alternatif olarak `X-API-Key: <API_BEARER_TOKEN>` başlığı veya URL sorgu parametresi `?api_token=<API_BEARER_TOKEN>` kullanılabilir.
 
-### Aktif Yönetici Kullanıcı & Tokenı:
-| Kullanıcı | E-Posta | Rol | API Bearer Token |
-|---|---|---|---|
-| **Talha Keskin** | `iletisimtktalha@gmail.com` | **Admin** | `tm_admin_talha_keskin_token_2026` |
+### 🚀 Sıfır Sabit Kod & Kur-Çalıştır (Zero-Config / White-Label) Mimarisi:
+* **Dinamik Base URL:** İstek yapılan sunucunun `settings.siteurl` veya `Host` başlığı üzerinden anında çözülür. Sunucu veya alan adı değiştiğinde hiçbir kod dosyasına dokunulması gerekmez.
+* **Dinamik Yönetici Tokenı:** Sistem, veritabanındaki aktif yöneticinin (`role = 'admin' AND status = 'active'`) güncel `api_token` anahtarını kullanır.
+* **Otomatik Token Üretimi (Self-Healing):** Sistem yeni bir sunucuya kurulduğunda veya admin token'ı henüz oluşturulmamışsa, sistem hata vermez; ilk istekte anında `tm_live_<hash>` formatında benzersiz bir token üreterek veritabanına kaydeder.
+* **Token Yenileme:** Güvenlik amacıyla token yenilendiğinde (`POST /api/auth/regenerate-token`), sonraki tüm görev bildirimlerinde ve ajan çağrılarında yeni token otomatik olarak kullanılır.
 
 > *Not: Yeni ekip üyeleri ve projeler doğrudan API üzerinden (`POST /api/v1/users` ve `POST /api/v1/projects`) veya web arayüzünden eklenebilir.*
 
@@ -417,6 +418,8 @@ X-TaskManager-Conversation-ID: 760ae474-fe99-431f-93a8-927b31cb72a9
   "project_code": "01",
   "project_title": "Task Manager",
   "agent_conversation_id": "760ae474-fe99-431f-93a8-927b31cb72a9",
+  "api_base_url": "http://localhost/taskmanager",
+  "api_token": "tm_admin_talha_keskin_token_2026",
   "timestamp": "2026-10-12T14:40:00+03:00",
   "data": {
     "task_id": 15,
@@ -428,14 +431,26 @@ X-TaskManager-Conversation-ID: 760ae474-fe99-431f-93a8-927b31cb72a9
 }
 ```
 
-#### 9.3 Webhook Test Pingi Gönder
+#### 9.3 Otonom Ajanların Kullandığı Resmi Teslimat Standardı (PowerShell)
+Ajanlar görev tamamlandığında yerel TaskManager dizinini veya veritabanını aramadan doğrudan HTTP REST API üzerinden şu komutla teslimat gerçekleştirir:
+```powershell
+$headers = @{ 'Authorization' = 'Bearer ' + $api_token; 'Content-Type' = 'application/json; charset=utf-8' }
+$body = @{ 
+    notes = '1. Neler Yapıldı: ... 2. Nereden Test Edilir: ... 3. Nasıl Test Edilir: ... 4. Test Kanıtı: ...';
+    attachment_url = 'https://github.com/organization/repo/commit/abc123'
+} | ConvertTo-Json -Compress
+
+Invoke-RestMethod -Uri "$api_base_url/api/tasks/$task_code/workflow/submit" -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))
+```
+
+#### 9.4 Webhook Test Pingi Gönder
 Yapılandırılmış bağlantıyı anında test etmek için:
 ```http
 POST /api/v1/projects/01/webhook/test
-Authorization: Bearer tm_admin_talha_keskin_token_2026
+Authorization: Bearer <API_BEARER_TOKEN>
 ```
 
-#### 9.4 Son Webhook Çağrı Günlükleri (Audit Logs)
+#### 9.5 Son Webhook Çağrı Günlükleri (Audit Logs)
 ```http
 GET /api/v1/webhooks/logs
 Authorization: Bearer tm_admin_talha_keskin_token_2026
@@ -450,7 +465,7 @@ import json
 import urllib.request
 
 BASE_URL = "http://localhost/taskmanager/api/v1"
-TOKEN = "tm_admin_talha_keskin_token_2026"
+TOKEN = "YOUR_API_TOKEN"  # Webhook payloadından gelen api_token değeri
 HEADERS = {
     "Authorization": f"Bearer {TOKEN}",
     "Content-Type": "application/json; charset=utf-8"

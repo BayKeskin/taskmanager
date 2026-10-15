@@ -124,9 +124,20 @@ def poll_live_tasks(api_url, token, project_code, interval=10):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="TaskManager Live Pull Agent v3.0")
     parser.add_argument("--url", default="http://localhost/taskmanager/api/v1", help="API Base URL")
-    parser.add_argument("--token", default="tm_admin_talha_keskin_token_2026", help="Admin Bearer Token")
+    parser.add_argument("--token", default="", help="Admin Bearer Token (Boş bırakılırsa veritabanından dinamik alınır)")
     parser.add_argument("--project", default="01", help="Project Code")
     parser.add_argument("--interval", type=int, default=10, help="Poll interval in seconds")
     args = parser.parse_args()
 
-    poll_live_tasks(args.url, args.token, args.project, args.interval)
+    token = args.token.strip()
+    if not token:
+        try:
+            root_dir = os.path.dirname(BASE_DIR)
+            php_code = "require_once 'System/System.php'; echo Helper::getDynamicApiConfig()['api_token'];"
+            res = subprocess.run(['php', '-r', php_code], cwd=root_dir, capture_output=True, text=True, timeout=5)
+            if res.returncode == 0 and res.stdout.strip():
+                token = res.stdout.strip()
+        except Exception:
+            pass
+
+    poll_live_tasks(args.url, token, args.project, args.interval)
