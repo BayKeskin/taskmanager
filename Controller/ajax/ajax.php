@@ -1494,6 +1494,31 @@ switch ($action) {
             }
         }
 
+        // Kural D (Otomatik Rollup): Eğer taşınan görev bir alt görevse ve 'submitted' veya 'completed' olduysa,
+        // ve bu ana görevin diğer tüm alt görevleri de 'submitted' veya 'completed' ise, Ana Görevi de 'submitted' yap!
+        if (!empty($taskRow[0]->parent_task_id) && in_array($newStatus, ['submitted', 'completed'], true)) {
+            $pId = (int)$taskRow[0]->parent_task_id;
+            $remainingSubs = (int)$db->single_query("
+                SELECT COUNT(*) FROM tasks 
+                WHERE parent_task_id = ? AND status NOT IN ('submitted', 'completed')
+            ", [$pId]);
+            if ($remainingSubs === 0) {
+                $parentTask = $db->row_query("SELECT id, task_code, title, status FROM tasks WHERE id = ?", [$pId]);
+                if ($parentTask && !in_array($parentTask->status, ['submitted', 'completed'], true)) {
+                    $oldPStatus = $parentTask->status;
+                    $db->update("tasks", ["status"], ["submitted", $pId], "id");
+                    Helper::broadcastLiveEvent('task_status_changed', (int)$taskRow[0]->project_id, $pId, (int)$currentUser->id, [
+                        'task_id'    => $pId,
+                        'task_code'  => $parentTask->task_code,
+                        'title'      => $parentTask->title,
+                        'old_status' => $oldPStatus,
+                        'new_status' => 'submitted',
+                        'user_name'  => 'System Rollup'
+                    ]);
+                }
+            }
+        }
+
         $db->insert("task_activities", [
             'task_id', 'user_id', 'action_type', 'old_value', 'new_value', 'comment'
         ], [
