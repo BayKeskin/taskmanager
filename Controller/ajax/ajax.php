@@ -1454,11 +1454,44 @@ switch ($action) {
             jsonResponse(false, 'Yalnızca yöneticiler görevi "Tamamlandı" olarak onaylayabilir.');
         }
 
+        // Kural A: Bir Ana Görev henüz bitmemiş alt görevleri varken doğrudan teslim edilemez
+        if (in_array($newStatus, ['submitted', 'completed'], true)) {
+            $uncompletedSubs = (int)$db->single_query("SELECT COUNT(*) FROM tasks WHERE parent_task_id = ? AND status NOT IN ('submitted', 'completed')", [$taskId]);
+            if ($uncompletedSubs > 0) {
+                jsonResponse(false, "Bu ana görevin altında henüz tamamlanmamış {$uncompletedSubs} alt görev bulunmaktadır. Tüm alt görevler bitmeden ana görev teslim edilemez.");
+            }
+        }
+
+        // Kural B: Bir Ana Görevin altında çalışan (in_progress) alt görev varken ana görev 'Yapılacak İşler'e alınamaz
+        if (in_array($newStatus, ['assigned', 'created'], true)) {
+            $runningSubs = (int)$db->single_query("SELECT COUNT(*) FROM tasks WHERE parent_task_id = ? AND status = 'in_progress'", [$taskId]);
+            if ($runningSubs > 0) {
+                jsonResponse(false, "Bu ana görevin altında şu anda çalışılan alt görev bulunmaktadır. Ana görev 'Yapılacak İşler'e alınamaz.");
+            }
+        }
+
         $completedAt = ($newStatus === 'completed') ? date('Y-m-d H:i:s') : null;
         if ($completedAt) {
             $db->update("tasks", ["status", "completed_at"], [$newStatus, $completedAt, $taskId], "id");
         } else {
             $db->update("tasks", ["status"], [$newStatus, $taskId], "id");
+        }
+
+        // Kural C (Senkronizasyon): Eğer taşınan görev bir alt görevse ve 'in_progress' olduysa, bağlı olduğu Ana Görevi de 'in_progress' yap
+        if (!empty($taskRow[0]->parent_task_id) && $newStatus === 'in_progress') {
+            $pId = (int)$taskRow[0]->parent_task_id;
+            $parentTask = $db->row_query("SELECT id, task_code, title, status FROM tasks WHERE id = ?", [$pId]);
+            if ($parentTask && $parentTask->status !== 'in_progress') {
+                $db->update("tasks", ["status"], ["in_progress", $pId], "id");
+                Helper::broadcastLiveEvent('task_status_changed', (int)$taskRow[0]->project_id, $pId, (int)$currentUser->id, [
+                    'task_id'    => $pId,
+                    'task_code'  => $parentTask->task_code,
+                    'title'      => $parentTask->title,
+                    'old_status' => $parentTask->status,
+                    'new_status' => 'in_progress',
+                    'user_name'  => 'System'
+                ]);
+            }
         }
 
         $db->insert("task_activities", [

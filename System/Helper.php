@@ -1569,13 +1569,14 @@ class Helper
             if (!empty($nextTask->parent_task_id)) {
                 $pId = (int)$nextTask->parent_task_id;
                 $parentRow = $db->row_query("SELECT id, task_code, title, status FROM tasks WHERE id = ?", [$pId]);
-                if ($parentRow && $parentRow->status === 'assigned') {
+                if ($parentRow && $parentRow->status !== 'in_progress') {
+                    $oldParentStatus = $parentRow->status;
                     $db->exec_query("UPDATE tasks SET status = 'in_progress', updated_at = NOW() WHERE id = ?", [$pId]);
                     self::broadcastLiveEvent('task_status_changed', (int)$projectId, $pId, 1, [
                         'task_id'    => $pId,
                         'task_code'  => $parentRow->task_code,
                         'title'      => $parentRow->title,
-                        'old_status' => 'assigned',
+                        'old_status' => $oldParentStatus,
                         'new_status' => 'in_progress',
                         'user_name'  => 'AI Architect'
                     ]);
