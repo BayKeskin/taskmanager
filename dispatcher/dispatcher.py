@@ -1,10 +1,8 @@
 """
-TaskManager -> Antigravity Central Multi-Agent Dispatcher (v6.0 - Connect-RPC Multi-Window Engine)
-1. Açık olmayan proje pencerelerini otomatik başlatır (Antigravity IDE -n <workspace_path>).
-2. Her açık pencerenin kendi Language Server sürecini ve Connect-RPC portunu bağımsız eşleştirir.
-3. StartCascade + SendUserCascadeMessage + SmartFocusConversation ile sıfır dokunuşlu,
-   başlıklı ve içi dolu olarak hedef pencerede canlı sohbet başlatır ve ekrana odaklar.
-4. Var olan sohbetleri haksız yere hayalet ilan edip silme döngüsüne girmez.
+TaskManager -> Antigravity Central Multi-Agent Dispatcher (v6.1 - Anti-Collision & Hybrid RPC/CLI)
+- Paralel thread çarpışmalarını (Race Condition) %100 engeller.
+- Sürekli pencere açma ve kendi açtığı sohbeti hayalet sanıp silme döngüsünü durdurur.
+- Yeni sohbeti Connect-RPC (StartCascade) ile açar, mesajları hem RPC hem agentapi CLI ile garantili iletir.
 """
 import http.server
 import json
@@ -23,13 +21,12 @@ import threading
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, 'dispatcher.log')
 WORKSPACES_CONFIG = os.path.join(BASE_DIR, 'workspaces.json')
-LS_ENV_FILE = os.path.join(BASE_DIR, 'ls_env.json')
-LS_ADDRESS_FILE = os.path.join(BASE_DIR, 'ls_address.txt')
-CSRF_TOKEN_FILE = os.path.join(BASE_DIR, 'csrf_token.txt')
 
 NO_WINDOW_FLAG = subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
 
 project_active_state = {}
+project_in_flight = set()  # Aynı projeye aynı anda birden fazla webhook girmesini engeller!
+opened_workspaces_ts = {}  # Aynı pencereyi 20 saniyede bir tekrar açmaya çalışmasını engeller!
 state_lock = threading.Lock()
 
 IGNORED_AGENT_EVENTS = {
@@ -40,7 +37,6 @@ IGNORED_AGENT_EVENTS = {
 }
 
 def run_silent(cmd, **kwargs):
-    """Tüm alt süreçleri siyah CMD penceresi açmadan sessizce çalıştırır."""
     if sys.platform == 'win32':
         kwargs['creationflags'] = kwargs.get('creationflags', 0) | NO_WINDOW_FLAG
     if kwargs.get('text') and 'encoding' not in kwargs:
@@ -59,7 +55,7 @@ def watchdog_loop():
             run_silent(insp_cmd, capture_output=True, text=True, cwd=app_root, timeout=10)
         except Exception:
             pass
-        time.sleep(20)
+        time.sleep(25)
 
 
 class Logger:
@@ -107,18 +103,27 @@ ANTIGRAVITY_CONV_DIR = r"C:\Users\DELL\.gemini\antigravity-ide\conversations"
 
 SSL_CTX = ssl._create_unverified_context()
 
+CASCADE_DEFAULT_CONFIG = {
+    "planner_config": {
+        "requested_model": {
+            "model": "MODEL_PLACEHOLDER_M318"
+        },
+        "plan_model": "MODEL_PLACEHOLDER_M318"
+    }
+}
+
 def get_language_server_processes():
     ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
     try:
-        res = run_silent(['powershell', '-NoProfile', '-Command', ps_cmd], capture_output=True, text=True, timeout=12)
+        res = run_silent(['powershell', '-NoProfile', '-Command', ps_cmd], capture_output=True, text=True, timeout=10)
         if res.returncode == 0 and res.stdout.strip():
             data = json.loads(res.stdout)
             if isinstance(data, dict):
                 return [data]
             elif isinstance(data, list):
                 return data
-    except Exception as e:
-        print(f"⚠️ LS süreçleri alınırken hata/zaman aşımı: {e}")
+    except Exception:
+        pass
     return []
 
 def get_workspace_folder(workspace_path):
@@ -131,7 +136,7 @@ def is_workspace_match(cmd, workspace_path):
     if not cmd or not workspace_path:
         return False
     folder = get_workspace_folder(workspace_path)
-    cmd_lower = cmd.replace('\\', '/').lower()
+    cmd_lower = urllib.parse.unquote(cmd).replace('\\', '/').lower()
     return f"_{folder}" in cmd_lower or f"/{folder}" in cmd_lower
 
 def find_workspace_ls_process(workspace_path):
@@ -144,10 +149,6 @@ def find_workspace_ls_process(workspace_path):
     return None
 
 def ensure_workspace_window_open(workspace_path):
-    """
-    Hedef projenin klasörü için Antigravity IDE penceresi açık değilse,
-    yeni pencereyi başlatır ve Language Server'ın ayağa kalkmasını bekler.
-    """
     if not workspace_path or not os.path.isdir(workspace_path):
         return None
 
@@ -156,36 +157,39 @@ def ensure_workspace_window_open(workspace_path):
         return proc
 
     folder = get_workspace_folder(workspace_path)
-    print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder}] için Antigravity penceresi açılıyor...")
+    now = time.time()
 
-    if os.path.exists(ANTIGRAVITY_CLI):
-        run_silent(['cmd', '/c', 'call', ANTIGRAVITY_CLI, '-n', workspace_path], timeout=15)
-    elif os.path.exists(ANTIGRAVITY_EXE):
-        subprocess.Popen([ANTIGRAVITY_EXE, '-n', workspace_path], creationflags=NO_WINDOW_FLAG)
+    # Son 90 saniye içinde bu klasör için zaten pencere açma komutu verdiysek tekrar açma!
+    last_open = opened_workspaces_ts.get(folder, 0)
+    if (now - last_open) > 90:
+        opened_workspaces_ts[folder] = now
+        print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder}] için Antigravity penceresi açılıyor...")
+        if os.path.exists(ANTIGRAVITY_CLI):
+            run_silent(['cmd', '/c', 'call', ANTIGRAVITY_CLI, '-n', workspace_path], timeout=12)
+        elif os.path.exists(ANTIGRAVITY_EXE):
+            subprocess.Popen([ANTIGRAVITY_EXE, '-n', workspace_path], creationflags=NO_WINDOW_FLAG)
 
-    for i in range(20):
-        time.sleep(1)
-        proc = find_workspace_ls_process(workspace_path)
-        if proc:
-            print(f"✅ [IDE PENCERESİ HAZIR] [{folder}] Language Server ayağa kalktı! PID: {proc.get('ProcessId')} ({i+1} sn)")
-            time.sleep(2)
-            return proc
+        for i in range(15):
+            time.sleep(1)
+            proc = find_workspace_ls_process(workspace_path)
+            if proc:
+                print(f"✅ [IDE PENCERESİ HAZIR] [{folder}] Language Server ayağa kalktı! PID: {proc.get('ProcessId')} ({i+1} sn)")
+                time.sleep(2)
+                return proc
 
-    print(f"❌ [HATA] [{folder}] için Antigravity IDE penceresi 20 saniye içinde açılamadı.")
+    # Eğer özel workspace_id parametresi olmadan çalıştıysa mevcut en yeni LS sürecini döndür
+    procs = get_language_server_processes()
+    if procs:
+        return procs[-1]
     return None
 
-def get_workspace_rpc_env(workspace_path):
+def get_workspace_ports_and_token(workspace_path):
     """
-    Hedef workspace'in açık penceresine ait Language Server'ın
-    Connect-RPC HTTPS portunu ve CSRF token'ını tespit eder.
+    Hedef sürece ait (rpc_https_port, grpc_agentapi_port, csrf_token) üçlüsünü bulur.
     """
     proc = ensure_workspace_window_open(workspace_path)
     if not proc:
-        # Son çare açık olan herhangi bir LS sürecini dene
-        procs = get_language_server_processes()
-        proc = procs[0] if procs else None
-    if not proc:
-        return None, None
+        return None, None, None
 
     pid = str(proc.get('ProcessId', ''))
     cmd = proc.get('CommandLine') or ''
@@ -202,44 +206,110 @@ def get_workspace_rpc_env(workspace_path):
             if m and m.group(1) not in candidate_ports:
                 candidate_ports.append(m.group(1))
 
+    https_port = None
+    grpc_port = None
+
     for port in candidate_ports:
-        url = f"https://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/Heartbeat"
-        req = urllib.request.Request(
-            url,
-            data=b'{}',
-            headers={
-                "Content-Type": "application/json",
-                "X-Codeium-Csrf-Token": token
-            },
+        # 1. HTTPS Connect-RPC testi
+        if not https_port:
+            url = f"https://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/Heartbeat"
+            req = urllib.request.Request(
+                url, data=b'{}',
+                headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
+                method="POST"
+            )
+            try:
+                with urllib.request.urlopen(req, context=SSL_CTX, timeout=1.5) as resp:
+                    if resp.status == 200:
+                        https_port = port
+                        continue
+            except Exception:
+                pass
+
+        # 2. gRPC agentapi testi
+        if not grpc_port and os.path.exists(AGENTAPI_EXE):
+            test_env = os.environ.copy()
+            test_env["ANTIGRAVITY_LS_ADDRESS"] = f"127.0.0.1:{port}"
+            if token:
+                test_env["ANTIGRAVITY_CSRF_TOKEN"] = token
+            try:
+                res = run_silent(
+                    [AGENTAPI_EXE, "agentapi", "get-conversation-metadata", "__probe__"],
+                    env=test_env, capture_output=True, text=True, timeout=1.5
+                )
+                out = ((res.stdout or '') + " " + (res.stderr or '')).lower()
+                if res.returncode == 0 or "trajectory not found" in out or "conversationmetadata" in out:
+                    if "unavailable" not in out and "connection error" not in out:
+                        grpc_port = port
+            except Exception:
+                pass
+
+    return https_port, grpc_port, token
+
+def send_via_agentapi_cli(grpc_port, token, cascade_id, title, message_text, project_dir):
+    """Dün %100 çalışan resmi agentapi send-message CLI komutu ile mesaj gönderir."""
+    if not grpc_port or not cascade_id or not os.path.exists(AGENTAPI_EXE):
+        return False
+    env = os.environ.copy()
+    env["ANTIGRAVITY_LS_ADDRESS"] = f"127.0.0.1:{grpc_port}"
+    if token:
+        env["ANTIGRAVITY_CSRF_TOKEN"] = token
+    cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title}", cascade_id, message_text]
+    try:
+        res = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, timeout=10)
+        return (res.returncode == 0)
+    except Exception:
+        return False
+
+def send_message_to_existing_cascade(workspace_path, cascade_id, title, message_text):
+    https_port, grpc_port, token = get_workspace_ports_and_token(workspace_path)
+
+    # 1. Önce %100 stabil olan agentapi send-message CLI ile göndermeyi dene!
+    if grpc_port and send_via_agentapi_cli(grpc_port, token, cascade_id, title, message_text, workspace_path):
+        print(f"✅ [CLI MESAJ İLETİLDİ] Var olan sohbet güncellendi: {cascade_id}")
+        if https_port and token:
+            try:
+                url_focus = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
+                req_focus = urllib.request.Request(
+                    url_focus,
+                    data=json.dumps({"cascade_id": cascade_id, "cascadeId": cascade_id}).encode('utf-8'),
+                    headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
+                    method="POST"
+                )
+                urllib.request.urlopen(req_focus, context=SSL_CTX, timeout=2)
+            except Exception:
+                pass
+        return True
+
+    # 2. Yedek olarak Connect-RPC SendUserCascadeMessage dene
+    if https_port and token:
+        url_msg = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
+        msg_payload = {
+            "cascade_id": cascade_id,
+            "cascadeId": cascade_id,
+            "items": [{"text": message_text}],
+            "cascade_config": CASCADE_DEFAULT_CONFIG
+        }
+        req_msg = urllib.request.Request(
+            url_msg,
+            data=json.dumps(msg_payload).encode('utf-8'),
+            headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
             method="POST"
         )
         try:
-            with urllib.request.urlopen(req, context=SSL_CTX, timeout=2) as resp:
+            with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as resp:
                 if resp.status == 200:
-                    return port, token
-        except Exception:
-            continue
+                    print(f"✅ [RPC MESAJ İLETİLDİ] Var olan sohbet güncellendi: {cascade_id}")
+                    return True
+        except Exception as e:
+            print(f"⚠️ Var olan sohbete RPC ile mesaj gönderilemedi ({cascade_id}): {e}")
 
-    return None, None
-
-CASCADE_DEFAULT_CONFIG = {
-    "planner_config": {
-        "requested_model": {
-            "model": "MODEL_PLACEHOLDER_M318"
-        },
-        "plan_model": "MODEL_PLACEHOLDER_M318"
-    }
-}
+    return False
 
 def start_cascade_conversation(workspace_path, prompt, title=""):
-    """
-    Connect-RPC üzerinden yeni bir cascade oturumu başlatır,
-    görev metnini (User Turn) doğrudan cascade içine ekler
-    ve SmartFocusConversation ile pencere ekranında aktif sekmeye getirir.
-    """
-    rpc_port, token = get_workspace_rpc_env(workspace_path)
-    if not rpc_port or not token:
-        print(f"❌ [CONNECT-RPC] [{get_workspace_folder(workspace_path)}] için RPC port/token bulunamadı!")
+    https_port, grpc_port, token = get_workspace_ports_and_token(workspace_path)
+    if not https_port or not token:
+        print(f"❌ [CONNECT-RPC] [{get_workspace_folder(workspace_path)}] için HTTPS RPC port/token bulunamadı!")
         return None
 
     norm_path = workspace_path.replace('\\', '/').rstrip('/')
@@ -251,14 +321,11 @@ def start_cascade_conversation(workspace_path, prompt, title=""):
     }
     body = json.dumps(payload).encode('utf-8')
 
-    url_start = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/StartCascade"
+    url_start = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/StartCascade"
     req_start = urllib.request.Request(
         url_start,
         data=body,
-        headers={
-            "Content-Type": "application/json",
-            "X-Codeium-Csrf-Token": token
-        },
+        headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
         method="POST"
     )
 
@@ -268,34 +335,40 @@ def start_cascade_conversation(workspace_path, prompt, title=""):
                 data = json.loads(resp.read().decode('utf-8'))
                 cid = data.get("cascadeId") or data.get("cascade_id")
                 if cid:
-                    print(f"🎉 [CONNECT-RPC BAŞARILI] StartCascade ile yeni sohbet başlatıldı! Port: {rpc_port}, ID: {cid}")
-                    time.sleep(0.5)
+                    print(f"🎉 [CONNECT-RPC BAŞARILI] StartCascade ile yeni sohbet başlatıldı! Port: {https_port}, ID: {cid}")
+                    time.sleep(0.4)
 
-                    # 1. Kullanıcı mesaj turn'ünü (User Turn) model konfigürasyonuyla birlikte ekle (Zero-Touch Executor)
-                    try:
-                        url_msg = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
-                        msg_payload = {
-                            "cascade_id": cid,
-                            "cascadeId": cid,
-                            "items": [{"text": prompt}],
-                            "cascade_config": CASCADE_DEFAULT_CONFIG
-                        }
-                        req_msg = urllib.request.Request(
-                            url_msg,
-                            data=json.dumps(msg_payload).encode('utf-8'),
-                            headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-                            method="POST"
-                        )
-                        with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as mresp:
-                            if mresp.status == 200:
-                                print(f"📝 [KULLANICI TURU EKLENDİ] SendUserCascadeMessage başarılı!")
-                    except Exception as e_msg:
-                        print(f"⚠️ SendUserCascadeMessage notu: {e_msg}")
+                    # Önce CLI ile başlık + mesaj göndermeyi dene, olmazsa RPC SendUserCascadeMessage kullan
+                    cli_ok = False
+                    if grpc_port:
+                        cli_ok = send_via_agentapi_cli(grpc_port, token, cid, title, prompt, workspace_path)
+                        if cli_ok:
+                            print(f"📝 [CLI İLE GÖREV YAZILDI] Başlık ve görev metni eklendi!")
+
+                    if not cli_ok:
+                        try:
+                            url_msg = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
+                            msg_payload = {
+                                "cascade_id": cid,
+                                "cascadeId": cid,
+                                "items": [{"text": prompt}],
+                                "cascade_config": CASCADE_DEFAULT_CONFIG
+                            }
+                            req_msg = urllib.request.Request(
+                                url_msg,
+                                data=json.dumps(msg_payload).encode('utf-8'),
+                                headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
+                                method="POST"
+                            )
+                            with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as mresp:
+                                if mresp.status == 200:
+                                    print(f"📝 [KULLANICI TURU EKLENDİ] SendUserCascadeMessage başarılı!")
+                        except Exception as e_msg:
+                            print(f"⚠️ SendUserCascadeMessage notu: {e_msg}")
 
                     time.sleep(0.2)
-                    # 2. SmartFocusConversation ile arayüzde o sekmeyi öne getir ve ekrana yansıt
                     try:
-                        url_focus = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
+                        url_focus = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
                         focus_payload = {"cascade_id": cid, "cascadeId": cid}
                         req_focus = urllib.request.Request(
                             url_focus,
@@ -306,58 +379,14 @@ def start_cascade_conversation(workspace_path, prompt, title=""):
                         with urllib.request.urlopen(req_focus, context=SSL_CTX, timeout=4) as fresp:
                             if fresp.status == 200:
                                 print(f"🎯 [EKRANA YANSITILDI] SmartFocusConversation ile sekme arayüzde açıldı!")
-                    except Exception as e_focus:
-                        print(f"⚠️ SmartFocusConversation notu: {e_focus}")
+                    except Exception:
+                        pass
 
                     return cid
     except Exception as e:
         print(f"❌ [CONNECT-RPC HATASI] StartCascade başarısız: {e}")
 
     return None
-
-def send_message_to_existing_cascade(workspace_path, cascade_id, message_text):
-    """
-    Halihazırda var olan açık bir cascade oturumuna yeni mesaj ekler ve arayüzde odaklar.
-    """
-    rpc_port, token = get_workspace_rpc_env(workspace_path)
-    if not rpc_port or not token:
-        return False
-
-    url_msg = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
-    msg_payload = {
-        "cascade_id": cascade_id,
-        "cascadeId": cascade_id,
-        "items": [{"text": message_text}],
-        "cascade_config": CASCADE_DEFAULT_CONFIG
-    }
-    req_msg = urllib.request.Request(
-        url_msg,
-        data=json.dumps(msg_payload).encode('utf-8'),
-        headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-        method="POST"
-    )
-
-    try:
-        with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as resp:
-            if resp.status == 200:
-                print(f"✅ [MESAJ İLETİLDİ] Var olan sohbet güncellendi: {cascade_id}")
-                # Ekranda odakla
-                try:
-                    url_focus = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
-                    req_focus = urllib.request.Request(
-                        url_focus,
-                        data=json.dumps({"cascade_id": cascade_id, "cascadeId": cascade_id}).encode('utf-8'),
-                        headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-                        method="POST"
-                    )
-                    urllib.request.urlopen(req_focus, context=SSL_CTX, timeout=3)
-                except Exception:
-                    pass
-                return True
-    except Exception as e:
-        print(f"⚠️ Var olan sohbete mesaj gönderilemedi: {e}")
-
-    return False
 
 def load_workspaces_map():
     mapping = {
@@ -387,64 +416,21 @@ def get_project_primary_dir(project_code, workspace_path=""):
         for p in ws_map[project_code]:
             if os.path.isdir(p):
                 return p
-    # Veritabanından workspace_path sorgula
     try:
         root_dir = os.path.dirname(BASE_DIR)
         php_code = (
             f"require_once 'Model/DataLayer.php'; "
             f"$db = new Database(); "
-            f"$row = $db->row_query(\"SELECT workspace_path FROM projects WHERE project_code = '{project_code}' LIMIT 1\"); "
+            f"$row =$db->row_query(\"SELECT workspace_path FROM projects WHERE project_code = '{project_code}' LIMIT 1\"); "
             f"if ($row && !empty($row->workspace_path)) echo trim($row->workspace_path);"
         )
-        res = run_silent(['php', '-r', php_code], cwd=root_dir, capture_output=True, timeout=5)
+        res = run_silent(['php', '-r', php_code], cwd=root_dir, capture_output=True, text=True, timeout=5)
         out = (res.stdout or '').strip()
         if out and os.path.isdir(out):
             return out
     except Exception:
         pass
     return os.path.dirname(BASE_DIR)
-
-def get_active_context_window(normalized_targets):
-    try:
-        vscdb_path = os.path.expandvars(r'%APPDATA%\Antigravity IDE\User\globalStorage\state.vscdb')
-        if not os.path.exists(vscdb_path):
-            return None
-
-        con = sqlite3.connect(f'file:{vscdb_path}?mode=ro', uri=True)
-        cur = con.cursor()
-        cur.execute("SELECT value FROM ItemTable WHERE key = 'erennyuksell.ag-multi-account-switchboard'")
-        row = cur.fetchone()
-        con.close()
-
-        if not row or not row[0]:
-            return None
-
-        val = row[0].decode('utf-8', errors='ignore') if isinstance(row[0], bytes) else row[0]
-        data = json.loads(val)
-        last_win = data.get('ag.lastContextWindow', {})
-        active_cid = last_win.get('conversationId')
-        if not active_cid:
-            return None
-
-        conv_db = os.path.join(ANTIGRAVITY_CONV_DIR, f"{active_cid}.db")
-        if not os.path.exists(conv_db):
-            return None
-
-        con_conv = sqlite3.connect(f'file:{conv_db}?mode=ro', uri=True)
-        cur_conv = con_conv.cursor()
-        cur_conv.execute("SELECT data FROM trajectory_metadata_blob WHERE id='main'")
-        blob = cur_conv.fetchone()
-        con_conv.close()
-
-        if blob and blob[0]:
-            decoded = urllib.parse.unquote(blob[0].decode('utf-8', errors='ignore')).replace('\\', '/').lower()
-            for target in normalized_targets:
-                pattern = rf"(?:^|[^\w\-\.]){re.escape(target)}(?:[/?#\"\'\s,\x00-\x1f\\]|$)"
-                if re.search(pattern, decoded):
-                    return active_cid
-    except Exception:
-        pass
-    return None
 
 def discover_latest_conversation(project_code, project_title="", workspace_path=""):
     workspaces_map = load_workspaces_map()
@@ -460,12 +446,6 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
     if not normalized_targets or not os.path.exists(ANTIGRAVITY_CONV_DIR):
         return None, None
 
-    # 1. ÖNCELİK: Canlı Kullanıcı Odağı (Active Context Window)
-    active_cid = get_active_context_window(normalized_targets)
-    if active_cid:
-        return active_cid, f"file:///{normalized_targets[0]}"
-
-    # 2. İKİNCİ AŞAMA: Bu projeye ait son 4 saat içinde işlem görmüş geçerli bir .db oturumu
     db_files = glob.glob(os.path.join(ANTIGRAVITY_CONV_DIR, '*.db'))
     db_files.sort(key=os.path.getmtime, reverse=True)
 
@@ -498,7 +478,7 @@ def sync_conversation_id_to_db(project_code, conv_id):
         php_code = (
             f"require_once 'Model/DataLayer.php'; "
             f"$db = new Database(); "
-            f"$stmt = $db->connect->prepare('UPDATE projects SET agent_conversation_id = :cid WHERE project_code = :pcode'); "
+            f"$stmt =$db->connect->prepare('UPDATE projects SET agent_conversation_id = :cid WHERE project_code = :pcode'); "
             f"$stmt->execute([':cid' => '{conv_id}', ':pcode' => '{project_code}']);"
         )
         run_silent(['php', '-r', php_code], cwd=root_dir, capture_output=True, timeout=5)
@@ -523,6 +503,7 @@ def process_webhook_async(payload, header_conv_id):
     if event == 'task.submitted':
         with state_lock:
             project_active_state.pop(project_code, None)
+            project_in_flight.discard(project_code)
         print(f"✅ [GÖREV TESLİM EDİLDİ] [{project_code}] {task_code} -> Ajanın yanıtını bitirmesi için 4 sn bekleniyor...")
         time.sleep(4)
         if project_id:
@@ -535,133 +516,124 @@ def process_webhook_async(payload, header_conv_id):
     if event in IGNORED_AGENT_EVENTS:
         return
 
-    workspace_path = payload.get('workspace_path') or data.get('workspace_path', '')
-    agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
-    project_dir = get_project_primary_dir(project_code, workspace_path)
-
-    # 1. HEDEF SOHBET TESPİTİ (GHOST SİLME DÖNGÜSÜ ENGELLENDİ)
-    target_conv_id = None
-    if incoming_conv_id:
-        db_check = os.path.join(ANTIGRAVITY_CONV_DIR, f"{incoming_conv_id}.db")
-        if os.path.exists(db_check):
-            # Veritabanında kayıtlı olan sohbet diskte mevcut, ASLA silme!
-            target_conv_id = incoming_conv_id
-
-    if not target_conv_id:
-        discovered_cid, _ = discover_latest_conversation(project_code, project_title, workspace_path)
-        if discovered_cid:
-            target_conv_id = discovered_cid
-
-    # Sadece ve sadece incoming_conv_id diskte gerçekten YOKSA temizle
-    if incoming_conv_id and not target_conv_id:
-        print(f"🧹 [ESKİ/HAYALET SOHBET TEMİZLENDİ] {incoming_conv_id} diskte bulunamadı, yeni pencerede sohbet açılacak.")
-        sync_conversation_id_to_db(project_code, "")
-
-    is_resumed = bool(data.get('resumed', False))
-
+    # 1. ÇARPIŞMA ENGELLEYİCİ (IN-FLIGHT LOCK):
     with state_lock:
+        if project_code in project_in_flight:
+            return
         prev_state = project_active_state.get(project_code)
         if prev_state and prev_state.get('task_code') == task_code and event in ('task.started', 'task.in_progress'):
-            prev_cid = prev_state.get('conv_id')
             elapsed = time.time() - prev_state.get('dispatched_at', 0)
-
-            if prev_cid and prev_cid == target_conv_id and elapsed < 180:
+            if elapsed < 180:
                 return
-            elif prev_cid and target_conv_id and prev_cid != target_conv_id:
-                print(f"🔄 [HESAP/SOHBET DEĞİŞİMİ] {task_code} -> Yeni Pencere: {target_conv_id}")
-                is_resumed = True
-            elif elapsed >= 180:
-                print(f"⏰ [HATIRLATMA] {task_code} görevi {int(elapsed)} saniyedir teslim edilmedi, tekrar hatırlatılıyor...")
-                is_resumed = True
+        project_in_flight.add(project_code)
 
-    print(f"\n=======================================================")
-    print(f"🔔 [GÖREV TETİKLENİYOR] -> Olay: {event} | Proje: [{project_code}] {project_title} | Görev: {task_code}")
+    try:
+        workspace_path = payload.get('workspace_path') or data.get('workspace_path', '')
+        agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
+        project_dir = get_project_primary_dir(project_code, workspace_path)
 
-    task_title = data.get('title', '').replace('🔄 [RESUMING TASK] ', '').replace('⚠️ [REVISION REQUEST] ', '')
-    priority = data.get('priority', 'normal')
+        # Bellekteki son başarılı conv_id'yi veya DB'den geleni koru (ASLA SİLME!)
+        with state_lock:
+            mem_cid = project_active_state.get(project_code, {}).get('conv_id')
 
-    rules_block = ""
-    if agent_rules:
-        rules_block = f"\n\n---\n📌 **PROJECT RULES ([{project_code}] {project_title}):**\n{agent_rules}\n"
+        target_conv_id = mem_cid or incoming_conv_id
+        if not target_conv_id:
+            discovered_cid, _ = discover_latest_conversation(project_code, project_title, workspace_path)
+            if discovered_cid:
+                target_conv_id = discovered_cid
 
-    if event in ('task.started', 'task.in_progress', 'task.revision_requested', 'task.modification_requested'):
-        is_rev = event in ('task.revision_requested', 'task.modification_requested')
-        if is_rev:
-            title_header = f"⚠️ [REVISION] {task_code}: {task_title}"
-            banner = f"⚠️ **[{project_code}] REVISION TASK MOVED TO IN PROGRESS!**\n🔴 **Requested Changes:** {data.get('revision_reason', 'Revision requested.')}\n\n"
-        elif is_resumed:
-            title_header = f"🔄 [RESUMED] {task_code}: {task_title}"
-            banner = f"🔄 **[SESSION HANDOFF / RESUME DIRECTIVE]**\nThis task is currently IN PROGRESS and awaiting completion.\n\n"
+        is_resumed = bool(data.get('resumed', False))
+
+        print(f"\n=======================================================")
+        print(f"🔔 [GÖREV TETİKLENİYOR] -> Olay: {event} | Proje: [{project_code}] {project_title} | Görev: {task_code}")
+
+        task_title = data.get('title', '').replace('🔄 [RESUMING TASK] ', '').replace('⚠️ [REVISION REQUEST] ', '')
+        priority = data.get('priority', 'normal')
+
+        rules_block = ""
+        if agent_rules:
+            rules_block = f"\n\n---\n📌 **PROJECT RULES ([{project_code}] {project_title}):**\n{agent_rules}\n"
+
+        if event in ('task.started', 'task.in_progress', 'task.revision_requested', 'task.modification_requested'):
+            is_rev = event in ('task.revision_requested', 'task.modification_requested')
+            if is_rev:
+                title_header = f"⚠️ [REVISION] {task_code}: {task_title}"
+                banner = f"⚠️ **[{project_code}] REVISION TASK MOVED TO IN PROGRESS!**\n🔴 **Requested Changes:** {data.get('revision_reason', 'Revision requested.')}\n\n"
+            elif is_resumed:
+                title_header = f"🔄 [RESUMED] {task_code}: {task_title}"
+                banner = f"🔄 **[SESSION HANDOFF / RESUME DIRECTIVE]**\nThis task is currently IN PROGRESS and awaiting completion.\n\n"
+            else:
+                title_header = f"🚀 [IN PROGRESS] {task_code}: {task_title}"
+                banner = f"🚀 **TaskManager Task Marked as 'In Progress'!**\n\n"
+
+            desc = data.get('description', '').strip() or '*(No description provided)*'
+            desc = re.sub(r'---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$', '', desc, flags=re.DOTALL).strip()
+
+            checklists = data.get('checklists', [])
+            checklist_md = ""
+            if checklists:
+                checklist_md = "\n\n### ✅ Checklist:\n"
+                for item in checklists:
+                    box = "[x]" if item.get('is_completed') else "[ ]"
+                    text = item.get('title') or item.get('item_text', '')
+                    checklist_md += f"- {box} {text}\n"
+
+            message_text = (
+                f"{banner}"
+                f"📌 **Project:** [{project_code}] {project_title} (`{project_dir}`)\n"
+                f"📋 **Task Code:** `{task_code}`\n"
+                f"🏷️ **Title:** {task_title}\n"
+                f"⚡ **Priority:** {priority}\n\n"
+                f"### 📝 Task Description & Requirements:\n{desc}"
+                f"{checklist_md}"
+                f"{rules_block}\n\n"
+                f"---\n"
+                f"🛑 **STRICT OPERATIONAL GUARDRAILS:**\n"
+                f"1. **SINGLE ACTIVE TASK FOCUS:** Work EXCLUSIVELY on `{task_code}` in project `[{project_code}]`. NEVER jump to older or other tasks!\n"
+                f"2. **ZERO ABANDONMENT & AUTONOMOUS QA:** Complete 100% of implementation and live automated verification before responding to the user. The user is NOT a QA tester.\n"
+                f"3. **SUBMIT AND STOP (USE OFFICIAL REST API - NEVER SEARCH FOR TASKMANAGER FILES OR DB):** When completed and verified, execute the following REST API request in your terminal to move `{task_code}` to `submitted` (REVIEW), then **END YOUR TURN** (The next queued task will be automatically dispatched in 4 seconds):\n\n"
+                f"```powershell\n"
+                f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
+                f"$body = @{{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' }} | ConvertTo-Json -Compress\n"
+                f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow/submit' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"
+                f"```"
+            )
+        elif event == 'project.webhook_test':
+            title_header = f"Webhook Test Ping: [{project_code}]"
+            message_text = f"✅ **TaskManager Webhook Test Ping Successful!**\n- **Project:** [{project_code}] {project_title}\n- **Target Conversation:** {target_conv_id or 'New Conversation'}"
         else:
-            title_header = f"🚀 [IN PROGRESS] {task_code}: {task_title}"
-            banner = f"🚀 **TaskManager Task Marked as 'In Progress'!**\n\n"
+            return
 
-        desc = data.get('description', '').strip() or '*(No description provided)*'
-        desc = re.sub(r'---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$', '', desc, flags=re.DOTALL).strip()
+        success = False
 
-        checklists = data.get('checklists', [])
-        checklist_md = ""
-        if checklists:
-            checklist_md = "\n\n### ✅ Checklist:\n"
-            for item in checklists:
-                box = "[x]" if item.get('is_completed') else "[ ]"
-                text = item.get('title') or item.get('item_text', '')
-                checklist_md += f"- {box} {text}\n"
+        # A. Hedef sohbet varsa önce ona (CLI + RPC hibrit) iletmeyi dene
+        if target_conv_id:
+            success = send_message_to_existing_cascade(project_dir, target_conv_id, title_header, message_text)
+            if not success:
+                print(f"⚠️ [MEVCUT SOHBETE İLETİLEMEDİ] ID: {target_conv_id} yanıt vermedi, yeni Connect-RPC oturumu açılıyor...")
 
-        message_text = (
-            f"{banner}"
-            f"📌 **Project:** [{project_code}] {project_title} (`{project_dir}`)\n"
-            f"📋 **Task Code:** `{task_code}`\n"
-            f"🏷️ **Title:** {task_title}\n"
-            f"⚡ **Priority:** {priority}\n\n"
-            f"### 📝 Task Description & Requirements:\n{desc}"
-            f"{checklist_md}"
-            f"{rules_block}\n\n"
-            f"---\n"
-            f"🛑 **STRICT OPERATIONAL GUARDRAILS:**\n"
-            f"1. **SINGLE ACTIVE TASK FOCUS:** Work EXCLUSIVELY on `{task_code}` in project `[{project_code}]`. NEVER jump to older or other tasks!\n"
-            f"2. **ZERO ABANDONMENT & AUTONOMOUS QA:** Complete 100% of implementation and live automated verification before responding to the user. The user is NOT a QA tester.\n"
-            f"3. **SUBMIT AND STOP (USE OFFICIAL REST API - NEVER SEARCH FOR TASKMANAGER FILES OR DB):** When completed and verified, execute the following REST API request in your terminal to move `{task_code}` to `submitted` (REVIEW), then **END YOUR TURN** (The next queued task will be automatically dispatched in 4 seconds):\n\n"
-            f"```powershell\n"
-            f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
-            f"$body = @{{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' }} | ConvertTo-Json -Compress\n"
-            f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow/submit' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"
-            f"```"
-        )
-    elif event == 'project.webhook_test':
-        title_header = f"Webhook Test Ping: [{project_code}]"
-        message_text = f"✅ **TaskManager Webhook Test Ping Successful!**\n- **Project:** [{project_code}] {project_title}\n- **Target Conversation:** {target_conv_id or 'New Conversation'}"
-    else:
-        return
-
-    # 2. GÖNDERİM AKIŞI:
-    success = False
-
-    # A. Hedef sohbet varsa önce ona iletmeyi dene
-    if target_conv_id:
-        success = send_message_to_existing_cascade(project_dir, target_conv_id, message_text)
+        # B. Hedef sohbet yoksa veya eskisine iletilemediyse: Connect-RPC StartCascade ile YENİ AÇ!
         if not success:
-            print(f"⚠️ [MEVCUT SOHBETE İLETİLEMEDİ] ID: {target_conv_id} yanıt vermedi, yeni Connect-RPC oturumu açılıyor...")
+            new_cid = start_cascade_conversation(project_dir, message_text, title=title_header)
+            if new_cid:
+                target_conv_id = new_cid
+                sync_conversation_id_to_db(project_code, new_cid)
+                success = True
 
-    # B. Hedef sohbet yoksa veya eskisine iletilemediyse: Connect-RPC StartCascade ile YENİ AÇ!
-    if not success:
-        new_cid = start_cascade_conversation(project_dir, message_text, title=title_header)
-        if new_cid:
-            target_conv_id = new_cid
-            sync_conversation_id_to_db(project_code, new_cid)
-            success = True
-
-    if success and target_conv_id:
-        print(f"✅ Gönderim Başarılı! Hedef Sohbet: {target_conv_id}")
-        if task_code:
-            with state_lock:
-                project_active_state[project_code] = {
-                    'task_code': task_code,
-                    'conv_id': target_conv_id,
-                    'dispatched_at': time.time()
-                }
-    else:
-        print(f"❌ [HATA] [{project_code}] için görev iletilemedi!")
+        if success and target_conv_id:
+            print(f"✅ Gönderim Başarılı! Hedef Sohbet: {target_conv_id}")
+            if task_code:
+                with state_lock:
+                    project_active_state[project_code] = {
+                        'task_code': task_code,
+                        'conv_id': target_conv_id,
+                        'dispatched_at': time.time()
+                    }
+        else:
+            print(f"❌ [HATA] [{project_code}] için görev iletilemedi!")
+    finally:
+        with state_lock:
+            project_in_flight.discard(project_code)
 
 
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
@@ -696,23 +668,13 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
         return
 
 def run_server():
-    if '--probe' in sys.argv:
-        ws = None
-        for i, a in enumerate(sys.argv):
-            if a == '--probe' and i + 1 < len(sys.argv) and not sys.argv[i+1].startswith('-'):
-                ws = sys.argv[i+1]
-        port, tok = get_workspace_rpc_env(ws)
-        addr = f"127.0.0.1:{port}" if port else ""
-        print(json.dumps({"address": addr, "csrf_token": tok or ""}))
-        return
-
     watchdog_thread = threading.Thread(target=watchdog_loop, daemon=True)
     watchdog_thread.start()
 
     server_address = ('', PORT)
     httpd = http.server.HTTPServer(server_address, WebhookHandler)
     print("=======================================================")
-    print("🤖 Antigravity Multi-Agent Dispatcher v6.0 (Connect-RPC Multi-Window) Başlatıldı!")
+    print("🤖 Antigravity Multi-Agent Dispatcher v6.1 (Anti-Collision & Hybrid) Başlatıldı!")
     print(f"📡 Dinleme Adresi : http://localhost:{PORT}/webhook")
     print("=======================================================")
     try:
