@@ -222,6 +222,15 @@ def get_workspace_rpc_env(workspace_path):
 
     return None, None
 
+CASCADE_DEFAULT_CONFIG = {
+    "planner_config": {
+        "requested_model": {
+            "model": "MODEL_PLACEHOLDER_M318"
+        },
+        "plan_model": "MODEL_PLACEHOLDER_M318"
+    }
+}
+
 def start_cascade_conversation(workspace_path, prompt, title=""):
     """
     Connect-RPC üzerinden yeni bir cascade oturumu başlatır,
@@ -237,12 +246,8 @@ def start_cascade_conversation(workspace_path, prompt, title=""):
     ws_uri = f"file:///{norm_path}" if not norm_path.startswith('/') else f"file://{norm_path}"
 
     payload = {
-        "active_workspaces": [{
-            "workspace_folder_absolute_uri": ws_uri,
-            "git_root_absolute_uri": ws_uri
-        }],
-        "source": "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT",
-        "serialized_prompt": prompt
+        "workspace_uris": [ws_uri],
+        "source": "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT"
     }
     body = json.dumps(payload).encode('utf-8')
 
@@ -261,17 +266,19 @@ def start_cascade_conversation(workspace_path, prompt, title=""):
         with urllib.request.urlopen(req_start, context=SSL_CTX, timeout=6) as resp:
             if resp.status == 200:
                 data = json.loads(resp.read().decode('utf-8'))
-                cid = data.get("cascadeId")
+                cid = data.get("cascadeId") or data.get("cascade_id")
                 if cid:
                     print(f"🎉 [CONNECT-RPC BAŞARILI] StartCascade ile yeni sohbet başlatıldı! Port: {rpc_port}, ID: {cid}")
                     time.sleep(0.5)
 
-                    # 1. Kullanıcı mesaj turn'ünü (User Turn) kesin olarak ekle
+                    # 1. Kullanıcı mesaj turn'ünü (User Turn) model konfigürasyonuyla birlikte ekle (Zero-Touch Executor)
                     try:
                         url_msg = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
                         msg_payload = {
+                            "cascade_id": cid,
                             "cascadeId": cid,
-                            "items": [{"text": prompt}]
+                            "items": [{"text": prompt}],
+                            "cascade_config": CASCADE_DEFAULT_CONFIG
                         }
                         req_msg = urllib.request.Request(
                             url_msg,
@@ -289,7 +296,7 @@ def start_cascade_conversation(workspace_path, prompt, title=""):
                     # 2. SmartFocusConversation ile arayüzde o sekmeyi öne getir ve ekrana yansıt
                     try:
                         url_focus = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
-                        focus_payload = {"cascadeId": cid}
+                        focus_payload = {"cascade_id": cid, "cascadeId": cid}
                         req_focus = urllib.request.Request(
                             url_focus,
                             data=json.dumps(focus_payload).encode('utf-8'),
@@ -318,8 +325,10 @@ def send_message_to_existing_cascade(workspace_path, cascade_id, message_text):
 
     url_msg = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
     msg_payload = {
+        "cascade_id": cascade_id,
         "cascadeId": cascade_id,
-        "items": [{"text": message_text}]
+        "items": [{"text": message_text}],
+        "cascade_config": CASCADE_DEFAULT_CONFIG
     }
     req_msg = urllib.request.Request(
         url_msg,
@@ -337,7 +346,7 @@ def send_message_to_existing_cascade(workspace_path, cascade_id, message_text):
                     url_focus = f"https://127.0.0.1:{rpc_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
                     req_focus = urllib.request.Request(
                         url_focus,
-                        data=json.dumps({"cascadeId": cascade_id}).encode('utf-8'),
+                        data=json.dumps({"cascade_id": cascade_id, "cascadeId": cascade_id}).encode('utf-8'),
                         headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
                         method="POST"
                     )
