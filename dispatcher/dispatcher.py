@@ -297,11 +297,6 @@ def send_message_to_existing_cascade(workspace_path, cascade_id, title, message_
     except Exception as e:
         print(f"⚠️ Var olan sohbete RPC ile mesaj gönderilemedi ({cascade_id}): {e}")
 
-    # CLI yedek denemesi
-    if grpc_port and send_via_agentapi_cli(grpc_port, token, cascade_id, title, message_text, workspace_path):
-        print(f"✅ [CLI MESAJ İLETİLDİ] Var olan sohbet CLI ile güncellendi: {cascade_id}")
-        return True
-
     return False
 
 def start_cascade_conversation(workspace_path, prompt, title=""):
