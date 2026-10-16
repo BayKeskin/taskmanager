@@ -199,16 +199,51 @@ def is_conversation_active(cid, ls_address, csrf_token=None):
     except Exception:
         return False
 
+_ws_cache = {"data": {}, "expires_at": 0}
+
 def load_workspaces_map():
+    now = time.time()
+    if _ws_cache["data"] and now < _ws_cache["expires_at"]:
+        return _ws_cache["data"]
+
     mapping = {}
+    # 1. Veritabanından dinamik olarak tüm projelerin workspace_path değerlerini çek
+    try:
+        app_root = os.path.dirname(BASE_DIR)
+        php_code = 'require "Model/DataLayer.php"; $db = new Database(); $rows = $db->connect->query("SELECT project_code, workspace_path FROM projects WHERE workspace_path IS NOT NULL AND workspace_path != \'\'")->fetchAll(PDO::FETCH_KEY_PAIR); echo json_encode($rows);'
+        res = run_silent(['php', '-r', php_code], cwd=app_root, capture_output=True, text=True, timeout=5)
+        if res.returncode == 0 and res.stdout.strip():
+            db_projects = json.loads(res.stdout.strip())
+            for pcode, ppath in db_projects.items():
+                if ppath:
+                    mapping[str(pcode)] = [str(ppath)]
+    except Exception:
+        pass
+
+    # 2. Varsa workspaces.json dosyasından ek/özel yolları birleştir (override/extend)
     if os.path.exists(WORKSPACES_CONFIG):
         try:
             with open(WORKSPACES_CONFIG, 'r', encoding='utf-8') as f:
                 user_map = json.load(f)
                 if isinstance(user_map, dict):
-                    mapping.update(user_map)
+                    for k, v in user_map.items():
+                        k_str = str(k)
+                        if isinstance(v, list):
+                            if k_str in mapping:
+                                mapping[k_str] = list(dict.fromkeys(mapping[k_str] + v))
+                            else:
+                                mapping[k_str] = v
+                        elif isinstance(v, str):
+                            if k_str in mapping:
+                                if v not in mapping[k_str]:
+                                    mapping[k_str].append(v)
+                            else:
+                                mapping[k_str] = [v]
         except Exception:
             pass
+
+    _ws_cache["data"] = mapping
+    _ws_cache["expires_at"] = now + 15
     return mapping
 
 def get_project_primary_dir(project_code, workspace_path=""):

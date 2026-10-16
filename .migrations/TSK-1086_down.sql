@@ -1,0 +1,4 @@
+-- Rollback for TSK-1086
+-- Note: No structural DDL changes were applied in TSK-1086 (schema remained intact, model & client logic corrected).
+-- If any test records or MCP configurations were modified for project 1:
+-- DELETE FROM project_mcps WHERE project_id = 1 AND mcp_catalog_id IN (1, 17);

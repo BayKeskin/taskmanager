@@ -780,8 +780,8 @@ if (empty($aiArchProjects)) {
             </div>
             <div id="mcpCardsEmpty" style="display:none; text-align:center; padding:60px 20px; color:var(--text-muted);">
                 <div style="font-size:36px; margin-bottom:10px;">🔍</div>
-                <div style="font-size:14px; font-weight:600; color:var(--text-white);">Aradığınız kriterlere uygun MCP aracı bulunamadı.</div>
-                <div style="font-size:12px; margin-top:4px;">Arama teriminizi veya kategori filtresini değiştirin.</div>
+                <div style="font-size:14px; font-weight:600; color:var(--text-white);"><?= __('app.mcp_not_found') ?></div>
+                <div style="font-size:12px; margin-top:4px;"><?= __('app.mcp_not_found_hint') ?></div>
             </div>
         </div>
 
@@ -789,7 +789,7 @@ if (empty($aiArchProjects)) {
         <div class="cu-modal-footer" style="padding:12px 22px; border-top:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2); flex-shrink:0;">
             <div style="font-size:11.5px; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
                 <span>💡</span>
-                <span>Aktif edilen araçlar Antigravity IDE açıldığında otomatik olarak projenizin <code>.agents/mcp_config.json</code> dosyasından okunur.</span>
+                <span><?= __('app.mcp_footer_info') ?></span>
             </div>
             <button type="button" class="cu-btn-sm" onclick="closeModal('modalProjectMcp')" style="background:rgba(255,255,255,0.08); color:var(--text-white); padding:6px 18px; border-radius:6px; font-size:12px; cursor:pointer;">
                 <?= __('app.btn_cancel') ?>
@@ -797,6 +797,28 @@ if (empty($aiArchProjects)) {
         </div>
     </div>
 </div>
+
+<script>
+window.MCP_I18N = {
+    badge_required_env: <?= json_encode(__('app.mcp_badge_required_env'), JSON_UNESCAPED_UNICODE) ?>,
+    badge_key_configured: <?= json_encode(__('app.mcp_badge_key_configured'), JSON_UNESCAPED_UNICODE) ?>,
+    badge_ready: <?= json_encode(__('app.mcp_badge_ready'), JSON_UNESCAPED_UNICODE) ?>,
+    btn_details: <?= json_encode(__('app.mcp_btn_details'), JSON_UNESCAPED_UNICODE) ?>,
+    btn_config: <?= json_encode(__('app.mcp_btn_config'), JSON_UNESCAPED_UNICODE) ?>,
+    status_enabled: <?= json_encode(__('app.mcp_status_enabled'), JSON_UNESCAPED_UNICODE) ?>,
+    status_disabled: <?= json_encode(__('app.mcp_status_disabled'), JSON_UNESCAPED_UNICODE) ?>,
+    field_required: <?= json_encode(__('app.mcp_field_required'), JSON_UNESCAPED_UNICODE) ?>,
+    field_optional: <?= json_encode(__('app.mcp_field_optional'), JSON_UNESCAPED_UNICODE) ?>,
+    enter_value: <?= json_encode(__('app.mcp_enter_value'), JSON_UNESCAPED_UNICODE) ?>,
+    active_toast: <?= json_encode(__('app.mcp_active_toast'), JSON_UNESCAPED_UNICODE) ?>,
+    deactive_toast: <?= json_encode(__('app.mcp_deactive_toast'), JSON_UNESCAPED_UNICODE) ?>,
+    no_external_needed_info: <?= json_encode(__('app.mcp_no_external_needed_info'), JSON_UNESCAPED_UNICODE) ?>,
+    not_found: <?= json_encode(__('app.mcp_not_found'), JSON_UNESCAPED_UNICODE) ?>,
+    not_found_hint: <?= json_encode(__('app.mcp_not_found_hint'), JSON_UNESCAPED_UNICODE) ?>,
+    sync_success: <?= json_encode(__('app.mcp_sync_success'), JSON_UNESCAPED_UNICODE) ?>,
+    save_success: <?= json_encode(__('app.mcp_save_success'), JSON_UNESCAPED_UNICODE) ?>
+};
+</script>
 
 <!-- 🧩 7. MCP YAPILANDIRMA MODALI (API Keys / Env Değişkenleri) -->
 <div class="cu-modal-overlay" id="modalMcpConfig" onclick="if(event.target === this) closeModal('modalMcpConfig')" style="z-index:1100;">

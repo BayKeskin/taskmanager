@@ -4437,11 +4437,28 @@ window.renderMcpGrid = function() {
     }
     if (emptyState) emptyState.style.display = 'none';
 
+    const i18n = window.MCP_I18N || {};
+
+    function getMcpFields(item) {
+        if (!item) return [];
+        if (Array.isArray(item.required_env_fields) && item.required_env_fields.length > 0) {
+            return item.required_env_fields;
+        }
+        if (Array.isArray(item.required_env) && item.required_env.length > 0) {
+            return item.required_env.map(k => typeof k === 'string' ? { key: k, label: k, type: 'password', required: true } : k);
+        }
+        return [];
+    }
+
     grid.innerHTML = filtered.map(item => {
         const isEnabled = parseInt(item.is_enabled, 10) === 1;
-        const reqEnv = Array.isArray(item.required_env) ? item.required_env : [];
-        const hasEnvReq = reqEnv.length > 0;
-        const envFilled = hasEnvReq && reqEnv.every(k => item.env_values && item.env_values[k] && item.env_values[k].length > 0);
+        const fields = getMcpFields(item);
+        const hasEnvReq = fields.length > 0;
+        const envFilled = hasEnvReq && fields.every(f => {
+            if (f.required === false) return true;
+            const val = item.env_values && item.env_values[f.key];
+            return val && String(val).trim().length > 0;
+        });
 
         // Kategori Rozeti Rengi
         const catColors = {
@@ -4472,7 +4489,7 @@ window.renderMcpGrid = function() {
                                 </span>
                             </div>
                         </div>
-                        <label class="mcp-toggle-switch" title="${isEnabled ? 'Devre Dışı Bırak' : 'Aktif Et'}">
+                        <label class="mcp-toggle-switch" title="${isEnabled ? (i18n.status_disabled || 'Devre Dışı Bırak') : (i18n.status_enabled || 'Aktif Et')}">
                             <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleProjectMcp(${item.id}, this.checked)">
                             <span class="mcp-slider"></span>
                         </label>
@@ -4490,11 +4507,11 @@ window.renderMcpGrid = function() {
                         </span>
                         ${hasEnvReq ? `
                             <span style="font-size:10.5px; background:${envFilled ? 'rgba(46,160,67,0.15)' : 'rgba(230,126,34,0.15)'}; color:${envFilled ? '#3fb950' : '#f39c12'}; border:1px solid ${envFilled ? 'rgba(46,160,67,0.4)' : 'rgba(230,126,34,0.4)'}; padding:2px 7px; border-radius:4px; font-weight:500;">
-                                ${envFilled ? '🔑 Anahtar Tanımlı' : '⚠️ API Anahtarı Gerekli'}
+                                ${envFilled ? (i18n.badge_key_configured || '🔑 Anahtar Tanımlı') : (i18n.badge_required_env || '⚠️ API Anahtarı Gerekli')}
                             </span>
                         ` : `
                             <span style="font-size:10.5px; background:rgba(123,104,238,0.12); color:#c4b5fd; border:1px solid rgba(123,104,238,0.3); padding:2px 7px; border-radius:4px; font-weight:500;">
-                                ⚡ Hemen Hazır
+                                ${i18n.badge_ready || '⚡ Hemen Hazır (Harici Anahtar Gerekmez)'}
                             </span>
                         `}
                     </div>
@@ -4504,11 +4521,11 @@ window.renderMcpGrid = function() {
                 <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.06); padding-top:10px; margin-top:4px;">
                     <span style="font-size:11px; display:inline-flex; align-items:center; gap:5px; color:${isEnabled ? '#3fb950' : 'var(--text-muted)'}; font-weight:600;">
                         <span style="width:7px; height:7px; border-radius:50%; background:${isEnabled ? '#3fb950' : 'var(--text-muted)'};"></span>
-                        ${isEnabled ? 'Aktif' : 'Pasif'}
+                        ${isEnabled ? (i18n.status_enabled || 'Aktif') : (i18n.status_disabled || 'Pasif')}
                     </span>
                     <button type="button" onclick="openMcpConfig(${item.id})" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:var(--text-white); font-size:11px; padding:4px 10px; border-radius:5px; cursor:pointer;" title="Yapılandırma & API Anahtarları">
                         <span>⚙️</span>
-                        <span>${hasEnvReq ? 'Yapılandır' : 'Detaylar'}</span>
+                        <span>${hasEnvReq ? (i18n.btn_config || 'Ayarlar') : (i18n.btn_details || 'Detaylar')}</span>
                     </button>
                 </div>
             </div>
@@ -4519,6 +4536,7 @@ window.renderMcpGrid = function() {
 window.toggleProjectMcp = async function(catalogId, isChecked) {
     if (!window.CURRENT_MCP_PROJECT_ID) return;
     const item = (window.MCP_CATALOG_DATA || []).find(x => parseInt(x.id, 10) === parseInt(catalogId, 10));
+    const i18n = window.MCP_I18N || {};
 
     try {
         const fd = new FormData();
@@ -4532,17 +4550,22 @@ window.toggleProjectMcp = async function(catalogId, isChecked) {
         if (data.success) {
             if (item) item.is_enabled = isChecked ? 1 : 0;
             renderMcpGrid();
-            showToast(`${item ? item.display_name : 'MCP'} ${isChecked ? 'aktif edildi 🚀' : 'devre dışı bırakıldı.'}`, 'success');
+            const name = item ? (item.display_name || item.name) : 'MCP';
+            const actionText = isChecked ? (i18n.active_toast || 'aktif edildi 🚀') : (i18n.deactive_toast || 'devre dışı bırakıldı.');
+            showToast(`${name} ${actionText}`, 'success');
 
             // Eğer açıldıysa ve doldurulmamış API anahtarı varsa kullanıcıya kolaylık için ayar modalını aç
-            const reqEnv = item && Array.isArray(item.required_env) ? item.required_env : [];
-            const envFilled = reqEnv.length > 0 && reqEnv.every(k => item.env_values && item.env_values[k]);
-            if (isChecked && reqEnv.length > 0 && !envFilled) {
+            const fields = item && (Array.isArray(item.required_env_fields) && item.required_env_fields.length > 0 ? item.required_env_fields : (Array.isArray(item.required_env) ? item.required_env.map(k => typeof k === 'string' ? { key: k, required: true } : k) : []));
+            const hasEnvReq = fields && fields.length > 0;
+            const envFilled = hasEnvReq && fields.every(f => {
+                if (f.required === false) return true;
+                return item.env_values && item.env_values[f.key] && String(item.env_values[f.key]).trim().length > 0;
+            });
+            if (isChecked && hasEnvReq && !envFilled) {
                 setTimeout(() => openMcpConfig(catalogId), 250);
             }
         } else {
             showToast(data.message || 'Durum değiştirilemedi.', 'error');
-            // Revert checkbox in UI
             renderMcpGrid();
         }
     } catch (e) {
@@ -4555,6 +4578,7 @@ window.toggleProjectMcp = async function(catalogId, isChecked) {
 window.openMcpConfig = function(catalogId) {
     const item = (window.MCP_CATALOG_DATA || []).find(x => parseInt(x.id, 10) === parseInt(catalogId, 10));
     if (!item) return;
+    const i18n = window.MCP_I18N || {};
 
     document.getElementById('mcpConfigCatalogId').value = item.id;
     document.getElementById('mcpConfigIcon').textContent = window.getMcpDisplayIcon(item.icon);
@@ -4566,32 +4590,45 @@ window.openMcpConfig = function(catalogId) {
     if (!container) return;
     container.innerHTML = '';
 
-    const reqEnv = Array.isArray(item.required_env) ? item.required_env : [];
+    const fields = (Array.isArray(item.required_env_fields) && item.required_env_fields.length > 0)
+        ? item.required_env_fields
+        : (Array.isArray(item.required_env) ? item.required_env.map(k => typeof k === 'string' ? { key: k, label: k, required: true } : k) : []);
+
     const currentEnv = item.env_values || {};
 
-    if (reqEnv.length === 0) {
+    if (fields.length === 0) {
         container.innerHTML = `
-            <div style="background:rgba(46,160,67,0.1); border:1px solid rgba(46,160,67,0.3); border-radius:8px; padding:12px 14px; color:#3fb950; font-size:12.5px; display:flex; align-items:center; gap:10px;">
-                <span style="font-size:20px;">✅</span>
-                <div>Bu araç için harici bir API anahtarı gerekmez. Doğrudan Antigravity IDE içinden çalıştırılabilir.</div>
+            <div style="background:rgba(46,160,67,0.1); border:1px solid rgba(46,160,67,0.3); border-radius:8px; padding:14px 16px; color:#3fb950; font-size:12.5px; display:flex; align-items:flex-start; gap:12px;">
+                <span style="font-size:22px; line-height:1;">⚡</span>
+                <div>
+                    <strong style="display:block; margin-bottom:4px; font-size:13px; color:#3fb950;">${i18n.badge_ready || 'Hemen Hazır'}</strong>
+                    <div style="color:var(--text-secondary); font-size:12px; line-height:1.4;">${i18n.no_external_needed_info || 'Bu araç yerel derleyici ve ortam araçlarıyla çalışır. Harici bir API anahtarı veya servis tokenı gerekmez.'}</div>
+                </div>
             </div>
         `;
     } else {
-        container.innerHTML = reqEnv.map(envKey => {
+        container.innerHTML = fields.map(field => {
+            const envKey = field.key;
+            const label = field.label || envKey;
             const val = currentEnv[envKey] || '';
-            const isSecret = envKey.includes('TOKEN') || envKey.includes('KEY') || envKey.includes('SECRET') || envKey.includes('PASSWORD');
+            const isRequired = field.required !== false;
+            const isSecret = field.type === 'password' || (!field.type && (envKey.includes('TOKEN') || envKey.includes('KEY') || envKey.includes('SECRET') || envKey.includes('PASSWORD')));
+            const placeholder = field.placeholder || `${envKey} ${i18n.enter_value || 'değerini giriniz...'}`;
+
             return `
                 <div class="cu-form-group" style="margin-bottom:0;">
-                    <label style="font-size:11.5px; font-weight:600; color:var(--text-white); font-family:monospace; display:flex; justify-content:space-between;">
-                        <span>${envKey}</span>
-                        <span style="color:#e056fd; font-size:10.5px;">Zorunlu</span>
+                    <label style="font-size:11.5px; font-weight:600; color:var(--text-white); display:flex; justify-content:space-between; align-items:center;">
+                        <span>${label} <code style="font-size:10px; color:#c4b5fd; background:rgba(123,104,238,0.15); padding:1px 5px; border-radius:3px; margin-left:6px; font-family:monospace;">${envKey}</code></span>
+                        <span style="color:${isRequired ? '#ff7675' : 'var(--text-muted)'}; font-size:10.5px; font-weight:500;">
+                            ${isRequired ? (i18n.field_required || 'Zorunlu') : (i18n.field_optional || 'İsteğe Bağlı')}
+                        </span>
                     </label>
-                    <div style="position:relative; margin-top:4px;">
+                    <div style="position:relative; margin-top:5px;">
                         <input type="${isSecret ? 'password' : 'text'}" 
                                id="env_input_${envKey}" 
                                data-env-key="${envKey}"
                                value="${val}" 
-                               placeholder="${envKey} değerini giriniz..." 
+                               placeholder="${placeholder}" 
                                class="cu-form-control" 
                                style="width:100%; height:36px; background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:6px; padding:0 ${isSecret ? '36px' : '12px'} 0 12px; color:var(--text-white); font-size:12.5px; font-family:monospace; box-sizing:border-box;">
                         ${isSecret ? `
@@ -4610,17 +4647,22 @@ window.handleMcpConfigSubmit = async function(e) {
     e.preventDefault();
     const catalogId = document.getElementById('mcpConfigCatalogId')?.value;
     if (!catalogId || !window.CURRENT_MCP_PROJECT_ID) return;
+    const i18n = window.MCP_I18N || {};
 
     const item = (window.MCP_CATALOG_DATA || []).find(x => parseInt(x.id, 10) === parseInt(catalogId, 10));
-    const reqEnv = item && Array.isArray(item.required_env) ? item.required_env : [];
+    const fields = item && ((Array.isArray(item.required_env_fields) && item.required_env_fields.length > 0)
+        ? item.required_env_fields
+        : (Array.isArray(item.required_env) ? item.required_env.map(k => typeof k === 'string' ? { key: k } : k) : []));
 
     const envValues = {};
-    reqEnv.forEach(k => {
-        const input = document.getElementById(`env_input_${k}`);
-        if (input) {
-            envValues[k] = input.value.trim();
-        }
-    });
+    if (fields) {
+        fields.forEach(f => {
+            const input = document.getElementById(`env_input_${f.key}`);
+            if (input) {
+                envValues[f.key] = input.value.trim();
+            }
+        });
+    }
 
     const btn = document.getElementById('btnSaveMcpConfig');
     const origHtml = btn ? btn.innerHTML : '';
@@ -4640,7 +4682,7 @@ window.handleMcpConfigSubmit = async function(e) {
         const data = await res.json();
 
         if (data.success) {
-            showToast('MCP yapılandırması başarıyla kaydedildi ve senkronize edildi!', 'success');
+            showToast(i18n.save_success || 'MCP ayarları başarıyla kaydedildi!', 'success');
             if (item) {
                 item.is_enabled = 1;
                 item.env_values = envValues;

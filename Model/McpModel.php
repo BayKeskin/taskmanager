@@ -48,7 +48,9 @@ class McpModel extends Model
         $rows = $this->db->multi_record_query($sql, [$projectId]) ?: [];
         foreach ($rows as &$r) {
             $r->is_enabled = !empty($r->is_enabled);
-            $r->required_env_fields = json_decode($r->required_env_fields ?? '[]', true) ?: [];
+            $fields = json_decode($r->required_env_fields ?? '[]', true) ?: [];
+            $r->required_env_fields = $fields;
+            $r->required_env = !empty($fields) ? array_column($fields, 'key') : [];
             $r->default_args = json_decode($r->default_args ?? '[]', true) ?: [];
             $r->env_values = json_decode($r->env_values ?? '{}', true) ?: [];
             $r->custom_args = json_decode($r->custom_args ?? '[]', true) ?: [];
