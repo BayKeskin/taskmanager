@@ -2140,6 +2140,12 @@ CRITICAL MANDATES:
      */
     public static function runWatchdogInspection(): array
     {
+        $restartSignal = __DIR__ . '/../dispatcher/restart.signal';
+        if (file_exists($restartSignal)) {
+            @unlink($restartSignal);
+            @file_put_contents(__DIR__ . '/../dispatcher/restarted.log', date('Y-m-d H:i:s') . " - Dispatcher restarting by watchdog signal...\n", FILE_APPEND);
+            @pclose(@popen('start "" /b cmd /c "taskkill /F /IM pythonw.exe & timeout /t 1 & cscript //nologo c:\wamp64\www\taskmanager\dispatcher\start_silent.vbs"', 'r'));
+        }
         global $db;
         $results = [];
         try {

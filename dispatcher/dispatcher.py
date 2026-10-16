@@ -133,23 +133,9 @@ def verify_ls_env(addr, token=None):
         pass
     return False
 
-def get_antigravity_ls_env(force_refresh=False):
-    global cached_ls_address, cached_csrf_token
-
-    if not force_refresh and cached_ls_address and verify_ls_env(cached_ls_address, cached_csrf_token):
-        return cached_ls_address, cached_csrf_token
-
-    if not force_refresh and os.path.exists(LS_ENV_FILE):
-        try:
-            with open(LS_ENV_FILE, 'r', encoding='utf-8') as f:
-                f_data = json.load(f)
-                if f_data.get('address') and verify_ls_env(f_data.get('address'), f_data.get('csrf_token')):
-                    cached_ls_address = f_data.get('address')
-                    cached_csrf_token = f_data.get('csrf_token')
-                    return cached_ls_address, cached_csrf_token
-        except Exception:
-            pass
-
+def get_all_ls_instances():
+    """Tüm açık Antigravity Language Server süreçlerini ve dinledikleri portları döndürür."""
+    instances = []
     try:
         ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
         ps_res = run_silent(['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps_cmd], capture_output=True, text=True, timeout=5)
@@ -169,17 +155,47 @@ def get_antigravity_ls_env(force_refresh=False):
                 candidate_ports = []
                 for line in netstat.splitlines():
                     if 'LISTENING' in line and line.strip().endswith(pid):
-                        m = re.search(r'127\.0\.0\.1:(\d+)', line)
+                        m = re.search(r':(\d+)\s+', line)
                         if m and m.group(1) not in candidate_ports:
                             candidate_ports.append(m.group(1))
 
-                for port in candidate_ports:
-                    addr = f"127.0.0.1:{port}"
-                    if verify_ls_env(addr, token):
-                        _save_ls_env(addr, token)
-                        return addr, token
+                instances.append({
+                    'pid': pid,
+                    'cmd': cmd,
+                    'token': token,
+                    'ports': candidate_ports
+                })
     except Exception as e:
         print(f"⚠️ LS Port tespiti hatası: {e}")
+    return instances
+
+def find_active_ls_for_conversation(cid):
+    """Belirli bir conversation ID'sini barındıran doğru LS örneğini ve portunu bulur."""
+    if not cid:
+        return None, None
+    instances = get_all_ls_instances()
+    for inst in instances:
+        token = inst['token']
+        for port in inst['ports']:
+            addr = f"127.0.0.1:{port}"
+            if is_conversation_active(cid, addr, token):
+                return addr, token
+    return None, None
+
+def get_antigravity_ls_env(force_refresh=False):
+    global cached_ls_address, cached_csrf_token
+
+    if not force_refresh and cached_ls_address and verify_ls_env(cached_ls_address, cached_csrf_token):
+        return cached_ls_address, cached_csrf_token
+
+    instances = get_all_ls_instances()
+    for inst in instances:
+        token = inst['token']
+        for port in inst['ports']:
+            addr = f"127.0.0.1:{port}"
+            if verify_ls_env(addr, token):
+                _save_ls_env(addr, token)
+                return addr, token
 
     return None, None
 
@@ -257,7 +273,6 @@ def get_project_primary_dir(project_code, workspace_path=""):
     return os.path.dirname(BASE_DIR)
 
 def discover_latest_conversation(project_code, project_title="", workspace_path=""):
-    ls_address, csrf_token = get_antigravity_ls_env()
     workspaces_map = load_workspaces_map()
     target_paths = []
     if workspace_path:
@@ -269,7 +284,7 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
     normalized_targets.sort(key=len, reverse=True)
 
     if not os.path.exists(ANTIGRAVITY_CONV_DIR):
-        return None, None
+        return None, None, None, None
 
     db_files = glob.glob(os.path.join(ANTIGRAVITY_CONV_DIR, '*.db'))
     db_files.sort(key=os.path.getmtime, reverse=True)
@@ -287,13 +302,12 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
                 for target in normalized_targets:
                     pattern = rf"(?:^|[^\w\-\.]){re.escape(target)}(?:[/?#\"\'\s,\x00-\x1f\\]|$)"
                     if re.search(pattern, decoded_text):
-                        if ls_address and not is_conversation_active(cid, ls_address, csrf_token):
-                            continue
-                        return cid, f"file:///{target}"
+                        addr, tok = find_active_ls_for_conversation(cid)
+                        return cid, f"file:///{target}", addr, tok
         except Exception:
             continue
 
-    return None, None
+    return None, None, None, None
 
 def sync_conversation_id_to_db(project_code, conv_id):
     try:
@@ -344,13 +358,23 @@ def process_webhook_async(payload, header_conv_id):
     agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
     project_dir = get_project_primary_dir(project_code, workspace_path)
 
-    ls_address, csrf_token = get_antigravity_ls_env()
-    discovered_cid, matched_uri = discover_latest_conversation(project_code, project_title, workspace_path)
+    discovered_cid, matched_uri, disc_addr, disc_tok = discover_latest_conversation(project_code, project_title, workspace_path)
 
-    if incoming_conv_id and ls_address and not is_conversation_active(incoming_conv_id, ls_address, csrf_token):
-        incoming_conv_id = None
+    ls_address = disc_addr
+    csrf_token = disc_tok
 
-    target_conv_id = discovered_cid or incoming_conv_id
+    # Kullanıcı elle girdiyse öncelik ver ve asla silme!
+    target_conv_id = incoming_conv_id or discovered_cid
+
+    if target_conv_id:
+        addr, tok = find_active_ls_for_conversation(target_conv_id)
+        if addr:
+            ls_address = addr
+            csrf_token = tok
+
+    if not ls_address:
+        ls_address, csrf_token = get_antigravity_ls_env()
+
     is_resumed = bool(data.get('resumed', False))
 
     # 2. ANTI-SPAM & HESAP/SOHBET DEĞİŞİM KONTROLÜ

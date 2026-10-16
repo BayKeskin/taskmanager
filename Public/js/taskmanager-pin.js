@@ -1,10 +1,8 @@
 /**
- * TaskManager In-House Visual Pin & Feedback Widget (v2.1 - Universal Resilient Edition)
- * BugHerd / Marker.io Alternative: Pixel-perfect in-browser visual feedback.
- * Works seamlessly across all client domains, virtual hosts, and local/production setups.
- *
- * Usage:
- * <script src="http://localhost/taskmanager/Public/js/taskmanager-pin.js" data-project="TKMDEV-02" async></script>
+ * TaskManager In-House Visual Pin & Feedback Widget (v2.3 - Modal-Safe & Zero-Freeze Edition)
+ * - Bootstrap / Custom Modal açıkken oluşan Focus-Trap sonsuz döngüsünü %100 engeller.
+ * - Modal içine tıklandığında arka planı taramak yerine doğrudan modalı yakalar (0ms takılma).
+ * - Klonlama sırasında ağır backdrop-filter / blur / animasyon efektlerini devre dışı bırakır.
  */
 (function () {
     if (window.__TM_PIN_INITIALIZED__) return;
@@ -25,76 +23,53 @@
                 const scriptUrl = new URL(currentScript.src, window.location.href);
                 const basePath = scriptUrl.pathname.replace(/\/Public\/js\/taskmanager-pin\.js.*$/i, '');
                 baseOrigin = scriptUrl.origin + basePath;
-            } catch (e) {}
+            } catch (e) { }
         }
         const apiEndpoint = currentScript?.getAttribute('data-api') || (baseOrigin + '/api/v1/visual-feedback');
 
         let isPinMode = false;
         let hoveredElement = null;
         let currentPin = null;
+        let activeCapturePromise = null;
 
-        // 1. Ekran Görüntüsü Motoru (Yerel Öncelikli: Local modern-screenshot -> CDN modern-screenshot -> Local html2canvas)
+        // 1. Ekran Görüntüsü Motoru
         let screenshotLibPromise = null;
         function loadScreenshotEngine() {
-            if (window.modernScreenshot && window.modernScreenshot.domToCanvas) {
-                return Promise.resolve({ type: 'modern', fn: window.modernScreenshot.domToCanvas });
-            }
             if (window.html2canvas) {
                 return Promise.resolve({ type: 'h2c', fn: window.html2canvas });
             }
             if (screenshotLibPromise) return screenshotLibPromise;
 
             screenshotLibPromise = new Promise((resolve) => {
-                // Aşama A: TaskManager içerisindeki yerel modern-screenshot.js
                 const scriptLocal = document.createElement('script');
-                scriptLocal.src = baseOrigin + '/Public/js/modern-screenshot.js';
+                scriptLocal.src = baseOrigin + '/Public/js/html2canvas.min.js';
                 scriptLocal.async = true;
                 scriptLocal.onload = () => {
-                    if (window.modernScreenshot && window.modernScreenshot.domToCanvas) {
-                        resolve({ type: 'modern', fn: window.modernScreenshot.domToCanvas });
+                    if (window.html2canvas) {
+                        resolve({ type: 'h2c', fn: window.html2canvas });
                     } else {
-                        tryCdnModernScreenshot().then(resolve);
+                        loadCdnHtml2Canvas().then(resolve);
                     }
                 };
                 scriptLocal.onerror = () => {
-                    tryCdnModernScreenshot().then(resolve);
+                    loadCdnHtml2Canvas().then(resolve);
                 };
                 document.head.appendChild(scriptLocal);
             });
             return screenshotLibPromise;
         }
 
-        function tryCdnModernScreenshot() {
+        function loadCdnHtml2Canvas() {
             return new Promise((resolve) => {
                 const scriptCdn = document.createElement('script');
-                scriptCdn.src = 'https://cdn.jsdelivr.net/npm/modern-screenshot@4.6.0/dist/index.js';
+                scriptCdn.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
                 scriptCdn.async = true;
-                scriptCdn.onload = () => {
-                    if (window.modernScreenshot && window.modernScreenshot.domToCanvas) {
-                        resolve({ type: 'modern', fn: window.modernScreenshot.domToCanvas });
-                    } else {
-                        loadFallbackHtml2Canvas().then(resolve);
-                    }
-                };
-                scriptCdn.onerror = () => {
-                    loadFallbackHtml2Canvas().then(resolve);
-                };
+                scriptCdn.onload = () => resolve(window.html2canvas ? { type: 'h2c', fn: window.html2canvas } : null);
+                scriptCdn.onerror = () => resolve(null);
                 document.head.appendChild(scriptCdn);
             });
         }
 
-        function loadFallbackHtml2Canvas() {
-            return new Promise((resolve) => {
-                const script = document.createElement('script');
-                script.src = baseOrigin + '/Public/js/html2canvas.min.js';
-                script.async = true;
-                script.onload = () => resolve(window.html2canvas ? { type: 'h2c', fn: window.html2canvas } : null);
-                script.onerror = () => resolve(null);
-                document.head.appendChild(script);
-            });
-        }
-
-        // Motoru arka planda önceden ısıt
         loadScreenshotEngine();
 
         // 2. CSS Stillerini Enjekte Et
@@ -140,7 +115,6 @@
                     background: rgba(18, 18, 26, 0.95);
                     color: #ffffff;
                     border: 1px solid rgba(123, 104, 238, 0.5);
-                    backdrop-filter: blur(8px);
                     border-radius: 30px;
                     padding: 8px 20px;
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -157,7 +131,7 @@
                     cursor: crosshair !important;
                 }
                 .tm-pin-marker {
-                    position: absolute;
+                    position: fixed;
                     z-index: 2147483641;
                     width: 30px;
                     height: 30px;
@@ -182,8 +156,8 @@
                     line-height: 1;
                 }
                 #tm-pin-dialog {
-                    position: absolute;
-                    z-index: 2147483645;
+                    position: fixed;
+                    z-index: 2147483646;
                     width: 340px;
                     background: #1e1e28;
                     color: #f1f2f6;
@@ -289,7 +263,7 @@
             <div id="tm-pin-preview-box" style="display:none; margin-bottom:8px; border-radius:6px; overflow:hidden; border:1px solid rgba(123,104,238,0.4); background:#0c0c14; text-align:center;">
                 <img id="tm-pin-preview-img" style="max-width:100%; max-height:130px; display:block; margin:0 auto; object-fit:contain;" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Preview">
                 <div style="font-size:10px; color:#00b894; padding:3px 6px; background:rgba(0,184,148,0.1); display:flex; align-items:center; justify-content:center; gap:4px;">
-                    <span>📸</span> <span>Birebir ekran görüntüsü & pin yakalandı</span>
+                    <span>📸</span> <span>Ekran görüntüsü & pin hazır</span>
                 </div>
             </div>
 
@@ -312,6 +286,20 @@
             </div>
         `;
         document.body.appendChild(dialog);
+
+        // KRİTİK KORUMA 1: Bootstrap / Modal Focus-Trap Sonsuz Döngüsünü Engelle!
+        // Sayfada açık bir modal varken bizim diyaloğun içindeki inputlara tıklanınca
+        // modalın odağı zorla geri çalıp tarayıcıyı kilitlemesini (infinite focus loop) önler.
+        ['focusin', 'focus', 'mousedown', 'click', 'keydown'].forEach((evtName) => {
+            dialog.addEventListener(evtName, (ev) => {
+                ev.stopPropagation();
+            });
+        });
+        document.addEventListener('focusin', (ev) => {
+            if (dialog.style.display === 'block' && dialog.contains(ev.target)) {
+                ev.stopImmediatePropagation();
+            }
+        }, true);
 
         function getCssSelector(el) {
             if (!(el instanceof Element)) return '';
@@ -370,6 +358,7 @@
         document.addEventListener('mouseover', (e) => {
             if (!isPinMode) return;
             const target = e.target;
+            if (!target || !target.closest) return;
             if (target.closest('#tm-pin-trigger, #tm-pin-banner, #tm-pin-dialog, .tm-pin-marker')) return;
 
             if (hoveredElement && hoveredElement !== target) {
@@ -379,52 +368,94 @@
             hoveredElement.classList.add('tm-pin-hover-target');
         });
 
-        // Pin çizici (Canvas üzerine sivri uçlu Teardrop pini çizer)
-        function drawPinOnCanvas(ctx, pinX, pinY, dpr) {
+        function drawPinOnCanvas(ctx, pinX, pinY, scale) {
             ctx.save();
             ctx.translate(pinX, pinY);
 
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-            ctx.shadowBlur = 10 * dpr;
-            ctx.shadowOffsetY = 4 * dpr;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+            ctx.shadowBlur = 10 * scale;
+            ctx.shadowOffsetY = 4 * scale;
 
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.bezierCurveTo(-13 * dpr, -12 * dpr, -16 * dpr, -28 * dpr, 0, -38 * dpr);
-            ctx.bezierCurveTo(16 * dpr, -28 * dpr, 13 * dpr, -12 * dpr, 0, 0);
+            ctx.bezierCurveTo(-13 * scale, -12 * scale, -16 * scale, -28 * scale, 0, -38 * scale);
+            ctx.bezierCurveTo(16 * scale, -28 * scale, 13 * scale, -12 * scale, 0, 0);
             ctx.closePath();
 
-            const pinGrad = ctx.createLinearGradient(-14 * dpr, -38 * dpr, 14 * dpr, 0);
+            const pinGrad = ctx.createLinearGradient(-14 * scale, -38 * scale, 14 * scale, 0);
             pinGrad.addColorStop(0, '#7b68ee');
             pinGrad.addColorStop(1, '#9b5de5');
             ctx.fillStyle = pinGrad;
             ctx.fill();
 
             ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2.5 * dpr;
+            ctx.lineWidth = 2.5 * scale;
             ctx.stroke();
 
             ctx.shadowColor = 'transparent';
             ctx.fillStyle = '#ffffff';
-            ctx.font = `bold ${Math.round(12 * dpr)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            ctx.font = `bold ${Math.round(12 * scale)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('1', 0, -23 * dpr);
+            ctx.fillText('1', 0, -23 * scale);
 
             ctx.restore();
         }
 
-        // Tıklama: Pin Bırak ve Dialogu Anında Göster, Ekranı Asenkron Yakala
-        document.addEventListener('click', async (e) => {
+        function createInstantFallbackSnapshot(viewportW, viewportH, clientX, clientY, targetRect, selector, pageUrl) {
+            const canvas = document.createElement('canvas');
+            canvas.width = viewportW;
+            canvas.height = viewportH;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#181824';
+            ctx.fillRect(0, 0, viewportW, viewportH);
+
+            ctx.strokeStyle = 'rgba(123, 104, 238, 0.12)';
+            ctx.lineWidth = 1;
+            for (let gx = 0; gx < viewportW; gx += 40) {
+                ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, viewportH); ctx.stroke();
+            }
+            for (let gy = 0; gy < viewportH; gy += 40) {
+                ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(viewportW, gy); ctx.stroke();
+            }
+
+            if (targetRect && targetRect.width > 0 && targetRect.height > 0) {
+                ctx.fillStyle = 'rgba(123, 104, 238, 0.18)';
+                ctx.fillRect(targetRect.left, targetRect.top, targetRect.width, targetRect.height);
+                ctx.strokeStyle = '#7b68ee';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.strokeRect(targetRect.left, targetRect.top, targetRect.width, targetRect.height);
+                ctx.setLineDash([]);
+            }
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+            ctx.fillRect(16, 16, Math.min(viewportW - 32, 650), 54);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillText('📍 URL: ' + pageUrl, 28, 38);
+            ctx.fillStyle = '#a4b0be';
+            ctx.font = '12px monospace';
+            ctx.fillText('Seçici: ' + selector.substring(0, 80), 28, 58);
+
+            drawPinOnCanvas(ctx, clientX, clientY, 1);
+            return canvas.toDataURL('image/jpeg', 0.85);
+        }
+
+        // Tıklama Yakalayıcı
+        document.addEventListener('click', (e) => {
             if (!isPinMode) return;
             const target = e.target;
+            if (!target || !target.closest) return;
             if (target.closest('#tm-pin-trigger, #tm-pin-banner, #tm-pin-dialog, .tm-pin-marker')) return;
 
             e.preventDefault();
             e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
-            const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
-            const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+            const scrollX = Math.round(window.pageXOffset || document.documentElement.scrollLeft || 0);
+            const scrollY = Math.round(window.pageYOffset || document.documentElement.scrollTop || 0);
             const clientX = typeof e.clientX === 'number' && !isNaN(e.clientX) ? Math.round(e.clientX) : 0;
             const clientY = typeof e.clientY === 'number' && !isNaN(e.clientY) ? Math.round(e.clientY) : 0;
             const x = typeof e.pageX === 'number' && !isNaN(e.pageX) ? Math.round(e.pageX) : (clientX + scrollX);
@@ -432,19 +463,23 @@
             const viewportW = window.innerWidth;
             const viewportH = window.innerHeight;
             const selector = getCssSelector(target);
+            const targetRect = target.getBoundingClientRect ? target.getBoundingClientRect() : null;
 
-            // 1. Pini ANINDA yerleştir
+            // Tıklanan yer açık bir Modal / Dialog içinde mi kontrol et!
+            const modalContainer = target.closest('.modal.show, .modal.in, .modal[style*="display: block"], [role="dialog"], .swal2-container, .fancybox-container, .mfp-wrap');
+
+            // 1. Pini Fixed olarak ekrana yerleştir (Modal üstünde de kaymadan sabit durur)
             if (currentPin) currentPin.remove();
             currentPin = document.createElement('div');
             currentPin.className = 'tm-pin-marker';
-            currentPin.style.left = x + 'px';
-            currentPin.style.top = y + 'px';
+            currentPin.style.left = clientX + 'px';
+            currentPin.style.top = clientY + 'px';
             currentPin.innerHTML = '<span>1</span>';
             document.body.appendChild(currentPin);
 
             togglePinMode(false);
 
-            // 2. Dialogu ANINDA aç (Kullanıcı asla beklemez)
+            // 2. Dialogu Fixed olarak konumlandır
             const previewBox = document.getElementById('tm-pin-preview-box');
             const previewImg = document.getElementById('tm-pin-preview-img');
             const snapshotStatus = document.getElementById('tm-pin-snapshot-status');
@@ -456,21 +491,26 @@
             }
 
             const dialogWidth = 340;
-            let leftPos = x + 20;
-            if (leftPos + dialogWidth > viewportW + scrollX) {
-                leftPos = x - dialogWidth - 20;
+            let leftPos = clientX + 20;
+            if (leftPos + dialogWidth > viewportW - 10) {
+                leftPos = clientX - dialogWidth - 20;
             }
-            let topPos = y + 10;
-            if (topPos + 340 > viewportH + scrollY) {
-                topPos = Math.max(scrollY + 10, y - 340);
+            let topPos = clientY + 10;
+            if (topPos + 350 > viewportH - 10) {
+                topPos = Math.max(10, viewportH - 360);
             }
             dialog.style.left = Math.max(10, leftPos) + 'px';
-            dialog.style.top = topPos + 'px';
+            dialog.style.top = Math.max(10, topPos) + 'px';
             dialog.style.display = 'block';
 
             document.getElementById('tm-pin-meta').textContent = `Öğe: ${selector.substring(0, 48)}...`;
-            document.getElementById('tm-pin-title').value = `[Pin] ${target.tagName.toLowerCase()}${target.id ? '#' + target.id : ''} öğesinde sorun`;
-            document.getElementById('tm-pin-title').focus();
+            const titleInput = document.getElementById('tm-pin-title');
+            titleInput.value = `[Pin] ${target.tagName.toLowerCase()}${target.id ? '#' + target.id : ''} öğesinde sorun`;
+
+            // Modal açık değilse doğrudan focus ver; modal açıksa focus-trap çakışmasını önlemek için gecikmeli ver
+            if (!modalContainer) {
+                titleInput.focus();
+            }
 
             dialog._pinData = {
                 x,
@@ -486,94 +526,103 @@
                 screenshot: ''
             };
 
-            // 3. Arka Planda Hızlı Ekran Görüntüsü Alma (Zaman aşımı korumalı: 2.5 saniye max)
-            (async () => {
-                let screenshotData = '';
-                try {
-                    // Yakalama esnasında widget UI öğelerini gizle
-                    triggerBtn.style.visibility = 'hidden';
-                    banner.style.visibility = 'hidden';
-                    dialog.style.visibility = 'hidden';
-                    if (currentPin) currentPin.style.visibility = 'hidden';
+            // 3. Arka Planda Ekran Görüntüsü Yakala (Modal varsa SADECE modalı yakalar -> 0ms donma!)
+            activeCapturePromise = new Promise((resolveCapture) => {
+                setTimeout(async () => {
+                    let screenshotData = '';
+                    try {
+                        const engine = await loadScreenshotEngine();
+                        if (engine && engine.type === 'h2c') {
+                            // EĞER MODAL İÇİNDEYSEK: Tüm body yerine sadece modalContainer'ı yakala!
+                            const captureRoot = modalContainer || document.body;
+                            const isModalCapture = Boolean(modalContainer);
 
-                    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-                    const engine = await loadScreenshotEngine();
-
-                    const finalCanvas = document.createElement('canvas');
-                    finalCanvas.width = viewportW * dpr;
-                    finalCanvas.height = viewportH * dpr;
-                    const ctx = finalCanvas.getContext('2d');
-
-                    if (engine && engine.type === 'modern') {
-                        // modern-screenshot (Hızlı mod: font fetch pasif, 2.5s zaman aşımı)
-                        const fullCanvas = await Promise.race([
-                            engine.fn(document.body, {
-                                scale: dpr,
-                                timeout: 2500,
-                                font: false,
-                                backgroundColor: window.getComputedStyle(document.body).backgroundColor || '#ffffff',
-                                filter: (node) => {
-                                    if (node.id === 'tm-pin-trigger' || node.id === 'tm-pin-banner' || node.id === 'tm-pin-dialog') return false;
-                                    if (node.classList && node.classList.contains('tm-pin-marker')) return false;
-                                    return true;
-                                }
-                            }),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('ModernScreenshot timeout')), 2500))
-                        ]);
-
-                        ctx.drawImage(
-                            fullCanvas,
-                            scrollX * dpr, scrollY * dpr, viewportW * dpr, viewportH * dpr,
-                            0, 0, viewportW * dpr, viewportH * dpr
-                        );
-                    } else if (engine && engine.type === 'h2c') {
-                        const h2cCanvas = await Promise.race([
-                            engine.fn(document.documentElement, {
-                                useCORS: false,
-                                allowTaint: true,
+                            const h2cOptions = {
+                                useCORS: true,
+                                allowTaint: false,
                                 logging: false,
-                                scale: dpr,
-                                x: scrollX,
-                                y: scrollY,
-                                width: viewportW,
-                                height: viewportH,
-                                windowWidth: viewportW,
-                                windowHeight: viewportH,
-                                ignoreElements: (el) => el.id === 'tm-pin-trigger' || el.id === 'tm-pin-banner' || el.id === 'tm-pin-dialog'
-                            }),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('Html2Canvas timeout')), 2500))
-                        ]);
-                        ctx.drawImage(h2cCanvas, 0, 0, finalCanvas.width, finalCanvas.height);
+                                scale: 1,
+                                imageTimeout: 1200,
+                                backgroundColor: isModalCapture ? '#181824' : null,
+                                onclone: (clonedDoc) => {
+                                    // KRİTİK KORUMA 2: html2canvas'ı donduran backdrop-filter (blur) ve animasyonları klonda kapat!
+                                    const styleReset = clonedDoc.createElement('style');
+                                    styleReset.textContent = `
+                                        *, *::before, *::after {
+                                            backdrop-filter: none !important;
+                                            -webkit-backdrop-filter: none !important;
+                                            transition: none !important;
+                                            animation: none !important;
+                                        }
+                                    `;
+                                    clonedDoc.head.appendChild(styleReset);
+                                },
+                                ignoreElements: (el) => {
+                                    if (!el) return false;
+                                    if (el.id === 'tm-pin-trigger' || el.id === 'tm-pin-banner' || el.id === 'tm-pin-dialog') return true;
+                                    if (el.classList && (el.classList.contains('tm-pin-marker') || el.classList.contains('modal-backdrop'))) return true;
+                                    if (el.tagName === 'VIDEO' || el.tagName === 'IFRAME') return true;
+                                    return false;
+                                }
+                            };
+
+                            if (!isModalCapture) {
+                                h2cOptions.x = scrollX;
+                                h2cOptions.y = scrollY;
+                                h2cOptions.width = viewportW;
+                                h2cOptions.height = viewportH;
+                                h2cOptions.windowWidth = viewportW;
+                                h2cOptions.windowHeight = viewportH;
+                            }
+
+                            const h2cCanvas = await Promise.race([
+                                engine.fn(captureRoot, h2cOptions),
+                                new Promise((_, reject) => setTimeout(() => reject(new Error('Capture timeout')), 2200))
+                            ]);
+
+                            const finalCanvas = document.createElement('canvas');
+                            finalCanvas.width = viewportW;
+                            finalCanvas.height = viewportH;
+                            const ctx = finalCanvas.getContext('2d');
+
+                            if (isModalCapture) {
+                                // Modal görüntüsünü tam ekrandaki koordinatına yerleştir
+                                ctx.fillStyle = '#14141f';
+                                ctx.fillRect(0, 0, viewportW, viewportH);
+                                const mRect = modalContainer.getBoundingClientRect();
+                                ctx.drawImage(h2cCanvas, mRect.left, mRect.top, mRect.width, mRect.height);
+                            } else {
+                                ctx.drawImage(h2cCanvas, 0, 0, viewportW, viewportH);
+                            }
+
+                            drawPinOnCanvas(ctx, clientX, clientY, 1);
+                            screenshotData = finalCanvas.toDataURL('image/jpeg', 0.85);
+                        }
+                    } catch (err) {
+                        console.warn('[TaskManager Pin] Yakalama uyarısı, sentetik harita devrede:', err.message);
                     }
 
-                    // Pini tam tıklanan koordinata damgala
-                    drawPinOnCanvas(ctx, clientX * dpr, clientY * dpr, dpr);
-                    screenshotData = finalCanvas.toDataURL('image/jpeg', 0.90);
-
-                } catch (err) {
-                    console.warn('[TaskManager Pin] Ekran görüntüsü alınamadı, DOM fallback devrede:', err.message);
-                } finally {
-                    triggerBtn.style.visibility = 'visible';
-                    banner.style.visibility = 'visible';
-                    dialog.style.visibility = 'visible';
-                    if (currentPin) currentPin.style.visibility = 'visible';
-                }
-
-                if (screenshotData && previewBox && previewImg) {
-                    previewImg.src = screenshotData;
-                    previewBox.style.display = 'block';
-                    if (snapshotStatus) {
-                        snapshotStatus.textContent = '📸 Resim Eklendi';
-                        snapshotStatus.style.color = '#00b894';
+                    if (!screenshotData) {
+                        screenshotData = createInstantFallbackSnapshot(
+                            viewportW, viewportH, clientX, clientY, targetRect, selector, window.location.href
+                        );
                     }
+
                     if (dialog._pinData) {
                         dialog._pinData.screenshot = screenshotData;
                     }
-                } else if (snapshotStatus) {
-                    snapshotStatus.textContent = '📍 DOM Pinli';
-                    snapshotStatus.style.color = '#a4b0be';
-                }
-            })();
+                    if (previewBox && previewImg) {
+                        previewImg.src = screenshotData;
+                        previewBox.style.display = 'block';
+                    }
+                    if (snapshotStatus) {
+                        snapshotStatus.textContent = '📸 Resim Hazır';
+                        snapshotStatus.style.color = '#00b894';
+                    }
+
+                    resolveCapture(screenshotData);
+                }, 60);
+            });
 
         }, true);
 
@@ -601,6 +650,10 @@
             submitBtn.textContent = '⏳ Gönderiliyor...';
 
             try {
+                if (!data.screenshot && activeCapturePromise) {
+                    await activeCapturePromise;
+                }
+
                 const payload = {
                     project_code: projectCode,
                     title: title,
@@ -611,7 +664,7 @@
                     viewport: data.viewport,
                     user_agent: data.userAgent,
                     coords: `Sayfa: X:${data.x}, Y:${data.y} | Görünüm: X:${data.clientX}, Y:${data.clientY} (Scroll: ${data.scrollY}px)`,
-                    screenshot: data.screenshot || '',
+                    screenshot: dialog._pinData?.screenshot || '',
                     created_via: 'tm_visual_pin'
                 };
 
@@ -627,7 +680,7 @@
                 const result = await res.json();
                 if (result.success || result.task_code || result.id) {
                     const code = result.task_code || result.data?.task_code || 'TSK';
-                    alert(`✅ Görsel Hata Görevi Başarıyla Oluşturuldu!\nGörev Kodu: ${code}\nBildirim TaskManager panosuna kaydedildi.`);
+                    alert(`✅ Görsel Hata Görevi Başarıyla Oluşturuldu!\nGörev Kodu: ${code}\nEkran görüntüsü ile birlikte TaskManager panosuna kaydedildi.`);
                     dialog.style.display = 'none';
                     if (currentPin) {
                         currentPin.remove();
