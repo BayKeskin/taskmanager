@@ -15,6 +15,7 @@ dispatcher/*.log
 dispatcher/csrf_token.txt
 dispatcher/ls_address.txt
 dispatcher/ls_env.json
+yeni/
 
 # Uploaded logs
 Public/uploads/webhook_logs.json

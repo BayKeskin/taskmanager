@@ -1,8 +1,6 @@
 """
-TaskManager -> Antigravity Central Multi-Agent Dispatcher (v6.1 - Anti-Collision & Hybrid RPC/CLI)
-- Paralel thread çarpışmalarını (Race Condition) %100 engeller.
-- Sürekli pencere açma ve kendi açtığı sohbeti hayalet sanıp silme döngüsünü durdurur.
-- Yeni sohbeti Connect-RPC (StartCascade) ile açar, mesajları hem RPC hem agentapi CLI ile garantili iletir.
+TaskManager -> Antigravity Central Multi-Agent Dispatcher (v4.2 - Sıfır Pencere / No-Window Modu)
+Hiçbir CMD/PowerShell penceresi açmadan arka planda %100 sessiz çalışır.
 """
 import http.server
 import json
@@ -14,19 +12,19 @@ import sqlite3
 import re
 import time
 import urllib.parse
-import urllib.request
-import ssl
 import threading
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, 'dispatcher.log')
 WORKSPACES_CONFIG = os.path.join(BASE_DIR, 'workspaces.json')
+LS_ENV_FILE = os.path.join(BASE_DIR, 'ls_env.json')
+LS_ADDRESS_FILE = os.path.join(BASE_DIR, 'ls_address.txt')
+CSRF_TOKEN_FILE = os.path.join(BASE_DIR, 'csrf_token.txt')
 
+# WINDOWS'TA SİYAH CMD EKRANI ÇIKMASINI VE 0xc0000142 HATASINI ENGELLEYEN BAYRAK:
 NO_WINDOW_FLAG = subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
 
 project_active_state = {}
-project_in_flight = set()  # Aynı projeye aynı anda birden fazla webhook girmesini engeller!
-opened_workspaces_ts = {}  # Aynı pencereyi 20 saniyede bir tekrar açmaya çalışmasını engeller!
 state_lock = threading.Lock()
 
 IGNORED_AGENT_EVENTS = {
@@ -37,11 +35,9 @@ IGNORED_AGENT_EVENTS = {
 }
 
 def run_silent(cmd, **kwargs):
+    """Tüm alt süreçleri siyah CMD penceresi açmadan sessizce çalıştırır."""
     if sys.platform == 'win32':
         kwargs['creationflags'] = kwargs.get('creationflags', 0) | NO_WINDOW_FLAG
-    if kwargs.get('text') and 'encoding' not in kwargs:
-        kwargs['encoding'] = 'utf-8'
-        kwargs['errors'] = 'replace'
     return subprocess.run(cmd, **kwargs)
 
 def watchdog_loop():
@@ -55,7 +51,7 @@ def watchdog_loop():
             run_silent(insp_cmd, capture_output=True, text=True, cwd=app_root, timeout=10)
         except Exception:
             pass
-        time.sleep(25)
+        time.sleep(20)
 
 
 class Logger:
@@ -97,281 +93,111 @@ sys.stderr = logger
 
 PORT = 4000
 AGENTAPI_EXE = r"c:\Users\DELL\AppData\Local\Programs\Antigravity IDE\resources\app\extensions\antigravity\bin\language_server_windows_x64.exe"
-ANTIGRAVITY_EXE = r"C:\Users\DELL\AppData\Local\Programs\Antigravity IDE\Antigravity IDE.exe"
-ANTIGRAVITY_CLI = r"C:\Users\DELL\AppData\Local\Programs\Antigravity IDE\bin\antigravity-ide.cmd"
 ANTIGRAVITY_CONV_DIR = r"C:\Users\DELL\.gemini\antigravity-ide\conversations"
 
-SSL_CTX = ssl._create_unverified_context()
+cached_ls_address = None
+cached_csrf_token = None
 
-CASCADE_DEFAULT_CONFIG = {
-    "planner_config": {
-        "requested_model": {
-            "model": "MODEL_PLACEHOLDER_M318"
-        },
-        "plan_model": "MODEL_PLACEHOLDER_M318"
-    }
-}
-
-def get_language_server_processes():
-    ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
+def _save_ls_env(addr, token):
+    global cached_ls_address, cached_csrf_token
+    cached_ls_address = addr
+    cached_csrf_token = token
     try:
-        res = run_silent(['powershell', '-NoProfile', '-Command', ps_cmd], capture_output=True, text=True, timeout=10)
-        if res.returncode == 0 and res.stdout.strip():
-            data = json.loads(res.stdout)
-            if isinstance(data, dict):
-                return [data]
-            elif isinstance(data, list):
-                return data
+        with open(LS_ENV_FILE, 'w', encoding='utf-8') as f:
+            json.dump({"address": addr, "csrf_token": token or "", "updated_at": int(time.time())}, f, indent=2)
+        with open(LS_ADDRESS_FILE, 'w', encoding='utf-8') as f:
+            f.write(addr)
+        if token:
+            with open(CSRF_TOKEN_FILE, 'w', encoding='utf-8') as f:
+                f.write(token)
     except Exception:
         pass
-    return []
 
-def get_workspace_folder(workspace_path):
-    if not workspace_path:
-        return ""
-    norm = workspace_path.replace('\\', '/').rstrip('/').lower()
-    return os.path.basename(norm)
-
-def is_workspace_match(cmd, workspace_path):
-    if not cmd or not workspace_path:
+def verify_ls_env(addr, token=None):
+    if not addr or not os.path.exists(AGENTAPI_EXE):
         return False
-    folder = get_workspace_folder(workspace_path)
-    cmd_lower = urllib.parse.unquote(cmd).replace('\\', '/').lower()
-    return f"_{folder}" in cmd_lower or f"/{folder}" in cmd_lower
+    test_env = os.environ.copy()
+    test_env["ANTIGRAVITY_LS_ADDRESS"] = addr
+    if token:
+        test_env["ANTIGRAVITY_CSRF_TOKEN"] = token
+    try:
+        res = run_silent(
+            [AGENTAPI_EXE, "agentapi", "get-conversation-metadata", "__probe__"],
+            env=test_env, capture_output=True, text=True, timeout=2
+        )
+        out = ((res.stdout or '') + " " + (res.stderr or '')).lower()
+        if res.returncode == 0 or "trajectory not found" in out or "conversationmetadata" in out:
+            if "unavailable" not in out and "connection error" not in out and "invalid csrf" not in out:
+                return True
+    except Exception:
+        pass
+    return False
 
-def find_workspace_ls_process(workspace_path):
-    if not workspace_path:
-        return None
-    for pr in get_language_server_processes():
-        cmd = pr.get('CommandLine') or ''
-        if is_workspace_match(cmd, workspace_path):
-            return pr
-    return None
+def get_antigravity_ls_env(force_refresh=False):
+    global cached_ls_address, cached_csrf_token
 
-def ensure_workspace_window_open(workspace_path):
-    if not workspace_path or not os.path.isdir(workspace_path):
-        return None
+    if not force_refresh and cached_ls_address and verify_ls_env(cached_ls_address, cached_csrf_token):
+        return cached_ls_address, cached_csrf_token
 
-    proc = find_workspace_ls_process(workspace_path)
-    if proc:
-        return proc
+    if not force_refresh and os.path.exists(LS_ENV_FILE):
+        try:
+            with open(LS_ENV_FILE, 'r', encoding='utf-8') as f:
+                f_data = json.load(f)
+                if f_data.get('address') and verify_ls_env(f_data.get('address'), f_data.get('csrf_token')):
+                    cached_ls_address = f_data.get('address')
+                    cached_csrf_token = f_data.get('csrf_token')
+                    return cached_ls_address, cached_csrf_token
+        except Exception:
+            pass
 
-    folder = get_workspace_folder(workspace_path)
-    now = time.time()
+    try:
+        ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
+        ps_res = run_silent(['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps_cmd], capture_output=True, text=True, timeout=5)
+        if ps_res.returncode == 0 and ps_res.stdout.strip():
+            procs = json.loads(ps_res.stdout)
+            if isinstance(procs, dict):
+                procs = [procs]
 
-    # Son 90 saniye içinde bu klasör için zaten pencere açma komutu verdiysek tekrar açma!
-    last_open = opened_workspaces_ts.get(folder, 0)
-    if (now - last_open) > 90:
-        opened_workspaces_ts[folder] = now
-        print(f"🚀 [OTOMATİK IDE PENCERESİ BAŞLATILIYOR] [{folder}] için Antigravity penceresi açılıyor...")
-        if os.path.exists(ANTIGRAVITY_CLI):
-            run_silent(['cmd', '/c', 'call', ANTIGRAVITY_CLI, '-n', workspace_path], timeout=12)
-        elif os.path.exists(ANTIGRAVITY_EXE):
-            subprocess.Popen([ANTIGRAVITY_EXE, '-n', workspace_path], creationflags=NO_WINDOW_FLAG)
+            netstat_res = run_silent(['netstat', '-ano'], capture_output=True, text=True, timeout=5)
+            netstat = netstat_res.stdout or ''
+            for proc in procs:
+                pid = str(proc.get('ProcessId', ''))
+                cmd = proc.get('CommandLine') or ''
+                token_m = re.search(r'--csrf_token\s+([a-zA-Z0-9\-]+)', cmd)
+                token = token_m.group(1) if token_m else None
 
-        for i in range(15):
-            time.sleep(1)
-            proc = find_workspace_ls_process(workspace_path)
-            if proc:
-                print(f"✅ [IDE PENCERESİ HAZIR] [{folder}] Language Server ayağa kalktı! PID: {proc.get('ProcessId')} ({i+1} sn)")
-                time.sleep(2)
-                return proc
+                candidate_ports = []
+                for line in netstat.splitlines():
+                    if 'LISTENING' in line and line.strip().endswith(pid):
+                        m = re.search(r'127\.0\.0\.1:(\d+)', line)
+                        if m and m.group(1) not in candidate_ports:
+                            candidate_ports.append(m.group(1))
 
-    # Eğer özel workspace_id parametresi olmadan çalıştıysa mevcut en yeni LS sürecini döndür
-    procs = get_language_server_processes()
-    if procs:
-        return procs[-1]
-    return None
+                for port in candidate_ports:
+                    addr = f"127.0.0.1:{port}"
+                    if verify_ls_env(addr, token):
+                        _save_ls_env(addr, token)
+                        return addr, token
+    except Exception as e:
+        print(f"⚠️ LS Port tespiti hatası: {e}")
 
-def get_workspace_ports_and_token(workspace_path):
-    """
-    Hedef sürece ait (rpc_https_port, grpc_agentapi_port, csrf_token) üçlüsünü bulur.
-    """
-    proc = ensure_workspace_window_open(workspace_path)
-    if not proc:
-        return None, None, None
+    return None, None
 
-    pid = str(proc.get('ProcessId', ''))
-    cmd = proc.get('CommandLine') or ''
-    token_m = re.search(r'--csrf_token\s+([a-zA-Z0-9\-]+)', cmd)
-    token = token_m.group(1) if token_m else ""
-
-    netstat_res = run_silent(['netstat', '-ano'], capture_output=True, text=True, timeout=5)
-    netstat = netstat_res.stdout or ''
-
-    candidate_ports = []
-    for line in netstat.splitlines():
-        if 'LISTENING' in line and line.strip().endswith(pid):
-            m = re.search(r'127\.0\.0\.1:(\d+)', line)
-            if m and m.group(1) not in candidate_ports:
-                candidate_ports.append(m.group(1))
-
-    https_port = None
-    grpc_port = None
-
-    for port in candidate_ports:
-        # 1. HTTPS Connect-RPC testi
-        if not https_port:
-            url = f"https://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/Heartbeat"
-            req = urllib.request.Request(
-                url, data=b'{}',
-                headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-                method="POST"
-            )
-            try:
-                with urllib.request.urlopen(req, context=SSL_CTX, timeout=1.5) as resp:
-                    if resp.status == 200:
-                        https_port = port
-                        continue
-            except Exception:
-                pass
-
-        # 2. gRPC agentapi testi
-        if not grpc_port and os.path.exists(AGENTAPI_EXE):
-            test_env = os.environ.copy()
-            test_env["ANTIGRAVITY_LS_ADDRESS"] = f"127.0.0.1:{port}"
-            if token:
-                test_env["ANTIGRAVITY_CSRF_TOKEN"] = token
-            try:
-                res = run_silent(
-                    [AGENTAPI_EXE, "agentapi", "get-conversation-metadata", "__probe__"],
-                    env=test_env, capture_output=True, text=True, timeout=1.5
-                )
-                out = ((res.stdout or '') + " " + (res.stderr or '')).lower()
-                if res.returncode == 0 or "trajectory not found" in out or "conversationmetadata" in out:
-                    if "unavailable" not in out and "connection error" not in out:
-                        grpc_port = port
-            except Exception:
-                pass
-
-    return https_port, grpc_port, token
-
-def send_via_agentapi_cli(grpc_port, token, cascade_id, title, message_text, project_dir):
-    """Dün %100 çalışan resmi agentapi send-message CLI komutu ile mesaj gönderir."""
-    if not grpc_port or not cascade_id or not os.path.exists(AGENTAPI_EXE):
+def is_conversation_active(cid, ls_address, csrf_token=None):
+    if not cid or not ls_address or not os.path.exists(AGENTAPI_EXE):
         return False
     env = os.environ.copy()
-    env["ANTIGRAVITY_LS_ADDRESS"] = f"127.0.0.1:{grpc_port}"
-    if token:
-        env["ANTIGRAVITY_CSRF_TOKEN"] = token
-    cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title}", cascade_id, message_text]
+    env["ANTIGRAVITY_LS_ADDRESS"] = ls_address
+    if csrf_token:
+        env["ANTIGRAVITY_CSRF_TOKEN"] = csrf_token
     try:
-        res = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, timeout=10)
+        res = run_silent(
+            [AGENTAPI_EXE, "agentapi", "get-conversation-metadata", cid],
+            env=env, capture_output=True, text=True, timeout=3
+        )
         return (res.returncode == 0)
     except Exception:
         return False
-
-def send_message_to_existing_cascade(workspace_path, cascade_id, title, message_text):
-    https_port, grpc_port, token = get_workspace_ports_and_token(workspace_path)
-    if not https_port or not token:
-        return False
-
-    url_msg = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
-    msg_payload = {
-        "cascade_id": cascade_id,
-        "items": [{"text": message_text}],
-        "cascade_config": CASCADE_DEFAULT_CONFIG
-    }
-    req_msg = urllib.request.Request(
-        url_msg,
-        data=json.dumps(msg_payload).encode('utf-8'),
-        headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-        method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as resp:
-            if resp.status == 200:
-                print(f"✅ [RPC MESAJ İLETİLDİ] Var olan sohbet güncellendi: {cascade_id}")
-                try:
-                    url_focus = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
-                    req_focus = urllib.request.Request(
-                        url_focus,
-                        data=json.dumps({"cascade_id": cascade_id}).encode('utf-8'),
-                        headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-                        method="POST"
-                    )
-                    urllib.request.urlopen(req_focus, context=SSL_CTX, timeout=2)
-                except Exception:
-                    pass
-                return True
-    except Exception as e:
-        print(f"⚠️ Var olan sohbete RPC ile mesaj gönderilemedi ({cascade_id}): {e}")
-
-    return False
-
-def start_cascade_conversation(workspace_path, prompt, title=""):
-    https_port, grpc_port, token = get_workspace_ports_and_token(workspace_path)
-    if not https_port or not token:
-        print(f"❌ [CONNECT-RPC] [{get_workspace_folder(workspace_path)}] için HTTPS RPC port/token bulunamadı!")
-        return None
-
-    norm_path = workspace_path.replace('\\', '/').rstrip('/')
-    ws_uri = f"file:///{norm_path}" if not norm_path.startswith('/') else f"file://{norm_path}"
-
-    payload = {
-        "workspace_uris": [ws_uri],
-        "source": "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT"
-    }
-    body = json.dumps(payload).encode('utf-8')
-
-    url_start = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/StartCascade"
-    req_start = urllib.request.Request(
-        url_start,
-        data=body,
-        headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-        method="POST"
-    )
-
-    try:
-        with urllib.request.urlopen(req_start, context=SSL_CTX, timeout=6) as resp:
-            if resp.status == 200:
-                data = json.loads(resp.read().decode('utf-8'))
-                cid = data.get("cascadeId") or data.get("cascade_id")
-                if cid:
-                    print(f"🎉 [CONNECT-RPC BAŞARILI] StartCascade ile yeni sohbet başlatıldı! Port: {https_port}, ID: {cid}")
-                    time.sleep(0.4)
-
-                    # 1. Kullanıcı mesaj turn'ünü model konfigürasyonuyla birlikte ekle (Zero-Touch Executor)
-                    try:
-                        url_msg = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
-                        msg_payload = {
-                            "cascade_id": cid,
-                            "items": [{"text": prompt}],
-                            "cascade_config": CASCADE_DEFAULT_CONFIG
-                        }
-                        req_msg = urllib.request.Request(
-                            url_msg,
-                            data=json.dumps(msg_payload).encode('utf-8'),
-                            headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-                            method="POST"
-                        )
-                        with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as mresp:
-                            if mresp.status == 200:
-                                print(f"📝 [KULLANICI TURU EKLENDİ] SendUserCascadeMessage başarılı!")
-                    except Exception as e_msg:
-                        print(f"⚠️ SendUserCascadeMessage notu: {e_msg}")
-
-                    time.sleep(0.2)
-                    try:
-                        url_focus = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
-                        focus_payload = {"cascade_id": cid}
-                        req_focus = urllib.request.Request(
-                            url_focus,
-                            data=json.dumps(focus_payload).encode('utf-8'),
-                            headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-                            method="POST"
-                        )
-                        with urllib.request.urlopen(req_focus, context=SSL_CTX, timeout=4) as fresp:
-                            if fresp.status == 200:
-                                print(f"🎯 [EKRANA YANSITILDI] SmartFocusConversation ile sekme arayüzde açıldı!")
-                    except Exception:
-                        pass
-
-                    return cid
-    except Exception as e:
-        print(f"❌ [CONNECT-RPC HATASI] StartCascade başarısız: {e}")
-
-    return None
 
 def load_workspaces_map():
     mapping = {
@@ -381,8 +207,7 @@ def load_workspaces_map():
         "TKMDEV-03": ["c:/wamp64/www/benimcarsim"],
         "TKMDEV-04": ["c:/wamp64/www/benimcarsim-depo"],
         "NKLYCM": ["d:/MobilProjeler/nakliyecim"],
-        "NETTAKIP": ["d:/MobilProjeler/sonuctakip", "d:/MobilProjeler/nettakip"],
-        "NEWJOBS": ["c:/wamp64/www/mvcproje"]
+        "NETTAKIP": ["d:/MobilProjeler/sonuctakip", "d:/MobilProjeler/nettakip"]
     }
     if os.path.exists(WORKSPACES_CONFIG):
         try:
@@ -401,23 +226,10 @@ def get_project_primary_dir(project_code, workspace_path=""):
         for p in ws_map[project_code]:
             if os.path.isdir(p):
                 return p
-    try:
-        root_dir = os.path.dirname(BASE_DIR)
-        php_code = (
-            f"require_once 'Model/DataLayer.php'; "
-            f"$db = new Database(); "
-            f"$row =$db->row_query(\"SELECT workspace_path FROM projects WHERE project_code = '{project_code}' LIMIT 1\"); "
-            f"if ($row && !empty($row->workspace_path)) echo trim($row->workspace_path);"
-        )
-        res = run_silent(['php', '-r', php_code], cwd=root_dir, capture_output=True, text=True, timeout=5)
-        out = (res.stdout or '').strip()
-        if out and os.path.isdir(out):
-            return out
-    except Exception:
-        pass
     return os.path.dirname(BASE_DIR)
 
 def discover_latest_conversation(project_code, project_title="", workspace_path=""):
+    ls_address, csrf_token = get_antigravity_ls_env()
     workspaces_map = load_workspaces_map()
     target_paths = []
     if workspace_path:
@@ -428,17 +240,13 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
     normalized_targets = list(dict.fromkeys([p.replace('\\', '/').lower().rstrip('/') for p in target_paths if p]))
     normalized_targets.sort(key=len, reverse=True)
 
-    if not normalized_targets or not os.path.exists(ANTIGRAVITY_CONV_DIR):
+    if not os.path.exists(ANTIGRAVITY_CONV_DIR):
         return None, None
 
     db_files = glob.glob(os.path.join(ANTIGRAVITY_CONV_DIR, '*.db'))
     db_files.sort(key=os.path.getmtime, reverse=True)
 
-    now = time.time()
     for db_path in db_files:
-        if (now - os.path.getmtime(db_path)) > 14400:
-            continue
-
         cid = os.path.splitext(os.path.basename(db_path))[0]
         try:
             con = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
@@ -451,6 +259,8 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
                 for target in normalized_targets:
                     pattern = rf"(?:^|[^\w\-\.]){re.escape(target)}(?:[/?#\"\'\s,\x00-\x1f\\]|$)"
                     if re.search(pattern, decoded_text):
+                        if ls_address and not is_conversation_active(cid, ls_address, csrf_token):
+                            continue
                         return cid, f"file:///{target}"
         except Exception:
             continue
@@ -482,13 +292,14 @@ def process_webhook_async(payload, header_conv_id):
 
     task_code = str(data.get('task_code', ''))
     task_id = data.get('task_id')
+    is_watchdog_check = bool(data.get('watchdog_check', False))
     api_base_url = (payload.get('api_base_url') or 'http://localhost/taskmanager').rstrip('/')
     api_token = str(payload.get('api_token') or '').strip()
 
+    # 1. GÖREV TESLİM EDİLDİĞİNDE: Kilidi temizle, 4 saniye bekle (ajan cevabını tamamlasın), sonra sıradaki görevi başlat!
     if event == 'task.submitted':
         with state_lock:
             project_active_state.pop(project_code, None)
-            project_in_flight.discard(project_code)
         print(f"✅ [GÖREV TESLİM EDİLDİ] [{project_code}] {task_code} -> Ajanın yanıtını bitirmesi için 4 sn bekleniyor...")
         time.sleep(4)
         if project_id:
@@ -501,124 +312,145 @@ def process_webhook_async(payload, header_conv_id):
     if event in IGNORED_AGENT_EVENTS:
         return
 
-    # 1. ÇARPIŞMA ENGELLEYİCİ (IN-FLIGHT LOCK):
+    workspace_path = payload.get('workspace_path') or data.get('workspace_path', '')
+    agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
+    project_dir = get_project_primary_dir(project_code, workspace_path)
+
+    ls_address, csrf_token = get_antigravity_ls_env()
+    discovered_cid, matched_uri = discover_latest_conversation(project_code, project_title, workspace_path)
+
+    if incoming_conv_id and ls_address and not is_conversation_active(incoming_conv_id, ls_address, csrf_token):
+        incoming_conv_id = None
+
+    target_conv_id = discovered_cid or incoming_conv_id
+    is_resumed = bool(data.get('resumed', False))
+
+    # 2. ANTI-SPAM & HESAP/SOHBET DEĞİŞİM KONTROLÜ
     with state_lock:
-        if project_code in project_in_flight:
-            return
         prev_state = project_active_state.get(project_code)
         if prev_state and prev_state.get('task_code') == task_code and event in ('task.started', 'task.in_progress'):
+            prev_cid = prev_state.get('conv_id')
             elapsed = time.time() - prev_state.get('dispatched_at', 0)
-            if elapsed < 180:
+
+            if prev_cid and prev_cid == target_conv_id and elapsed < 180:
                 return
-        project_in_flight.add(project_code)
+            elif prev_cid and target_conv_id and prev_cid != target_conv_id:
+                print(f"🔄 [HESAP/SOHBET DEĞİŞİMİ] {task_code} -> Yeni Pencere: {target_conv_id}")
+                is_resumed = True
+            elif elapsed >= 180:
+                print(f"⏰ [HATIRLATMA] {task_code} görevi {int(elapsed)} saniyedir teslim edilmedi, tekrar hatırlatılıyor...")
+                is_resumed = True
+
+    print(f"\n=======================================================")
+    print(f"🔔 [GÖREV TETİKLENİYOR] -> Olay: {event} | Proje: [{project_code}] {project_title} | Görev: {task_code}")
+
+    if discovered_cid:
+        sync_conversation_id_to_db(project_code, discovered_cid)
+
+    task_title = data.get('title', '').replace('🔄 [RESUMING TASK] ', '').replace('⚠️ [REVISION REQUEST] ', '')
+    priority = data.get('priority', 'normal')
+
+    rules_block = ""
+    if agent_rules:
+        rules_block = f"\n\n---\n📌 **PROJECT RULES ([{project_code}] {project_title}):**\n{agent_rules}\n"
+
+    if event in ('task.started', 'task.in_progress', 'task.revision_requested', 'task.modification_requested'):
+        is_rev = event in ('task.revision_requested', 'task.modification_requested')
+        if is_rev:
+            title_header = f"⚠️ [REVISION] {task_code}: {task_title}"
+            banner = f"⚠️ **[{project_code}] REVISION TASK MOVED TO IN PROGRESS!**\n🔴 **Requested Changes:** {data.get('revision_reason', 'Revision requested.')}\n\n"
+        elif is_resumed:
+            title_header = f"🔄 [RESUMED] {task_code}: {task_title}"
+            banner = f"🔄 **[SESSION HANDOFF / RESUME DIRECTIVE]**\nThis task is currently IN PROGRESS and awaiting completion.\n\n"
+        else:
+            title_header = f"🚀 [IN PROGRESS] {task_code}: {task_title}"
+            banner = f"🚀 **TaskManager Task Marked as 'In Progress'!**\n\n"
+
+        desc = data.get('description', '').strip() or '*(No description provided)*'
+        desc = re.sub(r'---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$', '', desc, flags=re.DOTALL).strip()
+
+        checklists = data.get('checklists', [])
+        checklist_md = ""
+        if checklists:
+            checklist_md = "\n\n### ✅ Checklist:\n"
+            for item in checklists:
+                box = "[x]" if item.get('is_completed') else "[ ]"
+                text = item.get('title') or item.get('item_text', '')
+                checklist_md += f"- {box} {text}\n"
+
+        message_text = (
+            f"{banner}"
+            f"📌 **Project:** [{project_code}] {project_title} (`{project_dir}`)\n"
+            f"📋 **Task Code:** `{task_code}`\n"
+            f"🏷️ **Title:** {task_title}\n"
+            f"⚡ **Priority:** {priority}\n\n"
+            f"### 📝 Task Description & Requirements:\n{desc}"
+            f"{checklist_md}"
+            f"{rules_block}\n\n"
+            f"---\n"
+            f"🛑 **STRICT OPERATIONAL GUARDRAILS:**\n"
+            f"1. **SINGLE ACTIVE TASK FOCUS:** Work EXCLUSIVELY on `{task_code}` in project `[{project_code}]`. NEVER jump to older or other tasks!\n"
+            f"2. **ZERO ABANDONMENT & AUTONOMOUS QA:** Complete 100% of implementation and live automated verification before responding to the user. The user is NOT a QA tester.\n"
+            f"3. **SUBMIT AND STOP (USE OFFICIAL REST API - NEVER SEARCH FOR TASKMANAGER FILES OR DB):** When completed and verified, execute the following REST API request in your terminal to move `{task_code}` to `submitted` (REVIEW), then **END YOUR TURN** (The next queued task will be automatically dispatched in 4 seconds):\n\n"
+            f"```powershell\n"
+            f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
+            f"$body = @{{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' }} | ConvertTo-Json -Compress\n"
+            f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow/submit' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"
+            f"```"
+        )
+    elif event == 'project.webhook_test':
+        title_header = f"Webhook Test Ping: [{project_code}]"
+        message_text = f"✅ **TaskManager Webhook Test Ping Successful!**\n- **Project:** [{project_code}] {project_title}\n- **Target Conversation:** {target_conv_id or 'New Conversation'}"
+    else:
+        return
+
+    env = os.environ.copy()
+    if ls_address:
+        env["ANTIGRAVITY_LS_ADDRESS"] = ls_address
+    if csrf_token:
+        env["ANTIGRAVITY_CSRF_TOKEN"] = csrf_token
+
+    if target_conv_id:
+        cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", target_conv_id, message_text]
+    else:
+        cmd = [AGENTAPI_EXE, "agentapi", "new-conversation", f"--title={title_header}", message_text]
 
     try:
-        workspace_path = payload.get('workspace_path') or data.get('workspace_path', '')
-        agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
-        project_dir = get_project_primary_dir(project_code, workspace_path)
+        result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 
-        # Bellekteki son başarılı conv_id'yi veya DB'den geleni koru (ASLA SİLME!)
-        with state_lock:
-            mem_cid = project_active_state.get(project_code, {}).get('conv_id')
+        if result.returncode != 0:
+            fresh_addr, fresh_token = get_antigravity_ls_env(force_refresh=True)
+            if fresh_addr:
+                env["ANTIGRAVITY_LS_ADDRESS"] = fresh_addr
+                if fresh_token:
+                    env["ANTIGRAVITY_CSRF_TOKEN"] = fresh_token
+                result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 
-        target_conv_id = mem_cid or incoming_conv_id
-        if not target_conv_id:
-            discovered_cid, _ = discover_latest_conversation(project_code, project_title, workspace_path)
-            if discovered_cid:
-                target_conv_id = discovered_cid
+        combined_err = ((result.stdout or '') + ' ' + (result.stderr or '')).lower()
+        if result.returncode != 0 and ('trajectory not found' in combined_err or not target_conv_id):
+            fallback_cmd = [AGENTAPI_EXE, "agentapi", "new-conversation", f"--title={title_header}", message_text]
+            result = run_silent(fallback_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 
-        is_resumed = bool(data.get('resumed', False))
+        if result.returncode == 0 and result.stdout:
+            try:
+                out_json = json.loads(result.stdout)
+                new_cid = out_json.get('response', {}).get('newConversation', {}).get('conversationId')
+                if new_cid:
+                    target_conv_id = new_cid
+                    sync_conversation_id_to_db(project_code, new_cid)
+            except Exception:
+                pass
 
-        print(f"\n=======================================================")
-        print(f"🔔 [GÖREV TETİKLENİYOR] -> Olay: {event} | Proje: [{project_code}] {project_title} | Görev: {task_code}")
-
-        task_title = data.get('title', '').replace('🔄 [RESUMING TASK] ', '').replace('⚠️ [REVISION REQUEST] ', '')
-        priority = data.get('priority', 'normal')
-
-        rules_block = ""
-        if agent_rules:
-            rules_block = f"\n\n---\n📌 **PROJECT RULES ([{project_code}] {project_title}):**\n{agent_rules}\n"
-
-        if event in ('task.started', 'task.in_progress', 'task.revision_requested', 'task.modification_requested'):
-            is_rev = event in ('task.revision_requested', 'task.modification_requested')
-            if is_rev:
-                title_header = f"⚠️ [REVISION] {task_code}: {task_title}"
-                banner = f"⚠️ **[{project_code}] REVISION TASK MOVED TO IN PROGRESS!**\n🔴 **Requested Changes:** {data.get('revision_reason', 'Revision requested.')}\n\n"
-            elif is_resumed:
-                title_header = f"🔄 [RESUMED] {task_code}: {task_title}"
-                banner = f"🔄 **[SESSION HANDOFF / RESUME DIRECTIVE]**\nThis task is currently IN PROGRESS and awaiting completion.\n\n"
-            else:
-                title_header = f"🚀 [IN PROGRESS] {task_code}: {task_title}"
-                banner = f"🚀 **TaskManager Task Marked as 'In Progress'!**\n\n"
-
-            desc = data.get('description', '').strip() or '*(No description provided)*'
-            desc = re.sub(r'---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$', '', desc, flags=re.DOTALL).strip()
-
-            checklists = data.get('checklists', [])
-            checklist_md = ""
-            if checklists:
-                checklist_md = "\n\n### ✅ Checklist:\n"
-                for item in checklists:
-                    box = "[x]" if item.get('is_completed') else "[ ]"
-                    text = item.get('title') or item.get('item_text', '')
-                    checklist_md += f"- {box} {text}\n"
-
-            message_text = (
-                f"{banner}"
-                f"📌 **Project:** [{project_code}] {project_title} (`{project_dir}`)\n"
-                f"📋 **Task Code:** `{task_code}`\n"
-                f"🏷️ **Title:** {task_title}\n"
-                f"⚡ **Priority:** {priority}\n\n"
-                f"### 📝 Task Description & Requirements:\n{desc}"
-                f"{checklist_md}"
-                f"{rules_block}\n\n"
-                f"---\n"
-                f"🛑 **STRICT OPERATIONAL GUARDRAILS:**\n"
-                f"1. **SINGLE ACTIVE TASK FOCUS:** Work EXCLUSIVELY on `{task_code}` in project `[{project_code}]`. NEVER jump to older or other tasks!\n"
-                f"2. **ZERO ABANDONMENT & AUTONOMOUS QA:** Complete 100% of implementation and live automated verification before responding to the user. The user is NOT a QA tester.\n"
-                f"3. **SUBMIT AND STOP (USE OFFICIAL REST API - NEVER SEARCH FOR TASKMANAGER FILES OR DB):** When completed and verified, execute the following REST API request in your terminal to move `{task_code}` to `submitted` (REVIEW), then **END YOUR TURN** (The next queued task will be automatically dispatched in 4 seconds):\n\n"
-                f"```powershell\n"
-                f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
-                f"$body = @{{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' }} | ConvertTo-Json -Compress\n"
-                f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow/submit' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"
-                f"```"
-            )
-        elif event == 'project.webhook_test':
-            title_header = f"Webhook Test Ping: [{project_code}]"
-            message_text = f"✅ **TaskManager Webhook Test Ping Successful!**\n- **Project:** [{project_code}] {project_title}\n- **Target Conversation:** {target_conv_id or 'New Conversation'}"
-        else:
-            return
-
-        success = False
-
-        # A. Hedef sohbet varsa önce ona (CLI + RPC hibrit) iletmeyi dene
-        if target_conv_id:
-            success = send_message_to_existing_cascade(project_dir, target_conv_id, title_header, message_text)
-            if not success:
-                print(f"⚠️ [MEVCUT SOHBETE İLETİLEMEDİ] ID: {target_conv_id} yanıt vermedi, yeni Connect-RPC oturumu açılıyor...")
-
-        # B. Hedef sohbet yoksa veya eskisine iletilemediyse: Connect-RPC StartCascade ile YENİ AÇ!
-        if not success:
-            new_cid = start_cascade_conversation(project_dir, message_text, title=title_header)
-            if new_cid:
-                target_conv_id = new_cid
-                sync_conversation_id_to_db(project_code, new_cid)
-                success = True
-
-        if success and target_conv_id:
-            print(f"✅ Gönderim Başarılı! Hedef Sohbet: {target_conv_id}")
-            if task_code:
-                with state_lock:
-                    project_active_state[project_code] = {
-                        'task_code': task_code,
-                        'conv_id': target_conv_id,
-                        'dispatched_at': time.time()
-                    }
-        else:
-            print(f"❌ [HATA] [{project_code}] için görev iletilemedi!")
-    finally:
-        with state_lock:
-            project_in_flight.discard(project_code)
+        print(f"✅ Gönderim Sonucu ({target_conv_id}): ExitCode {result.returncode}")
+        if result.returncode == 0 and task_code:
+            with state_lock:
+                project_active_state[project_code] = {
+                    'task_code': task_code,
+                    'conv_id': target_conv_id,
+                    'dispatched_at': time.time()
+                }
+    except Exception as err:
+        print(f"❌ Gönderim Hatası: {str(err)}")
 
 
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
@@ -653,13 +485,18 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
         return
 
 def run_server():
+    if '--probe' in sys.argv:
+        addr, tok = get_antigravity_ls_env(force_refresh=True)
+        print(json.dumps({"address": addr, "csrf_token": tok or ""}))
+        return
+
     watchdog_thread = threading.Thread(target=watchdog_loop, daemon=True)
     watchdog_thread.start()
 
     server_address = ('', PORT)
     httpd = http.server.HTTPServer(server_address, WebhookHandler)
     print("=======================================================")
-    print("🤖 Antigravity Multi-Agent Dispatcher v6.1 (Anti-Collision & Hybrid) Başlatıldı!")
+    print("🤖 Antigravity Multi-Agent Dispatcher v4.2 (Sessiz Mod) Başlatıldı!")
     print(f"📡 Dinleme Adresi : http://localhost:{PORT}/webhook")
     print("=======================================================")
     try:
