@@ -11,6 +11,7 @@ $selectedDocId = isset($_GET['doc_id']) ? (int)$_GET['doc_id'] : null;
 $docController = new DocController($system);
 $docData = $docController->index($activeProjectId, $selectedDocId);
 extract($docData);
+$isClient = $isClient ?? false;
 ?>
 
 <!-- Quill.js & Marked.js Kütüphaneleri -->
@@ -29,9 +30,11 @@ extract($docData);
         <button type="button" class="cu-btn-sm cu-mobile-docs-toggle" onclick="toggleDocsSidebar()" style="display:none; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:var(--text-white); font-size:12px; height:32px; padding:0 12px; border-radius:var(--radius-sm); cursor:pointer;">
             <span>📂</span> <span><?= __('app.docs_mobile_btn', 'Belgeler') ?></span>
         </button>
+        <?php if (!$isClient): ?>
         <button type="button" class="cu-btn-quick-task" onclick="openNewDocPrompt()" style="height:32px; padding:0 14px; font-size:12.5px; display:inline-flex; align-items:center; gap:6px; box-sizing:border-box;">
             <span>➕</span> <?= __('app.docs_new_doc', 'Yeni Döküman') ?>
         </button>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -44,9 +47,11 @@ extract($docData);
         <div style="padding:14px 16px; border-bottom:1px solid var(--border-subtle);">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
                 <span style="font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;"><?= __('app.docs_heading', 'DÖKÜMANLAR') ?></span>
+                <?php if (!$isClient): ?>
                 <button type="button" onclick="openNewDocPrompt()" style="background:none; border:none; color:var(--brand-primary); cursor:pointer; font-size:12px; font-weight:600;">
                     <?= __('app.docs_new_page', '+ Yeni Sayfa') ?>
                 </button>
+                <?php endif; ?>
             </div>
             <div style="position:relative;">
                 <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:11px; color:var(--text-muted);">🔍</span>
@@ -126,6 +131,7 @@ extract($docData);
                         <?php endforeach; ?>
                     </select>
 
+                    <?php if (!$isClient): ?>
                     <!-- Kayıt Durumu Göstergesi -->
                     <span id="docSaveStatus" style="font-size:11.5px; color:var(--text-muted); font-weight:500; min-width:85px;">
                         ✓ <?= __('app.docs_save_status_saved', 'Kaydedildi') ?>
@@ -140,6 +146,7 @@ extract($docData);
                     <button type="button" onclick="deleteActiveDoc()" class="cu-btn-sm" style="height:32px; padding:0 10px; background:rgba(231,76,60,0.15); color:#e74c3c; border:1px solid rgba(231,76,60,0.3);" title="<?= htmlspecialchars(__('app.docs_btn_delete', 'Dökümanı Sil'), ENT_QUOTES, 'UTF-8') ?>">
                         🗑️
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
 

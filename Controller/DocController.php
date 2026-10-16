@@ -22,6 +22,11 @@ class DocController extends Controller
     public function index(?int $activeProjectId = null, ?int $selectedDocId = null, ?object $currentUser = null): array
     {
         $currentUser = $currentUser ?? ($_SESSION['user'] ?? (object)['id' => 1, 'role' => 'admin']);
+        $isClient = ($currentUser->role === 'client');
+        if ($isClient) {
+            $activeProjectId = (int)($currentUser->client_project_id ?? 0);
+        }
+
         $allProjects = $this->projectModel->getProjects();
         $docsList = $this->docModel->getDocsList($activeProjectId);
 
@@ -42,6 +47,7 @@ class DocController extends Controller
 
         return [
             'currentUser'     => $currentUser,
+            'isClient'        => $isClient,
             'activeProjectId' => $activeProjectId,
             'allProjects'     => $allProjects,
             'docsList'        => $docsList,

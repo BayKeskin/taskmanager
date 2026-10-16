@@ -1,0 +1,1 @@
+-- No database changes for TSK-1099 (Bugfix in DocController & View/index/docs.php)
