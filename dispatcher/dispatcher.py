@@ -200,20 +200,13 @@ def is_conversation_active(cid, ls_address, csrf_token=None):
         return False
 
 def load_workspaces_map():
-    mapping = {
-        "01": ["c:/wamp64/www/taskmanager"],
-        "TKMDEV-01": ["c:/wamp64/www/ufkayolculuk"],
-        "TKMDEV-02": ["c:/wamp64/www/kitap-okuma", "c:/wamp64/www/ufkayolculuk-kitap-okuma"],
-        "TKMDEV-03": ["c:/wamp64/www/benimcarsim"],
-        "TKMDEV-04": ["c:/wamp64/www/benimcarsim-depo"],
-        "NKLYCM": ["d:/MobilProjeler/nakliyecim"],
-        "NETTAKIP": ["d:/MobilProjeler/sonuctakip", "d:/MobilProjeler/nettakip"]
-    }
+    mapping = {}
     if os.path.exists(WORKSPACES_CONFIG):
         try:
             with open(WORKSPACES_CONFIG, 'r', encoding='utf-8') as f:
                 user_map = json.load(f)
-                mapping.update(user_map)
+                if isinstance(user_map, dict):
+                    mapping.update(user_map)
         except Exception:
             pass
     return mapping
