@@ -1089,10 +1089,23 @@ class Helper
         } elseif (is_array($taskOrTags)) {
             $tagString = $taskOrTags['tags'] ?? '';
         }
-        if (empty($tagString)) {
+        if (empty($tagString) && !is_object($taskOrTags) && !is_array($taskOrTags)) {
             return false;
         }
-        $rawTags = array_map('trim', explode(',', mb_strtolower($tagString)));
+
+        $rawTags = !empty($tagString) ? array_map('trim', explode(',', mb_strtolower($tagString))) : [];
+
+        // 1. İSTİSNA KONTROLÜ (Human Opt-Out):
+        // Eğer görevde açıkça 'human', 'insan', 'manual', 'manuel', 'no_ai' etiketi varsa bu kesinlikle insan görevidir!
+        $humanKeywords = ['human', 'insan', 'manual', 'manuel', 'no_ai', 'no-ai'];
+        foreach ($rawTags as $tg) {
+            $clean = ltrim($tg, '#');
+            if (in_array($clean, $humanKeywords, true)) {
+                return false;
+            }
+        }
+
+        // 2. KENDİ ETİKETİ KONTROLÜ:
         $aiKeywords = ['ai', 'otonom', 'agent', 'yapay zeka', 'antigravity'];
         foreach ($rawTags as $tg) {
             $clean = ltrim($tg, '#');
@@ -1100,6 +1113,34 @@ class Helper
                 return true;
             }
         }
+
+        // 3. MİRAS KONTROLÜ (Parent AI Inheritance):
+        // Eğer bu bir alt görevse ve bağlı olduğu Ana Görevde AI etiketi varsa, alt görev de otomatik AI görevi sayılır!
+        $parentId = null;
+        if (is_object($taskOrTags) && !empty($taskOrTags->parent_task_id)) {
+            $parentId = (int)$taskOrTags->parent_task_id;
+        } elseif (is_array($taskOrTags) && !empty($taskOrTags['parent_task_id'])) {
+            $parentId = (int)$taskOrTags['parent_task_id'];
+        }
+
+        if ($parentId) {
+            global $db;
+            if (!$db || empty($db->connect)) {
+                require_once __DIR__ . '/../Model/DataLayer.php';
+                $db = new Database();
+            }
+            $parentTags = (string)$db->single_query("SELECT tags FROM tasks WHERE id = ?", [$parentId]);
+            if (!empty($parentTags)) {
+                $pRawTags = array_map('trim', explode(',', mb_strtolower($parentTags)));
+                foreach ($pRawTags as $ptg) {
+                    $pClean = ltrim($ptg, '#');
+                    if (in_array($pClean, $aiKeywords, true)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
         return false;
     }
 
@@ -1439,33 +1480,54 @@ class Helper
 
             // AŞAMA 1: ÇALIŞILIYOR ('in_progress') sütununda bekleyen / yarım kalan AI görevi var mı?
             $inProgressSql = "
-                SELECT * FROM tasks 
-                WHERE project_id = ? 
-                  AND status = 'in_progress'
-                  AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = tasks.id)
+                SELECT t.* FROM tasks t
+                LEFT JOIN tasks p ON t.parent_task_id = p.id
+                WHERE t.project_id = ? 
+                  AND t.status = 'in_progress'
+                  AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = t.id)
                   AND (
-                      LOWER(tags) LIKE '%ai%' 
-                      OR LOWER(tags) LIKE '%otonom%' 
-                      OR LOWER(tags) LIKE '%agent%'
-                      OR LOWER(tags) LIKE '%yapay zeka%'
-                      OR LOWER(tags) LIKE '%antigravity%'
+                      (
+                          LOWER(t.tags) LIKE '%ai%' 
+                          OR LOWER(t.tags) LIKE '%otonom%' 
+                          OR LOWER(t.tags) LIKE '%agent%'
+                          OR LOWER(t.tags) LIKE '%yapay zeka%'
+                          OR LOWER(t.tags) LIKE '%antigravity%'
+                      )
+                      OR (
+                          t.parent_task_id IS NOT NULL 
+                          AND (
+                              LOWER(p.tags) LIKE '%ai%' 
+                              OR LOWER(p.tags) LIKE '%otonom%' 
+                              OR LOWER(p.tags) LIKE '%agent%'
+                              OR LOWER(p.tags) LIKE '%yapay zeka%'
+                              OR LOWER(p.tags) LIKE '%antigravity%'
+                          )
+                          AND (
+                              LOWER(t.tags) NOT LIKE '%human%' 
+                              AND LOWER(t.tags) NOT LIKE '%insan%' 
+                              AND LOWER(t.tags) NOT LIKE '%manual%' 
+                              AND LOWER(t.tags) NOT LIKE '%manuel%' 
+                              AND LOWER(t.tags) NOT LIKE '%no_ai%'
+                              AND LOWER(t.tags) NOT LIKE '%no-ai%'
+                          )
+                      )
                   )
             ";
             $inProgressParams = [$projectId];
             if ($justFinishedTaskId) {
-                $inProgressSql .= " AND id != ?";
+                $inProgressSql .= " AND t.id != ?";
                 $inProgressParams[] = $justFinishedTaskId;
             }
             $inProgressSql .= "
                 ORDER BY 
-                    CASE priority 
+                    CASE t.priority 
                         WHEN 'urgent' THEN 1 
                         WHEN 'high' THEN 2 
                         WHEN 'normal' THEN 3 
                         WHEN 'low' THEN 4 
                         ELSE 5 
                     END ASC, 
-                    id ASC 
+                    t.id ASC 
                 LIMIT 1
             ";
             $activeTask = $db->row_query($inProgressSql, $inProgressParams);
@@ -1489,31 +1551,52 @@ class Helper
             // AŞAMA 2: YAPILACAK İŞLER ('assigned') sütunundaki sıradaki 'ai' etiketli görevi bul (Aday Havuzu)
             $sqlParams = [$projectId];
             $sql = "
-                SELECT * FROM tasks 
-                WHERE project_id = ? 
-                  AND status = 'assigned'
+                SELECT t.* FROM tasks t
+                LEFT JOIN tasks p ON t.parent_task_id = p.id
+                WHERE t.project_id = ? 
+                  AND t.status = 'assigned'
                   AND (
-                      LOWER(tags) LIKE '%ai%' 
-                      OR LOWER(tags) LIKE '%otonom%' 
-                      OR LOWER(tags) LIKE '%agent%'
-                      OR LOWER(tags) LIKE '%yapay zeka%'
-                      OR LOWER(tags) LIKE '%antigravity%'
+                      (
+                          LOWER(t.tags) LIKE '%ai%' 
+                          OR LOWER(t.tags) LIKE '%otonom%' 
+                          OR LOWER(t.tags) LIKE '%agent%'
+                          OR LOWER(t.tags) LIKE '%yapay zeka%'
+                          OR LOWER(t.tags) LIKE '%antigravity%'
+                      )
+                      OR (
+                          t.parent_task_id IS NOT NULL 
+                          AND (
+                              LOWER(p.tags) LIKE '%ai%' 
+                              OR LOWER(p.tags) LIKE '%otonom%' 
+                              OR LOWER(p.tags) LIKE '%agent%'
+                              OR LOWER(p.tags) LIKE '%yapay zeka%'
+                              OR LOWER(p.tags) LIKE '%antigravity%'
+                          )
+                          AND (
+                              LOWER(t.tags) NOT LIKE '%human%' 
+                              AND LOWER(t.tags) NOT LIKE '%insan%' 
+                              AND LOWER(t.tags) NOT LIKE '%manual%' 
+                              AND LOWER(t.tags) NOT LIKE '%manuel%' 
+                              AND LOWER(t.tags) NOT LIKE '%no_ai%'
+                              AND LOWER(t.tags) NOT LIKE '%no-ai%'
+                          )
+                      )
                   )
             ";
             if ($justFinishedTaskId) {
-                $sql .= " AND id != ?";
+                $sql .= " AND t.id != ?";
                 $sqlParams[] = $justFinishedTaskId;
             }
             $sql .= "
                 ORDER BY 
-                    CASE priority 
+                    CASE t.priority 
                         WHEN 'urgent' THEN 1 
                         WHEN 'high' THEN 2 
                         WHEN 'normal' THEN 3 
                         WHEN 'low' THEN 4 
                         ELSE 5 
                     END ASC, 
-                    id ASC 
+                    t.id ASC 
                 LIMIT 30
             ";
 
