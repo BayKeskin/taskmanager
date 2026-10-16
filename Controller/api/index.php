@@ -144,6 +144,11 @@ if (!empty($rawInput)) {
 }
 
 $requestData = array_merge($_GET, $_POST, is_array($requestBody) ? $requestBody : []);
+array_walk_recursive($requestData, function(&$val) {
+    if (is_string($val)) {
+        $val = Helper::fixUtf8Mojibake($val);
+    }
+});
 
 // Dil Tercihi Çözümleme (API Language Resolution)
 // 1. URL parametresi: ?lang=en veya ?locale=en veya ?set_lang=en

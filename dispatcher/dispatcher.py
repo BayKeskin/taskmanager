@@ -421,6 +421,7 @@ def process_webhook_async(payload, header_conv_id):
             f"2. **ZERO ABANDONMENT & AUTONOMOUS QA:** Complete 100% of implementation and live automated verification before responding to the user. The user is NOT a QA tester.\n"
             f"3. **SUBMIT AND STOP (USE OFFICIAL REST API - NEVER SEARCH FOR TASKMANAGER FILES OR DB):** When completed and verified, execute the following REST API request in your terminal to move `{task_code}` to `submitted` (REVIEW), then **END YOUR TURN** (The next queued task will be automatically dispatched in 4 seconds):\n\n"
             f"```powershell\n"
+            f"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8;\n"
             f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
             f"$body = @{{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' }} | ConvertTo-Json -Compress\n"
             f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow/submit' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"

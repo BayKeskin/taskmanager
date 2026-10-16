@@ -1,0 +1,3 @@
+-- Rollback for TSK-1095
+-- Note: TSK-1095 fixes character encoding / mojibake double UTF-8 decoding across System/Helper.php, Controller/api/index.php, Public/js/app.js, Public/js/taskmanager.js and dispatcher/dispatcher.py.
+-- No schema table DDL was altered.

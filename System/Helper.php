@@ -1231,6 +1231,69 @@ class Helper
     }
 
     /**
+     * Çift UTF-8 kodlamasından (Windows-1254/1252 Mojibake) kaynaklanan bozuk Türkçe karakterleri
+     * ve bozulmuş emojileri otomatik olarak orijinal temiz UTF-8 karakterlerine dönüştürür.
+     */
+    public static function fixUtf8Mojibake(?string $text): string
+    {
+        if (empty($text)) {
+            return (string)$text;
+        }
+
+        static $replacements = [
+            // Türkçe çift kodlanmış UTF-8 sekansları (CP1254 / CP1252 üzerinden gelenler)
+            'Ä±' => 'ı',
+            'ÄŸ' => 'ğ',
+            'Ã¼' => 'ü',
+            'ÅŸ' => 'ş',
+            'Ã¶' => 'ö',
+            'Ã§' => 'ç',
+            'Ä°' => 'İ',
+            'Äž' => 'Ğ',
+            'Ãœ' => 'Ü',
+            'Åž' => 'Ş',
+            'Ã–' => 'Ö',
+            'Ã‡' => 'Ç',
+            'Ã¢' => 'â',
+            'Ã®' => 'î',
+            'Ã»' => 'û',
+            'Ã‚' => 'Â',
+            'ÃŽ' => 'Î',
+            'â€™' => "'",
+            'â€œ' => '"',
+            'â€'  => '"',
+            'â€“' => '–',
+            'â€”' => '—',
+            // Bozulmuş sık emojiler
+            'ğŸ”‘' => '🔑',
+            'âš ï¸ ' => '⚠️',
+            'âš ï¸' => '⚠️',
+            'âš ' => '⚠️',
+            'âš¡' => '⚡',
+            'âš™ï¸ ' => '⚙️',
+            'âš™ï¸' => '⚙️',
+            'âš™' => '⚙️',
+            'ğŸ§©' => '🧩',
+            'ğŸ’¾' => '💾',
+            'ğŸ”„' => '🔄',
+            'ğŸš€' => '🚀',
+            'ğŸ’¡' => '💡',
+            'ğŸ“ ' => '📝',
+            'ğŸ“Š' => '📊',
+            'ğŸ” ' => '🔍',
+            'âœ…' => '✅',
+            'â Œ' => '❌',
+            'âž¡' => '➡️',
+            'â¬…' => '⬅️',
+            'ğŸ‘ ' => '👍',
+            'ğŸ”¥' => '🔥',
+            'ğŸ“¦' => '📦'
+        ];
+
+        return strtr($text, $replacements);
+    }
+
+    /**
      * Antigravity Ajanı tarafından görevi tek hamlede İNCELEMEDE ('submitted') sütununa taşır.
      * DİKKAT: Ajanın mevcut yanıtını (turn) bozmamak için sıradaki görevi aynı milisaniyede DEĞİL,
      * arka plan asenkron tetikleyici / Watchdog üzerinden 4 saniye gecikmeyle başlatır!
@@ -1239,6 +1302,8 @@ class Helper
     {
         global $db;
         try {
+            $notes = self::fixUtf8Mojibake($notes);
+
             if (!$db || empty($db->connect)) {
                 require_once __DIR__ . '/../Model/DataLayer.php';
                 $db = new Database();

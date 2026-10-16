@@ -13,6 +13,27 @@ let draggedTaskId = null;
 // ==========================================================================
 // 0. ÇOK DİLLİ MOTOR & İSTEK YAKALAYICI (I18N & GLOBAL FETCH INTERCEPTOR)
 // ==========================================================================
+window.cleanMojibake = function(str) {
+    if (!str || typeof str !== 'string') return str || '';
+    const map = {
+        'Ä±': 'ı', 'ÄŸ': 'ğ', 'Ã¼': 'ü', 'ÅŸ': 'ş', 'Ã¶': 'ö', 'Ã§': 'ç',
+        'Ä°': 'İ', 'Äž': 'Ğ', 'Ãœ': 'Ü', 'Åž': 'Ş', 'Ã–': 'Ö', 'Ã‡': 'Ç',
+        'Ã¢': 'â', 'Ã®': 'î', 'Ã»': 'û', 'Ã‚': 'Â', 'ÃŽ': 'Î',
+        'â€™': "'", 'â€œ': '"', 'â€': '"', 'â€“': '–', 'â€”': '—',
+        'ğŸ”‘': '🔑', 'âš ï¸ ': '⚠️', 'âš ï¸': '⚠️', 'âš ': '⚠️', 'âš¡': '⚡',
+        'âš™ï¸ ': '⚙️', 'âš™ï¸': '⚙️', 'âš™': '⚙️', 'ğŸ§©': '🧩', 'ğŸ’¾': '💾',
+        'ğŸ”„': '🔄', 'ğŸš€': '🚀', 'ğŸ’¡': '💡', 'ğŸ“ ': '📝', 'ğŸ“Š': '📊',
+        'ğŸ” ': '🔍', 'âœ…': '✅', 'â Œ': '❌', 'âž¡': '➡️', 'â¬…': '⬅️'
+    };
+    let res = str;
+    for (const [k, v] of Object.entries(map)) {
+        if (res.includes(k)) {
+            res = res.split(k).join(v);
+        }
+    }
+    return res;
+};
+
 function getAppLanguage() {
     return window.CURRENT_LANG || document.documentElement.lang || 'tr';
 }
@@ -290,7 +311,7 @@ async function openTaskDrawer(taskId) {
         document.getElementById('drawerTaskTitle').innerText = task.title;
         const descEl = document.getElementById('drawerDescription');
         if (descEl) {
-            descEl.innerHTML = task.description || `<p style="color:var(--text-muted); font-style:italic;">${i18n.desc_empty_hint || 'Görev açıklaması ve talimatları yazmak için buraya tıklayın...'}</p>`;
+            descEl.innerHTML = window.cleanMojibake(task.description) || `<p style="color:var(--text-muted); font-style:italic;">${i18n.desc_empty_hint || 'Görev açıklaması ve talimatları yazmak için buraya tıklayın...'}</p>`;
         }
         const descStatus = document.getElementById('drawerDescSaveStatus');
         if (descStatus) descStatus.innerText = i18n.click_to_edit || 'Düzenlemek için tıklayın';
@@ -370,13 +391,13 @@ async function openTaskDrawer(taskId) {
             notesBox.style.display = 'block';
             document.getElementById('drawerNotesTitle').innerText = i18n.notes_revision_title || 'Çalışanın Revizyon / Açıklama Gerekçesi:';
             document.getElementById('drawerNotesTitle').style.color = '#e67e22';
-            document.getElementById('drawerNotesContent').innerText = modification.reason;
+            document.getElementById('drawerNotesContent').innerText = window.cleanMojibake(modification.reason);
             document.getElementById('drawerAttachmentLink').innerHTML = '';
         } else if ((task.status === 'submitted' || task.status === 'completed') && submission) {
             notesBox.style.display = 'block';
             document.getElementById('drawerNotesTitle').innerText = i18n.notes_submission_title || 'Çalışanın Teslim Notu:';
             document.getElementById('drawerNotesTitle').style.color = '#9b5de5';
-            document.getElementById('drawerNotesContent').innerText = submission.notes;
+            document.getElementById('drawerNotesContent').innerText = window.cleanMojibake(submission.notes);
             if (submission.attachment_url) {
                 document.getElementById('drawerAttachmentLink').innerHTML = `
                     <a href="${submission.attachment_url}" target="_blank" style="color:var(--brand-primary); font-size:12px; text-decoration:underline;">
