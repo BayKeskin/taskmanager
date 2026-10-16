@@ -1,0 +1,5 @@
+{
+    "name": "GitHub",
+    "version": "1.0.0",
+    "description": "The GitHub MCP Server provides seamless integration with GitHub APIs, enabling advanced automation, PR management, issues, and workflow actions."
+}

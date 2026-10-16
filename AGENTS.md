@@ -153,6 +153,52 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 - **Universal Tri-Lingual Standard (i18n):** All UI texts, error/success messages, and system notifications must be managed via `languages/{lang}/app.php` dictionaries across all 3 languages (TR, EN, DE) and `Config/ajax_translations.php`. Hardcoded single-language strings are strictly prohibited.
 - **QA Doctrine:** "The User Is Not a QA Tester". Every button, modal, form input, state transition, and AJAX call must be autonomously verified in the live environment using headless browser, curl, and CLI scripts before task completion.
 - **Task Delivery Protocol:** Tasks must be delivered via `Helper::submitTaskDirectly()` following the 4-stage Definition of Done (DoD) format (What Was Done, Where to Test, How to Test, Autonomous Test Evidence).
+- **Documentation Access via REST API:** Project documentation must NOT be stored as loose markdown files in the root directory. AI Agents can query all project documentation via `GET http://localhost/taskmanager/api/projects/{code}/docs` and fetch full document contents using `GET http://localhost/taskmanager/api/docs/{id}` with header `Authorization: Bearer <api_token>`.
 <!-- PROJECT_RULES_END -->
+
+---
+
+## 10. PROJECT DOCUMENTATION ACCESS VIA REST API (AI AGENT GUIDELINE)
+
+> ### 📖 REST API DOCUMENTATION RETRIEVAL DIRECTIVE:
+> All technical specifications, architecture blueprints, system credentials, and workflow manuals are centrally managed in TaskManager and exposed via the Enterprise REST API.
+> **DO NOT keep loose markdown documentation files in the project root directory.** If an AI Agent needs to read project documentation, query them directly via the REST API endpoints:
+
+### 🔌 REST API Endpoints:
+1. **List All Project Documents:**
+   - **Method & URL:** `GET http://localhost/taskmanager/api/projects/{project_id_or_code}/docs`
+   - **Alternative:** `GET http://localhost/taskmanager/api/docs?project={project_code}`
+   - **Headers:** `Authorization: Bearer tm_admin_talha_keskin_token_2026` (or `X-API-Key: tm_admin_talha_keskin_token_2026`)
+   - **Response Payload:** Returns an array of document items containing `id`, `title`, `icon`, `created_at`, and `updated_at`.
+
+2. **Fetch Document Content by ID:**
+   - **Method & URL:** `GET http://localhost/taskmanager/api/docs/{doc_id}`
+   - **Headers:** `Authorization: Bearer tm_admin_talha_keskin_token_2026`
+   - **Response Payload:** Returns the document object including the complete markdown `content`.
+
+### 💻 Fast Retrieval CLI Examples:
+- **PowerShell (List Docs for Project 01):**
+  ```powershell
+  $headers = @{ 'Authorization' = 'Bearer tm_admin_talha_keskin_token_2026' }
+  (Invoke-RestMethod -Uri 'http://localhost/taskmanager/api/projects/01/docs' -Headers $headers).data | Select-Object id, title
+  ```
+- **PowerShell (Read Document Content):**
+  ```powershell
+  $headers = @{ 'Authorization' = 'Bearer tm_admin_talha_keskin_token_2026' }
+  (Invoke-RestMethod -Uri 'http://localhost/taskmanager/api/docs/97' -Headers $headers).data.content
+  ```
+- **cURL:**
+  ```bash
+  curl -s -H "Authorization: Bearer tm_admin_talha_keskin_token_2026" "http://localhost/taskmanager/api/projects/01/docs"
+  ```
+- **Python:**
+  ```python
+  import requests
+  headers = {"Authorization": "Bearer tm_admin_talha_keskin_token_2026"}
+  resp = requests.get("http://localhost/taskmanager/api/projects/01/docs", headers=headers).json()
+  for doc in resp.get("data", []):
+      print(f"[{doc['id']}] {doc['title']}")
+  ```
+
 
 
