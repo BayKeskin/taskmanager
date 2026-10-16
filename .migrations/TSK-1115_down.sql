@@ -1,0 +1,3 @@
+-- Rollback script for TSK-1115 (Pinleme eklentisi düzeltmesi)
+-- Bu görevde veritabanı şemasında tablo ekleme/silme işlemi yapılmamıştır.
+-- taskmanager-pin.js ve modern-screenshot.js client widget dosyaları güncellenmiştir.
