@@ -263,46 +263,44 @@ def send_via_agentapi_cli(grpc_port, token, cascade_id, title, message_text, pro
 
 def send_message_to_existing_cascade(workspace_path, cascade_id, title, message_text):
     https_port, grpc_port, token = get_workspace_ports_and_token(workspace_path)
+    if not https_port or not token:
+        return False
 
-    # 1. Önce %100 stabil olan agentapi send-message CLI ile göndermeyi dene!
+    url_msg = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
+    msg_payload = {
+        "cascade_id": cascade_id,
+        "items": [{"text": message_text}],
+        "cascade_config": CASCADE_DEFAULT_CONFIG
+    }
+    req_msg = urllib.request.Request(
+        url_msg,
+        data=json.dumps(msg_payload).encode('utf-8'),
+        headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as resp:
+            if resp.status == 200:
+                print(f"✅ [RPC MESAJ İLETİLDİ] Var olan sohbet güncellendi: {cascade_id}")
+                try:
+                    url_focus = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
+                    req_focus = urllib.request.Request(
+                        url_focus,
+                        data=json.dumps({"cascade_id": cascade_id}).encode('utf-8'),
+                        headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
+                        method="POST"
+                    )
+                    urllib.request.urlopen(req_focus, context=SSL_CTX, timeout=2)
+                except Exception:
+                    pass
+                return True
+    except Exception as e:
+        print(f"⚠️ Var olan sohbete RPC ile mesaj gönderilemedi ({cascade_id}): {e}")
+
+    # CLI yedek denemesi
     if grpc_port and send_via_agentapi_cli(grpc_port, token, cascade_id, title, message_text, workspace_path):
-        print(f"✅ [CLI MESAJ İLETİLDİ] Var olan sohbet güncellendi: {cascade_id}")
-        if https_port and token:
-            try:
-                url_focus = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
-                req_focus = urllib.request.Request(
-                    url_focus,
-                    data=json.dumps({"cascade_id": cascade_id, "cascadeId": cascade_id}).encode('utf-8'),
-                    headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-                    method="POST"
-                )
-                urllib.request.urlopen(req_focus, context=SSL_CTX, timeout=2)
-            except Exception:
-                pass
+        print(f"✅ [CLI MESAJ İLETİLDİ] Var olan sohbet CLI ile güncellendi: {cascade_id}")
         return True
-
-    # 2. Yedek olarak Connect-RPC SendUserCascadeMessage dene
-    if https_port and token:
-        url_msg = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
-        msg_payload = {
-            "cascade_id": cascade_id,
-            "cascadeId": cascade_id,
-            "items": [{"text": message_text}],
-            "cascade_config": CASCADE_DEFAULT_CONFIG
-        }
-        req_msg = urllib.request.Request(
-            url_msg,
-            data=json.dumps(msg_payload).encode('utf-8'),
-            headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-            method="POST"
-        )
-        try:
-            with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as resp:
-                if resp.status == 200:
-                    print(f"✅ [RPC MESAJ İLETİLDİ] Var olan sohbet güncellendi: {cascade_id}")
-                    return True
-        except Exception as e:
-            print(f"⚠️ Var olan sohbete RPC ile mesaj gönderilemedi ({cascade_id}): {e}")
 
     return False
 
@@ -338,38 +336,30 @@ def start_cascade_conversation(workspace_path, prompt, title=""):
                     print(f"🎉 [CONNECT-RPC BAŞARILI] StartCascade ile yeni sohbet başlatıldı! Port: {https_port}, ID: {cid}")
                     time.sleep(0.4)
 
-                    # Önce CLI ile başlık + mesaj göndermeyi dene, olmazsa RPC SendUserCascadeMessage kullan
-                    cli_ok = False
-                    if grpc_port:
-                        cli_ok = send_via_agentapi_cli(grpc_port, token, cid, title, prompt, workspace_path)
-                        if cli_ok:
-                            print(f"📝 [CLI İLE GÖREV YAZILDI] Başlık ve görev metni eklendi!")
-
-                    if not cli_ok:
-                        try:
-                            url_msg = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
-                            msg_payload = {
-                                "cascade_id": cid,
-                                "cascadeId": cid,
-                                "items": [{"text": prompt}],
-                                "cascade_config": CASCADE_DEFAULT_CONFIG
-                            }
-                            req_msg = urllib.request.Request(
-                                url_msg,
-                                data=json.dumps(msg_payload).encode('utf-8'),
-                                headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
-                                method="POST"
-                            )
-                            with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as mresp:
-                                if mresp.status == 200:
-                                    print(f"📝 [KULLANICI TURU EKLENDİ] SendUserCascadeMessage başarılı!")
-                        except Exception as e_msg:
-                            print(f"⚠️ SendUserCascadeMessage notu: {e_msg}")
+                    # 1. Kullanıcı mesaj turn'ünü model konfigürasyonuyla birlikte ekle (Zero-Touch Executor)
+                    try:
+                        url_msg = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage"
+                        msg_payload = {
+                            "cascade_id": cid,
+                            "items": [{"text": prompt}],
+                            "cascade_config": CASCADE_DEFAULT_CONFIG
+                        }
+                        req_msg = urllib.request.Request(
+                            url_msg,
+                            data=json.dumps(msg_payload).encode('utf-8'),
+                            headers={"Content-Type": "application/json", "X-Codeium-Csrf-Token": token},
+                            method="POST"
+                        )
+                        with urllib.request.urlopen(req_msg, context=SSL_CTX, timeout=5) as mresp:
+                            if mresp.status == 200:
+                                print(f"📝 [KULLANICI TURU EKLENDİ] SendUserCascadeMessage başarılı!")
+                    except Exception as e_msg:
+                        print(f"⚠️ SendUserCascadeMessage notu: {e_msg}")
 
                     time.sleep(0.2)
                     try:
                         url_focus = f"https://127.0.0.1:{https_port}/exa.language_server_pb.LanguageServerService/SmartFocusConversation"
-                        focus_payload = {"cascade_id": cid, "cascadeId": cid}
+                        focus_payload = {"cascade_id": cid}
                         req_focus = urllib.request.Request(
                             url_focus,
                             data=json.dumps(focus_payload).encode('utf-8'),
