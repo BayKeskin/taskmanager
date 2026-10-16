@@ -234,7 +234,7 @@ foreach ($projectsList as $p) {
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span class="cu-nav-badge"><?= $pCount ?></span>
                             <?php if ($currentUser->role === 'admin'): ?>
-                                <button type="button" onclick="openEditProjectModal(<?= htmlspecialchars(json_encode($proj), ENT_QUOTES, 'UTF-8') ?>)" class="cu-btn-proj-action" title="<?= htmlspecialchars(__('app.sidebar_project_settings')) ?>">
+                                <button type="button" onclick="openEditProjectModal(<?= (int)$proj->id ?>)" class="cu-btn-proj-action" title="<?= htmlspecialchars(__('app.sidebar_project_settings')) ?>">
                                     ⚙️
                                 </button>
                                 <button type="button" onclick="toggleProjectStatus(<?= $proj->id ?>, 'completed')" class="cu-btn-proj-action" title="<?= htmlspecialchars(__('app.sidebar_archive_project')) ?>">

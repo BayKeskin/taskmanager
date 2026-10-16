@@ -19,7 +19,7 @@ class ProjectModel extends Model
     public function getProjects(?string $status = null): array
     {
         if ($status !== null) {
-            return $this->db->multi_record_query("SELECT id, project_code, title, color FROM projects WHERE status = ? ORDER BY title ASC", [$status]) ?: [];
+            return $this->db->multi_record("projects", ["status"], [$status], "=", "title", "ASC") ?: [];
         }
         return $this->db->multi_record("projects", [], [], "", "id", "ASC") ?: [];
     }

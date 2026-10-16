@@ -562,6 +562,40 @@ switch ($action) {
         }
         break;
 
+    // 3.0.0 PROJE BİLGİSİ GETİR (AJAX)
+    case 'get_project':
+        $projectId = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
+        if ($projectId <= 0) {
+            jsonResponse(false, 'Geçersiz proje ID.');
+        }
+
+        require_once __DIR__ . '/../../Model/ProjectModel.php';
+        $projectModel = new ProjectModel();
+        $proj = $projectModel->getProjectById($projectId);
+
+        if (!$proj) {
+            jsonResponse(false, 'Proje bulunamadı.');
+        }
+
+        // Eğer agent_rules veritabanında boş ama workspace_path içinde AGENTS.md varsa oradan kurtar ve DB'ye eşitle!
+        if (empty($proj->agent_rules) && !empty($proj->workspace_path)) {
+            $ws = rtrim($proj->workspace_path, '/\\');
+            $agentsMd = $ws . DIRECTORY_SEPARATOR . 'AGENTS.md';
+            if (file_exists($agentsMd)) {
+                $content = @file_get_contents($agentsMd);
+                if ($content && preg_match('/<!-- PROJECT_RULES_START -->(.*?)<!-- PROJECT_RULES_END -->/s', $content, $m)) {
+                    $extracted = trim($m[1]);
+                    if ($extracted) {
+                        $proj->agent_rules = $extracted;
+                        $projectModel->updateProject($projectId, ['agent_rules' => $extracted]);
+                    }
+                }
+            }
+        }
+
+        jsonResponse(true, 'Proje bilgisi alındı', (array)$proj);
+        break;
+
     // 3.0.1 PROJE GÜNCELLEME (ADMIN)
     case 'update_project':
         if ($currentUser->role !== 'admin') {

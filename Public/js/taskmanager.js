@@ -673,18 +673,46 @@ async function handleCreateProject(e) {
     }
 }
 
-function openEditProjectModal(proj) {
-    if (!proj) return;
-    document.getElementById('editProjId').value = proj.id;
-    document.getElementById('editProjTitle').value = proj.title || '';
-    document.getElementById('editProjCode').value = proj.project_code || '';
-    document.getElementById('editProjColor').value = proj.color || '#7B68EE';
-    document.getElementById('editProjDesc').value = proj.description || '';
-    document.getElementById('editProjWorkspacePath').value = proj.workspace_path || '';
-    document.getElementById('editProjAgentRules').value = proj.agent_rules || '';
-    document.getElementById('editProjWebhookUrl').value = proj.webhook_url || '';
-    document.getElementById('editProjConvId').value = proj.agent_conversation_id || '';
+function openEditProjectModal(projOrId) {
+    if (!projOrId) return;
     openModal('modalEditProject');
+
+    let projId = null;
+    if (typeof projOrId === 'object' && projOrId !== null) {
+        projId = projOrId.id;
+        document.getElementById('editProjId').value = projOrId.id || '';
+        document.getElementById('editProjTitle').value = projOrId.title || '';
+        document.getElementById('editProjCode').value = projOrId.project_code || '';
+        document.getElementById('editProjColor').value = projOrId.color || '#7B68EE';
+        document.getElementById('editProjDesc').value = projOrId.description || '';
+        document.getElementById('editProjWorkspacePath').value = projOrId.workspace_path || '';
+        document.getElementById('editProjAgentRules').value = projOrId.agent_rules || '';
+        document.getElementById('editProjWebhookUrl').value = projOrId.webhook_url || '';
+        document.getElementById('editProjConvId').value = projOrId.agent_conversation_id || '';
+    } else {
+        projId = projOrId;
+        document.getElementById('editProjId').value = projId;
+    }
+
+    if (projId) {
+        fetch('/taskmanager/ajax?action=get_project&id=' + projId)
+            .then(res => res.json())
+            .then(result => {
+                if (result.success && result.data) {
+                    const p = result.data;
+                    document.getElementById('editProjId').value = p.id;
+                    document.getElementById('editProjTitle').value = p.title || '';
+                    document.getElementById('editProjCode').value = p.project_code || '';
+                    document.getElementById('editProjColor').value = p.color || '#7B68EE';
+                    document.getElementById('editProjDesc').value = p.description || '';
+                    document.getElementById('editProjWorkspacePath').value = p.workspace_path || '';
+                    document.getElementById('editProjAgentRules').value = p.agent_rules || '';
+                    document.getElementById('editProjWebhookUrl').value = p.webhook_url || '';
+                    document.getElementById('editProjConvId').value = p.agent_conversation_id || '';
+                }
+            })
+            .catch(err => console.error('Proje detayları yüklenemedi:', err));
+    }
 }
 
 async function handleUpdateProject(e) {
