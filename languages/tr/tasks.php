@@ -237,6 +237,16 @@ return [
     'billing_kpi_tasks'          => 'Tamamlanan Görev',
     'billing_kpi_tasks_sub'      => 'Teslim edilen ve onaylanan işler',
     'billing_kpi_spent'          => 'Toplam Harcanan Efor',
-    'billing_kpi_est_sub'        => 'Tahmini efor:',
     'rep_title'                  => 'Raporlar ve Analitik - TaskManager',
+
+    // Gantt Şeması & Takvim Geliştirmeleri (01-104)
+    'gantt_title'                => 'Gantt & Zaman Çizelgesi',
+    'gantt_view_tab'             => '📊 Gantt Şeması',
+    'cal_view_tab'               => '📅 Standart Takvim',
+    'gantt_filter_week'          => 'Haftalık Görünüm',
+    'gantt_filter_month'         => 'Aylık Görünüm',
+    'gantt_overdue_badge'        => 'Gecikmiş / Riskli',
+    'gantt_drag_success'         => '✅ Teslim tarihi başarıyla güncellendi: ',
+    'gantt_no_tasks'             => 'Bu görünüm için henüz takvimli görev bulunmamaktadır.',
+    'gantt_task_progress'        => 'İlerleme',
 ];

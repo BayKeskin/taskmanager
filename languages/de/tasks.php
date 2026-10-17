@@ -237,6 +237,16 @@ return [
     'billing_kpi_tasks'          => 'Abgeschlossene Aufgaben',
     'billing_kpi_tasks_sub'      => 'Gelieferte und abgenommene Arbeiten',
     'billing_kpi_spent'          => 'Gesamter geleisteter Aufwand',
-    'billing_kpi_est_sub'        => 'Geschätzter Aufwand:',
     'rep_title'                  => 'Berichte & Analysen - TaskManager',
+
+    // Gantt-Diagramm & Kalender-Erweiterungen (01-104)
+    'gantt_title'                => 'Gantt & Zeitplan',
+    'gantt_view_tab'             => '📊 Gantt-Diagramm',
+    'cal_view_tab'               => '📅 Standardkalender',
+    'gantt_filter_week'          => 'Wochenansicht',
+    'gantt_filter_month'         => 'Monatsansicht',
+    'gantt_overdue_badge'        => 'Überfällig / Gefährdet',
+    'gantt_drag_success'         => '✅ Fristdatum erfolgreich aktualisiert: ',
+    'gantt_no_tasks'             => 'Keine geplanten Aufgaben für diese Ansicht gefunden.',
+    'gantt_task_progress'        => 'Fortschritt',
 ];

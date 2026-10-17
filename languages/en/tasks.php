@@ -237,6 +237,16 @@ return [
     'billing_kpi_tasks'          => 'Completed Tasks',
     'billing_kpi_tasks_sub'      => 'Delivered and accepted tasks',
     'billing_kpi_spent'          => 'Total Effort Spent',
-    'billing_kpi_est_sub'        => 'Estimated effort:',
     'rep_title'                  => 'Reports & Analytics - TaskManager',
+
+    // Gantt Chart & Calendar Enhancements (01-104)
+    'gantt_title'                => 'Gantt & Timeline',
+    'gantt_view_tab'             => '📊 Gantt Chart',
+    'cal_view_tab'               => '📅 Standard Calendar',
+    'gantt_filter_week'          => 'Weekly View',
+    'gantt_filter_month'         => 'Monthly View',
+    'gantt_overdue_badge'        => 'Overdue / At Risk',
+    'gantt_drag_success'         => '✅ Deadline successfully updated: ',
+    'gantt_no_tasks'             => 'No scheduled tasks found for this view.',
+    'gantt_task_progress'        => 'Progress',
 ];

@@ -15,9 +15,9 @@ class CalendarController extends Controller
     }
 
     /**
-     * Takvim görünümü için ay, gün ve görev verilerini hazırlar
+     * Takvim ve Gantt görünümü için ay, gün ve görev verilerini hazırlar
      */
-    public function index(?int $year = null, ?int $month = null, ?int $activeProjectId = null, ?object $currentUser = null): array
+    public function index(?int $year = null, ?int $month = null, ?int $activeProjectId = null, ?object $currentUser = null, string $viewMode = 'month'): array
     {
         $currentUser = $currentUser ?? ($_SESSION['user'] ?? (object)['id' => 1, 'role' => 'admin']);
         $isClient = ($currentUser->role === 'client');
@@ -44,15 +44,21 @@ class CalendarController extends Controller
         $startDate = sprintf('%04d-%02d-01', $year, $month);
         $endDate = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
 
+        // Standart Takvim görevleri (seçili ay için)
         $calendarTasks = $this->taskModel->getTasksForCalendar($startDate, $endDate, $activeProjectId);
+
+        // Gantt Şeması için tüm aktif/takvimli görevler
+        $allGanttTasks = $this->taskModel->getTasksForCalendar(null, null, $activeProjectId);
 
         // Görevleri tarihe göre grupla (YYYY-MM-DD -> [tasks])
         $tasksByDate = [];
         foreach ($calendarTasks as $t) {
-            if (!isset($tasksByDate[$t->deadline])) {
-                $tasksByDate[$t->deadline] = [];
+            if (!empty($t->deadline)) {
+                if (!isset($tasksByDate[$t->deadline])) {
+                    $tasksByDate[$t->deadline] = [];
+                }
+                $tasksByDate[$t->deadline][] = $t;
             }
-            $tasksByDate[$t->deadline][] = $t;
         }
 
         return [
@@ -65,7 +71,9 @@ class CalendarController extends Controller
             'daysInMonth'        => $daysInMonth,
             'firstDayOfWeek'     => $firstDayOfWeek,
             'calendarTasks'      => $calendarTasks,
-            'tasksByDate'        => $tasksByDate
+            'allGanttTasks'      => $allGanttTasks,
+            'tasksByDate'        => $tasksByDate,
+            'viewMode'           => $viewMode
         ];
     }
 }
