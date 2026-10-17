@@ -59,6 +59,9 @@ foreach ($allTasks as $t) {
                 <span>🪄</span> <span><?= __('app.btn_ai_architect') ?></span>
             </button>
         <?php endif; ?>
+        <button type="button" class="cu-btn-sm" onclick="downloadDeliveryReportPdf(<?= (int)($activeProjectId ?? 0) ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(0,184,148,0.2), rgba(9,132,227,0.25)); border:1px solid rgba(0,184,148,0.5); color:#00cec9; font-weight:700; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box; box-shadow:0 2px 8px rgba(0,184,148,0.2);" title="<?= htmlspecialchars(__('tasks.tooltip_pdf_report', 'Tamamlanan işlerin efor, maliyet ve hakediş PDF dökümünü al')) ?>">
+            <span>📄</span> <span><?= __('tasks.btn_pdf_report', 'PDF Hakediş Raporu') ?></span>
+        </button>
         <button type="button" class="cu-btn-sm" onclick="openAiStandupModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(123,104,238,0.2), rgba(0,184,148,0.2)); border:1px solid rgba(123,104,238,0.4); color:var(--text-white); font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('tasks.tooltip_ai_standup', 'Son 24 saatin LLM özetini ve standup bültenini görüntüle')) ?>">
             <span>🤖</span> <span><?= __('tasks.btn_ai_standup', 'AI Standup Özeti') ?></span>
         </button>

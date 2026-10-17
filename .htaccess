@@ -21,6 +21,7 @@ DirectoryIndex index.php View/index/board.php
     RewriteRule ^board/?$               View/index/board.php [L,NC,QSA]
     RewriteRule ^calendar/?$            View/index/calendar.php [L,NC,QSA]
     RewriteRule ^reports/?$             View/index/reports.php [L,NC,QSA]
+    RewriteRule ^billing-report/?$      View/index/billing_report.php [L,NC,QSA]
     RewriteRule ^team/?$                View/index/team.php [L,NC,QSA]
     RewriteRule ^docs/?$                View/index/docs.php [L,NC,QSA]
     RewriteRule ^chat/?$                View/index/chat.php [L,NC,QSA]

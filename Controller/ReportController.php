@@ -21,6 +21,23 @@ class ReportController extends Controller
         $currentUser = $currentUser ?? ($_SESSION['user'] ?? (object)['id' => 1, 'role' => 'admin']);
         $metrics = $this->reportModel->getAnalyticsSummary();
 
-        return array_merge(['currentUser' => $currentUser], $metrics);
+        // Müşteri ise yalnızca yetkili olduğu projenin hakedişini getir
+        $isClient = ($currentUser->role === 'client');
+        $activeProjectId = $isClient ? (int)($currentUser->client_project_id ?? 0) : null;
+        $billingSummary = $this->reportModel->getProjectBillingSummary($activeProjectId);
+
+        return array_merge([
+            'currentUser'    => $currentUser,
+            'isClient'       => $isClient,
+            'billingSummary' => $billingSummary
+        ], $metrics);
+    }
+
+    /**
+     * Hakediş / Teslimat Raporu verilerini döner
+     */
+    public function getBillingData(?int $projectId = null, float $hourlyRate = 500.0): array
+    {
+        return $this->reportModel->getProjectBillingSummary($projectId, $hourlyRate);
     }
 }

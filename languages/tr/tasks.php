@@ -227,4 +227,16 @@ return [
     'project'                    => 'Proje',
     'server_error'               => 'Sunucu hatası: ',
     'error_prefix'               => '❌ Hata: ',
+
+    // Efor, Maliyet ve Hakediş / Teslimat Raporu (TSK-194)
+    'btn_pdf_report'             => 'PDF Hakediş Raporu',
+    'tooltip_pdf_report'         => 'Tamamlanan işlerin efor, maliyet ve hakediş PDF dökümünü al',
+    'billing_summary_title'      => 'Efor, Maliyet ve Hakediş Özeti',
+    'billing_generated_at'       => 'Tarih:',
+    'btn_print_pdf'              => 'PDF / Yazdır',
+    'billing_kpi_tasks'          => 'Tamamlanan Görev',
+    'billing_kpi_tasks_sub'      => 'Teslim edilen ve onaylanan işler',
+    'billing_kpi_spent'          => 'Toplam Harcanan Efor',
+    'billing_kpi_est_sub'        => 'Tahmini efor:',
+    'rep_title'                  => 'Raporlar ve Analitik - TaskManager',
 ];

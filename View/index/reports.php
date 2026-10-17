@@ -15,9 +15,59 @@ extract($reportData);
         <span style="font-size:16px;">📊</span>
         <span style="font-weight:700; font-size:14px; color:var(--text-white);"><?= __('tasks.view_analytics', 'Analitik & SLA') ?></span>
     </div>
+    <div class="cu-filter-bar">
+        <button type="button" class="cu-btn-sm" onclick="downloadDeliveryReportPdf()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(0,184,148,0.2), rgba(9,132,227,0.25)); border:1px solid rgba(0,184,148,0.5); color:#00cec9; font-weight:700; padding:0 14px; font-size:12px; border-radius:6px; cursor:pointer; box-shadow:0 2px 8px rgba(0,184,148,0.2);" title="<?= htmlspecialchars(__('tasks.tooltip_pdf_report', 'Tamamlanan işlerin efor, maliyet ve hakediş PDF dökümünü al')) ?>">
+            <span>📄</span> <span><?= __('tasks.btn_pdf_report', 'PDF Hakediş / Teslim Raporu İndir') ?></span>
+        </button>
+    </div>
 </div>
 
 <div class="cu-content-scroll">
+    <!-- EFOR, MALİYET VE HAKEDİŞ ÖZETİ KARTI (TSK-194) -->
+    <?php if (!empty($billingSummary)): ?>
+        <div style="background:linear-gradient(135deg, rgba(123,104,238,0.12), rgba(0,184,148,0.12)); border:1px solid rgba(0,184,148,0.3); border-radius:var(--radius-md); padding:20px; margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:36px; height:36px; border-radius:8px; background:rgba(0,184,148,0.2); display:flex; align-items:center; justify-content:center; font-size:18px;">
+                        💰
+                    </div>
+                    <div>
+                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('tasks.billing_summary_title', 'Efor, Maliyet ve Hakediş Özeti') ?></h3>
+                        <p style="font-size:12px; color:var(--text-secondary); margin:2px 0 0 0;">
+                            <?= htmlspecialchars($billingSummary['project_title']) ?> • <?= __('tasks.billing_generated_at', 'Tarih:') ?> <?= htmlspecialchars($billingSummary['generated_at']) ?>
+                        </p>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button type="button" class="cu-btn-sm" onclick="downloadDeliveryReportPdf(<?= (int)($billingSummary['project_id'] ?? 0) ?>)" style="background:#00b894; color:#fff; font-weight:700; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                        <span>🖨️</span> <span><?= __('tasks.btn_print_pdf', 'PDF / Yazdır') ?></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hakediş KPI'ları -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-top:14px;">
+                <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; padding:14px;">
+                    <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;"><?= __('tasks.billing_kpi_tasks', 'Tamamlanan Görev') ?></div>
+                    <div style="font-size:24px; font-weight:800; color:#00cec9; margin:4px 0;"><?= (int)$billingSummary['total_completed_tasks'] ?> adet</div>
+                    <div style="font-size:11.5px; color:var(--text-secondary);"><?= __('tasks.billing_kpi_tasks_sub', 'Teslim edilen ve onaylanan işler') ?></div>
+                </div>
+
+                <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; padding:14px;">
+                    <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;"><?= __('tasks.billing_kpi_spent', 'Toplam Harcanan Efor') ?></div>
+                    <div style="font-size:24px; font-weight:800; color:#a29bfe; margin:4px 0;"><?= $billingSummary['total_hours_spent'] ?> saat</div>
+                    <div style="font-size:11.5px; color:var(--text-secondary);"><?= __('tasks.billing_kpi_est_sub', 'Tahmini efor:') ?> <?= $billingSummary['total_hours_estimated'] ?> sa</div>
+                </div>
+
+                <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; padding:14px;">
+                    <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;"><?= __('tasks.billing_kpi_total_cost', 'Toplam Hakediş Bedeli') ?></div>
+                    <div style="font-size:24px; font-weight:800; color:#00b894; margin:4px 0;"><?= number_format($billingSummary['total_cost'], 2, ',', '.') ?> TL</div>
+                    <div style="font-size:11.5px; color:var(--text-secondary);"><?= __('tasks.billing_kpi_rate_sub', 'Birim saatlik ücret:') ?> <?= number_format($billingSummary['hourly_rate'], 0, ',', '.') ?> TL</div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- ÜST METRİK KARTLARI (KPI CARDS) -->
     <div class="cu-reports-kpi-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:24px;">
         <!-- Toplam Görev -->

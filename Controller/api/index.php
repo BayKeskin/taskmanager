@@ -20,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // 2. System Core
 require_once __DIR__ . '/../../System/System.php';
+require_once __DIR__ . '/../../Model/Model.php';
+require_once __DIR__ . '/../../Model/ReportModel.php';
 global $db;
 
 // Dil Çevirici (API I18n)
@@ -1208,6 +1210,18 @@ if ($resource === 'projects') {
         } else {
             apiError($res['message'] ?? 'Geri alma işlemi başarısız oldu.', 400, $res);
         }
+    }
+
+    // 5.11 GET /api/projects/{id_or_code}/billing-report - Efor, Maliyet ve Hakediş Raporu (TSK-194)
+    if ($param1 !== null && $param2 === 'billing-report' && $method === 'GET') {
+        $proj = resolveProject($db, $param1);
+        if (!$proj) apiError('Proje bulunamadı.', 404);
+
+        $hourlyRate = !empty($requestData['rate']) && (float)$requestData['rate'] > 0 ? (float)$requestData['rate'] : 500.0;
+        $reportModel = new ReportModel($db);
+        $billing = $reportModel->getProjectBillingSummary((int)$proj->id, $hourlyRate);
+
+        apiResponse($billing, 'Efor, maliyet ve hakediş teslimat özeti başarıyla oluşturuldu.');
     }
 
     // 6. DELETE /api/projects/{id_or_code} - Proje Sil / Arşivle

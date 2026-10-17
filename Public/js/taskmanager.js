@@ -4098,6 +4098,12 @@ function executeDeployRollback() {
         .catch(err => showToast('Geri alma hatası: ' + err.message, 'error'));
 }
 
+function downloadDeliveryReportPdf(projectId) {
+    const url = '/taskmanager/billing-report' + (projectId ? '?project_id=' + projectId : '');
+    window.open(url, '_blank');
+}
+
+
 
 
 

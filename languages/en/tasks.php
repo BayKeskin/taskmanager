@@ -227,4 +227,16 @@ return [
     'project'                    => 'Project',
     'server_error'               => 'Server error: ',
     'error_prefix'               => '❌ Error: ',
+
+    // Effort, Cost & Billing / Delivery Report (TSK-194)
+    'btn_pdf_report'             => 'PDF Billing & Delivery Report',
+    'tooltip_pdf_report'         => 'Generate and download PDF invoice/delivery report for completed tasks',
+    'billing_summary_title'      => 'Effort, Cost & Billing Summary',
+    'billing_generated_at'       => 'Date:',
+    'btn_print_pdf'              => 'PDF / Print',
+    'billing_kpi_tasks'          => 'Completed Tasks',
+    'billing_kpi_tasks_sub'      => 'Delivered and accepted tasks',
+    'billing_kpi_spent'          => 'Total Effort Spent',
+    'billing_kpi_est_sub'        => 'Estimated effort:',
+    'rep_title'                  => 'Reports & Analytics - TaskManager',
 ];

@@ -227,4 +227,16 @@ return [
     'project'                    => 'Projekt',
     'server_error'               => 'Serverfehler: ',
     'error_prefix'               => '❌ Fehler: ',
+
+    // Aufwand, Kosten & Abrechnungs- / Lieferbericht (TSK-194)
+    'btn_pdf_report'             => 'PDF-Abrechnungsbericht',
+    'tooltip_pdf_report'         => 'PDF-Abrechnungs- und Lieferbericht für abgeschlossene Aufgaben herunterladen',
+    'billing_summary_title'      => 'Aufwands-, Kosten- und Abrechnungsübersicht',
+    'billing_generated_at'       => 'Datum:',
+    'btn_print_pdf'              => 'PDF / Drucken',
+    'billing_kpi_tasks'          => 'Abgeschlossene Aufgaben',
+    'billing_kpi_tasks_sub'      => 'Gelieferte und abgenommene Arbeiten',
+    'billing_kpi_spent'          => 'Gesamter geleisteter Aufwand',
+    'billing_kpi_est_sub'        => 'Geschätzter Aufwand:',
+    'rep_title'                  => 'Berichte & Analysen - TaskManager',
 ];
