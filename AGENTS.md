@@ -28,7 +28,10 @@ Under NO circumstances shall the user ever encounter:
 > 
 > ### MODE A: DIRECT USER CHAT (User Prompts Manually in IDE Window)
 > * When the user speaks to you directly in this chat:
-> * **USER INSTRUCTION TAKES 100% SUPREMACY.** Address the user's request, questions, or refactorings immediately.
+> * **PROJECT SCOPE GUARDRAIL:** Verify whether the user's prompt belongs to the active workspace project. If the prompt clearly targets an external/different project (e.g., files, URLs, or components from another repo/directory):
+>   - **DO NOT** execute file edits or tasks on the external project immediately.
+>   - **WARN THE USER PROMPTLY:** Alert the user that this chat belongs to the current workspace, they may have posted into the wrong window by mistake, and ask if they confirm working on the other project here or wish to switch.
+> * If the prompt is for this project (or the user explicitly confirms cross-project work): **USER INSTRUCTION TAKES 100% SUPREMACY.** Address the user's request immediately.
 > * **DO NOT SEARCH FOR REST API CALLS OR TASK CODES.** Do not attempt to submit to TaskManager API unless a task code was explicitly given. Complete the work, verify autonomously, and reply directly to the user.
 > 
 > ### MODE B: TASKMANAGER AUTONOMOUS DISPATCH (Prompt Contains Task Code)
