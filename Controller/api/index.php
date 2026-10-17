@@ -1011,6 +1011,100 @@ if ($resource === 'projects') {
         apiResponse($res, 'Canlı veritabanı ve kullanıcısı başarıyla tahsis edildi.', 201);
     }
 
+    // 5.5 POST /api/projects/{id_or_code}/hosting/generate-config - Canlıya Özel İzolasyonlu Konfigürasyon Üretici (TSK-1083)
+    if ($param1 !== null && $param2 === 'hosting' && $param3 === 'generate-config' && $method === 'POST') {
+        $proj = resolveProject($db, $param1);
+        if (!$proj) apiError('Proje bulunamadı.', 404);
+
+        $targetPath = $proj->workspace_path;
+        $liveDomain = trim($requestData['live_domain'] ?? ($requestData['domain'] ?? 'https://example.com'));
+        $dbConfig = [
+            'host'     => $requestData['db_host'] ?? 'localhost',
+            'database' => $requestData['db_name'] ?? '',
+            'username' => $requestData['db_user'] ?? '',
+            'password' => $requestData['db_pass'] ?? '',
+            'port'     => (int)($requestData['db_port'] ?? 3306)
+        ];
+
+        // 1. Framework Analizi
+        $analysis = ProjectAnalyzer::analyze($targetPath, [
+            'live_domain' => $liveDomain,
+            'db_name'     => $dbConfig['database'],
+            'db_user'     => $dbConfig['username'],
+            'db_pass'     => $dbConfig['password'],
+            'db_host'     => $dbConfig['host']
+        ]);
+
+        $generatedFiles = [];
+        $replacements = [];
+        foreach (($analysis['live_payload']['replacements'] ?? []) as $k => $info) {
+            $replacements[$k] = $info['target_live'];
+        }
+
+        // A) .env Dosyası Varsa Canlıya Özel Üret
+        if (file_exists("{$targetPath}/.env")) {
+            $origDotEnv = @file_get_contents("{$targetPath}/.env") ?: '';
+            $generatedFiles['.env'] = LiveConfigGenerator::generateDotEnv($origDotEnv, $replacements);
+        } elseif (file_exists("{$targetPath}/.env.example")) {
+            $origDotEnv = @file_get_contents("{$targetPath}/.env.example") ?: '';
+            $generatedFiles['.env'] = LiveConfigGenerator::generateDotEnv($origDotEnv, $replacements);
+        }
+
+        // B) config/database.php Varsa Canlıya Özel Üret
+        $phpDbPaths = ["{$targetPath}/config/database.php", "{$targetPath}/Config/database.php"];
+        foreach ($phpDbPaths as $pdp) {
+            if (file_exists($pdp)) {
+                $relName = str_replace("{$targetPath}/", '', $pdp);
+                $origPhp = @file_get_contents($pdp) ?: '';
+                $generatedFiles[$relName] = LiveConfigGenerator::generatePhpConfig($origPhp, $dbConfig);
+            }
+        }
+
+        // C) wp-config.php Varsa Canlıya Özel Üret
+        if (file_exists("{$targetPath}/wp-config.php")) {
+            $origWp = @file_get_contents("{$targetPath}/wp-config.php") ?: '';
+            $generatedFiles['wp-config.php'] = LiveConfigGenerator::generateWpConfig($origWp, $dbConfig, $liveDomain);
+        } elseif (file_exists("{$targetPath}/wp-config-sample.php")) {
+            $origWp = @file_get_contents("{$targetPath}/wp-config-sample.php") ?: '';
+            $generatedFiles['wp-config.php'] = LiveConfigGenerator::generateWpConfig($origWp, $dbConfig, $liveDomain);
+        }
+
+        apiResponse([
+            'project_code'    => $proj->project_code,
+            'framework'       => $analysis['framework'],
+            'live_domain'     => $liveDomain,
+            'generated_files' => $generatedFiles,
+            'file_count'      => count($generatedFiles),
+            'local_intact'    => true
+        ], 'Canlıya özel izolasyonlu konfigürasyon dosyaları başarıyla üretildi.');
+    }
+
+    // 5.6 POST /api/projects/{id_or_code}/hosting/dump-schema - Yerel Şemayı Dışa Aktarma ve Domain Eşitleme (TSK-1083)
+    if ($param1 !== null && $param2 === 'hosting' && $param3 === 'dump-schema' && ($method === 'POST' || $method === 'GET')) {
+        $proj = resolveProject($db, $param1);
+        if (!$proj) apiError('Proje bulunamadı.', 404);
+
+        $liveDomain = trim($requestData['live_domain'] ?? ($requestData['domain'] ?? 'https://example.com'));
+        $dumpData = ($requestData['dump_data'] ?? true) == true;
+
+        // Yerel PDO bağlantısını al
+        $localPdo = $db->connect;
+        $sqlDump = LiveConfigGenerator::dumpDatabase($localPdo, ['dump_data' => $dumpData]);
+
+        // Domain değişimi
+        $oldDomain = 'http://localhost/taskmanager';
+        $transformedSql = LiveConfigGenerator::replaceDomainsInSql($sqlDump, $oldDomain, $liveDomain);
+
+        apiResponse([
+            'project_code' => $proj->project_code,
+            'sql_size'     => strlen($transformedSql),
+            'sql_preview'  => substr($transformedSql, 0, 1000) . '...',
+            'old_domain'   => $oldDomain,
+            'new_domain'   => $liveDomain,
+            'sql'          => $transformedSql
+        ], 'Yerel veritabanı şeması ve verileri canlı domain eşitlemesiyle başarıyla dışa aktarıldı.');
+    }
+
     // 6. DELETE /api/projects/{id_or_code} - Proje Sil / Arşivle
     if ($param1 !== null && $param2 === null && $method === 'DELETE') {
         if ($currentUser->role !== 'admin') {

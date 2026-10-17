@@ -3043,6 +3043,69 @@ switch ($action) {
         }
         break;
 
+    case 'generate_live_config':
+        $projectId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
+        $proj = null;
+        if ($projectId > 0) {
+            $proj = $db->row_query("SELECT * FROM projects WHERE id = ?", [$projectId]);
+        }
+        $targetPath = $proj->workspace_path ?? '';
+        if (empty($targetPath)) {
+            jsonResponse(false, 'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.');
+        }
+
+        $liveDomain = trim($_POST['live_domain'] ?? 'https://example.com');
+        $dbConfig = [
+            'host'     => $_POST['db_host'] ?? 'localhost',
+            'database' => $_POST['db_name'] ?? '',
+            'username' => $_POST['db_user'] ?? '',
+            'password' => $_POST['db_pass'] ?? '',
+            'port'     => (int)($_POST['db_port'] ?? 3306)
+        ];
+
+        $analysis = ProjectAnalyzer::analyze($targetPath, [
+            'live_domain' => $liveDomain,
+            'db_name'     => $dbConfig['database'],
+            'db_user'     => $dbConfig['username'],
+            'db_pass'     => $dbConfig['password']
+        ]);
+
+        $generatedFiles = [];
+        $replacements = [];
+        foreach (($analysis['live_payload']['replacements'] ?? []) as $k => $info) {
+            $replacements[$k] = $info['target_live'];
+        }
+
+        if (file_exists("{$targetPath}/.env")) {
+            $generatedFiles['.env'] = LiveConfigGenerator::generateDotEnv(@file_get_contents("{$targetPath}/.env") ?: '', $replacements);
+        }
+        if (file_exists("{$targetPath}/config/database.php")) {
+            $generatedFiles['config/database.php'] = LiveConfigGenerator::generatePhpConfig(@file_get_contents("{$targetPath}/config/database.php") ?: '', $dbConfig);
+        }
+
+        jsonResponse(true, 'Canlıya özel izolasyonlu konfigürasyon dosyaları başarıyla üretildi.', [
+            'generated_files' => $generatedFiles,
+            'file_count'      => count($generatedFiles),
+            'local_intact'    => true
+        ]);
+        break;
+
+    case 'dump_project_schema':
+        $liveDomain = trim($_POST['live_domain'] ?? 'https://example.com');
+        $dumpData = ($_POST['dump_data'] ?? true) == true;
+
+        $localPdo = $db->connect;
+        $sqlDump = LiveConfigGenerator::dumpDatabase($localPdo, ['dump_data' => $dumpData]);
+        $oldDomain = 'http://localhost/taskmanager';
+        $transformedSql = LiveConfigGenerator::replaceDomainsInSql($sqlDump, $oldDomain, $liveDomain);
+
+        jsonResponse(true, 'Yerel veritabanı şeması ve verileri canlı domain eşitlemesiyle başarıyla dışa aktarıldı.', [
+            'sql_size'    => strlen($transformedSql),
+            'sql_preview' => substr($transformedSql, 0, 1000) . '...',
+            'sql'         => $transformedSql
+        ]);
+        break;
+
     default:
         jsonResponse(false, 'Geçersiz AJAX işlemi.');
 }

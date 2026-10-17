@@ -524,5 +524,7 @@ return array (
   'hosting_panel_standard' => 'Standart / Paylaşımlı Hosting (Doğrudan Bağlantı)',
   'hosting_test_success' => 'Barındırma paneli bağlantısı başarıyla doğrulandı.',
   'hosting_provision_success' => 'Canlı veritabanı ve kullanıcısı başarıyla tahsis edildi.',
+  'deploy_config_generated' => 'Canlıya özel izolasyonlu konfigürasyon dosyaları başarıyla üretildi.',
+  'deploy_schema_dumped' => 'Yerel veritabanı şeması ve verileri canlı domain eşitlemesiyle başarıyla dışa aktarıldı.',
 );
 

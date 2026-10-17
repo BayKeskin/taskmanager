@@ -524,5 +524,7 @@ return array (
   'hosting_panel_standard' => 'Standard / Shared Hosting (Direct Connection)',
   'hosting_test_success' => 'Hosting panel connection verified successfully.',
   'hosting_provision_success' => 'Live database and user successfully provisioned.',
+  'deploy_config_generated' => 'Live isolated configuration files successfully generated.',
+  'deploy_schema_dumped' => 'Local database schema and data successfully exported with live domain synchronization.',
 );
 

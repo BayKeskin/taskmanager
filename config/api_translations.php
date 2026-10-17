@@ -100,6 +100,8 @@ return array (
     'Canlı veritabanı ve kullanıcısı başarıyla tahsis edildi.' => 'Live database and user successfully provisioned.',
     'Veritabanı tahsisi başarısız oldu.' => 'Database provisioning failed.',
     'Oluşturulacak veritabanı adı (db_name) zorunludur.' => 'Database name (db_name) to create is required.',
+    'Canlıya özel izolasyonlu konfigürasyon dosyaları başarıyla üretildi.' => 'Live isolated configuration files successfully generated.',
+    'Yerel veritabanı şeması ve verileri canlı domain eşitlemesiyle başarıyla dışa aktarıldı.' => 'Local database schema and data successfully exported with live domain synchronization.',
   ),
   'de' => 
   array (
@@ -199,5 +201,7 @@ return array (
     'Canlı veritabanı ve kullanıcısı başarıyla tahsis edildi.' => 'Live-Datenbank und Benutzer erfolgreich bereitgestellt.',
     'Veritabanı tahsisi başarısız oldu.' => 'Datenbank-Bereitstellung fehlgeschlagen.',
     'Oluşturulacak veritabanı adı (db_name) zorunludur.' => 'Zu erstellender Datenbankname (db_name) ist erforderlich.',
+    'Canlıya özel izolasyonlu konfigürasyon dosyaları başarıyla üretildi.' => 'Live-isolierte Konfigurationsdateien erfolgreich generiert.',
+    'Yerel veritabanı şeması ve verileri canlı domain eşitlemesiyle başarıyla dışa aktarıldı.' => 'Lokales Datenbankschema und Daten erfolgreich mit Live-Domain-Synchronisation exportiert.',
   ),
 );

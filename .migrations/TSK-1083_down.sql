@@ -1,0 +1,5 @@
+-- Rollback Migration for TSK-1083
+-- Task: [Deploy-3] Canlıya Özel İzolasyonlu Konfigürasyon ve Şema Kurulum Motoru
+-- Note: TSK-1083 introduced in-memory configuration generators (LiveConfigGenerator.php),
+-- schema dumper and domain replacement routines, along with API/AJAX endpoints.
+-- No persistent database table structure (DDL) was altered.
