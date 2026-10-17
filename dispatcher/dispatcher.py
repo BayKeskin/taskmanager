@@ -525,7 +525,35 @@ def process_webhook_async(payload, header_conv_id):
 
 
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path in ('/restart', '/shutdown'):
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "shutting_down"}).encode())
+            def _exit_later():
+                time.sleep(0.5)
+                os._exit(0)
+            threading.Thread(target=_exit_later, daemon=True).start()
+            return
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b"TaskManager Dispatcher OK")
+
     def do_POST(self):
+        if self.path in ('/restart', '/shutdown'):
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "shutting_down"}).encode())
+            def _exit_later():
+                time.sleep(0.5)
+                os._exit(0)
+            threading.Thread(target=_exit_later, daemon=True).start()
+            return
+
         if self.path != '/webhook':
             self.send_response(404)
             self.end_headers()
