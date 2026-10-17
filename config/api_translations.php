@@ -104,6 +104,9 @@ return array (
     'Yerel veritabanı şeması ve verileri canlı domain eşitlemesiyle başarıyla dışa aktarıldı.' => 'Local database schema and data successfully exported with live domain synchronization.',
     'Akıllı delta senkronizasyon dosya farkları ve şema göçleri başarıyla hesaplandı.' => 'Smart delta sync file differences and schema migrations successfully calculated.',
     'Proje dağıtımı ve delta senkronizasyon kaydı başarıyla tamamlandı.' => 'Project deployment and delta sync record completed successfully.',
+    'Canlı site sağlık kontrolü başarıyla doğrulandı.' => 'Live site healthcheck verified successfully.',
+    'Canlı dağıtım cerrahi olarak önceki stabil sürüme başarıyla geri alındı.' => 'Live deployment successfully rolled back surgically to the previous stable release.',
+    'Test edilecek canlı site URL adresi belirtilmedi.' => 'Live site URL to test was not specified.',
   ),
   'de' => 
   array (
@@ -207,5 +210,8 @@ return array (
     'Yerel veritabanı şeması ve verileri canlı domain eşitlemesiyle başarıyla dışa aktarıldı.' => 'Lokales Datenbankschema und Daten erfolgreich mit Live-Domain-Synchronisation exportiert.',
     'Akıllı delta senkronizasyon dosya farkları ve şema göçleri başarıyla hesaplandı.' => 'Intelligente Delta-Synchronisations-Dateidifferenzen und Schema-Migrationen erfolgreich berechnet.',
     'Proje dağıtımı ve delta senkronizasyon kaydı başarıyla tamamlandı.' => 'Projektbereitstellung und Delta-Synchronisationsdatensatz erfolgreich abgeschlossen.',
+    'Canlı site sağlık kontrolü başarıyla doğrulandı.' => 'Live-Website-Zustandsprüfung erfolgreich bestätigt.',
+    'Canlı dağıtım cerrahi olarak önceki stabil sürüme başarıyla geri alındı.' => 'Live-Bereitstellung chirurgisch erfolgreich auf die vorherige stabile Version zurückgesetzt.',
+    'Test edilecek canlı site URL adresi belirtilmedi.' => 'Zu testende Live-Website-URL wurde nicht angegeben.',
   ),
 );

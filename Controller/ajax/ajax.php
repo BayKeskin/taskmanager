@@ -3179,6 +3179,47 @@ switch ($action) {
         ]);
         break;
 
+    case 'live_healthcheck':
+        $liveUrl = trim($_POST['live_url'] ?? ($_GET['live_url'] ?? ''));
+        if (empty($liveUrl)) {
+            $projectId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
+            if ($projectId > 0) {
+                $lastDep = DeltaSyncEngine::getLastDeployment($projectId);
+                if ($lastDep && !empty($lastDep->details)) {
+                    $det = is_string($lastDep->details) ? json_decode($lastDep->details, true) : (array)$lastDep->details;
+                    $liveUrl = $det['live_domain'] ?? '';
+                }
+            }
+        }
+
+        if (empty($liveUrl)) {
+            jsonResponse(false, 'Test edilecek canlı site URL adresi belirtilmedi.');
+        }
+
+        $res = DeltaSyncEngine::performHealthcheck($liveUrl);
+        if (!empty($res['success'])) {
+            jsonResponse(true, 'Canlı site sağlık kontrolü başarıyla doğrulandı.', ['result' => $res]);
+        } else {
+            jsonResponse(false, $res['message'] ?? 'Canlı site sağlık kontrolü başarısız.', ['result' => $res]);
+        }
+        break;
+
+    case 'rollback_deployment':
+        $projectId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
+        $deploymentId = !empty($_POST['deployment_id']) ? (int)$_POST['deployment_id'] : null;
+
+        if ($projectId <= 0) {
+            jsonResponse(false, 'Geçerli bir proje ID belirtilmelidir.');
+        }
+
+        $res = DeltaSyncEngine::rollbackDeployment($projectId, $deploymentId, $db->connect);
+        if (!empty($res['success'])) {
+            jsonResponse(true, 'Canlı dağıtım cerrahi olarak önceki stabil sürüme başarıyla geri alındı.', ['result' => $res]);
+        } else {
+            jsonResponse(false, $res['message'] ?? 'Geri alma işlemi başarısız oldu.', ['result' => $res]);
+        }
+        break;
+
     default:
         jsonResponse(false, 'Geçersiz AJAX işlemi.');
 }

@@ -1168,6 +1168,48 @@ if ($resource === 'projects') {
         ], 'Proje dağıtımı ve delta senkronizasyon kaydı başarıyla tamamlandı.', 201);
     }
 
+    // 5.9 POST /api/projects/{id_or_code}/hosting/healthcheck - Canlı Dağıtım Sağlık Kontrolü (TSK-1085)
+    if ($param1 !== null && $param2 === 'hosting' && $param3 === 'healthcheck' && ($method === 'POST' || $method === 'GET')) {
+        $proj = resolveProject($db, $param1);
+        if (!$proj) apiError('Proje bulunamadı.', 404);
+
+        $liveUrl = trim($requestData['url'] ?? ($requestData['live_domain'] ?? ''));
+        if (empty($liveUrl)) {
+            // Projeden veya son deployment'tan bulmaya çalış
+            $lastDep = DeltaSyncEngine::getLastDeployment((int)$proj->id);
+            if ($lastDep && !empty($lastDep->details)) {
+                $det = is_string($lastDep->details) ? json_decode($lastDep->details, true) : (array)$lastDep->details;
+                $liveUrl = $det['live_domain'] ?? '';
+            }
+        }
+
+        if (empty($liveUrl)) {
+            apiError('Test edilecek canlı site URL adresi belirtilmedi.', 400);
+        }
+
+        $res = DeltaSyncEngine::performHealthcheck($liveUrl);
+        if (!empty($res['success'])) {
+            apiResponse($res, 'Canlı site sağlık kontrolü başarıyla doğrulandı.');
+        } else {
+            apiError($res['message'] ?? 'Canlı site sağlık kontrolü başarısız.', 502, $res);
+        }
+    }
+
+    // 5.10 POST /api/projects/{id_or_code}/hosting/rollback - Canlıyı Cerrahi Geri Alma (TSK-1085)
+    if ($param1 !== null && $param2 === 'hosting' && $param3 === 'rollback' && $method === 'POST') {
+        $proj = resolveProject($db, $param1);
+        if (!$proj) apiError('Proje bulunamadı.', 404);
+
+        $deploymentId = !empty($requestData['deployment_id']) ? (int)$requestData['deployment_id'] : null;
+        $res = DeltaSyncEngine::rollbackDeployment((int)$proj->id, $deploymentId, $db->connect);
+
+        if (!empty($res['success'])) {
+            apiResponse($res, 'Canlı dağıtım cerrahi olarak önceki stabil sürüme başarıyla geri alındı.');
+        } else {
+            apiError($res['message'] ?? 'Geri alma işlemi başarısız oldu.', 400, $res);
+        }
+    }
+
     // 6. DELETE /api/projects/{id_or_code} - Proje Sil / Arşivle
     if ($param1 !== null && $param2 === null && $method === 'DELETE') {
         if ($currentUser->role !== 'admin') {

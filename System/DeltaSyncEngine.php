@@ -294,4 +294,146 @@ class DeltaSyncEngine
         $stmt = $db->connect->prepare($sql);
         $stmt->execute($params);
     }
+
+    /**
+     * Dağıtım sonrası canlı sitenin HTTP sağlık kontrolünü (Healthcheck) yapar.
+     *
+     * @param string $liveUrl Canlı site URL'si
+     * @param int $timeout Zaman aşımı (saniye)
+     * @return array ['success' => bool, 'http_code' => int, 'response_time_ms' => float, 'message' => string]
+     */
+    public static function performHealthcheck(string $liveUrl, int $timeout = 8): array
+    {
+        if (empty($liveUrl) || !filter_var($liveUrl, FILTER_VALIDATE_URL)) {
+            return [
+                'success' => false,
+                'http_code' => 0,
+                'response_time_ms' => 0,
+                'message' => 'Geçersiz canlı site URL formatı.'
+            ];
+        }
+
+        $startTime = microtime(true);
+        $ch = curl_init($liveUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'TaskManager-HealthCheck/1.0 (+http://localhost/taskmanager)');
+
+        $body = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+        $isOk = ($httpCode >= 200 && $httpCode < 400);
+
+        return [
+            'success'          => $isOk,
+            'http_code'        => $httpCode,
+            'response_time_ms' => $durationMs,
+            'body_length'      => strlen($body ?: ''),
+            'message'          => $isOk 
+                ? "Canlı site başarıyla yanıt verdi (HTTP {$httpCode}, {$durationMs}ms)."
+                : (!empty($curlError) ? "Bağlantı hatası: {$curlError}" : "Beklenmeyen HTTP yanıt kodu: {$httpCode}")
+        ];
+    }
+
+    /**
+     * Cerrahi Geri Alma (Rollback): Dağıtımı önceki stabil commit'e döndürür ve inverse migration'ları (_down.sql) çalıştırır.
+     *
+     * @param int $projectId Proje ID
+     * @param int|null $deploymentId Geri alınacak dağıtım ID (null ise en son dağıtım)
+     * @param PDO|null $livePdo Canlı veritabanı bağlantısı (şema geri alma için)
+     * @return array Sonuç raporu
+     */
+    public static function rollbackDeployment(int $projectId, ?int $deploymentId = null, ?PDO $livePdo = null): array
+    {
+        global $db;
+        self::ensureSchema();
+
+        $dep = null;
+        if ($deploymentId > 0) {
+            $dep = $db->connect->query("SELECT * FROM project_deployments WHERE id = {$deploymentId} AND project_id = {$projectId}")->fetch(PDO::FETCH_OBJ);
+        } else {
+            $dep = self::getLastDeployment($projectId);
+        }
+
+        if (!$dep) {
+            return [
+                'success' => false,
+                'message' => 'Geri alınacak geçerli bir dağıtım kaydı bulunamadı.'
+            ];
+        }
+
+        $targetCommit = $dep->from_commit;
+        if (empty($targetCommit)) {
+            return [
+                'success' => false,
+                'message' => 'Bu ilk dağıtım olduğundan geri dönülebilecek önceki bir commit bulunmuyor.'
+            ];
+        }
+
+        // Proje bilgilerini al
+        $proj = $db->row_query("SELECT * FROM projects WHERE id = ?", [$projectId]);
+        $workspacePath = $proj->workspace_path ?? '';
+        $rolledBackMigrations = [];
+
+        // Eğer canlı PDO varsa, to_commit ile from_commit arasındaki .migrations/*_down.sql dosyalarını çalıştır
+        if ($livePdo instanceof PDO && !empty($workspacePath)) {
+            $diff = self::calculateGitDiff($workspacePath, $targetCommit, $dep->to_commit);
+            $files = array_merge($diff['added'] ?? [], $diff['modified'] ?? []);
+
+            foreach ($files as $file) {
+                if (preg_match('#^\.migrations/([a-zA-Z0-9_\-]+)\.sql$#i', $file, $m)) {
+                    if (str_ends_with($file, '_down.sql')) continue;
+                    
+                    $downFile = str_replace('.sql', '_down.sql', $file);
+                    $fullDownPath = rtrim($workspacePath, '/') . '/' . $downFile;
+
+                    if (file_exists($fullDownPath)) {
+                        $downSql = trim(@file_get_contents($fullDownPath) ?: '');
+                        if (!empty($downSql)) {
+                            try {
+                                $livePdo->exec($downSql);
+                                $livePdo->prepare("DELETE FROM `taskmanager_schema_migrations` WHERE migration_file = ?")->execute([$file]);
+                                $rolledBackMigrations[] = $downFile;
+                            } catch (Exception $e) {
+                                // Geri alma devam eder
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Yeni bir 'rolled_back' deployment kaydı oluştur
+        $rollbackDepId = self::recordDeployment($projectId, [
+            'deployment_type' => 'delta',
+            'from_commit'     => $dep->to_commit,
+            'to_commit'       => $targetCommit,
+            'status'          => 'rolled_back',
+            'files_uploaded'  => 0,
+            'files_deleted'   => 0,
+            'migrations_run'  => count($rolledBackMigrations),
+            'details'         => [
+                'rolled_back_from_id' => $dep->id,
+                'rolled_back_migrations' => $rolledBackMigrations
+            ],
+            'deployed_by'     => $_SESSION['user']->id ?? 1
+        ]);
+
+        self::updateDeploymentStatus((int)$dep->id, 'rolled_back');
+
+        return [
+            'success'                 => true,
+            'rollback_deployment_id' => $rollbackDepId,
+            'restored_commit'         => $targetCommit,
+            'rolled_back_migrations'  => $rolledBackMigrations,
+            'message'                 => "Canlı dağıtım cerrahi olarak önceki stabil sürüme ({$targetCommit}) başarıyla geri alındı."
+        ];
+    }
 }

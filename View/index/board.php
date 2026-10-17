@@ -69,9 +69,11 @@ foreach ($allTasks as $t) {
             <button type="button" class="cu-btn-sm" onclick="openGithubSettingsModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); color:var(--text-white); font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.modal_github_title', 'GitHub Otomasyon & Hesap Ayarları')) ?>">
                 <span>🐙</span> <span><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : __('app.btn_connect_github', 'GitHub Bağla') ?></span>
             </button>
-            <?php if (!empty($activeProjectId)): ?>
                 <button type="button" class="cu-btn-sm" onclick="syncProjectToGithub(<?= (int)$activeProjectId ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(46,160,67,0.15); border:1px solid rgba(46,160,67,0.4); color:#3fb950; font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.btn_sync_github', 'Bu Projeyi GitHub ile Eşitle')) ?>">
-                    <span>🚀</span> <span><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
+                    <span>🐙</span> <span><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
+                </button>
+                <button type="button" id="btnOpenDeployWizard" class="cu-btn-sm" onclick="openDeployWizard(<?= (int)$activeProjectId ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(0,184,148,0.2), rgba(9,132,227,0.25)); border:1px solid rgba(0,184,148,0.5); color:#00cec9; font-weight:700; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box; box-shadow:0 2px 8px rgba(0,184,148,0.2);" title="<?= htmlspecialchars(__('app.deploy_wizard_desc')) ?>">
+                    <span>🚀</span> <span><?= __('app.deploy_btn_wizard') ?></span>
                 </button>
                 <button type="button" id="btnOpenProjectMcp" class="cu-btn-sm" onclick="openProjectMcpModal(<?= (int)$activeProjectId ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(230,126,34,0.15), rgba(243,156,18,0.25)); border:1px solid rgba(243,156,18,0.45); color:#f39c12; font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.mcp_marketplace_desc')) ?>">
                     <span>🧩</span> <span><?= __('app.mcp_btn_open') ?></span>
