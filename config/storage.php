@@ -60,11 +60,13 @@ return [
     'allowed_extensions' => [
         'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp',
         'pdf', 'txt', 'md', 'csv', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-        'zip', 'rar', '7z', 'tar', 'gz'
+        'zip', 'rar', '7z', 'tar', 'gz',
+        // Kaynak Kod & Yazılım Dosyaları (Ajan İncelemesi İçin Güvenli Saklanır)
+        'php', 'js', 'css', 'html', 'sql', 'py', 'json', 'ts', 'jsx', 'tsx', 'vue', 'xml', 'yaml', 'yml'
     ],
 
     'disallowed_extensions' => [
-        'php', 'php3', 'php4', 'php5', 'phtml', 'phar',
-        'exe', 'sh', 'bat', 'cmd', 'bin', 'js', 'vbs', 'scr', 'cgi', 'pl', 'msi', 'com'
+        'phtml', 'phar',
+        'exe', 'sh', 'bat', 'cmd', 'bin', 'vbs', 'scr', 'cgi', 'pl', 'msi', 'com'
     ]
 ];

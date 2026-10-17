@@ -85,17 +85,22 @@ class Storage
         $origName = basename($file['name']);
         $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
 
-        // 2. Dangerous Extension Check
-        $disallowed = $config['disallowed_extensions'] ?? ['php', 'phtml', 'phar', 'exe', 'sh', 'bat', 'cmd', 'js'];
+        // 2. Dangerous Executable Binary Check (Binary executables that must never be uploaded)
+        $disallowed = $config['disallowed_extensions'] ?? ['phtml', 'phar', 'exe', 'sh', 'bat', 'cmd', 'bin', 'vbs', 'scr', 'cgi', 'pl', 'msi', 'com'];
         if (in_array($ext, $disallowed, true)) {
             $msg = $isTr 
-                ? "Güvenlik uyarısı: '{$ext}' uzantılı dosyalar yüklenemez." 
-                : "Security warning: '{$ext}' files cannot be uploaded.";
+                ? "Güvenlik uyarısı: '{$ext}' uzantılı çalıştırılabilir dosyalar yüklenemez." 
+                : "Security warning: '{$ext}' executable files cannot be uploaded.";
             return ['valid' => false, 'error' => $msg];
         }
 
-        // 3. Allowed Extension Check
+        // 3. Allowed Extension Check (Includes source code: php, js, html, css, sql, py, json, etc.)
+        $codeExtensions = ['php', 'js', 'css', 'html', 'sql', 'py', 'json', 'ts', 'jsx', 'tsx', 'vue', 'xml', 'yaml', 'yml'];
         $allowedExts = $config['allowed_extensions'] ?? [];
+        if (!empty($allowedExts)) {
+            $allowedExts = array_values(array_unique(array_merge($allowedExts, $codeExtensions)));
+        }
+
         if (!empty($allowedExts) && !in_array($ext, $allowedExts, true)) {
             $msg = $isTr 
                 ? ("Desteklenmeyen dosya türü. İzin verilenler: " . implode(', ', array_slice($allowedExts, 0, 10)) . "...") 
@@ -118,20 +123,15 @@ class Storage
             $mime = mime_content_type($file['tmp_name']) ?: $mime;
         }
 
-        // PHP script content detection
-        if (str_contains($mime, 'php') || str_contains($mime, 'x-httpd-php')) {
-            $msg = $isTr 
-                ? 'Güvenlik uyarısı: Çalıştırılabilir betik tespit edildi.' 
-                : 'Security warning: Executable script detected.';
-            return ['valid' => false, 'error' => $msg];
-        }
+        $isCodeFile = in_array($ext, $codeExtensions, true);
 
         return [
-            'valid'     => true,
-            'orig_name' => $origName,
-            'ext'       => $ext,
-            'mime'      => $mime,
-            'size'      => (int)$file['size']
+            'valid'        => true,
+            'orig_name'    => $origName,
+            'ext'          => $ext,
+            'is_code_file' => $isCodeFile,
+            'mime'         => $mime,
+            'size'         => (int)$file['size']
         ];
     }
 
@@ -153,7 +153,11 @@ class Storage
         $diskCfg = $config['disks'][$diskName] ?? $config['disks']['local'];
 
         // Benzersiz ve güvenli dosya adı üretimi
-        $safeName = $subfolder . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $val['ext'];
+        // PHP ve web ortamında çalıştırılabilir betikler diskte .safe uzantısıyla saklanır (güvenlik)
+        $diskExt = in_array($val['ext'], ['php', 'phtml', 'phar', 'js', 'html', 'htm', 'cgi'], true) 
+            ? $val['ext'] . '.safe' 
+            : $val['ext'];
+        $safeName = $subfolder . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $diskExt;
 
         if ($diskCfg['driver'] === 's3' && !empty($diskCfg['key']) && !empty($diskCfg['bucket'])) {
             // S3 / Cloudflare R2 Bulut Yükleme
