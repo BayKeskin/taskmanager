@@ -200,7 +200,7 @@ $canUseAiTasks = ($currentUser && $currentUser->role === 'admin') || ($currentUs
                     </div>
 
                     <!-- Gizli File Input -->
-                    <input type="file" id="modalNewTaskFileInput" name="attachments[]" multiple accept="image/*,.pdf,.zip" style="display:none;" onchange="handleModalNewTaskFiles(this.files)">
+                    <input type="file" id="modalNewTaskFileInput" name="attachments[]" multiple accept="image/*,.pdf,.zip,.rar,.7z,.txt,.docx,.xlsx,.sql,.php,.js,.html,.css,.json" style="display:none;" onchange="handleModalNewTaskFiles(this.files)">
 
                     <!-- Dropzone Alanı -->
                     <div id="modalNewTaskDropzone"

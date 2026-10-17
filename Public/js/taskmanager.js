@@ -666,6 +666,11 @@ function handleAiArchitectFiles(files) {
     renderAiArchitectFiles();
     const fileInput = document.getElementById('aiArchitectFileInput');
     if (fileInput) fileInput.value = '';
+
+    // Eklenen dosyaları/görselleri otomatik olarak görevin ana eklerine de dahil et
+    if (typeof handleModalNewTaskFiles === 'function') {
+        handleModalNewTaskFiles(files);
+    }
 }
 
 function removeAiArchitectFile(index) {
@@ -825,7 +830,12 @@ let modalNewTaskFiles = [];
 function handleModalNewTaskFiles(files) {
     if (!files || files.length === 0) return;
     for (let i = 0; i < files.length; i++) {
-        modalNewTaskFiles.push(files[i]);
+        const file = files[i];
+        // Aynı isim ve boyuttaki dosyaların mükerrer eklenmesini önle
+        const alreadyExists = modalNewTaskFiles.some(f => f.name === file.name && f.size === file.size);
+        if (!alreadyExists) {
+            modalNewTaskFiles.push(file);
+        }
     }
     renderModalNewTaskFiles();
     const fileInput = document.getElementById('modalNewTaskFileInput');
@@ -910,8 +920,17 @@ async function handleCreateTask(e) {
     const formData = new FormData(form);
 
     // Seçilen veya panodan yapıştırılan tüm dosyaları formData'ya ekle
-    if (modalNewTaskFiles && modalNewTaskFiles.length > 0) {
-        modalNewTaskFiles.forEach(file => {
+    const allFilesToUpload = [...modalNewTaskFiles];
+    if (typeof aiArchitectFiles !== 'undefined' && aiArchitectFiles.length > 0) {
+        aiArchitectFiles.forEach(f => {
+            if (!allFilesToUpload.some(existing => existing.name === f.name && existing.size === f.size)) {
+                allFilesToUpload.push(f);
+            }
+        });
+    }
+
+    if (allFilesToUpload.length > 0) {
+        allFilesToUpload.forEach(file => {
             formData.append('attachments[]', file);
         });
     }
