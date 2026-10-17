@@ -53,48 +53,101 @@ foreach ($allTasks as $t) {
         <span style="font-weight:700; font-size:14px; color:var(--text-white);"><?= $isClient ? __('tasks.view_client_portal', 'Müşteri Portalı (Panom)') : __('tasks.view_board', 'Kanban Board') ?></span>
     </div>
 
-    <div class="cu-filter-bar">
+    <div class="cu-filter-bar" style="display:flex; align-items:center; gap:8px;">
         <?php if ($canCreateTask && !$isClient): ?>
             <button type="button" class="cu-btn-sm" onclick="openAiArchitectModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, #7B68EE, #e056fd); border:none; color:#ffffff; font-weight:700; padding:0 14px; font-size:12px; border-radius:6px; cursor:pointer; box-shadow:0 4px 12px rgba(123,104,238,0.35); box-sizing:border-box;" title="<?= htmlspecialchars(__('app.tooltip_ai_architect')) ?>">
                 <span>🪄</span> <span><?= __('app.btn_ai_architect') ?></span>
             </button>
         <?php endif; ?>
-        <button type="button" class="cu-btn-sm" onclick="downloadDeliveryReportPdf(<?= (int)($activeProjectId ?? 0) ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(0,184,148,0.2), rgba(9,132,227,0.25)); border:1px solid rgba(0,184,148,0.5); color:#00cec9; font-weight:700; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box; box-shadow:0 2px 8px rgba(0,184,148,0.2);" title="<?= htmlspecialchars(__('tasks.tooltip_pdf_report', 'Tamamlanan işlerin efor, maliyet ve hakediş PDF dökümünü al')) ?>">
-            <span>📄</span> <span><?= __('tasks.btn_pdf_report', 'PDF Hakediş Raporu') ?></span>
-        </button>
-        <button type="button" class="cu-btn-sm" onclick="openAiStandupModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(123,104,238,0.2), rgba(0,184,148,0.2)); border:1px solid rgba(123,104,238,0.4); color:var(--text-white); font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('tasks.tooltip_ai_standup', 'Son 24 saatin LLM özetini ve standup bültenini görüntüle')) ?>">
-            <span>🤖</span> <span><?= __('tasks.btn_ai_standup', 'AI Standup Özeti') ?></span>
-        </button>
-        <?php if (!$isClient): 
-            Helper::ensureGithubAndRollbackSchema();
-            $ghCreds = Helper::getGithubCredentials();
-        ?>
-            <button type="button" class="cu-btn-sm" onclick="openGithubSettingsModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); color:var(--text-white); font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.modal_github_title', 'GitHub Otomasyon & Hesap Ayarları')) ?>">
-                <span>🐙</span> <span><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : __('app.btn_connect_github', 'GitHub Bağla') ?></span>
+
+        <!-- 🛠️ ARAÇLAR (TOOLS) DROPDOWN -->
+        <div class="cu-tools-dropdown-wrap" style="position:relative; display:inline-block;">
+            <button type="button" id="btnKanbanTools" class="cu-btn-sm" onclick="toggleKanbanToolsDropdown(event)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:var(--text-white); font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box; transition:all 0.2s ease;" title="<?= htmlspecialchars(__('app.kanban_tools_desc', 'Raporlama, DevOps, Dağıtım ve Dışa Aktarma Araçları')) ?>">
+                <span>🛠️</span>
+                <span><?= __('app.kanban_tools', 'Araçlar') ?></span>
+                <span style="font-size:10px; opacity:0.7; margin-left:2px;">▼</span>
             </button>
-            <?php if (!empty($activeProjectId)): ?>
-                <button type="button" class="cu-btn-sm" onclick="syncProjectToGithub(<?= (int)$activeProjectId ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(46,160,67,0.15); border:1px solid rgba(46,160,67,0.4); color:#3fb950; font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.btn_sync_github', 'Bu Projeyi GitHub ile Eşitle')) ?>">
-                    <span>🐙</span> <span><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
+            <div id="kanbanToolsMenu" style="display:none; position:absolute; top:calc(100% + 6px); right:0; min-width:230px; background:var(--bg-card, #1e1e2d); border:1px solid var(--border-subtle, rgba(255,255,255,0.12)); border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.45); padding:6px; z-index:1050; backdrop-filter:blur(10px);">
+                <!-- PDF Hakediş Raporu -->
+                <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); downloadDeliveryReportPdf(<?= (int)($activeProjectId ?? 0) ?>);" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:var(--text-white); font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(0,184,148,0.12)'" onmouseout="this.style.background='transparent'">
+                    <span style="font-size:15px;">📄</span>
+                    <div style="display:flex; flex-direction:column;">
+                        <span><?= __('tasks.btn_pdf_report', 'PDF Hakediş Raporu') ?></span>
+                        <span style="font-size:10px; color:var(--text-muted);"><?= __('tasks.tooltip_pdf_report', 'Tamamlanan işlerin PDF dökümü') ?></span>
+                    </div>
                 </button>
-                <button type="button" id="btnOpenDeployWizard" class="cu-btn-sm" onclick="openDeployWizard(<?= (int)$activeProjectId ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(0,184,148,0.2), rgba(9,132,227,0.25)); border:1px solid rgba(0,184,148,0.5); color:#00cec9; font-weight:700; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box; box-shadow:0 2px 8px rgba(0,184,148,0.2);" title="<?= htmlspecialchars(__('app.deploy_wizard_desc')) ?>">
-                    <span>🚀</span> <span><?= __('app.deploy_btn_wizard') ?></span>
+
+                <!-- AI Standup Özeti -->
+                <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openAiStandupModal();" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:var(--text-white); font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(123,104,238,0.12)'" onmouseout="this.style.background='transparent'">
+                    <span style="font-size:15px;">🤖</span>
+                    <div style="display:flex; flex-direction:column;">
+                        <span><?= __('tasks.btn_ai_standup', 'AI Standup Özeti') ?></span>
+                        <span style="font-size:10px; color:var(--text-muted);"><?= __('tasks.tooltip_ai_standup', 'Son 24 saatin standup bülteni') ?></span>
+                    </div>
                 </button>
-                <button type="button" id="btnOpenProjectMcp" class="cu-btn-sm" onclick="openProjectMcpModal(<?= (int)$activeProjectId ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(230,126,34,0.15), rgba(243,156,18,0.25)); border:1px solid rgba(243,156,18,0.45); color:#f39c12; font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.mcp_marketplace_desc')) ?>">
-                    <span>🧩</span> <span><?= __('app.mcp_btn_open') ?></span>
-                </button>
-            <?php endif; ?>
-        <?php endif; ?>
-        <?php if (!empty($activeProjectId)): ?>
-            <a href="/taskmanager/kanban/export-excel?project_id=<?= (int)$activeProjectId ?>" 
-               id="btnExportExcel" 
-               class="cu-btn-sm" 
-               title="<?= htmlspecialchars(__('app.kanban_export_excel', 'Excel\'e Aktar')) ?>"
-               target="_blank"
-               style="height:32px; display:inline-flex; align-items:center; gap:8px; background:#107C41; border:1px solid #0E6B37; color:#FFFFFF; font-weight:600; padding:0 14px; font-size:12px; border-radius:6px; cursor:pointer; text-decoration:none; box-sizing:border-box; box-shadow:0 1px 3px rgba(0,0,0,0.2); transition:all 0.2s ease-in-out;">
-                <span style="font-size:13px;">📊</span>
-                <span><?= __('app.kanban_export_excel', 'Excel\'e Aktar') ?></span>
-            </a>
-        <?php endif; ?>
+
+                <?php if (!empty($activeProjectId)): ?>
+                    <!-- Excel'e Aktar -->
+                    <a href="/taskmanager/kanban/export-excel?project_id=<?= (int)$activeProjectId ?>" 
+                       id="btnExportExcel" 
+                       onclick="closeKanbanToolsDropdown()" 
+                       target="_blank"
+                       style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:#2ecc71; font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; text-decoration:none; box-sizing:border-box; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(46,204,113,0.12)'" onmouseout="this.style.background='transparent'">
+                        <span style="font-size:15px;">📊</span>
+                        <div style="display:flex; flex-direction:column;">
+                            <span><?= __('app.kanban_export_excel', 'Excel\'e Aktar') ?></span>
+                            <span style="font-size:10px; color:var(--text-muted);"><?= __('app.export_excel_desc', 'Görevleri UTF-8 Excel formatında indir') ?></span>
+                        </div>
+                    </a>
+                <?php endif; ?>
+
+                <?php if (!$isClient): 
+                    Helper::ensureGithubAndRollbackSchema();
+                    $ghCreds = Helper::getGithubCredentials();
+                ?>
+                    <div style="height:1px; background:var(--border-subtle, rgba(255,255,255,0.08)); margin:4px 0;"></div>
+
+                    <!-- GitHub Ayarları -->
+                    <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openGithubSettingsModal();" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:var(--text-white); font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='transparent'">
+                        <span style="font-size:15px;">🐙</span>
+                        <div style="display:flex; flex-direction:column;">
+                            <span><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : __('app.btn_connect_github', 'GitHub Bağla') ?></span>
+                            <span style="font-size:10px; color:var(--text-muted);"><?= __('app.modal_github_title', 'GitHub Hesap & DevOps') ?></span>
+                        </div>
+                    </button>
+
+                    <?php if (!empty($activeProjectId)): ?>
+                        <!-- GitHub Sync -->
+                        <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); syncProjectToGithub(<?= (int)$activeProjectId ?>);" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:#3fb950; font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(46,160,67,0.12)'" onmouseout="this.style.background='transparent'">
+                            <span style="font-size:15px;">🔄</span>
+                            <div style="display:flex; flex-direction:column;">
+                                <span><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
+                                <span style="font-size:10px; color:var(--text-muted);"><?= __('app.tooltip_sync_github', 'Projeyi GitHub ile eşitle') ?></span>
+                            </div>
+                        </button>
+
+                        <!-- Canlı Dağıtım (Deploy Wizard) -->
+                        <button type="button" id="btnOpenDeployWizard" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openDeployWizard(<?= (int)$activeProjectId ?>);" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:#00cec9; font-size:12.5px; font-weight:600; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(0,184,148,0.12)'" onmouseout="this.style.background='transparent'">
+                            <span style="font-size:15px;">🚀</span>
+                            <div style="display:flex; flex-direction:column;">
+                                <span><?= __('app.deploy_btn_wizard', 'Canlı Dağıtım') ?></span>
+                                <span style="font-size:10px; color:var(--text-muted);"><?= __('app.deploy_wizard_desc', 'Hosting & Canlı Yayın') ?></span>
+                            </div>
+                        </button>
+
+                        <!-- MCP Tools -->
+                        <button type="button" id="btnOpenProjectMcp" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openProjectMcpModal(<?= (int)$activeProjectId ?>);" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:#f39c12; font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(243,156,18,0.12)'" onmouseout="this.style.background='transparent'">
+                            <span style="font-size:15px;">🧩</span>
+                            <div style="display:flex; flex-direction:column;">
+                                <span><?= __('app.mcp_btn_open', 'MCP Tools') ?></span>
+                                <span style="font-size:10px; color:var(--text-muted);"><?= __('app.mcp_marketplace_desc', 'Antigravity Araçları') ?></span>
+                            </div>
+                        </button>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <?php if ($canCreateTask): ?>
             <button type="button" class="cu-btn-quick-task" onclick="openNewTaskModal()" style="height:32px; padding:0 14px; font-size:12.5px; display:inline-flex; align-items:center; gap:6px; box-sizing:border-box;">
                 <span>➕</span> <?= __('tasks.btn_add_task', 'Görev Ekle') ?>
@@ -102,6 +155,28 @@ foreach ($allTasks as $t) {
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+function toggleKanbanToolsDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('kanbanToolsMenu');
+    if (!menu) return;
+    const isVisible = (menu.style.display === 'block');
+    menu.style.display = isVisible ? 'none' : 'block';
+}
+
+function closeKanbanToolsDropdown() {
+    const menu = document.getElementById('kanbanToolsMenu');
+    if (menu) menu.style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+    const dropdownWrap = document.querySelector('.cu-tools-dropdown-wrap');
+    if (dropdownWrap && !dropdownWrap.contains(e.target)) {
+        closeKanbanToolsDropdown();
+    }
+});
+</script>
 
 <!-- TaskManager YAN YANA FİLTRE & SIRALAMA TOOLBAR'I -->
 <?php include __DIR__ . '/../../Components/filter_toolbar.php'; ?>

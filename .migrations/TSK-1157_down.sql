@@ -1,0 +1,2 @@
+-- Rollback script for TSK-1157: Araç çubuğunun araçlar altında toplanması
+-- No database schema changes were made in this task.

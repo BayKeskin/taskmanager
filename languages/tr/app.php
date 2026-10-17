@@ -558,6 +558,12 @@ return array (
   'export_unassigned' => 'Atanmamış',
   'export_no_date' => 'Belirtilmedi',
   'invalid_project' => 'Geçersiz proje seçimi.',
+
+  // Kanban Toolbar Dropdown (TSK-1157)
+  'kanban_tools' => 'Araçlar',
+  'kanban_tools_desc' => 'Raporlama, DevOps, Dağıtım ve Dışa Aktarma Araçları',
+  'export_excel_desc' => 'Görevleri UTF-8 Excel formatında indir',
+  'tooltip_sync_github' => 'Projeyi GitHub ile eşitle',
 );
 
 

@@ -558,6 +558,12 @@ return array (
   'export_unassigned' => 'Unassigned',
   'export_no_date' => 'Not Specified',
   'invalid_project' => 'Invalid project selected.',
+
+  // Kanban Toolbar Dropdown (TSK-1157)
+  'kanban_tools' => 'Tools',
+  'kanban_tools_desc' => 'Reporting, DevOps, Deployment, and Export Tools',
+  'export_excel_desc' => 'Download tasks in UTF-8 Excel format',
+  'tooltip_sync_github' => 'Sync project with GitHub repository',
 );
 
 
