@@ -239,9 +239,15 @@ function openModal(id) {
 function closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.classList.remove('active');
+    if (id === 'modalNewTask') {
+        modalNewTaskFiles = [];
+        if (typeof renderModalNewTaskFiles === 'function') renderModalNewTaskFiles();
+    }
 }
 
 function openNewTaskModal() { 
+    modalNewTaskFiles = [];
+    if (typeof renderModalNewTaskFiles === 'function') renderModalNewTaskFiles();
     initModalAssignees();
     const urlParams = new URLSearchParams(window.location.search);
     const curProjId = urlParams.get('project_id');
@@ -626,11 +632,102 @@ function triggerSubmitTaskModal(taskId) {
     openModal('modalSubmitTask');
 }
 
+// Modal Yeni Görev Dosya & Ek Yönetimi
+let modalNewTaskFiles = [];
+
+function handleModalNewTaskFiles(files) {
+    if (!files || files.length === 0) return;
+    for (let i = 0; i < files.length; i++) {
+        modalNewTaskFiles.push(files[i]);
+    }
+    renderModalNewTaskFiles();
+    const fileInput = document.getElementById('modalNewTaskFileInput');
+    if (fileInput) fileInput.value = '';
+}
+
+function removeModalNewTaskFile(index) {
+    if (index >= 0 && index < modalNewTaskFiles.length) {
+        modalNewTaskFiles.splice(index, 1);
+        renderModalNewTaskFiles();
+    }
+}
+
+function renderModalNewTaskFiles() {
+    const previewContainer = document.getElementById('modalNewTaskFilesPreview');
+    if (!previewContainer) return;
+    previewContainer.innerHTML = '';
+
+    modalNewTaskFiles.forEach((file, idx) => {
+        const item = document.createElement('div');
+        item.style.cssText = 'position:relative; display:flex; align-items:center; gap:6px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:4px 8px; font-size:11px; max-width:180px;';
+
+        const isImage = file.type.startsWith('image/');
+        const iconSpan = document.createElement('span');
+        iconSpan.innerText = isImage ? '🖼️' : '📄';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; color:var(--text-white); font-weight:500;';
+        nameSpan.innerText = file.name;
+        nameSpan.title = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.innerHTML = '✕';
+        delBtn.style.cssText = 'background:none; border:none; color:#ff4757; cursor:pointer; font-size:11px; font-weight:700; padding:0 2px;';
+        delBtn.title = 'Kaldır';
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            removeModalNewTaskFile(idx);
+        };
+
+        item.appendChild(iconSpan);
+        item.appendChild(nameSpan);
+        item.appendChild(delBtn);
+        previewContainer.appendChild(item);
+    });
+}
+
+function handleModalNewTaskDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dz = document.getElementById('modalNewTaskDropzone');
+    if (dz) {
+        dz.style.borderColor = 'var(--brand-primary)';
+        dz.style.background = 'rgba(123, 104, 238, 0.08)';
+    }
+}
+
+function handleModalNewTaskDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dz = document.getElementById('modalNewTaskDropzone');
+    if (dz) {
+        dz.style.borderColor = 'var(--border-subtle)';
+        dz.style.background = 'rgba(255,255,255,0.02)';
+    }
+}
+
+function handleModalNewTaskDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    handleModalNewTaskDragLeave(e);
+    if (e.dataTransfer && e.dataTransfer.files) {
+        handleModalNewTaskFiles(e.dataTransfer.files);
+    }
+}
+
 // Form Submit Handlers
 async function handleCreateTask(e) {
     e.preventDefault();
     const form = e.target;
     const formData = new FormData(form);
+
+    // Seçilen veya panodan yapıştırılan tüm dosyaları formData'ya ekle
+    if (modalNewTaskFiles && modalNewTaskFiles.length > 0) {
+        modalNewTaskFiles.forEach(file => {
+            formData.append('attachments[]', file);
+        });
+    }
 
     try {
         const res = await fetch('/taskmanager/ajax?action=create_task', {
@@ -640,6 +737,8 @@ async function handleCreateTask(e) {
         const result = await res.json();
         if (result.success) {
             showToast('Görev başarıyla oluşturuldu!', 'success');
+            modalNewTaskFiles = [];
+            renderModalNewTaskFiles();
             closeModal('modalNewTask');
             setTimeout(() => window.location.reload(), 700);
         } else {
@@ -2881,6 +2980,16 @@ window.addEventListener('paste', async (e) => {
         }
     }
     if (!imageBlob) return;
+
+    // 0. Yeni Görev Oluşturma Modalı Açıksa (modalNewTask)
+    const modalNewTask = document.getElementById('modalNewTask');
+    if (modalNewTask && modalNewTask.classList.contains('active')) {
+        const ext = imageBlob.type.split('/')[1] || 'png';
+        const safeFile = new File([imageBlob], `gorev_${Date.now()}.${ext}`, { type: imageBlob.type });
+        handleModalNewTaskFiles([safeFile]);
+        showToast('📋 Ekran görüntüsü yeni göreve eklendi!', 'info');
+        return;
+    }
 
     // 1. Görev Teslim Modalı Açıksa
     const modalSubmit = document.getElementById('modalSubmitTask');

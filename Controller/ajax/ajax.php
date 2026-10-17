@@ -500,6 +500,65 @@ switch ($action) {
                 "Görev oluşturuldu ve çalışanlara ({$namesStr}) atandı."
             ]);
 
+            // Görev açarken yüklenen ek görseller ve dosyalar (Attachments)
+            $uploadedFilesList = [];
+            if (!empty($_FILES['attachments'])) {
+                $rawFiles = $_FILES['attachments'];
+                if (is_array($rawFiles['name'])) {
+                    for ($i = 0; $i < count($rawFiles['name']); $i++) {
+                        if (!empty($rawFiles['tmp_name'][$i]) && $rawFiles['error'][$i] === UPLOAD_ERR_OK) {
+                            $singleFile = [
+                                'name'     => $rawFiles['name'][$i],
+                                'type'     => $rawFiles['type'][$i],
+                                'tmp_name' => $rawFiles['tmp_name'][$i],
+                                'error'    => $rawFiles['error'][$i],
+                                'size'     => $rawFiles['size'][$i],
+                            ];
+                            $upRes = Storage::upload($singleFile, 'tasks');
+                            if ($upRes['success']) {
+                                $db->exec_query("
+                                    INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
+                                    VALUES (?, ?, ?, ?, ?, ?, NOW())
+                                ", [
+                                    $newTaskId,
+                                    $currentUser->id,
+                                    $upRes['file_name'],
+                                    $upRes['file_path'],
+                                    $upRes['file_type'],
+                                    $upRes['file_size']
+                                ]);
+                                $uploadedFilesList[] = $upRes['file_name'];
+                            }
+                        }
+                    }
+                }
+            } elseif (!empty($_FILES['attachment']) && !empty($_FILES['attachment']['tmp_name'])) {
+                $upRes = Storage::upload($_FILES['attachment'], 'tasks');
+                if ($upRes['success']) {
+                    $db->exec_query("
+                        INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, NOW())
+                    ", [
+                        $newTaskId,
+                        $currentUser->id,
+                        $upRes['file_name'],
+                        $upRes['file_path'],
+                        $upRes['file_type'],
+                        $upRes['file_size']
+                    ]);
+                    $uploadedFilesList[] = $upRes['file_name'];
+                }
+            }
+
+            if (!empty($uploadedFilesList)) {
+                $filesStr = implode(', ', $uploadedFilesList);
+                $db->insert("task_activities", [
+                    'task_id', 'user_id', 'action_type', 'comment'
+                ], [
+                    $newTaskId, $currentUser->id, 'attachment_uploaded', "{$currentUser->name} görev oluşturulurken görsel/ek ekledi: {$filesStr}"
+                ]);
+            }
+
             // CANLI SSE YAYINI
             Helper::broadcastLiveEvent('task_created', $projectId, $newTaskId, (int)$currentUser->id, [
                 'task_id'     => $newTaskId,

@@ -119,6 +119,34 @@ $canUseAiTasks = ($currentUser && $currentUser->role === 'admin') || ($currentUs
                     <!-- Form Gönderimi için Gizli Inputlar -->
                     <div id="modalAssigneeHiddenInputs"></div>
                 </div>
+
+                <!-- GÖREV RESİMLERİ & EKLERİ (TASK IMAGES & ATTACHMENTS) -->
+                <div class="cu-form-group" style="margin-bottom:0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label style="margin-bottom:0; display:flex; align-items:center; gap:6px;">
+                            <span>🖼️</span> <?= __('app.modal_attachments') ?>
+                        </label>
+                        <span style="font-size:11px; color:var(--text-muted);"><?= __('app.modal_attachments_hint') ?></span>
+                    </div>
+
+                    <!-- Gizli File Input -->
+                    <input type="file" id="modalNewTaskFileInput" name="attachments[]" multiple accept="image/*,.pdf,.zip" style="display:none;" onchange="handleModalNewTaskFiles(this.files)">
+
+                    <!-- Dropzone Alanı -->
+                    <div id="modalNewTaskDropzone"
+                         ondragover="handleModalNewTaskDragOver(event)"
+                         ondragleave="handleModalNewTaskDragLeave(event)"
+                         ondrop="handleModalNewTaskDrop(event)"
+                         onclick="document.getElementById('modalNewTaskFileInput').click()"
+                         style="border: 2px dashed var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.02); transition: var(--transition); margin-bottom: 8px;">
+                        <div style="font-size: 16px; margin-bottom: 2px;">📸 📤</div>
+                        <div style="font-size: 11.5px; font-weight: 600; color: var(--text-primary);"><?= __('app.modal_dropzone_title') ?></div>
+                        <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;"><?= __('app.modal_dropzone_sub') ?></div>
+                    </div>
+
+                    <!-- Seçilen / Yapıştırılan Dosyaların Önizleme Listesi -->
+                    <div id="modalNewTaskFilesPreview" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;"></div>
+                </div>
             </div>
             <div class="cu-modal-footer" style="padding:14px 20px; background:var(--bg-card-hover); border-top:1px solid var(--border-subtle); display:flex; justify-content:flex-end; gap:10px; align-items:center;">
                 <button type="button" class="cu-btn-sm" onclick="closeModal('modalNewTask')"><?= __('app.modal_cancel') ?></button>
