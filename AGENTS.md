@@ -34,6 +34,10 @@ Under NO circumstances shall the user ever encounter:
 > * If the prompt is for this project (or the user explicitly confirms cross-project work): **USER INSTRUCTION TAKES 100% SUPREMACY.** Address the user's request immediately.
 > * **DO NOT SEARCH FOR REST API CALLS OR TASK CODES.** Do not attempt to submit to TaskManager API unless a task code was explicitly given. Complete the work, verify autonomously, and reply directly to the user.
 > 
+> ### 🛑 STRICT WORKSPACE BOUNDARY & ISOLATION (ZERO EXTERNAL SCANNING):
+> * **NO OUT-OF-BOUNDS DIRECTORY ACCESS:** The agent is STRICTLY FORBIDDEN from listing (`list_dir`), reading (`view_file`), grepping, or inspecting any directory or file outside the current project workspace (`c:\wamp64\www\taskmanager`), including neighbor directories (`askerlik`, `ufkayolculuk`, `gutenberg`, `cake`, `C:\wamp64\www\*`).
+> * **NO EXTERNAL INSPECTION FOR TESTING:** Even when developing analyzers, deployment tools, or scanners, the agent MUST NOT probe real external user directories. All testing and verification MUST be performed strictly within the workspace using synthetic mock fixtures (e.g., under `tests/fixtures/`).
+> 
 > ### MODE B: TASKMANAGER AUTONOMOUS DISPATCH (Prompt Contains Task Code)
 > * When triggered by TaskManager background queue with an assigned `task_code`:
 > * Focus EXCLUSIVELY on that single task (`task_code`). Never jump to older or unrelated tasks.
@@ -157,6 +161,9 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 - **QA Doctrine:** "The User Is Not a QA Tester". Every button, modal, form input, state transition, and AJAX call must be autonomously verified in the live environment using headless browser, curl, and CLI scripts before task completion.
 - **Task Delivery Protocol:** Tasks must be delivered via `Helper::submitTaskDirectly()` following the 4-stage Definition of Done (DoD) format (What Was Done, Where to Test, How to Test, Autonomous Test Evidence).
 - **Documentation Access via REST API:** Project documentation must NOT be stored as loose markdown files in the root directory. AI Agents can query all project documentation via `GET http://localhost/taskmanager/api/projects/{code}/docs` and fetch full document contents using `GET http://localhost/taskmanager/api/docs/{id}` with header `Authorization: Bearer <api_token>`.
+- **Taskmanager access user
+email iletisimtktalha@gmail.com
+password 145236
 <!-- PROJECT_RULES_END -->
 
 ---

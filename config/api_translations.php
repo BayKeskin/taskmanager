@@ -92,6 +92,9 @@ return array (
     'Desteklenmeyen metod.' => 'Unsupported method.',
     'İşlem başarısız.' => 'Operation failed.',
     'Bilinmeyen API endpointi.' => 'Unknown API endpoint.',
+    'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.' => 'Project environment variables and live deployment configuration analysis completed.',
+    'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.' => 'Project local workspace path (workspace_path) is not defined.',
+    'Proje analiz edilemedi.' => 'Project could not be analyzed.',
   ),
   'de' => 
   array (
@@ -183,5 +186,8 @@ return array (
     'Desteklenmeyen metod.' => 'Nicht unterstützte Methode.',
     'İşlem başarısız.' => 'Vorgang fehlgeschlagen.',
     'Bilinmeyen API endpointi.' => 'Unbekannter API-Endpunkt.',
+    'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.' => 'Analyse der Projektumgebungsvariablen und Live-Bereitstellungskonfiguration abgeschlossen.',
+    'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.' => 'Lokaler Projekt-Arbeitsbereichspfad (workspace_path) ist nicht definiert.',
+    'Proje analiz edilemedi.' => 'Projekt konnte nicht analysiert werden.',
   ),
 );

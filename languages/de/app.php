@@ -511,5 +511,11 @@ return array (
   'mcp_not_found' => 'Kein MCP-Tool gefunden, das Ihren Suchkriterien entspricht.',
   'mcp_not_found_hint' => 'Ändern Sie Ihren Suchbegriff oder den Kategoriefilter.',
   'mcp_footer_info' => 'Aktivierte Werkzeuge werden von der Antigravity IDE automatisch aus der Datei <code>.agents/mcp_config.json</code> Ihres Projekts gelesen.',
+  'deploy_analyzer_title' => 'Intelligenter Projekt- und Umgebungsvariablen-Analysator',
+  'deploy_analyzer_desc' => 'Durchsucht den Quellcode nach Einstellungen, die in der Live-Umgebung geändert werden müssen (URL, DB, Debug).',
+  'deploy_target_domain' => 'Ziel-Live-Domain / URL',
+  'deploy_target_db' => 'Live-Produktionsdatenbank',
+  'deploy_framework_detected' => 'Erkanntes Framework',
+  'deploy_live_payload_ready' => 'Live-Bereitstellungsvorlage bereit',
 );
 

@@ -946,6 +946,32 @@ if ($resource === 'projects') {
         apiResponse($res, 'Webhook test pingi gönderildi.');
     }
 
+    // 5.2 POST /api/projects/{id_or_code}/analyze - Akıllı Proje ve Ortam Değişkeni Analizcisi (TSK-1081)
+    if ($param1 !== null && $param2 === 'analyze' && ($method === 'POST' || $method === 'GET')) {
+        $proj = resolveProject($db, $param1);
+        if (!$proj) apiError('Proje bulunamadı.', 404);
+
+        $targetPath = !empty($requestData['workspace_path']) ? trim($requestData['workspace_path']) : ($proj->workspace_path ?? '');
+        if (empty($targetPath)) {
+            apiError('Projenin yerel çalışma alanı (workspace_path) tanımlı değil.', 400);
+        }
+
+        $overrides = [
+            'live_domain' => $requestData['live_domain'] ?? ($requestData['domain'] ?? null),
+            'db_host'     => $requestData['db_host'] ?? null,
+            'db_name'     => $requestData['db_name'] ?? null,
+            'db_user'     => $requestData['db_user'] ?? null,
+            'db_pass'     => $requestData['db_pass'] ?? ($requestData['db_password'] ?? null),
+        ];
+
+        $analysis = ProjectAnalyzer::analyze($targetPath, array_filter($overrides));
+        if (empty($analysis['success'])) {
+            apiError($analysis['error'] ?? 'Proje analiz edilemedi.', 422, $analysis);
+        }
+
+        apiResponse($analysis, 'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.');
+    }
+
     // 6. DELETE /api/projects/{id_or_code} - Proje Sil / Arşivle
     if ($param1 !== null && $param2 === null && $method === 'DELETE') {
         if ($currentUser->role !== 'admin') {

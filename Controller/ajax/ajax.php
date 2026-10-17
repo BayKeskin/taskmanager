@@ -2984,6 +2984,33 @@ switch ($action) {
         }
         break;
 
+    case 'analyze_project':
+        $projectId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
+        $proj = null;
+        if ($projectId > 0) {
+            $proj = $db->row_query("SELECT * FROM projects WHERE id = ?", [$projectId]);
+        }
+        $targetPath = trim($_POST['workspace_path'] ?? ($proj->workspace_path ?? ''));
+        if (empty($targetPath)) {
+            jsonResponse(false, 'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.');
+        }
+
+        $overrides = [
+            'live_domain' => $_POST['live_domain'] ?? null,
+            'db_host'     => $_POST['db_host'] ?? null,
+            'db_name'     => $_POST['db_name'] ?? null,
+            'db_user'     => $_POST['db_user'] ?? null,
+            'db_pass'     => $_POST['db_pass'] ?? null,
+        ];
+
+        $analysis = ProjectAnalyzer::analyze($targetPath, array_filter($overrides));
+        if (empty($analysis['success'])) {
+            jsonResponse(false, $analysis['error'] ?? 'Proje analiz edilemedi.', $analysis);
+        }
+
+        jsonResponse(true, 'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.', ['analysis' => $analysis]);
+        break;
+
     default:
         jsonResponse(false, 'Geçersiz AJAX işlemi.');
 }

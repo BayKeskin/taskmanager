@@ -150,6 +150,9 @@ return array (
     'MCP ayarları başarıyla kaydedildi.' => 'MCP settings saved successfully.',
     'Durum güncellenemedi.' => 'Status could not be updated.',
     'Geçersiz AJAX işlemi.' => 'Invalid AJAX action.',
+    'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.' => 'Project environment variables and live deployment configuration analysis completed.',
+    'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.' => 'Project local workspace path (workspace_path) is not defined.',
+    'Proje analiz edilemedi.' => 'Project could not be analyzed.',
   ),
   'de' => 
   array (
@@ -299,5 +302,8 @@ return array (
     'MCP ayarları başarıyla kaydedildi.' => 'MCP-Einstellungen erfolgreich gespeichert.',
     'Durum güncellenemedi.' => 'Status konnte nicht aktualisiert werden.',
     'Geçersiz AJAX işlemi.' => 'Ungültige AJAX-Aktion.',
+    'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.' => 'Analyse der Projektumgebungsvariablen und Live-Bereitstellungskonfiguration abgeschlossen.',
+    'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.' => 'Lokaler Projekt-Arbeitsbereichspfad (workspace_path) ist nicht definiert.',
+    'Proje analiz edilemedi.' => 'Projekt konnte nicht analysiert werden.',
   ),
 );

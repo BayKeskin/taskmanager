@@ -511,5 +511,11 @@ return array (
   'mcp_not_found' => 'No MCP tool matching your search criteria was found.',
   'mcp_not_found_hint' => 'Change your search query or category filter.',
   'mcp_footer_info' => 'Enabled tools are automatically loaded by Antigravity IDE from your project\'s <code>.agents/mcp_config.json</code> file.',
+  'deploy_analyzer_title' => 'Smart Project & Environment Variable Analyzer',
+  'deploy_analyzer_desc' => 'Scans source code to automatically detect required production environment settings (URL, DB, Debug).',
+  'deploy_target_domain' => 'Target Production Domain / URL',
+  'deploy_target_db' => 'Production Database',
+  'deploy_framework_detected' => 'Detected Framework',
+  'deploy_live_payload_ready' => 'Live Deployment Payload Ready',
 );
 

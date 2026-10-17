@@ -511,5 +511,11 @@ return array (
   'mcp_not_found' => 'Aradığınız kriterlere uygun MCP aracı bulunamadı.',
   'mcp_not_found_hint' => 'Arama teriminizi veya kategori filtresini değiştirin.',
   'mcp_footer_info' => 'Aktif edilen araçlar Antigravity IDE açıldığında otomatik olarak projenizin <code>.agents/mcp_config.json</code> dosyasından okunur.',
+  'deploy_analyzer_title' => 'Akıllı Proje ve Ortam Değişkeni Analizcisi',
+  'deploy_analyzer_desc' => 'Kaynak kodları tarayarak canlı sunucuda değişmesi zorunlu ortam ayarlarını (URL, DB, Debug) otomatik tespit eder.',
+  'deploy_target_domain' => 'Hedef Canlı Domain / URL',
+  'deploy_target_db' => 'Canlı Veritabanı',
+  'deploy_framework_detected' => 'Tespit Edilen Çerçeve',
+  'deploy_live_payload_ready' => 'Canlı Dağıtım Şablonu Hazır',
 );
 
