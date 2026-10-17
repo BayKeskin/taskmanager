@@ -249,12 +249,20 @@ function closeModal(id) {
     if (id === 'modalNewTask') {
         modalNewTaskFiles = [];
         if (typeof renderModalNewTaskFiles === 'function') renderModalNewTaskFiles();
+        aiArchitectFiles = [];
+        if (typeof renderAiArchitectFiles === 'function') renderAiArchitectFiles();
+        const inst = document.getElementById('aiArchitectInstruction');
+        if (inst) inst.value = '';
     }
 }
 
 function openNewTaskModal() { 
     modalNewTaskFiles = [];
     if (typeof renderModalNewTaskFiles === 'function') renderModalNewTaskFiles();
+    aiArchitectFiles = [];
+    if (typeof renderAiArchitectFiles === 'function') renderAiArchitectFiles();
+    const inst = document.getElementById('aiArchitectInstruction');
+    if (inst) inst.value = '';
     initModalAssignees();
     const urlParams = new URLSearchParams(window.location.search);
     const curProjId = urlParams.get('project_id');
@@ -773,6 +781,185 @@ function triggerRequestModModal(taskId) {
 function triggerSubmitTaskModal(taskId) {
     document.getElementById('submitTaskId').value = taskId;
     openModal('modalSubmitTask');
+}
+
+// 🪄 AI GÖREV MİMARI (TASK ARCHITECT LOGIC)
+let aiArchitectFiles = [];
+
+function toggleAiArchitectPanel() {
+    const body = document.getElementById('aiArchitectPanelBody');
+    const icon = document.getElementById('aiArchitectToggleIcon');
+    if (!body) return;
+    const isHidden = body.style.display === 'none' || body.style.display === '';
+    body.style.display = isHidden ? 'block' : 'none';
+    if (icon) icon.innerText = isHidden ? '▲' : '▼';
+    if (isHidden) {
+        setTimeout(() => {
+            const txt = document.getElementById('aiArchitectInstruction');
+            if (txt) txt.focus();
+        }, 50);
+    }
+}
+
+function handleAiArchitectFiles(files) {
+    if (!files || files.length === 0) return;
+    for (let i = 0; i < files.length; i++) {
+        aiArchitectFiles.push(files[i]);
+    }
+    renderAiArchitectFiles();
+    const fileInput = document.getElementById('aiArchitectFileInput');
+    if (fileInput) fileInput.value = '';
+}
+
+function removeAiArchitectFile(index) {
+    if (index >= 0 && index < aiArchitectFiles.length) {
+        aiArchitectFiles.splice(index, 1);
+        renderAiArchitectFiles();
+    }
+}
+
+function renderAiArchitectFiles() {
+    const previewContainer = document.getElementById('aiArchitectFilesPreview');
+    if (!previewContainer) return;
+    previewContainer.innerHTML = '';
+
+    aiArchitectFiles.forEach((file, idx) => {
+        const item = document.createElement('div');
+        item.style.cssText = 'position:relative; display:flex; align-items:center; gap:5px; background:var(--bg-card); border:1px solid rgba(123, 104, 238, 0.3); border-radius:var(--radius-sm); padding:3px 8px; font-size:11px; max-width:200px;';
+
+        const isImage = file.type.startsWith('image/');
+        const isCode = /\.(php|js|blade\.php|sql|html|css|json|txt|py)$/i.test(file.name);
+        const iconSpan = document.createElement('span');
+        iconSpan.innerText = isImage ? '🖼️' : (isCode ? '💻' : '📄');
+
+        const nameSpan = document.createElement('span');
+        nameSpan.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; color:var(--text-white); font-weight:500; font-size:10.5px;';
+        nameSpan.innerText = file.name;
+        nameSpan.title = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.innerHTML = '✕';
+        delBtn.style.cssText = 'background:none; border:none; color:#ff4757; cursor:pointer; font-size:11px; font-weight:700; padding:0 2px;';
+        delBtn.title = 'Kaldır';
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            removeAiArchitectFile(idx);
+        };
+
+        item.appendChild(iconSpan);
+        item.appendChild(nameSpan);
+        item.appendChild(delBtn);
+        previewContainer.appendChild(item);
+    });
+}
+
+function handleAiArchitectDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dz = document.getElementById('aiArchitectDropzone');
+    if (dz) {
+        dz.style.borderColor = 'var(--brand-primary)';
+        dz.style.background = 'rgba(123, 104, 238, 0.15)';
+    }
+}
+
+function handleAiArchitectDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dz = document.getElementById('aiArchitectDropzone');
+    if (dz) {
+        dz.style.borderColor = 'rgba(123, 104, 238, 0.35)';
+        dz.style.background = 'rgba(0,0,0,0.1)';
+    }
+}
+
+function handleAiArchitectDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    handleAiArchitectDragLeave(e);
+    if (e.dataTransfer && e.dataTransfer.files) {
+        handleAiArchitectFiles(e.dataTransfer.files);
+    }
+}
+
+async function runAiArchitect() {
+    const instEl = document.getElementById('aiArchitectInstruction');
+    const instruction = instEl ? instEl.value.trim() : '';
+    if (!instruction) {
+        showToast('Lütfen ne yaptırmak istediğinize dair kısa bir not yazın.', 'warning');
+        if (instEl) instEl.focus();
+        return;
+    }
+
+    const projSelect = document.getElementById('modalNewTaskProjectSelect') || document.querySelector('#modalNewTask select[name="project_id"]');
+    const projectId = projSelect ? projSelect.value : 1;
+
+    const btn = document.getElementById('btnRunAiArchitect');
+    const btnText = document.getElementById('btnRunAiArchitectText');
+    const origText = btnText ? btnText.innerText : 'Şartname Üret';
+
+    if (btn) btn.disabled = true;
+    if (btnText) btnText.innerText = 'Mimar analiz ediyor...';
+
+    const formData = new FormData();
+    formData.append('project_id', projectId);
+    formData.append('instruction', instruction);
+
+    // Eklenen referans görseller ve kod dosyalarını ayırarak ekle
+    aiArchitectFiles.forEach(file => {
+        if (file.type.startsWith('image/')) {
+            formData.append('images[]', file);
+        } else {
+            formData.append('code_files[]', file);
+        }
+    });
+
+    try {
+        const res = await fetch('/taskmanager/ajax?action=refine_task_specification', {
+            method: 'POST',
+            body: formData
+        });
+        const d = await res.json();
+
+        if (d.success && d.data && d.data.specification) {
+            const descArea = document.getElementById('modalNewTaskDescription');
+            if (descArea) {
+                descArea.value = d.data.specification;
+                descArea.style.borderColor = 'var(--brand-primary)';
+                descArea.style.boxShadow = '0 0 0 3px rgba(123, 104, 238, 0.2)';
+                setTimeout(() => {
+                    descArea.style.borderColor = '';
+                    descArea.style.boxShadow = '';
+                }, 2000);
+            }
+
+            // Görev başlığı henüz boşsa veya varsayılansa, kısa nottan anlamlı bir başlık ata
+            const titleInput = document.getElementById('modalNewTaskTitleInput');
+            if (titleInput && (!titleInput.value.trim() || titleInput.value.length < 5)) {
+                let cleanTitle = instruction.split('\n')[0].replace(/[.,;:].*$/, '').trim();
+                if (cleanTitle.length > 60) cleanTitle = cleanTitle.substring(0, 57) + '...';
+                titleInput.value = cleanTitle;
+            }
+
+            // Ayrıca yüklenen resimler varsa, doğrudan görevin eklerine de otomatik kopyala
+            if (aiArchitectFiles.length > 0) {
+                const imgFiles = aiArchitectFiles.filter(f => f.type.startsWith('image/'));
+                if (imgFiles.length > 0) {
+                    handleModalNewTaskFiles(imgFiles);
+                }
+            }
+
+            showToast('✨ Teknik mimari şartname başarıyla üretildi!', 'success');
+        } else {
+            showToast(d.message || 'Şartname üretilemedi.', 'error');
+        }
+    } catch(err) {
+        showToast('Bağlantı hatası oluştu.', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.innerText = origText;
+    }
 }
 
 // Modal Yeni Görev Dosya & Ek Yönetimi
@@ -3211,8 +3398,17 @@ window.addEventListener('paste', async (e) => {
     if (modalNewTask && modalNewTask.classList.contains('active')) {
         const ext = imageBlob.type.split('/')[1] || 'png';
         const safeFile = new File([imageBlob], `gorev_${Date.now()}.${ext}`, { type: imageBlob.type });
-        handleModalNewTaskFiles([safeFile]);
-        showToast('📋 Ekran görüntüsü yeni göreve eklendi!', 'info');
+        
+        // Eğer AI Mimarı Paneli açıksa oraya ekle
+        const aiBody = document.getElementById('aiArchitectPanelBody');
+        const isAiPanelOpen = aiBody && aiBody.style.display !== 'none' && aiBody.style.display !== '';
+        if (isAiPanelOpen) {
+            handleAiArchitectFiles([safeFile]);
+            showToast('📋 Ekran görüntüsü AI Görev Mimarina eklendi!', 'info');
+        } else {
+            handleModalNewTaskFiles([safeFile]);
+            showToast('📋 Ekran görüntüsü yeni göreve eklendi!', 'info');
+        }
         return;
     }
 

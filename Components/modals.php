@@ -38,12 +38,82 @@ $canUseAiTasks = ($currentUser && $currentUser->role === 'admin') || ($currentUs
 
                 <div class="cu-form-group">
                     <label><?= __('app.modal_task_title') ?></label>
-                    <input type="text" name="title" class="cu-form-control" placeholder="<?= htmlspecialchars(__('app.modal_task_title_placeholder')) ?>" required>
+                    <input type="text" name="title" id="modalNewTaskTitleInput" class="cu-form-control" placeholder="<?= htmlspecialchars(__('app.modal_task_title_placeholder')) ?>" required>
+                </div>
+
+                <!-- 🪄 AI GÖREV MİMARI (TASK ARCHITECT PANEL) -->
+                <div class="cu-form-group" style="background:linear-gradient(135deg, rgba(123, 104, 238, 0.08) 0%, rgba(155, 93, 229, 0.04) 100%); border:1px solid rgba(123, 104, 238, 0.25); border-radius:var(--radius-sm); padding:12px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleAiArchitectPanel()">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:14px;">🪄</span>
+                            <span style="font-size:12px; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.03em;">
+                                <?= __('app.modal_ai_architect_badge') ?>
+                            </span>
+                            <span style="font-size:11px; color:var(--text-muted); font-weight:400;" class="d-none d-sm-inline">
+                                — <?= __('app.modal_ai_architect_title') ?>
+                            </span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span id="aiArchitectToggleIcon" style="font-size:11px; color:var(--brand-primary); font-weight:700;">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Açılır Panel Gövdesi -->
+                    <div id="aiArchitectPanelBody" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed rgba(123, 104, 238, 0.2);">
+                        <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px; line-height:1.4;">
+                            <?= __('app.modal_ai_architect_desc') ?>
+                        </p>
+
+                        <!-- Kısa Talimat Alanı (Zorunlu) -->
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:11.5px; font-weight:600; color:var(--text-primary); margin-bottom:4px; display:block;">
+                                <?= __('app.modal_ai_architect_prompt_label') ?> <span style="color:#ff4757;">*</span>
+                            </label>
+                            <textarea id="aiArchitectInstruction" class="cu-form-control" rows="2" style="font-size:12px; background:var(--bg-input);" placeholder="<?= htmlspecialchars(__('app.modal_ai_architect_prompt_ph')) ?>"></textarea>
+                        </div>
+
+                        <!-- Opsiyonel Ekler (Görsel ve Kod Dosyası) -->
+                        <div style="margin-bottom:10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <label style="font-size:11.5px; font-weight:600; color:var(--text-primary); margin-bottom:0;">
+                                    <?= __('app.modal_ai_architect_ref_label') ?>
+                                </label>
+                                <span style="font-size:10.5px; color:var(--text-muted);"><?= __('app.modal_ai_architect_ref_hint') ?></span>
+                            </div>
+
+                            <input type="file" id="aiArchitectFileInput" multiple accept="image/*,.php,.js,.blade.php,.sql,.html,.css,.json,.txt,.py" style="display:none;" onchange="handleAiArchitectFiles(this.files)">
+
+                            <!-- Sürükle Bırak / Tıkla Alanı -->
+                            <div id="aiArchitectDropzone"
+                                 ondragover="handleAiArchitectDragOver(event)"
+                                 ondragleave="handleAiArchitectDragLeave(event)"
+                                 ondrop="handleAiArchitectDrop(event)"
+                                 onclick="document.getElementById('aiArchitectFileInput').click()"
+                                 style="border:1.5px dashed rgba(123, 104, 238, 0.35); border-radius:var(--radius-sm); padding:8px 12px; text-align:center; cursor:pointer; background:rgba(0,0,0,0.1); transition:var(--transition);">
+                                <span style="font-size:12px;">📁 📸</span>
+                                <span style="font-size:11px; font-weight:600; color:var(--brand-primary); margin-left:6px;">Dosya/Görsel Seç veya Sürükle (Opsiyonel)</span>
+                                <span style="font-size:10.5px; color:var(--text-muted); margin-left:6px;">(Ctrl+V ile görsel yapıştırılabilir)</span>
+                            </div>
+
+                            <!-- Seçilen Referans Dosyalar Listesi -->
+                            <div id="aiArchitectFilesPreview" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;"></div>
+                        </div>
+
+                        <!-- AI Üret Butonu -->
+                        <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px;">
+                            <button type="button" id="btnRunAiArchitect" onclick="runAiArchitect()" class="cu-btn-sm" style="background:var(--brand-primary); color:#ffffff; font-weight:700; display:inline-flex; align-items:center; gap:6px; padding:6px 14px; font-size:11.5px; border-radius:var(--radius-sm); cursor:pointer; border:none; transition:var(--transition);">
+                                <span>🪄</span> <span id="btnRunAiArchitectText"><?= __('app.modal_ai_architect_btn') ?></span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="cu-form-group">
-                    <label><?= __('app.modal_desc_instructions') ?></label>
-                    <textarea name="description" class="cu-form-control" rows="3" placeholder="<?= htmlspecialchars(__('app.modal_desc_placeholder')) ?>"></textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label style="margin-bottom:0;"><?= __('app.modal_desc_instructions') ?></label>
+                        <span style="font-size:11px; color:var(--text-muted);"><?= __('tasks.click_to_edit', 'Düzenlemek için tıklayın') ?></span>
+                    </div>
+                    <textarea name="description" id="modalNewTaskDescription" class="cu-form-control" rows="5" placeholder="<?= htmlspecialchars(__('app.modal_desc_placeholder')) ?>"></textarea>
                 </div>
 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">

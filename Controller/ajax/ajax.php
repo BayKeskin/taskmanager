@@ -577,6 +577,84 @@ switch ($action) {
         }
         break;
 
+    // 2.1 AI GÖREV MİMARI: KISA TALEBİ TEKNİK ŞARTNAME & PROMPT'A DÖNÜŞTÜR
+    case 'refine_task_specification':
+        $projectId = (int)($_POST['project_id'] ?? 1);
+        $instruction = trim($_POST['instruction'] ?? '');
+
+        if (empty($instruction)) {
+            jsonResponse(false, 'Lütfen ne yapmak istediğinize dair kısa bir açıklama veya yönerge girin.');
+        }
+
+        $refImages = [];
+        $refFiles = [];
+
+        // 1. Eklenen veya Yapıştırılan Görselleri Al
+        if (!empty($_FILES['images'])) {
+            $rawImgs = $_FILES['images'];
+            if (is_array($rawImgs['name'])) {
+                for ($i = 0; $i < count($rawImgs['name']); $i++) {
+                    if (!empty($rawImgs['tmp_name'][$i]) && $rawImgs['error'][$i] === UPLOAD_ERR_OK) {
+                        $mime = $rawImgs['type'][$i] ?? 'image/jpeg';
+                        $content = file_get_contents($rawImgs['tmp_name'][$i]);
+                        if ($content !== false) {
+                            $refImages[] = [
+                                'name'   => $rawImgs['name'][$i],
+                                'mime'   => $mime,
+                                'base64' => base64_encode($content)
+                            ];
+                        }
+                    }
+                }
+            }
+        } elseif (!empty($_FILES['image']) && !empty($_FILES['image']['tmp_name'])) {
+            $content = file_get_contents($_FILES['image']['tmp_name']);
+            if ($content !== false) {
+                $refImages[] = [
+                    'name'   => $_FILES['image']['name'],
+                    'mime'   => $_FILES['image']['type'] ?? 'image/jpeg',
+                    'base64' => base64_encode($content)
+                ];
+            }
+        }
+
+        // 2. Eklenen Kod / Yazılım Dosyalarını Al (.php, .js, .blade.php, .sql, .html, .css, .json, .txt vb.)
+        if (!empty($_FILES['code_files'])) {
+            $rawCode = $_FILES['code_files'];
+            if (is_array($rawCode['name'])) {
+                for ($i = 0; $i < count($rawCode['name']); $i++) {
+                    if (!empty($rawCode['tmp_name'][$i]) && $rawCode['error'][$i] === UPLOAD_ERR_OK) {
+                        $content = file_get_contents($rawCode['tmp_name'][$i]);
+                        if ($content !== false) {
+                            $refFiles[] = [
+                                'name'    => $rawCode['name'][$i],
+                                'content' => $content
+                            ];
+                        }
+                    }
+                }
+            }
+        } elseif (!empty($_FILES['code_file']) && !empty($_FILES['code_file']['tmp_name'])) {
+            $content = file_get_contents($_FILES['code_file']['tmp_name']);
+            if ($content !== false) {
+                $refFiles[] = [
+                    'name'    => $_FILES['code_file']['name'],
+                    'content' => $content
+                ];
+            }
+        }
+
+        $result = Helper::refineTaskPromptToSpecification($projectId, $instruction, $refImages, $refFiles);
+        if (!empty($result['success']) && !empty($result['specification'])) {
+            jsonResponse(true, 'Şartname başarıyla üretildi!', [
+                'specification' => $result['specification'],
+                'engine'        => $result['engine'] ?? 'ai'
+            ]);
+        } else {
+            jsonResponse(false, $result['error'] ?? 'Şartname üretilemedi.');
+        }
+        break;
+
     // 3. YENİ PROJE OLUŞTURMA (ADMIN)
     case 'create_project':
         if ($currentUser->role !== 'admin') {
