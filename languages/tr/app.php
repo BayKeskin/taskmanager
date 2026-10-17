@@ -517,5 +517,12 @@ return array (
   'deploy_target_db' => 'Canlı Veritabanı',
   'deploy_framework_detected' => 'Tespit Edilen Çerçeve',
   'deploy_live_payload_ready' => 'Canlı Dağıtım Şablonu Hazır',
+  'hosting_adapter_title' => 'Barındırma Paneli ve Veritabanı Tahsis Motoru',
+  'hosting_panel_cpanel' => 'cPanel UAPI',
+  'hosting_panel_plesk' => 'Plesk REST API',
+  'hosting_panel_cyberpanel' => 'CyberPanel API',
+  'hosting_panel_standard' => 'Standart / Paylaşımlı Hosting (Doğrudan Bağlantı)',
+  'hosting_test_success' => 'Barındırma paneli bağlantısı başarıyla doğrulandı.',
+  'hosting_provision_success' => 'Canlı veritabanı ve kullanıcısı başarıyla tahsis edildi.',
 );
 

@@ -24,7 +24,9 @@ function translateAjaxMessage(string $msg): string {
     
     static $dict = null;
     if ($dict === null) {
-        $dictFile = __DIR__ . '/../../Config/ajax_translations.php';
+        $dictFile = file_exists(__DIR__ . '/../../config/ajax_translations.php')
+            ? __DIR__ . '/../../config/ajax_translations.php'
+            : __DIR__ . '/../../Config/ajax_translations.php';
         $dict = file_exists($dictFile) ? require $dictFile : [];
     }
     
@@ -3009,6 +3011,36 @@ switch ($action) {
         }
 
         jsonResponse(true, 'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.', ['analysis' => $analysis]);
+        break;
+
+    case 'test_hosting_panel':
+        $panelType = trim($_POST['panel_type'] ?? ($_POST['type'] ?? 'standard'));
+        $config = $_POST['config'] ?? $_POST;
+        $res = HostingManager::testCredentials($panelType, $config);
+        if (!empty($res['success'])) {
+            jsonResponse(true, 'Barındırma paneli bağlantısı başarıyla doğrulandı.', ['result' => $res]);
+        } else {
+            jsonResponse(false, 'Barındırma paneli bağlantısı başarısız.', ['result' => $res]);
+        }
+        break;
+
+    case 'provision_hosting_db':
+        $panelType = trim($_POST['panel_type'] ?? ($_POST['type'] ?? 'standard'));
+        $config    = $_POST['config'] ?? $_POST;
+        $dbName    = trim($_POST['db_name'] ?? ($_POST['database'] ?? ''));
+        $dbUser    = trim($_POST['db_user'] ?? ($_POST['username'] ?? ''));
+        $dbPass    = trim($_POST['db_pass'] ?? ($_POST['password'] ?? ''));
+
+        if (empty($dbName)) {
+            jsonResponse(false, 'Oluşturulacak veritabanı adı (db_name) zorunludur.');
+        }
+
+        $res = HostingManager::provision($panelType, $config, $dbName, $dbUser, $dbPass);
+        if (!empty($res['success'])) {
+            jsonResponse(true, 'Canlı veritabanı ve kullanıcısı başarıyla tahsis edildi.', ['result' => $res]);
+        } else {
+            jsonResponse(false, 'Veritabanı tahsisi başarısız oldu.', ['result' => $res]);
+        }
         break;
 
     default:

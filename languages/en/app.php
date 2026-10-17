@@ -517,5 +517,12 @@ return array (
   'deploy_target_db' => 'Production Database',
   'deploy_framework_detected' => 'Detected Framework',
   'deploy_live_payload_ready' => 'Live Deployment Payload Ready',
+  'hosting_adapter_title' => 'Hosting Panel & Database Provisioning Engine',
+  'hosting_panel_cpanel' => 'cPanel UAPI',
+  'hosting_panel_plesk' => 'Plesk REST API',
+  'hosting_panel_cyberpanel' => 'CyberPanel API',
+  'hosting_panel_standard' => 'Standard / Shared Hosting (Direct Connection)',
+  'hosting_test_success' => 'Hosting panel connection verified successfully.',
+  'hosting_provision_success' => 'Live database and user successfully provisioned.',
 );
 

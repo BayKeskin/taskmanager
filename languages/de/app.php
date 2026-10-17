@@ -517,5 +517,12 @@ return array (
   'deploy_target_db' => 'Live-Produktionsdatenbank',
   'deploy_framework_detected' => 'Erkanntes Framework',
   'deploy_live_payload_ready' => 'Live-Bereitstellungsvorlage bereit',
+  'hosting_adapter_title' => 'Hosting-Panel und Datenbankbereitstellungs-Engine',
+  'hosting_panel_cpanel' => 'cPanel UAPI',
+  'hosting_panel_plesk' => 'Plesk REST API',
+  'hosting_panel_cyberpanel' => 'CyberPanel API',
+  'hosting_panel_standard' => 'Standard / Shared Hosting (Direktverbindung)',
+  'hosting_test_success' => 'Hosting-Panel-Verbindung erfolgreich verifiziert.',
+  'hosting_provision_success' => 'Live-Datenbank und Benutzer erfolgreich bereitgestellt.',
 );
 

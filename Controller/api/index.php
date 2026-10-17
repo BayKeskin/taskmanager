@@ -972,6 +972,45 @@ if ($resource === 'projects') {
         apiResponse($analysis, 'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.');
     }
 
+    // 5.3 POST /api/projects/{id_or_code}/hosting/test - Barındırma Paneli Bağlantı Testi (TSK-1082)
+    if ($param1 !== null && $param2 === 'hosting' && $param3 === 'test' && $method === 'POST') {
+        $proj = resolveProject($db, $param1);
+        if (!$proj) apiError('Proje bulunamadı.', 404);
+
+        $panelType = trim($requestData['panel_type'] ?? ($requestData['type'] ?? 'standard'));
+        $config = $requestData['config'] ?? $requestData;
+
+        $res = HostingManager::testCredentials($panelType, $config);
+        if (empty($res['success'])) {
+            apiError($res['message'] ?? 'Barındırma paneli bağlantısı başarısız.', 400, $res);
+        }
+
+        apiResponse($res, 'Barındırma paneli bağlantısı başarıyla doğrulandı.');
+    }
+
+    // 5.4 POST /api/projects/{id_or_code}/hosting/provision-db - Otomatik Veritabanı Tahsisi (TSK-1082)
+    if ($param1 !== null && $param2 === 'hosting' && $param3 === 'provision-db' && $method === 'POST') {
+        $proj = resolveProject($db, $param1);
+        if (!$proj) apiError('Proje bulunamadı.', 404);
+
+        $panelType = trim($requestData['panel_type'] ?? ($requestData['type'] ?? 'standard'));
+        $config    = $requestData['config'] ?? $requestData;
+        $dbName    = trim($requestData['db_name'] ?? ($requestData['database'] ?? ''));
+        $dbUser    = trim($requestData['db_user'] ?? ($requestData['username'] ?? ''));
+        $dbPass    = trim($requestData['db_pass'] ?? ($requestData['password'] ?? ''));
+
+        if (empty($dbName)) {
+            apiError('Oluşturulacak veritabanı adı (db_name) zorunludur.', 400);
+        }
+
+        $res = HostingManager::provision($panelType, $config, $dbName, $dbUser, $dbPass);
+        if (empty($res['success'])) {
+            apiError($res['message'] ?? 'Veritabanı tahsisi başarısız oldu.', 500, $res);
+        }
+
+        apiResponse($res, 'Canlı veritabanı ve kullanıcısı başarıyla tahsis edildi.', 201);
+    }
+
     // 6. DELETE /api/projects/{id_or_code} - Proje Sil / Arşivle
     if ($param1 !== null && $param2 === null && $method === 'DELETE') {
         if ($currentUser->role !== 'admin') {

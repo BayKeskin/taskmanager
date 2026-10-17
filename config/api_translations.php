@@ -95,6 +95,11 @@ return array (
     'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.' => 'Project environment variables and live deployment configuration analysis completed.',
     'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.' => 'Project local workspace path (workspace_path) is not defined.',
     'Proje analiz edilemedi.' => 'Project could not be analyzed.',
+    'Barındırma paneli bağlantısı başarıyla doğrulandı.' => 'Hosting panel connection verified successfully.',
+    'Barındırma paneli bağlantısı başarısız.' => 'Hosting panel connection failed.',
+    'Canlı veritabanı ve kullanıcısı başarıyla tahsis edildi.' => 'Live database and user successfully provisioned.',
+    'Veritabanı tahsisi başarısız oldu.' => 'Database provisioning failed.',
+    'Oluşturulacak veritabanı adı (db_name) zorunludur.' => 'Database name (db_name) to create is required.',
   ),
   'de' => 
   array (
@@ -189,5 +194,10 @@ return array (
     'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.' => 'Analyse der Projektumgebungsvariablen und Live-Bereitstellungskonfiguration abgeschlossen.',
     'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.' => 'Lokaler Projekt-Arbeitsbereichspfad (workspace_path) ist nicht definiert.',
     'Proje analiz edilemedi.' => 'Projekt konnte nicht analysiert werden.',
+    'Barındırma paneli bağlantısı başarıyla doğrulandı.' => 'Hosting-Panel-Verbindung erfolgreich verifiziert.',
+    'Barındırma paneli bağlantısı başarısız.' => 'Hosting-Panel-Verbindung fehlgeschlagen.',
+    'Canlı veritabanı ve kullanıcısı başarıyla tahsis edildi.' => 'Live-Datenbank und Benutzer erfolgreich bereitgestellt.',
+    'Veritabanı tahsisi başarısız oldu.' => 'Datenbank-Bereitstellung fehlgeschlagen.',
+    'Oluşturulacak veritabanı adı (db_name) zorunludur.' => 'Zu erstellender Datenbankname (db_name) ist erforderlich.',
   ),
 );
