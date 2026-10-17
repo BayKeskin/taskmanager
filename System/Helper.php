@@ -1243,8 +1243,6 @@ class Helper
             if ($isResumed) {
                 $desc = "🔄 **Previous priority/revision task was completed! Resumed this pending task autonomously.**\n\n" . $desc;
             }
-            $desc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen development and autonomous verification are 100% complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . self::getAgentSubmitCommandBlock($task->task_code);
-
             // Görev Ekleri & Görselleri (Attachments)
             $attachmentRows = $db->multi_record_query("
                 SELECT id, file_name, file_path, file_type, file_size 
@@ -1258,10 +1256,27 @@ class Helper
             $baseUrl = rtrim($apiCfg['base_url'], '/');
 
             $attachments = [];
+            $attachmentsMd = '';
+            if (!empty($attachmentRows)) {
+                $attachmentsMd = "\n\n### 📎 Task Attachments & Reference Designs:\n"
+                    . "> **MANDATORY ASSET INSPECTION:** Carefully inspect all attached visual designs and reference documents before writing any code.\n";
+            }
+
             foreach ($attachmentRows as $row) {
                 $relPath = ltrim(str_replace(['\\', '/taskmanager/'], ['/', ''], (string)$row->file_path), '/');
                 $cleanAbsPath = str_replace('\\', '/', $baseDir . '/' . $relPath);
                 $fileUrl = $baseUrl . '/' . $relPath;
+
+                $fName = $row->file_name ?: basename($relPath);
+                $fType = strtolower($row->file_type ?? '');
+                $fUri  = 'file:///' . ltrim($cleanAbsPath, '/');
+                $isImg = str_starts_with($fType, 'image/') || preg_match('/\.(png|jpe?g|webp|gif|svg)$/i', $fName);
+                $icon  = $isImg ? '🖼️' : '📄';
+                $hint  = $isImg 
+                    ? "*(Reference Image: inspect using `view_file` or visual tools to match design pixel-perfect)*" 
+                    : "*(Attached Document: view using `view_file`)*";
+
+                $attachmentsMd .= "- {$icon} [{$fName}]({$fUri}) [Web URL: {$fileUrl}] {$hint}\n";
 
                 $attachments[] = [
                     'id'        => (int)$row->id,
@@ -1270,11 +1285,17 @@ class Helper
                     'file_size' => (int)$row->file_size,
                     'file_path' => $row->file_path,
                     'abs_path'  => $cleanAbsPath,
-                    'file_uri'  => 'file:///' . ltrim($cleanAbsPath, '/'),
+                    'file_uri'  => $fUri,
                     'url'       => $fileUrl,
                     'exists'    => file_exists($cleanAbsPath),
                 ];
             }
+
+            if (!empty($attachmentsMd)) {
+                $desc .= $attachmentsMd;
+            }
+
+            $desc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen development and autonomous verification are 100% complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . self::getAgentSubmitCommandBlock($task->task_code);
 
             $payloadData = array_merge([
                 'task_id'       => (int)$task->id,
@@ -1334,10 +1355,27 @@ class Helper
             $baseUrl = rtrim($apiCfg['base_url'], '/');
 
             $attachments = [];
+            $attachmentsMd = '';
+            if (!empty($attachmentRows)) {
+                $attachmentsMd = "\n\n### 📎 Task Attachments & Reference Designs:\n"
+                    . "> **MANDATORY ASSET INSPECTION:** Carefully inspect all attached visual designs and reference documents before writing any code.\n";
+            }
+
             foreach ($attachmentRows as $row) {
                 $relPath = ltrim(str_replace(['\\', '/taskmanager/'], ['/', ''], (string)$row->file_path), '/');
                 $cleanAbsPath = str_replace('\\', '/', $baseDir . '/' . $relPath);
                 $fileUrl = $baseUrl . '/' . $relPath;
+
+                $fName = $row->file_name ?: basename($relPath);
+                $fType = strtolower($row->file_type ?? '');
+                $fUri  = 'file:///' . ltrim($cleanAbsPath, '/');
+                $isImg = str_starts_with($fType, 'image/') || preg_match('/\.(png|jpe?g|webp|gif|svg)$/i', $fName);
+                $icon  = $isImg ? '🖼️' : '📄';
+                $hint  = $isImg 
+                    ? "*(Reference Image: inspect using `view_file` or visual tools to match design pixel-perfect)*" 
+                    : "*(Attached Document: view using `view_file`)*";
+
+                $attachmentsMd .= "- {$icon} [{$fName}]({$fUri}) [Web URL: {$fileUrl}] {$hint}\n";
 
                 $attachments[] = [
                     'id'        => (int)$row->id,
@@ -1346,13 +1384,17 @@ class Helper
                     'file_size' => (int)$row->file_size,
                     'file_path' => $row->file_path,
                     'abs_path'  => $cleanAbsPath,
-                    'file_uri'  => 'file:///' . ltrim($cleanAbsPath, '/'),
+                    'file_uri'  => $fUri,
                     'url'       => $fileUrl,
                     'exists'    => file_exists($cleanAbsPath),
                 ];
             }
 
-            $revDesc = ($task->description ?: '') . "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen revision fixes and autonomous verification are complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . self::getAgentSubmitCommandBlock($task->task_code);
+            $revDesc = ($task->description ?: '');
+            if (!empty($attachmentsMd)) {
+                $revDesc .= $attachmentsMd;
+            }
+            $revDesc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen revision fixes and autonomous verification are complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . self::getAgentSubmitCommandBlock($task->task_code);
 
             $payloadData = array_merge([
                 'task_id'         => (int)$task->id,
