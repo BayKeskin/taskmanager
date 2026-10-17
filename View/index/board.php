@@ -69,6 +69,7 @@ foreach ($allTasks as $t) {
             <button type="button" class="cu-btn-sm" onclick="openGithubSettingsModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); color:var(--text-white); font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.modal_github_title', 'GitHub Otomasyon & Hesap Ayarları')) ?>">
                 <span>🐙</span> <span><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : __('app.btn_connect_github', 'GitHub Bağla') ?></span>
             </button>
+            <?php if (!empty($activeProjectId)): ?>
                 <button type="button" class="cu-btn-sm" onclick="syncProjectToGithub(<?= (int)$activeProjectId ?>)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(46,160,67,0.15); border:1px solid rgba(46,160,67,0.4); color:#3fb950; font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box;" title="<?= htmlspecialchars(__('app.btn_sync_github', 'Bu Projeyi GitHub ile Eşitle')) ?>">
                     <span>🐙</span> <span><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
                 </button>
