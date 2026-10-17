@@ -97,6 +97,16 @@ function jsonResponse($success, $message = '', $data = []) {
 }
 
 switch ($action) {
+    // 0. KANBAN GÖREVLERİ EXCEL DIŞA AKTARIMI (TSK-1156)
+    case 'export_excel':
+    case 'kanban_export_excel':
+        require_once __DIR__ . '/../BoardController.php';
+        $bc = new BoardController($system ?? null);
+        $projId = (int)($_GET['project_id'] ?? ($_POST['project_id'] ?? 0));
+        $bc->exportExcel($projId, $currentUser);
+        exit;
+        break;
+
     // 1. GÖREV DETAYI ALMA
     case 'get_task_detail':
         $taskId = (int)($_GET['id'] ?? 0);

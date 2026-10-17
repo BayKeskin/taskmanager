@@ -543,5 +543,21 @@ return array (
   'deploy_badge_checking' => '🟡 Kontrol Ediliyor...',
   'deploy_badge_error' => '🔴 Yanıt Hatası',
   'deploy_rollback_confirm' => 'Canlı sunucu önceki stabil sürüme geri alınacak. Devam etmek istiyor musunuz?',
+
+  // Kanban Excel Export (TSK-1156)
+  'kanban_export_excel' => "Excel'e Aktar",
+  'export_task_id' => 'Görev ID',
+  'export_title' => 'Görev Başlığı',
+  'export_status' => 'Mevcut Durum',
+  'export_priority' => 'Öncelik',
+  'export_assignee' => 'Atanan',
+  'export_creator' => 'Oluşturan',
+  'export_start_date' => 'Başlangıç Tarihi',
+  'export_due_date' => 'Termin Tarihi',
+  'export_created_at' => 'Oluşturulma Tarihi',
+  'export_unassigned' => 'Atanmamış',
+  'export_no_date' => 'Belirtilmedi',
+  'invalid_project' => 'Geçersiz proje seçimi.',
 );
+
 

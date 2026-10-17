@@ -543,5 +543,21 @@ return array (
   'deploy_badge_checking' => '🟡 Checking...',
   'deploy_badge_error' => '🔴 Response Error',
   'deploy_rollback_confirm' => 'The live server will be rolled back to the previous stable release. Do you wish to continue?',
+
+  // Kanban Excel Export (TSK-1156)
+  'kanban_export_excel' => 'Export to Excel',
+  'export_task_id' => 'Task ID',
+  'export_title' => 'Task Title',
+  'export_status' => 'Current Status',
+  'export_priority' => 'Priority',
+  'export_assignee' => 'Assignee',
+  'export_creator' => 'Creator',
+  'export_start_date' => 'Start Date',
+  'export_due_date' => 'Due Date',
+  'export_created_at' => 'Created Date',
+  'export_unassigned' => 'Unassigned',
+  'export_no_date' => 'Not Specified',
+  'invalid_project' => 'Invalid project selected.',
 );
+
 

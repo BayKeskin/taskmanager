@@ -19,6 +19,7 @@ DirectoryIndex index.php View/index/board.php
     RewriteRule ^logout/?$              View/index/logout.php [L,NC,QSA]
     RewriteRule ^tasks/?$               View/index/index.php [L,NC,QSA]
     RewriteRule ^board/?$               View/index/board.php [L,NC,QSA]
+    RewriteRule ^kanban/export-excel/?$ Controller/ajax/ajax.php?action=export_excel [L,NC,QSA]
     RewriteRule ^calendar/?$            View/index/calendar.php [L,NC,QSA]
     RewriteRule ^reports/?$             View/index/reports.php [L,NC,QSA]
     RewriteRule ^billing-report/?$      View/index/billing_report.php [L,NC,QSA]

@@ -84,6 +84,17 @@ foreach ($allTasks as $t) {
                 </button>
             <?php endif; ?>
         <?php endif; ?>
+        <?php if (!empty($activeProjectId)): ?>
+            <a href="/taskmanager/kanban/export-excel?project_id=<?= (int)$activeProjectId ?>" 
+               id="btnExportExcel" 
+               class="cu-btn-sm" 
+               title="<?= htmlspecialchars(__('app.kanban_export_excel', 'Excel\'e Aktar')) ?>"
+               target="_blank"
+               style="height:32px; display:inline-flex; align-items:center; gap:8px; background:#107C41; border:1px solid #0E6B37; color:#FFFFFF; font-weight:600; padding:0 14px; font-size:12px; border-radius:6px; cursor:pointer; text-decoration:none; box-sizing:border-box; box-shadow:0 1px 3px rgba(0,0,0,0.2); transition:all 0.2s ease-in-out;">
+                <span style="font-size:13px;">📊</span>
+                <span><?= __('app.kanban_export_excel', 'Excel\'e Aktar') ?></span>
+            </a>
+        <?php endif; ?>
         <?php if ($canCreateTask): ?>
             <button type="button" class="cu-btn-quick-task" onclick="openNewTaskModal()" style="height:32px; padding:0 14px; font-size:12.5px; display:inline-flex; align-items:center; gap:6px; box-sizing:border-box;">
                 <span>➕</span> <?= __('tasks.btn_add_task', 'Görev Ekle') ?>

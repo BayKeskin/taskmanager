@@ -161,4 +161,54 @@ class TaskModel extends Model
     {
         return (int)($this->db->count_record("tasks", ["assigned_to"], [$userId]) ?: 0);
     }
+
+    /**
+     * Kanban görevlerini Excel / CSV dışa aktarımı için ilişkili verilerle çeker (TSK-1156)
+     */
+    public function getTasksForExport(int $projectId, array $filters = []): array
+    {
+        $sql = "
+            SELECT 
+                t.id,
+                t.task_code,
+                t.title,
+                t.status,
+                t.priority,
+                t.created_at,
+                t.deadline,
+                t.time_estimate,
+                t.time_spent,
+                p.title AS project_title,
+                u_assigned.name AS assignee_name,
+                u_creator.name AS creator_name,
+                (SELECT COUNT(*) FROM tasks sub WHERE sub.parent_task_id = t.id) as subtask_count,
+                (SELECT COUNT(*) FROM tasks sub WHERE sub.parent_task_id = t.id AND sub.status = 'completed') as subtask_completed_count
+            FROM tasks t
+            LEFT JOIN projects p ON t.project_id = p.id
+            LEFT JOIN users u_assigned ON t.assigned_to = u_assigned.id
+            LEFT JOIN users u_creator ON t.created_by = u_creator.id
+            WHERE t.project_id = ?
+        ";
+        $params = [$projectId];
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND t.status = ? ";
+            $params[] = $filters['status'];
+        }
+
+        if (!empty($filters['priority'])) {
+            $sql .= " AND t.priority = ? ";
+            $params[] = $filters['priority'];
+        }
+
+        if (!empty($filters['assigned_to'])) {
+            $sql .= " AND t.assigned_to = ? ";
+            $params[] = (int)$filters['assigned_to'];
+        }
+
+        $sql .= " ORDER BY t.id DESC ";
+
+        return $this->db->multi_record_query($sql, $params) ?: [];
+    }
 }
+
