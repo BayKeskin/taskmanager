@@ -719,6 +719,24 @@ class Helper
                 }
             }
 
+            $attachmentsMd = '';
+            if (!empty($data['attachments']) && is_array($data['attachments'])) {
+                $attachmentsMd = "\n\n### 📎 Task Attachments & Reference Designs:\n"
+                    . "> **MANDATORY ASSET INSPECTION:** Carefully inspect all attached visual designs and reference documents before writing any code.\n";
+                foreach ($data['attachments'] as $att) {
+                    $attObj = is_object($att) ? $att : (object)$att;
+                    $fName = $attObj->file_name ?? basename($attObj->file_path ?? 'attachment');
+                    $fUri  = $attObj->file_uri ?? ('file:///' . ltrim(str_replace('\\', '/', $attObj->abs_path ?? ''), '/'));
+                    $fType = $attObj->file_type ?? '';
+                    $isImg = str_starts_with($fType, 'image/') || preg_match('/\.(png|jpe?g|webp|gif|svg)$/i', $fName);
+                    $icon  = $isImg ? '🖼️' : '📄';
+                    $hint  = $isImg 
+                        ? "*(Reference Image: inspect using `view_file` or visual tools to match design pixel-perfect)*" 
+                        : "*(Attached Document: view using `view_file`)*";
+                    $attachmentsMd .= "- {$icon} [{$fName}]({$fUri}) {$hint}\n";
+                }
+            }
+
             $assigneesStr = !empty($data['assignees']) ? implode(', ', (array)$data['assignees']) : 'Unassigned';
             $timeEstimate = $data['time_estimate'] ?? '-';
             $deadline     = $data['deadline'] ?? '-';
@@ -736,6 +754,7 @@ class Helper
                 . "👥 **Assignees:** {$assigneesStr} | 👤 **Triggered By:** {$triggeredBy}\n\n"
                 . "### 📝 Task Description & Requirements:\n{$desc}"
                 . "{$checklistMd}"
+                . "{$attachmentsMd}"
                 . "{$projectRulesBlock}\n\n"
                 . "---\n"
                 . "🛡️ **MANDATORY QA DOCTRINE: \"THE USER IS NOT A QA TESTER\"**\n"
@@ -767,12 +786,32 @@ class Helper
             $titleHeader = "⚠️ [REVISION REQUEST] {$taskCode}: {$taskTitle}";
             $revReason = $data['revision_reason'] ?? '*(No reason specified)*';
             $desc = !empty($data['description']) ? trim((string)$data['description']) : '';
+
+            $attachmentsMd = '';
+            if (!empty($data['attachments']) && is_array($data['attachments'])) {
+                $attachmentsMd = "\n\n### 📎 Task Attachments & Reference Designs:\n"
+                    . "> **MANDATORY ASSET INSPECTION:** Carefully inspect all attached visual designs and reference documents before writing any code.\n";
+                foreach ($data['attachments'] as $att) {
+                    $attObj = is_object($att) ? $att : (object)$att;
+                    $fName = $attObj->file_name ?? basename($attObj->file_path ?? 'attachment');
+                    $fUri  = $attObj->file_uri ?? ('file:///' . ltrim(str_replace('\\', '/', $attObj->abs_path ?? ''), '/'));
+                    $fType = $attObj->file_type ?? '';
+                    $isImg = str_starts_with($fType, 'image/') || preg_match('/\.(png|jpe?g|webp|gif|svg)$/i', $fName);
+                    $icon  = $isImg ? '🖼️' : '📄';
+                    $hint  = $isImg 
+                        ? "*(Reference Image: inspect using `view_file` or visual tools to match design pixel-perfect)*" 
+                        : "*(Attached Document: view using `view_file`)*";
+                    $attachmentsMd .= "- {$icon} [{$fName}]({$fUri}) {$hint}\n";
+                }
+            }
+
             $messageText = "⚠️ **TaskManager Revision Request!**\n\n"
                 . "📌 **Project:** [{$projectCode}] {$projectTitle}\n"
                 . "📋 **Task Code:** {$taskCode}\n"
                 . "🏷️ **Title:** {$taskTitle}\n\n"
                 . "🔴 **Requested Revision & Feedback:**\n{$revReason}\n\n"
                 . "### 📝 Original Task Description:\n{$desc}"
+                . "{$attachmentsMd}"
                 . "{$projectRulesBlock}\n\n"
                 . "---\n"
                 . "🛡️ **MANDATORY QA DOCTRINE: \"THE USER IS NOT A QA TESTER\"**\n"
@@ -1206,6 +1245,37 @@ class Helper
             }
             $desc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen development and autonomous verification are 100% complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . self::getAgentSubmitCommandBlock($task->task_code);
 
+            // Görev Ekleri & Görselleri (Attachments)
+            $attachmentRows = $db->multi_record_query("
+                SELECT id, file_name, file_path, file_type, file_size 
+                FROM task_attachments 
+                WHERE task_id = ? 
+                ORDER BY id ASC
+            ", [$taskId]) ?: [];
+
+            $baseDir = str_replace('\\', '/', realpath(__DIR__ . '/..') ?: dirname(__DIR__)); // c:/wamp64/www/taskmanager
+            $apiCfg = self::getDynamicApiConfig();
+            $baseUrl = rtrim($apiCfg['base_url'], '/');
+
+            $attachments = [];
+            foreach ($attachmentRows as $row) {
+                $relPath = ltrim(str_replace(['\\', '/taskmanager/'], ['/', ''], (string)$row->file_path), '/');
+                $cleanAbsPath = str_replace('\\', '/', $baseDir . '/' . $relPath);
+                $fileUrl = $baseUrl . '/' . $relPath;
+
+                $attachments[] = [
+                    'id'        => (int)$row->id,
+                    'file_name' => $row->file_name,
+                    'file_type' => $row->file_type,
+                    'file_size' => (int)$row->file_size,
+                    'file_path' => $row->file_path,
+                    'abs_path'  => $cleanAbsPath,
+                    'file_uri'  => 'file:///' . ltrim($cleanAbsPath, '/'),
+                    'url'       => $fileUrl,
+                    'exists'    => file_exists($cleanAbsPath),
+                ];
+            }
+
             $payloadData = array_merge([
                 'task_id'       => (int)$task->id,
                 'task_code'     => $task->task_code,
@@ -1217,6 +1287,7 @@ class Helper
                 'tags'          => $task->tags,
                 'assignees'     => $assignees,
                 'checklists'    => $checklists,
+                'attachments'   => $attachments,
                 'old_status'    => $oldStatus,
                 'new_status'    => 'in_progress',
                 'resumed'       => $isResumed,
@@ -1250,6 +1321,37 @@ class Helper
 
             $checklists = $db->multi_record_query("SELECT id, title, is_completed FROM task_checklists WHERE task_id = ? ORDER BY id ASC", [$taskId]) ?: [];
 
+            // Görev Ekleri & Görselleri (Attachments)
+            $attachmentRows = $db->multi_record_query("
+                SELECT id, file_name, file_path, file_type, file_size 
+                FROM task_attachments 
+                WHERE task_id = ? 
+                ORDER BY id ASC
+            ", [$taskId]) ?: [];
+
+            $baseDir = str_replace('\\', '/', realpath(__DIR__ . '/..') ?: dirname(__DIR__)); // c:/wamp64/www/taskmanager
+            $apiCfg = self::getDynamicApiConfig();
+            $baseUrl = rtrim($apiCfg['base_url'], '/');
+
+            $attachments = [];
+            foreach ($attachmentRows as $row) {
+                $relPath = ltrim(str_replace(['\\', '/taskmanager/'], ['/', ''], (string)$row->file_path), '/');
+                $cleanAbsPath = str_replace('\\', '/', $baseDir . '/' . $relPath);
+                $fileUrl = $baseUrl . '/' . $relPath;
+
+                $attachments[] = [
+                    'id'        => (int)$row->id,
+                    'file_name' => $row->file_name,
+                    'file_type' => $row->file_type,
+                    'file_size' => (int)$row->file_size,
+                    'file_path' => $row->file_path,
+                    'abs_path'  => $cleanAbsPath,
+                    'file_uri'  => 'file:///' . ltrim($cleanAbsPath, '/'),
+                    'url'       => $fileUrl,
+                    'exists'    => file_exists($cleanAbsPath),
+                ];
+            }
+
             $revDesc = ($task->description ?: '') . "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen revision fixes and autonomous verification are complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . self::getAgentSubmitCommandBlock($task->task_code);
 
             $payloadData = array_merge([
@@ -1260,6 +1362,7 @@ class Helper
                 'revision_reason' => $reason,
                 'priority'        => $task->priority,
                 'checklists'      => $checklists,
+                'attachments'     => $attachments,
                 'old_status'      => $task->status,
                 'new_status'      => 'modification_requested'
             ], $extra);

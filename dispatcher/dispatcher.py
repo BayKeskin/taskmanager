@@ -430,6 +430,23 @@ def process_webhook_async(payload, header_conv_id):
                 text = item.get('title') or item.get('item_text', '')
                 checklist_md += f"- {box} {text}\n"
 
+        attachments = data.get('attachments', [])
+        attachments_md = ""
+        if attachments:
+            attachments_md = (
+                "\n\n### 📎 Task Attachments & Reference Designs:\n"
+                "> **MANDATORY ASSET INSPECTION:** Carefully inspect all attached visual designs and reference documents before writing any code.\n"
+            )
+            for att in attachments:
+                fname = att.get('file_name') or os.path.basename(att.get('file_path', 'attachment'))
+                abs_p = (att.get('abs_path') or att.get('file_path', '')).replace('\\', '/')
+                furi = att.get('file_uri') or f"file:///{abs_p.lstrip('/')}"
+                ftype = att.get('file_type', '').lower()
+                is_img = ftype.startswith('image/') or any(fname.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'])
+                icon = "🖼️" if is_img else "📄"
+                hint = "*(Reference Image: inspect using `view_file` or visual tools to match design pixel-perfect)*" if is_img else "*(Attached Document: view using `view_file`)*"
+                attachments_md += f"- {icon} [{fname}]({furi}) {hint}\n"
+
         message_text = (
             f"{banner}"
             f"📌 **Project:** [{project_code}] {project_title} (`{project_dir}`)\n"
@@ -438,6 +455,7 @@ def process_webhook_async(payload, header_conv_id):
             f"⚡ **Priority:** {priority}\n\n"
             f"### 📝 Task Description & Requirements:\n{desc}"
             f"{checklist_md}"
+            f"{attachments_md}"
             f"{rules_block}\n\n"
             f"---\n"
             f"🛑 **STRICT OPERATIONAL GUARDRAILS:**\n"
