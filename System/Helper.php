@@ -3788,16 +3788,28 @@ CRITICAL ARCHITECTURAL RULES:
         $projRules = $project->agent_rules ?? '';
 
         $systemPrompt = "You are a Principal Software Architect and elite AI Agent Prompt Engineer.
-Your mission is to take a developer's brief requirement note, along with optional reference UI screenshots or source code files, and transform it into a crystal-clear, highly disciplined, actionable TECHNICAL SPECIFICATION PROMPT for autonomous coding agents (like Antigravity, Cursor, or Claude Code).
+Your mission is to examine the provided UI/UX mockup images (wireframes, ChatGPT designs, screenshots), source code files, and user notes, and transform them into an EXTREMELY DETAILED, PIXEL-PERFECT, DEEPLY ANALYZED TECHNICAL SPECIFICATION PROMPT for autonomous coding agents (like Antigravity, Cursor, or Claude Code).
+
+CRITICAL VISUAL ANALYSIS DIRECTIVE (WHEN IMAGES ARE PROVIDED):
+You MUST visually analyze the image in extreme detail and explicitly describe every single section you see:
+1. Header / Navbar components (Logo, navigation links, buttons, search triggers, badges).
+2. Hero Section: Exact headline texts, subheadings, badges (e.g. 'GERÇEK DENEYİMLER, GERÇEK BİLGİLER'), background image style (soldiers/military/landscape), and exact floating search/filter bars (inputs, dropdowns, placeholder texts, icons, action buttons).
+3. Primary Call-to-Action Cards (e.g. 'Deneyimimi Paylaş' with green pen icon, 'Soru Sor' with blue chat bubble icon).
+4. Middle / Featured Sections: (e.g. 'Popüler Şehirler' with thumbnail cards for Ankara, İstanbul, İzmir, Burdur, Manisa, Tekirdağ, showing comment counts and 'Tüm Şehirleri Gör ->' link).
+5. Quick Submission Forms / Interactive Widgets: (e.g. 'Hızlı Deneyim Yaz' green card with dropdowns and textarea, 'Hızlı Soru Sor' blue card with question inputs).
+6. Recent Feeds / Tabbed Lists: (e.g. 'Son Yorumlar' and 'Son Sorular' side-by-side columns with author avatar badges, unit names, comment/answer counts).
+7. Footer / News sections: (e.g. 'Haberler' news grid with thumbnail images and publication dates).
+8. Colors, Typography & Styling: Exact hex color codes, border radiuses, box shadows, gradients, and icons (FontAwesome classes like fa-solid fa-location-dot, fa-pen-to-square, fa-comment-dots, etc.).
 
 MANDATORY RULES:
 1. OUTPUT LANGUAGE: Write the entire specification in the exact language used by the developer in the requirement note (if in Turkish, write completely in Turkish; if German, in German; if English, in English).
 2. TONE & STRUCTURE: Authoritative, structured, and unambiguous. Use clean Markdown with headers, bold points, and code snippets where appropriate:
    - 🎯 **1. GÖREV AMACI & KAPSAMI** (Purpose & High-level Scope)
-   - 📁 **2. ETKİLENECEK DOSYALAR & MİMARİ YAPI** (Target Files, classes, methods, or DB tables)
-   - 🛠️ **3. ADIM ADIM UYGULAMA YÖNERGESİ** (Concrete step-by-step technical instructions: UI/Frontend, Backend/Logic, Data structures)
-   - 🚫 **4. KESİN YASAKLAR & MİMARİ SINIRLAR** (Prohibitions: No breaking changes, strict project standards, no spaghetti code)
-   - ✅ **5. KABUL & OTONOM DOĞRULAMA KRİTERLERİ (DoD)** (Checklist of verified behaviors: live tests, zero console/PHP errors, responsiveness)
+   - 🎨 **2. GÖRSEL TASARIM & UI/UX DETAYLI ANALİZİ** (Exhaustive visual breakdown of EVERY SECTION seen in the image: texts, cards, colors, icons, layout)
+   - 📁 **3. ETKİLENECEK DOSYALAR & MİMARİ YAPI** (Target Files, classes, methods, or DB tables)
+   - 🛠️ **4. ADIM ADIM UYGULAMA YÖNERGESİ** (Concrete step-by-step technical instructions: HTML structure, CSS classes, JS interactions, Mock Data)
+   - 🚫 **5. KESİN YASAKLAR & MİMARİ SINIRLAR** (Prohibitions: No breaking changes, strict project standards, no spaghetti code)
+   - ✅ **6. KABUL & OTONOM DOĞRULAMA KRİTERLERİ (DoD)** (Checklist of verified behaviors: live tests, zero console/PHP errors, responsiveness)
 3. INCORPORATE ATTACHMENTS: If code files are provided, refer to their actual variables/functions. If images/mockups are provided, describe their visual layout, colors, alignment, and interactive behaviors (hover, active, states).
 4. OUTPUT FORMAT: Output ONLY the specification markdown. Do NOT wrap in outer ```markdown code blocks. No conversational greeting or chitchat (no 'Tabii ki!', no 'İşte şartnameniz:').";
 
@@ -3830,17 +3842,20 @@ MANDATORY RULES:
         // 1. Google Gemini API Denemesi (Vision / Multimodal Destekli)
         $apiKey = trim($settings->gemini_api_key ?? '');
         if (!empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
-            $candidateModels = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+            $candidateModels = ['gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
             $configuredModel = $settings->default_ai_model ?? '';
             if (!empty($configuredModel) && !in_array($configuredModel, $candidateModels, true)) {
                 array_unshift($candidateModels, $configuredModel);
             }
 
             foreach ($candidateModels as $tryModel) {
+                if (str_contains($tryModel, '1.5') || str_contains($tryModel, '2.5')) {
+                    continue;
+                }
                 $url = "https://generativelanguage.googleapis.com/v1beta/models/{$tryModel}:generateContent?key=" . urlencode($apiKey);
 
                 $userParts = [];
-                // Görseller varsa inline data (base64) olarak ekle
+                // Görseller varsa inline_data (base64) olarak ekle
                 foreach ($referenceImages as $img) {
                     if (!empty($img['base64']) && !empty($img['mime'])) {
                         $userParts[] = [
@@ -3857,8 +3872,8 @@ MANDATORY RULES:
                     'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
                     'contents'          => [['role' => 'user', 'parts' => $userParts]],
                     'generationConfig'  => [
-                        'temperature'     => 0.3,
-                        'maxOutputTokens' => 4096,
+                        'temperature'     => 0.2,
+                        'maxOutputTokens' => 8192,
                     ]
                 ];
 
@@ -3868,7 +3883,7 @@ MANDATORY RULES:
                     CURLOPT_POST           => true,
                     CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
                     CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
-                    CURLOPT_TIMEOUT        => 60,
+                    CURLOPT_TIMEOUT        => 90,
                     CURLOPT_SSL_VERIFYPEER => false,
                 ]);
                 $response = curl_exec($ch);
