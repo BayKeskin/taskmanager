@@ -1105,6 +1105,69 @@ if ($resource === 'projects') {
         ], 'Yerel veritabanı şeması ve verileri canlı domain eşitlemesiyle başarıyla dışa aktarıldı.');
     }
 
+    // 5.7 GET/POST /api/projects/{id_or_code}/hosting/delta-diff - Git Diff ve Bekleyen Migration Tespiti (TSK-1084)
+    if ($param1 !== null && $param2 === 'hosting' && $param3 === 'delta-diff' && ($method === 'POST' || $method === 'GET')) {
+        $proj = resolveProject($db, $param1);
+        if (!$proj) apiError('Proje bulunamadı.', 404);
+
+        $lastDep = DeltaSyncEngine::getLastDeployment((int)$proj->id);
+        $fromCommit = $requestData['from_commit'] ?? ($lastDep->to_commit ?? null);
+        $toCommit   = $requestData['to_commit'] ?? 'HEAD';
+
+        $diff = DeltaSyncEngine::calculateGitDiff($proj->workspace_path, $fromCommit, $toCommit);
+        if (empty($diff['success'])) {
+            apiError($diff['error'] ?? 'Git farkı hesaplanamadı.', 400);
+        }
+
+        $pendingMigrations = DeltaSyncEngine::detectPendingMigrations($proj->workspace_path, $fromCommit, $toCommit);
+
+        apiResponse([
+            'project_code'       => $proj->project_code,
+            'diff'               => $diff,
+            'pending_migrations' => $pendingMigrations,
+            'migration_count'    => count($pendingMigrations)
+        ], 'Akıllı delta senkronizasyon dosya farkları ve şema göçleri başarıyla hesaplandı.');
+    }
+
+    // 5.8 POST /api/projects/{id_or_code}/hosting/deploy - Delta/Tam Dağıtımı Kaydetme (TSK-1084)
+    if ($param1 !== null && $param2 === 'hosting' && $param3 === 'deploy' && $method === 'POST') {
+        $proj = resolveProject($db, $param1);
+        if (!$proj) apiError('Proje bulunamadı.', 404);
+
+        $depType    = trim($requestData['deployment_type'] ?? 'delta');
+        $fromCommit = $requestData['from_commit'] ?? null;
+        $toCommit   = trim($requestData['to_commit'] ?? '');
+
+        if (empty($toCommit)) {
+            $toCommit = trim(shell_exec("cd /d \"{$proj->workspace_path}\" && git rev-parse HEAD") ?: 'unknown');
+        }
+
+        $filesUp  = (int)($requestData['files_uploaded'] ?? 0);
+        $filesDel = (int)($requestData['files_deleted'] ?? 0);
+        $migsRun  = (int)($requestData['migrations_run'] ?? 0);
+        $details  = $requestData['details'] ?? [];
+
+        $depId = DeltaSyncEngine::recordDeployment((int)$proj->id, [
+            'deployment_type' => $depType,
+            'from_commit'     => $fromCommit,
+            'to_commit'       => $toCommit,
+            'status'          => 'completed',
+            'files_uploaded'  => $filesUp,
+            'files_deleted'   => $filesDel,
+            'migrations_run'  => $migsRun,
+            'details'         => $details,
+            'deployed_by'     => $currentUser->id ?? 1
+        ]);
+
+        apiResponse([
+            'deployment_id' => $depId,
+            'project_code'  => $proj->project_code,
+            'type'          => $depType,
+            'to_commit'     => $toCommit,
+            'status'        => 'completed'
+        ], 'Proje dağıtımı ve delta senkronizasyon kaydı başarıyla tamamlandı.', 201);
+    }
+
     // 6. DELETE /api/projects/{id_or_code} - Proje Sil / Arşivle
     if ($param1 !== null && $param2 === null && $method === 'DELETE') {
         if ($currentUser->role !== 'admin') {

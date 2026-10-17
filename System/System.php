@@ -28,6 +28,7 @@ require_once __DIR__ . '/Language.php';
 require_once __DIR__ . '/ProjectAnalyzer.php';
 require_once __DIR__ . '/HostingAdapters/HostingManager.php';
 require_once __DIR__ . '/LiveConfigGenerator.php';
+require_once __DIR__ . '/DeltaSyncEngine.php';
 
 // 2. Global Veritabanı ve Temel Ayarlar
 $db = new Database();

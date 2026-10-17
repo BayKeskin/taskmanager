@@ -3106,6 +3106,79 @@ switch ($action) {
         ]);
         break;
 
+    case 'delta_diff':
+        $projectId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
+        $proj = null;
+        if ($projectId > 0) {
+            $proj = $db->row_query("SELECT * FROM projects WHERE id = ?", [$projectId]);
+        }
+        $targetPath = $proj->workspace_path ?? '';
+        if (empty($targetPath)) {
+            jsonResponse(false, 'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.');
+        }
+
+        $lastDep = DeltaSyncEngine::getLastDeployment($projectId);
+        $fromCommit = $_POST['from_commit'] ?? ($lastDep->to_commit ?? null);
+        $toCommit   = $_POST['to_commit'] ?? 'HEAD';
+
+        $diff = DeltaSyncEngine::calculateGitDiff($targetPath, $fromCommit, $toCommit);
+        if (empty($diff['success'])) {
+            jsonResponse(false, $diff['error'] ?? 'Git farkı hesaplanamadı.', $diff);
+        }
+
+        $pendingMigrations = DeltaSyncEngine::detectPendingMigrations($targetPath, $fromCommit, $toCommit);
+
+        jsonResponse(true, 'Akıllı delta senkronizasyon dosya farkları ve şema göçleri başarıyla hesaplandı.', [
+            'diff'               => $diff,
+            'pending_migrations' => $pendingMigrations,
+            'migration_count'    => count($pendingMigrations)
+        ]);
+        break;
+
+    case 'record_deployment':
+        $projectId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
+        $proj = null;
+        if ($projectId > 0) {
+            $proj = $db->row_query("SELECT * FROM projects WHERE id = ?", [$projectId]);
+        }
+        if (!$proj) {
+            jsonResponse(false, 'Proje bulunamadı.');
+        }
+
+        $depType    = trim($_POST['deployment_type'] ?? 'delta');
+        $fromCommit = $_POST['from_commit'] ?? null;
+        $toCommit   = trim($_POST['to_commit'] ?? '');
+
+        if (empty($toCommit)) {
+            $toCommit = trim(shell_exec("cd /d \"{$proj->workspace_path}\" && git rev-parse HEAD") ?: 'unknown');
+        }
+
+        $filesUp  = (int)($_POST['files_uploaded'] ?? 0);
+        $filesDel = (int)($_POST['files_deleted'] ?? 0);
+        $migsRun  = (int)($_POST['migrations_run'] ?? 0);
+        $details  = $_POST['details'] ?? [];
+
+        $depId = DeltaSyncEngine::recordDeployment($projectId, [
+            'deployment_type' => $depType,
+            'from_commit'     => $fromCommit,
+            'to_commit'       => $toCommit,
+            'status'          => 'completed',
+            'files_uploaded'  => $filesUp,
+            'files_deleted'   => $filesDel,
+            'migrations_run'  => $migsRun,
+            'details'         => $details,
+            'deployed_by'     => $_SESSION['user']->id ?? 1
+        ]);
+
+        jsonResponse(true, 'Proje dağıtımı ve delta senkronizasyon kaydı başarıyla tamamlandı.', [
+            'deployment_id' => $depId,
+            'project_code'  => $proj->project_code,
+            'type'          => $depType,
+            'to_commit'     => $toCommit,
+            'status'        => 'completed'
+        ]);
+        break;
+
     default:
         jsonResponse(false, 'Geçersiz AJAX işlemi.');
 }

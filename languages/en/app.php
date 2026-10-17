@@ -523,8 +523,9 @@ return array (
   'hosting_panel_cyberpanel' => 'CyberPanel API',
   'hosting_panel_standard' => 'Standard / Shared Hosting (Direct Connection)',
   'hosting_test_success' => 'Hosting panel connection verified successfully.',
-  'hosting_provision_success' => 'Live database and user successfully provisioned.',
   'deploy_config_generated' => 'Live isolated configuration files successfully generated.',
   'deploy_schema_dumped' => 'Local database schema and data successfully exported with live domain synchronization.',
+  'deploy_delta_diff_calculated' => 'Smart delta sync file differences and schema migrations successfully calculated.',
+  'deploy_deployment_recorded' => 'Project deployment and delta sync record completed successfully.',
 );
 
