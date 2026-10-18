@@ -1,7 +1,7 @@
 <?php
 // TaskManager Gelişmiş Sistem Ayarları & API Yapılandırma Paneli (Enterprise System Settings)
 $system->title = __('app.settings_title', 'Sistem & API Ayarları - TaskManager');
-include dirname(dirname(__DIR__)) . '/Components/header.php';
+include dirname(__DIR__, 3) . '/Components/header.php';
 
 $settingsController = new \Modules\Settings\Controllers\SettingsController();
 $settingsData = $settingsController->index();
@@ -11,7 +11,7 @@ if (!$settingsData['isAuthorized']) {
     echo '<p>' . __('app.settings_unauthorized_desc', 'Sistem ayarlarına yalnızca yönetici rolündeki kullanıcılar erişebilir.') . '</p>';
     echo '<a href="/taskmanager/board" class="cu-btn cu-btn-primary" style="display:inline-block; margin-top:16px;">' . __('app.settings_btn_back_board', 'Panoya Dön') . '</a>';
     echo '</div>';
-    include dirname(dirname(__DIR__)) . '/Components/footer.php';
+    include dirname(__DIR__, 3) . '/Components/footer.php';
     exit;
 }
 
@@ -928,4 +928,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<?php include dirname(dirname(__DIR__)) . '/Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>

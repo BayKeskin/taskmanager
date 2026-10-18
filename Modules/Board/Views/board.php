@@ -3,7 +3,7 @@
 $boardController = new \Modules\Board\Controllers\BoardController();
 
 $system->title = __('Board::kanban_board', 'Kanban Panosu - TaskManager');
-include dirname(dirname(__DIR__)) . '/Components/header.php';
+include dirname(__DIR__, 3) . '/Components/header.php';
 
 $activeProjectId = isset($_GET['project_id']) ? (int)$_GET['project_id'] : null;
 
@@ -159,7 +159,7 @@ document.addEventListener('click', function(e) {
 </script>
 
 <!-- TaskManager YAN YANA FİLTRE & SIRALAMA TOOLBAR'I -->
-<?php include dirname(dirname(__DIR__)) . '/Components/filter_toolbar.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Components/filter_toolbar.php'; ?>
 
 <!-- PROJE BİLGİ KARTI (FİLTRELİ İSE) -->
 <?php if ($projectInfo): ?>
@@ -536,5 +536,5 @@ function sendStandupEmail() {
     </div>
 </div>
 
-<?php include dirname(dirname(__DIR__)) . '/Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>
 

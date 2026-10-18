@@ -2,7 +2,7 @@
 // TaskManager Sidebar Bileşeni
 require_once __DIR__ . '/../Controller/LayoutController.php';
 
-$layoutCtrl = new LayoutController();
+$layoutCtrl = new \Controllers\LayoutController();
 $sbData = $layoutCtrl->getSidebarData($_SESSION['user'] ?? null);
 extract($sbData);
 

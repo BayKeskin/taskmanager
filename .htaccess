@@ -13,12 +13,12 @@ DirectoryIndex index.php View/index/board.php
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]
 
-    # TaskManager Sayfa Rotaları (HMVC Modülleri)
-    RewriteRule ^$                      Modules/Board/Views/board.php [L,NC,QSA]
-    RewriteRule ^login/?$               Modules/Team/Views/login.php [L,NC,QSA]
-    RewriteRule ^logout/?$              old/View/index/logout.php [L,NC,QSA]
-    RewriteRule ^tasks/?$               Modules/Board/Views/board.php [L,NC,QSA]
-    RewriteRule ^board/?$               Modules/Board/Views/board.php [L,NC,QSA]
+    # TaskManager Sayfa Rotaları (HMVC Modülleri & Bootstrap)
+    RewriteRule ^$                      index.php [L,NC,QSA]
+    RewriteRule ^login/?$               index.php?page=login [L,NC,QSA]
+    RewriteRule ^logout/?$              index.php?page=logout [L,NC,QSA]
+    RewriteRule ^tasks/?$               index.php?page=board [L,NC,QSA]
+    RewriteRule ^board/?$               index.php?page=board [L,NC,QSA]
     RewriteRule ^kanban/export-excel/?$ Controller/ajax/ajax.php?action=export_excel [L,NC,QSA]
     RewriteRule ^calendar/?$            View/index/calendar.php [L,NC,QSA]
     RewriteRule ^reports/?$             View/index/reports.php [L,NC,QSA]

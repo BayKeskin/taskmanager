@@ -36,7 +36,7 @@ class TaskModel extends BaseModel
     public function getAssigneesMap(): array
     {
         $sql = "
-            SELECT ta.task_id, u.id, u.name, u.avatar_color 
+            SELECT ta.task_id, ta.user_id, u.id, u.name, u.avatar_color 
             FROM task_assignees ta 
             JOIN users u ON ta.user_id = u.id 
             ORDER BY u.name ASC

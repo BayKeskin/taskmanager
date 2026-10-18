@@ -1,8 +1,7 @@
 <?php
 // TaskManager Yan Yana Filtre & Sıralama Araç Çubuğu (Horizontal Filter Toolbar)
 if (!isset($allUsers)) {
-    require_once __DIR__ . '/../Model/UserModel.php';
-    $userModel = new UserModel();
+    $userModel = new \Modules\Team\Models\UserModel();
     $allUsers = $userModel->getUsersForFilter();
 }
 $currentUserId = $currentUser->id ?? 1;

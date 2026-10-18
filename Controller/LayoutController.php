@@ -1,25 +1,23 @@
 <?php
+namespace Controllers;
 
-require_once __DIR__ . '/Controller.php';
-require_once __DIR__ . '/../Model/ProjectModel.php';
-require_once __DIR__ . '/../Model/UserModel.php';
-require_once __DIR__ . '/../Model/SettingsModel.php';
-require_once __DIR__ . '/../Model/TaskModel.php';
+use Core\BaseController;
+use Modules\Projects\Models\ProjectModel;
+use Modules\Team\Models\UserModel;
+use Modules\Settings\Models\SettingsModel;
 
-class LayoutController extends Controller
+class LayoutController extends BaseController
 {
     private ProjectModel $projectModel;
     private UserModel $userModel;
     private SettingsModel $settingsModel;
-    private TaskModel $taskModel;
 
-    public function __construct(?System $system = null)
+    public function __construct()
     {
-        parent::__construct($system);
-        $this->projectModel = new ProjectModel($this->db);
-        $this->userModel = new UserModel($this->db);
-        $this->settingsModel = new SettingsModel($this->db);
-        $this->taskModel = new TaskModel($this->db);
+        parent::__construct();
+        $this->projectModel = new ProjectModel();
+        $this->userModel = new UserModel();
+        $this->settingsModel = new SettingsModel();
     }
 
     /**
@@ -31,14 +29,24 @@ class LayoutController extends Controller
         $projectsList = $this->projectModel->getProjects();
 
         // Okunmamış DM sayısı
-        $unreadDmCount = (int)$this->db->single_query("SELECT COUNT(*) FROM chat_messages WHERE receiver_id = ? AND is_read = 0", [$currentUser->id]);
+        $unreadDmCount = 0;
+        try {
+            $unreadDmCount = (int)$this->db->single_query("SELECT COUNT(*) FROM chat_messages WHERE receiver_id = ? AND is_read = 0", [$currentUser->id]);
+        } catch (\Throwable $e) {
+            $unreadDmCount = 0;
+        }
 
-        $totalTasksCount = (int)($this->db->count_record("tasks") ?: 0);
-        $totalDocsCount = (int)($this->db->count_record("docs") ?: 0);
-        $totalUsersCount = (int)($this->db->count_record("users") ?: 0);
+        $totalTasksCount = 0;
+        $totalDocsCount = 0;
+        $totalUsersCount = 0;
+        $projectTaskCounts = [];
 
-        // Proje bazlı görev sayıları
-        $projectTaskCounts = $this->db->pair_query("SELECT project_id, COUNT(*) as cnt FROM tasks GROUP BY project_id") ?: [];
+        try {
+            $totalTasksCount = (int)($this->db->count_record("tasks") ?: 0);
+            $totalDocsCount = (int)($this->db->count_record("docs") ?: 0);
+            $totalUsersCount = (int)($this->db->count_record("users") ?: 0);
+            $projectTaskCounts = $this->db->pair_query("SELECT project_id, COUNT(*) as cnt FROM tasks GROUP BY project_id") ?: [];
+        } catch (\Throwable $e) {}
 
         $clientProj = null;
         if (($currentUser->role ?? '') === 'client' && !empty($currentUser->client_project_id)) {

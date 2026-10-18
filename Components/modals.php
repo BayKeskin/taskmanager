@@ -2,7 +2,7 @@
 // Modallar ve Toast Konteyneri
 require_once __DIR__ . '/../Controller/LayoutController.php';
 
-$layoutCtrl = new LayoutController();
+$layoutCtrl = new \Controllers\LayoutController();
 $modalsData = $layoutCtrl->getModalsData();
 $allUsers = $modalsData['allUsers'];
 $allProjects = $modalsData['allProjects'];
@@ -706,7 +706,7 @@ $canUseAiTasks = ($currentUser && $currentUser->role === 'admin') || ($currentUs
 <?php
 $aiArchProjects = $projects ?? [];
 if (empty($aiArchProjects)) {
-    $pm = new ProjectModel();
+    $pm = new \Modules\Projects\Models\ProjectModel();
     $aiArchProjects = $pm->getProjects();
 }
 ?>
