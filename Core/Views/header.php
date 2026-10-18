@@ -36,6 +36,8 @@ $siteURL = 'http://localhost/taskmanager';
     </script>
     <!-- TaskManager Design System -->
     <link rel="stylesheet" href="/taskmanager/Public/css/app.css?v=<?= time() ?>">
+    <!-- Dynamic HMVC Module Stylesheets -->
+    <?= \Core\AssetManager::renderStyles() ?>
 </head>
 <body>
 

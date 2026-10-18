@@ -9,5 +9,7 @@
 
 <!-- TaskManager JAVASCRIPT ENGINE -->
 <script src="/taskmanager/Public/js/app.js?v=<?= time() ?>"></script>
+<!-- Dynamic HMVC Module Scripts -->
+<?= \Core\AssetManager::renderScripts() ?>
 </body>
 </html>
