@@ -848,6 +848,12 @@ class Helper
      */
     public static function ensureDispatcherRunning(): void
     {
+        if (class_exists('Modules\\Dispatcher\\Services\\DispatcherService')) {
+            $service = new \Modules\Dispatcher\Services\DispatcherService();
+            $service->ensureRunning();
+            return;
+        }
+
         $fp = @fsockopen('127.0.0.1', 4000, $errno, $errstr, 0.15);
         if ($fp) {
             fclose($fp);

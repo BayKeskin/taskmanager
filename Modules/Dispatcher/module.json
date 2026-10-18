@@ -1,0 +1,11 @@
+{
+  "id": "dispatcher",
+  "name": "Otonom Yapay Zeka Köprüsü & Dispatcher",
+  "slug": "dispatcher",
+  "version": "1.0.0",
+  "description": "Antigravity Language Server, arka plan kuyrukları ve AI worker süreçlerini yöneten otonom görev dağıtım motoru.",
+  "author": "Antigravity HMVC Engine",
+  "active": true,
+  "order": 6,
+  "dependencies": []
+}

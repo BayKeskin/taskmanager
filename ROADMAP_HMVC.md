@@ -177,7 +177,7 @@ Sistemdeki 24 modülün HMVC (`Modules/`) yapısına taşınma durumu bu tabloda
 | **03** | Güvenli Dosya Depolama | `Modules/Storage/` | `Storage.php`, `FileValidator.php`, Uploads | ✅ Taşındı |
 | **04** | GitHub DevOps & Rollback | `Modules/GithubDevops/` | `GitService.php`, `.migrations`, push/commit | ✅ Taşındı |
 | **05** | Antigravity MCP Pazarı | `Modules/Mcp/` | `McpController.php`, MCP manifest & tools | ✅ Taşındı |
-| **06** | Otonom Yapay Zeka Köprüsü | `Modules/Dispatcher/` | `dispatcher/`, AI kuyruk ve tetikleme motoru | ⏳ Bekliyor |
+| **06** | Otonom Yapay Zeka Köprüsü | `Modules/Dispatcher/` | `dispatcher/`, AI kuyruk ve tetikleme motoru | ✅ Taşındı |
 | **07** | Watchdog Otonom Kurtarma | `Modules/Watchdog/` | `WatchdogService.php`, kuyruk kurtarma | ✅ Taşındı |
 | **08** | Enterprise RESTful API | `Modules/RestApi/` | `Controller/api/index.php`, API router & JWT | ⏳ Bekliyor |
 | **09** | REST API Test Konsolu | `Modules/ApiTester/` | API Swagger/Tester arayüzü ve test motoru | ⏳ Bekliyor |
