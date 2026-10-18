@@ -1,0 +1,21 @@
+/* Modules/Docs/Assets/css/docs.css */
+.cu-docs-container {
+    display: flex;
+    gap: 16px;
+    height: 100%;
+}
+.cu-doc-sidebar {
+    width: 280px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow-y: auto;
+}
+.cu-doc-content {
+    flex: 1;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 24px;
+    overflow-y: auto;
+}

@@ -1,0 +1,10 @@
+{
+  "id": "docs",
+  "name": "Dökümantasyon Motoru (Docs)",
+  "slug": "docs",
+  "version": "1.0.0",
+  "description": "Zengin metin / Markdown dökümantasyon yönetimi, proje bazlı dökümanlar ve versiyonlanmış dosya ekleri.",
+  "author": "TaskManager Team",
+  "active": true,
+  "dependencies": []
+}

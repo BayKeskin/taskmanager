@@ -182,7 +182,7 @@ Sistemdeki 24 modülün HMVC (`Modules/`) yapısına taşınma durumu bu tabloda
 | **08** | Enterprise RESTful API | `Modules/RestApi/` | `Controller/api/index.php`, API router & JWT | ⏳ Bekliyor |
 | **09** | REST API Test Konsolu | `Modules/ApiTester/` | API Swagger/Tester arayüzü ve test motoru | ⏳ Bekliyor |
 | **10** | Görsel Hata Pinleme (Pins) | `Modules/VisualPins/` | `PinController`, `PinModel`, `visual-pins.js` | ✅ Taşındı |
-| **11** | Dökümantasyon Motoru | `Modules/Docs/` | `DocController`, `DocModel`, Docs view & markdown | ⏳ Bekliyor |
+| **11** | Dökümantasyon Motoru | `Modules/Docs/` | `DocController`, `DocModel`, Docs view & markdown | ✅ Taşındı |
 | **12** | Gerçek Zamanlı SSE Motoru | `Modules/SSE/` | `sse.php`, `SseBroadcaster.php`, live events | ✅ Taşındı |
 | **13** | Proje & Çalışma Alanları | `Modules/Projects/` | `ProjectController`, `ProjectModel`, projects view | ⏳ Bekliyor |
 | **14** | Ekip, Rol & İzinler (RBAC) | `Modules/Team/` | `TeamController`, `UserModel`, yetki matrisi | ⏳ Bekliyor |
