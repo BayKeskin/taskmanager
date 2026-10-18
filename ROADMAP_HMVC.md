@@ -199,6 +199,50 @@ Sistemdeki 24 modülün HMVC (`Modules/`) yapısına taşınma durumu bu tabloda
 
 ---
 
-> [!TIP]
-> Bu yol haritası her aşamada güncellenecek; yapılan adımlar `[x]` ve `✅ Taşındı` olarak işaretlenecek ve hiçbir aşamada geriye dönük uyumluluk (backward compatibility) bozulmayacaktır.
+## 🏗️ AŞAMA 8: Eski Sistemi `old/` Klasörüne Alma & Bağımlılık Arındırma Yol Haritası (Execution & Testing Plan)
+
+> **Amaç:** Yeni HMVC modüllerinin tam bağımsızlığını kanıtlamak ve eksik/unutulmuş kodları anında açığa çıkarmak için; eski dosyaları `old/` klasörüne taşımak, ana dizini tamamen `Modules/` üzerinden ayağa kaldırmak ve çekirdekten çevreye doğru her modülü doğrulamak.
+
+### 🎯 Neden "Çekirdekten Çevreye" (Core-First) Sıralaması?
+Sistem mimarisinde en temel bağımlılıklar hiyerarşisi şöyledir:
+1. **Çekirdek & Giriş:** Kimlik doğrulama, genel ayarlar, çalışma alanları (projeler) ve kullanıcılar olmadan Kanban panosu açılamaz.
+2. **Ana İş Akışı (Board):** Görevler ve panolar olmadan takvim, hakediş ve raporlar anlam ifade etmez.
+3. **Çevre / Uç Servisler:** Sohbet, dokümantasyon, bildirimler ve dış entegrasyonlar ana iş akışının üzerine kurulur.
+
+---
+
+### 📋 Adım Adım Modül Sıralaması ve Doğrulama Matrisi
+
+| Sıra | Modül Kodu & Adı | `old/` Dizinine Alınacak Eski Dosyalar | Taşınacak/Eritilecek Mantık | Otonom Doğrulama & Test Yöntemi | Durum |
+| :---: | :--- | :--- | :--- | :--- | :---: |
+| **8.1** | **`old/` Karantina Kurulumu** | Kök dizindeki eski yapılar için `old/` klasörü açılması | Yedekleme zaten alındı (`.zip`), güvenli ayrıştırma | `Test-Path old/` | ⏳ Bekliyor |
+| **8.2** | **#17 Settings & Auth** | `Controller/SettingsController.php`, `Model/SettingsModel.php`, `Controller/AuthController.php` | Sistem ayarları, i18n dil tercihleri, oturum yönetimi | `php tests/test_settings_module.php` + Session Auth Testi | ⏳ Bekliyor |
+| **8.3** | **#14 Team & RBAC** | `Controller/TeamController.php`, `Model/UserModel.php` | Kullanıcı rolleri (admin, member, client), şifreleme | `php tests/test_team_module.php` + Yetki matrisi | ⏳ Bekliyor |
+| **8.4** | **#13 Projects** | `Controller/ProjectController.php`, `Model/ProjectModel.php` | Çalışma alanı yolları, saatlik ücretler, webhooklar | `php tests/test_projects_module.php` + Proje listeleme | ⏳ Bekliyor |
+| **8.5** | **#01 Board & Tasks (KALP)**| `Controller/BoardController.php`, `Controller/TaskController.php`, `Model/TaskModel.php`, `View/index/board.php` | Kanban sütunları, görev CRUD, sürükle-bırak, alt görevler | `php tests/test_board_module.php` + Canlı Panoya GET isteği | ⏳ Bekliyor |
+| **8.6** | **#02 AiArchitect** | `ajax.php` içindeki `refine_task_specification` monolitik bloğu | Prompt mühendisliği, multimodal görsel/kod analizi | `php tests/test_aiarchitect_module.php` | ⏳ Bekliyor |
+| **8.7** | **#15 Calendar & Gantt**| `Controller/CalendarController.php`, `View/index/calendar.php` | Gantt timeline, deadline filtreleri | `php tests/test_gantt_view.php` + `test_phase5_modules.php` | ⏳ Bekliyor |
+| **8.8** | **#24 Billing & Hakediş**| `Controller/BillingController.php`, `Model/BillingModel.php`, `View/index/billing_report.php` | Saatlik hakediş, tamamlanan işler, PDF/Print | `php tests/test_billing_report.php` | ⏳ Bekliyor |
+| **8.9** | **#16 Reports & SLA** | `Controller/ReportController.php`, `Model/ReportModel.php`, `View/index/reports.php` | SLA analitiği, Chart.js veri havuzu | `php tests/test_reports_module.php` | ⏳ Bekliyor |
+| **8.10**| **#11 Docs (Doküman)** | `Controller/DocController.php`, `Model/DocModel.php`, `View/index/docs.php` | Markdown editör, döküman ağacı, ekler | `php tests/test_docs_module.php` | ⏳ Bekliyor |
+| **8.11**| **#20 Chat (Ekip Sohbet)**| `Controller/ChatController.php`, `Model/ChatModel.php`, `View/index/chat.php` | DM kanalları, genel sohbet, canlı mesajlaşma | `php tests/test_chat_module.php` | ⏳ Bekliyor |
+| **8.12**| **#03 Storage & Uploads**| `System/Storage.php`, `System/FileValidator.php` | MIME doğrulama, güvenli upload, S3/Local sürücü | `php tests/test_storage_module.php` | ⏳ Bekliyor |
+| **8.13**| **#08 RestApi & #09 Tester**| `Controller/api/index.php`, `View/index/api_test.php`, `View/index/api_docs.php` | REST API yönlendirici, Bearer yetkilendirme, Swagger | `php tests/test_restapi_module.php` + `test_apitester_module.php` | ⏳ Bekliyor |
+| **8.14**| **#06 Dispatcher & AI Bridge**| `dispatcher/` köprüsü, `System/Helper.php` dispatch blokları | Port 4000 denetimi, Language Server soketleri | `php tests/test_dispatcher_module.php` | ⏳ Bekliyor |
+| **8.15**| **#04 DevOps & #22 LiveDeploy**| `System/DeltaSyncEngine.php`, `System/LiveConfigGenerator.php`, `System/HostingAdapters/` | Git commit/push, FTP senkronizasyonu, Rollback | `php tests/test_delta_sync.php` + `test_hosting_adapters.php` | ⏳ Bekliyor |
+| **8.16**| **#18 Telegram & #19 Mailer**| `System/Telegram.php`, `System/Mailer.php` | SMTP teşhisi, Bot uyarıları, HTML e-postalar | `php tests/test_mailer_smoketest_modules.php` | ⏳ Bekliyor |
+| **8.17**| **#07 Watchdog & #12 SSE**| `System/Watchdog.php`, `Controller/sse.php` | Kuyruk oto-kurtarma, canlı SSE event yayını | `php tests/test_phase6_modules.php` | ⏳ Bekliyor |
+| **8.18**| **#10 VisualPins & #23 Excel**| `Public/js/visual-pins.js`, `kanban/export-excel` rotası | Sayfa pinleme, UTF-8 BOM CSV motoru | `php tests/test_e2e_excel_export.php` | ⏳ Bekliyor |
+| **8.19**| **#05 Mcp & #21 SmokeTest**| MCP controller ve manifestler, `System/SmokeTest.php` | MCP araç listeleme, 16/16 sistem sağlık taraması | `php tests/test_mailer_smoketest_modules.php` (16/16 PASS) | ⏳ Bekliyor |
+| **8.20**| **Global Dil Dosyası Arındırma**| `languages/{tr,en,de}/app.php` | Modüllere taşınan tüm anahtarların ana sözlükten çıkarılıp sadece genel UI terimlerinin bırakılması | `php tests/test_module_assets_lang.php` (3 dil denetimi) | ⏳ Bekliyor |
+
+---
+
+### 🛡️ Güvenlik ve Geri Dönüş Garantisi
+1. **Kod Kaybı İmkansız:** Hiçbir dosya `rm` ile silinmeyecek; `old/` klasöründe tam hiyerarşiyle korunacak.
+2. **Kırılma Tespiti:** Her adımda ilgili modül testi ve `audit_all_modules.php` çalıştırılacak.
+3. **Git Tarihçesi:** Her başarılı modül ayrıştırmasında `git commit` ve `git push` yapılarak GitHub üzerinde adım adım kaydedilecek.
+
+---
+
 
