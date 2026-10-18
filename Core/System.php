@@ -23,10 +23,6 @@ require_once __DIR__ . '/ModuleLoader.php';
 
 require_once __DIR__ . '/DataLayer.php';
 require_once __DIR__ . '/Helper.php';
-require_once __DIR__ . '/Storage.php';
-require_once __DIR__ . '/Auth.php';
-require_once __DIR__ . '/Content.php';
-require_once __DIR__ . '/Mailer.php';
 require_once __DIR__ . '/Language.php';
 
 // 2. Global Veritabanı ve Temel Ayarlar
@@ -40,7 +36,6 @@ if (!empty($siteURL) && !str_starts_with($siteURL, 'http://') && !str_starts_wit
 
 /**
  * System Sınıfı - Uygulama Koordinatörü ve Servis Yöneticisi
- * Çekirdek modülleri barındırır, ağır servisleri (Commerce, Mailer) ihtiyaç anında (Lazy Load) yükler.
  */
 class System
 {
@@ -49,59 +44,11 @@ class System
 
     // Çekirdek Servisler
     public Database $db;
-    public Content $content;
-
-    // İhtiyaç Anında Yüklenen Servisler (Lazy Loaded)
-    private ?Auth $authInstance = null;
-    private ?Mailer $mailerInstance = null;
 
     public function __construct(?Database $database = null)
     {
         global $db;
         $this->db = $database ?? $db;
-
-        $this->content = new Content($this->db);
-    }
-
-    /**
-     * Geriye dönük uyumluluk: Content::return_value metodunu doğrudan System üzerinden çağırabilme
-     */
-    public function return_value($post_id, $name)
-    {
-        return $this->content->return_value($post_id, $name);
-    }
-
-    public function __call(string $method, array $args)
-    {
-        if (method_exists($this->content, $method)) {
-            return $this->content->$method(...$args);
-        }
-        if (method_exists($this->auth(), $method)) {
-            return $this->auth()->$method(...$args);
-        }
-        throw new BadMethodCallException("Method System::{$method} does not exist.");
-    }
-
-    /**
-     * Kullanıcı / Oturum Modülü (Sadece üyelikli projelerde belleğe alınır)
-     */
-    public function auth(): Auth
-    {
-        if ($this->authInstance === null) {
-            $this->authInstance = new Auth($this->db);
-        }
-        return $this->authInstance;
-    }
-
-    /**
-     * Mailer Modülü (Sadece mail gönderileceği an belleğe alınır)
-     */
-    public function mailer(): Mailer
-    {
-        if ($this->mailerInstance === null) {
-            $this->mailerInstance = new Mailer();
-        }
-        return $this->mailerInstance;
     }
 }
 

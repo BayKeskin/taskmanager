@@ -3,8 +3,8 @@
  * TaskManager Enterprise REST API Live Test & Explorer Laboratory
  * Interactive Swagger / Postman style live testing console
  */
-require_once dirname(__DIR__, 3) . '/System/System.php';
-require_once dirname(__DIR__, 3) . '/System/Language.php';
+require_once dirname(__DIR__, 3) . '/Core/System.php';
+require_once dirname(__DIR__, 3) . '/Core/Language.php';
 
 Language::init();
 $currentLang = Language::current();

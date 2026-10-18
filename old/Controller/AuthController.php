@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/Controller.php';
 require_once __DIR__ . '/../Model/UserModel.php';
-require_once __DIR__ . '/../System/Language.php';
+require_once __DIR__ . '/../Core/Language.php';
 
 class AuthController extends Controller
 {

@@ -83,7 +83,7 @@ MANDATORY RULES:
             $combinedUserPrompt .= "\nNot: Kullanıcı " . count($referenceImages) . " adet görsel/ekran görüntüsü ekledi. Görseldeki tüm UI bileşenlerini, tipografiyi, renkleri ve etkileşimleri şartnameye yansıt.\n";
         }
 
-        // 1. Google Gemini API Denemesi (Vision / Multimodal Destekli)
+        // 1. Google Gemini API Denemesi
         $apiKey = trim($settings->gemini_api_key ?? '');
         if (!$skipLiveApi && !empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
             $candidateModels = ['gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
@@ -283,5 +283,151 @@ MANDATORY RULES:
               . "- İşlem tamamlandığında yapılan değişiklikler açıklayıcı bir özetle teslim edilmelidir.";
 
         return $spec;
+    }
+
+    /**
+     * Kullanıcının yazdığı kural notlarını disiplinli İngilizce kurallara dönüştürür.
+     */
+    public function refineRulesWithAi(string $rawRules, string $projectCode = '', string $projectTitle = ''): array
+    {
+        $rawRules = trim($rawRules);
+        if (empty($rawRules)) {
+            return [
+                'success' => false,
+                'error'   => 'Lütfen derlenmesini istediğiniz kural veya kısıtlamaları kısaca yazın.'
+            ];
+        }
+
+        $settingsRows = $this->query("SELECT active_ai_provider, default_ai_model, gemini_api_key, openai_api_key, deepseek_api_key FROM settings LIMIT 1");
+        $settings = !empty($settingsRows) ? (object)$settingsRows[0] : null;
+
+        $systemPrompt = "You are a Principal AI Software Architect and prompt engineer specializing in autonomous coding agents (Antigravity, Cursor, Gemini).
+Your role is to translate and expand brief, informal developer rule notes into strict, authoritative, highly disciplined English project-specific rules for AI coding agents.
+
+CRITICAL MANDATES:
+1. The rules MUST be written in authoritative, disciplined English.
+2. Ensure explicit prohibitions: If something is forbidden, state it clearly.
+3. Ensure strict architectural boundaries: Define the technology stack, framework conventions.
+4. Ensure autonomous QA verification directives: Remind the agent that 'The user is not a QA tester'.
+5. Output format: Clean markdown bullet points under '### [{$projectCode}] {$projectTitle} Project Rules':
+   - **Platform & Core Framework:** ...
+   - **Strict Architectural & Coding Prohibitions:** ...
+   - **Styling & Design Guidelines:** ...
+   - **Autonomous QA & Verification Directives:** ...
+6. Output ONLY raw markdown list items without code blocks or chatter.";
+
+        $userPrompt = "Project Code: [{$projectCode}]\nProject Title: {$projectTitle}\nDeveloper Notes: {$rawRules}\n\nGenerate the complete, disciplined agent rules in English now:";
+
+        $apiKey = $settings->gemini_api_key ?? '';
+        $isDummyKey = empty($apiKey) || str_contains($apiKey, 'test_') || strlen($apiKey) < 20;
+
+        if (!$isDummyKey && ($settings->active_ai_provider ?? 'gemini') === 'gemini') {
+            $model = !empty($settings->default_ai_model) ? $settings->default_ai_model : 'gemini-3.7-flash';
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
+            $payload = [
+                'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
+                'contents'          => [['role' => 'user', 'parts' => [['text' => $userPrompt]]]],
+                'generationConfig'  => ['temperature' => 0.2, 'maxOutputTokens' => 1024]
+            ];
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                CURLOPT_POSTFIELDS     => json_encode($payload),
+                CURLOPT_TIMEOUT        => 12,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200 && $response) {
+                $data = json_decode($response, true);
+                $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                if (!empty($text)) {
+                    $cleaned = trim(preg_replace('/^```(?:markdown)?\s*|\s*```$/i', '', trim($text)));
+                    return [
+                        'success'       => true,
+                        'refined_rules' => $cleaned,
+                        'engine'        => 'gemini'
+                    ];
+                }
+            }
+        }
+
+        $heuristicRules = $this->compileRulesHeuristic($rawRules, $projectCode, $projectTitle);
+        return [
+            'success'       => true,
+            'refined_rules' => $heuristicRules,
+            'engine'        => 'heuristic'
+        ];
+    }
+
+    /**
+     * Uzman kural derleyicisi (Heuristic Engine)
+     */
+    public function compileRulesHeuristic(string $raw, string $code = '', string $title = ''): string
+    {
+        $code = $code ?: 'PROJECT';
+        $title = $title ?: 'Custom Project';
+        $lower = mb_strtolower($raw, 'UTF-8');
+        $rules = [];
+
+        if (str_contains($lower, 'gutenberg') || str_contains($lower, 'wordpress') || str_contains($lower, 'block') || str_contains($lower, 'blok')) {
+            $rules[] = "- **Platform & Core Framework:** WordPress Gutenberg Block Architecture. All UI elements MUST be developed natively as Gutenberg Blocks using `@wordpress/block-editor`, `@wordpress/components`, and `@wordpress/element`.";
+            if (str_contains($lower, 'css') && (str_contains($lower, 'yasak') || str_contains($lower, 'kullanma') || str_contains($lower, 'yok') || str_contains($lower, 'prohibit') || str_contains($lower, 'forbidden') || str_contains($lower, 'no css'))) {
+                $rules[] = "- **Strict CSS Prohibition:** Writing raw, global, or inline CSS (`<style>`, external `.css` files, or inline `style=\"...\"` attributes) is STRICTLY FORBIDDEN. All styling and layout variations MUST be controlled solely through WordPress Block Supports (e.g. `theme.json`, standard block attributes for color, typography, spacing) or pre-registered block style variations.";
+            } else {
+                $rules[] = "- **Block Styling Standards:** Adhere strictly to block-level styling and `theme.json` theme tokens; avoid polluting global CSS scopes.";
+            }
+            $rules[] = "- **Editor Integrity & Component Hygiene:** Custom controls must use standard Gutenberg InspectorControls and BlockControls. Never inject unvetted third-party JavaScript libraries into the editor canvas.";
+            $rules[] = "- **Live Block Verification:** Before submitting any task, the agent MUST verify within the WordPress block editor that blocks render cleanly, block attributes persist correctly upon post save, and zero JavaScript console errors occur.";
+        } elseif (str_contains($lower, 'flutter') || str_contains($lower, 'dart') || str_contains($lower, 'mobil') || str_contains($lower, 'mobile')) {
+            $rules[] = "- **Technology Stack:** Flutter (Dart) cross-platform mobile development for iOS and Android.";
+            if (str_contains($lower, 'riverpod')) {
+                $rules[] = "- **State Management:** Riverpod MUST be used as the exclusive state management solution. Avoid mixing conflicting state paradigms.";
+            } elseif (str_contains($lower, 'bloc') || str_contains($lower, 'cubit')) {
+                $rules[] = "- **State Management:** BLoC / Cubit pattern MUST be used for state separation and business logic.";
+            } else {
+                $rules[] = "- **State Management:** Follow strict unidirectional data flow and clean state encapsulation.";
+            }
+            $rules[] = "- **UI & Responsiveness:** Material 3 design guidelines; strictly avoid render overflow errors by wrapping dynamic content in responsive layouts (`LayoutBuilder`, `SingleChildScrollView`, `Expanded`).";
+            $rules[] = "- **Mobile QA Verification:** The user is not a QA tester. Form interactions, navigation transitions, and button states must be autonomously verified in the emulator/test environment.";
+        } elseif (str_contains($lower, 'codeigniter') || str_contains($lower, 'ci4') || str_contains($lower, 'laravel') || str_contains($lower, 'mvc') || str_contains($lower, 'php')) {
+            $rules[] = "- **Backend Architecture:** Strict Model-View-Controller (MVC) architecture. Controllers coordinate request flow, while Models/Entities encapsulate database queries and business logic.";
+            if (str_contains($lower, 'view') || str_contains($lower, 'sorgu') || str_contains($lower, 'sql') || str_contains($lower, 'db')) {
+                $rules[] = "- **Zero Direct SQL in Views:** Executing raw SQL queries or database calls inside View templates is strictly forbidden. All data access must pass through dedicated Model classes.";
+            }
+        } else {
+            $rules[] = "- **Architecture & Framework Guidelines:** Follow strict separation of concerns, modular structure, and clean coding standards throughout the codebase.";
+        }
+
+        if (!str_contains($lower, 'gutenberg') && str_contains($lower, 'css') && (str_contains($lower, 'yasak') || str_contains($lower, 'kullanma') || str_contains($lower, 'no css') || str_contains($lower, 'inline'))) {
+            $rules[] = "- **Strict CSS Prohibition:** Writing raw custom CSS or inline styling is strictly forbidden. Utilize only the approved design tokens, utilities, or component framework properties.";
+        }
+
+        if (str_contains($lower, 'git') || str_contains($lower, 'pull') || str_contains($lower, 'push') || str_contains($lower, 'commit')) {
+            $rules[] = "- **Git Synchronization Protocol:** Run `git pull` before beginning work on any task; upon autonomous verification, commit with descriptive messages and push via `git push`.";
+        }
+
+        if (str_contains($lower, 'dil') || str_contains($lower, 'i18n') || str_contains($lower, 'çeviri') || str_contains($lower, 'lang') || str_contains($lower, 'translate')) {
+            $rules[] = "- **Mandatory Tri-Lingual Standard (EN, TR, DE):** Zero hardcoded strings. All user-facing labels and messages must resolve dynamically across English, Turkish, and German language dictionaries.";
+        }
+
+        $lines = preg_split('/[\r\n,;]+/', $raw);
+        $customSpecifics = [];
+        foreach ($lines as $ln) {
+            $cleanLn = trim($ln);
+            if (mb_strlen($cleanLn) > 5 && !preg_match('/^(css|gutenberg|flutter|codeigniter|git)/i', $cleanLn)) {
+                $customSpecifics[] = "- **Special Project Constraint:** " . htmlspecialchars($cleanLn, ENT_QUOTES, 'UTF-8');
+            }
+        }
+        if (!empty($customSpecifics)) {
+            $rules = array_merge($rules, $customSpecifics);
+        }
+
+        return implode("\n", $rules);
     }
 }

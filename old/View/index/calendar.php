@@ -1,8 +1,8 @@
 <?php
 // TaskManager Takvim & Gantt Şeması Görünümü (Calendar & Timeline/Gantt View)
 require_once __DIR__ . '/../../Controller/CalendarController.php';
-require_once __DIR__ . '/../../System/Language.php';
-require_once __DIR__ . '/../../System/Helper.php';
+require_once __DIR__ . '/../../Core/Language.php';
+require_once __DIR__ . '/../../Core/Helper.php';
 
 Language::init();
 $system->title = __('tasks.gantt_title', 'Gantt & Zaman Çizelgesi - TaskManager');

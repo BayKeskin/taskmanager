@@ -1,7 +1,7 @@
 <?php
 // TaskManager Interactive REST API & AI Agent Documentation
-require_once __DIR__ . '/../../System/System.php';
-require_once __DIR__ . '/../../System/Language.php';
+require_once __DIR__ . '/../../Core/System.php';
+require_once __DIR__ . '/../../Core/Language.php';
 
 Language::init();
 $currentLang = Language::current(); // 'tr', 'en', 'de'

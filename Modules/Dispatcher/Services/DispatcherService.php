@@ -86,6 +86,21 @@ class DispatcherService extends BaseModel
     }
 
     /**
+     * Antigravity Language Server portunu tespit eder
+     */
+    public function getAntigravityLsAddress(): ?string
+    {
+        $lsFile = $this->dispatcherDir . '/ls_address.txt';
+        if (file_exists($lsFile)) {
+            $addr = trim((string)file_get_contents($lsFile));
+            if (!empty($addr)) {
+                return $addr;
+            }
+        }
+        return getenv('ANTIGRAVITY_LS_ADDRESS') ?: null;
+    }
+
+    /**
      * Tüm projelerin workspace_path değerlerini dispatcher/workspaces.json dosyasına senkronize eder
      */
     public function syncWorkspaces(): bool
@@ -128,5 +143,203 @@ class DispatcherService extends BaseModel
             }
         }
         return true;
+    }
+
+    /**
+     * Antigravity SQLite oturumlarını tarayarak projeye ait en güncel açık pencereyi dinamik bulur.
+     */
+    public function discoverLatestConversation(?string $workspacePath = null, ?string $projectCode = null): ?string
+    {
+        $convDir = 'C:/Users/DELL/.gemini/antigravity-ide/conversations';
+        if (!is_dir($convDir)) {
+            return null;
+        }
+
+        $targets = [];
+        if (!empty($workspacePath)) {
+            $targets[] = str_replace('\\', '/', strtolower(rtrim($workspacePath, '/')));
+        }
+
+        $wsFile = $this->dispatcherDir . '/workspaces.json';
+        if (file_exists($wsFile) && $projectCode) {
+            $wsMap = json_decode(file_get_contents($wsFile), true) ?: [];
+            if (!empty($wsMap[$projectCode])) {
+                foreach ((array)$wsMap[$projectCode] as $p) {
+                    $targets[] = str_replace('\\', '/', strtolower(rtrim($p, '/')));
+                }
+            }
+        }
+
+        if (empty($targets) && $projectCode) {
+            $targets[] = 'c:/wamp64/www/' . strtolower($projectCode);
+        }
+
+        $targets = array_values(array_unique(array_filter($targets)));
+        usort($targets, fn($a, $b) => strlen($b) - strlen($a));
+
+        if (empty($targets)) {
+            return null;
+        }
+
+        // 1. ÖNCELİK: state.vscdb
+        $vscdb = 'C:/Users/DELL/AppData/Roaming/Antigravity IDE/User/globalStorage/state.vscdb';
+        if (file_exists($vscdb)) {
+            try {
+                $sdb = new \SQLite3($vscdb, SQLITE3_OPEN_READONLY);
+                $val = $sdb->querySingle("SELECT value FROM ItemTable WHERE key = 'erennyuksell.ag-multi-account-switchboard'");
+                $sdb->close();
+                if ($val) {
+                    $swData = json_decode((string)$val, true);
+                    $activeCid = $swData['ag.lastContextWindow']['conversationId'] ?? null;
+                    if ($activeCid) {
+                        $activeDb = $convDir . '/' . $activeCid . '.db';
+                        if (file_exists($activeDb)) {
+                            $adb = new \SQLite3($activeDb, SQLITE3_OPEN_READONLY);
+                            $blob = $adb->querySingle("SELECT data FROM trajectory_metadata_blob WHERE id='main'");
+                            $adb->close();
+                            if ($blob) {
+                                $decoded = strtolower(str_replace('\\', '/', rawurldecode((string)$blob)));
+                                foreach ($targets as $target) {
+                                    $pattern = '~(?:^|[^\w\-\.])' . preg_quote($target, '~') . '(?:[/?#\"\'\s,\x00-\x1f\\\\]|$)~i';
+                                    if (preg_match($pattern, $decoded)) {
+                                        return $activeCid;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // 2. İKİNCİ AŞAMA: Son 4 saat
+        $files = glob($convDir . '/*.db') ?: [];
+        usort($files, fn($a, $b) => filemtime($b) - filemtime($a));
+
+        $now = time();
+        foreach ($files as $file) {
+            if (($now - filemtime($file)) > 14400) {
+                continue;
+            }
+
+            $cid = basename($file, '.db');
+            try {
+                $sdb = new \SQLite3($file, SQLITE3_OPEN_READONLY);
+                $res = $sdb->querySingle("SELECT data FROM trajectory_metadata_blob WHERE id='main'");
+                $sdb->close();
+                if ($res) {
+                    $decoded = rawurldecode((string)$res);
+                    $decoded = strtolower(str_replace('\\', '/', $decoded));
+                    foreach ($targets as $target) {
+                        $pattern = '~(?:^|[^\w\-\.])' . preg_quote($target, '~') . '(?:[/?#\"\'\s,\x00-\x1f\\\\]|$)~i';
+                        if (preg_match($pattern, $decoded)) {
+                            return $cid;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        return null;
+    }
+
+    /**
+     * Port 4000'e gerek duymadan doğrudan Antigravity Language Server API'yi tetikler.
+     */
+    public function dispatchDirect(object $project, string $event, array $data = []): array
+    {
+        $agentExe = 'c:\Users\DELL\AppData\Local\Programs\Antigravity IDE\resources\app\extensions\antigravity\bin\language_server_windows_x64.exe';
+        if (!file_exists($agentExe)) {
+            return ['sent' => false, 'error' => 'Antigravity language_server binary not found.'];
+        }
+
+        $workspacePath = $project->workspace_path ?? '';
+        $projectCode   = $project->project_code ?? '';
+        $discoveredCid = $this->discoverLatestConversation($workspacePath, $projectCode);
+        $targetCid     = $discoveredCid ?: ($project->agent_conversation_id ?? '');
+
+        if (!empty($discoveredCid) && $discoveredCid !== ($project->agent_conversation_id ?? '')) {
+            $this->exec("UPDATE projects SET agent_conversation_id = ? WHERE id = ?", [$discoveredCid, $project->id]);
+        }
+
+        [$titleHeader, $messageText] = \Helper::formatAgentMessage($event, $project, $data);
+
+        if (!empty($targetCid)) {
+            $cmd = [$agentExe, 'agentapi', 'send-message', '--title=' . $titleHeader, $targetCid, $messageText];
+        } else {
+            $cmd = [$agentExe, 'agentapi', 'new-conversation', '--title=' . $titleHeader, $messageText];
+        }
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w']
+        ];
+        $lsEnv = $this->getAntigravityLsEnv($workspacePath);
+        $lsAddress = $lsEnv['address'] ?? null;
+        $csrfToken = $lsEnv['csrf_token'] ?? null;
+        $envVars = array_merge($_SERVER, $_ENV);
+        if ($lsAddress) {
+            $envVars['ANTIGRAVITY_LS_ADDRESS'] = $lsAddress;
+        }
+        if ($csrfToken) {
+            $envVars['ANTIGRAVITY_CSRF_TOKEN'] = $csrfToken;
+        }
+
+        $cwd = (!empty($workspacePath) && is_dir($workspacePath)) ? $workspacePath : dirname(__DIR__, 3);
+        $process = proc_open($cmd, $descriptors, $pipes, $cwd, $envVars);
+        if (!is_resource($process)) {
+            return ['sent' => false, 'error' => 'proc_open failed to launch language_server'];
+        }
+
+        fclose($pipes[0]);
+        $stdout = stream_get_contents($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $exitCode = proc_close($process);
+
+        if ($exitCode === 0 && empty($targetCid) && !empty($stdout)) {
+            $resJson = json_decode((string)$stdout, true);
+            $newCid = $resJson['response']['newConversation']['conversationId'] ?? null;
+            if ($newCid) {
+                $targetCid = $newCid;
+                $this->exec("UPDATE projects SET agent_conversation_id = ? WHERE id = ?", [$newCid, $project->id]);
+            }
+        }
+
+        if ($exitCode !== 0) {
+            $cmdFallback = [$agentExe, 'agentapi', 'new-conversation', '--title=' . $titleHeader, $messageText];
+            $pFallback = proc_open($cmdFallback, $descriptors, $pipes, $cwd, $envVars);
+            if (is_resource($pFallback)) {
+                fclose($pipes[0]);
+                $stdout = stream_get_contents($pipes[1]);
+                $stderr = stream_get_contents($pipes[2]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                $exitCode = proc_close($pFallback);
+                if ($exitCode === 0) {
+                    $resJson = json_decode((string)$stdout, true);
+                    $newCid = $resJson['response']['newConversation']['conversationId'] ?? null;
+                    if ($newCid) {
+                        $targetCid = $newCid;
+                        $this->exec("UPDATE projects SET agent_conversation_id = ? WHERE id = ?", [$newCid, $project->id]);
+                    }
+                }
+            }
+        }
+
+        $sent = ($exitCode === 0);
+        $this->ensureRunning();
+
+        return [
+            'sent'            => $sent,
+            'direct_dispatch' => true,
+            'recipient_id'    => $targetCid,
+            'discovered_cid'  => $discoveredCid,
+            'exit_code'       => $exitCode,
+            'stdout'          => trim((string)$stdout),
+            'stderr'          => trim((string)$stderr)
+        ];
     }
 }

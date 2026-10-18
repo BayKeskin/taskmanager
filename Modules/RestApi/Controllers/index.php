@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // 2. System Core
-require_once dirname(__DIR__, 3) . '/System/System.php';
+require_once dirname(__DIR__, 3) . '/Core/System.php';
 global $db;
 
 // Dil Çevirici (API I18n)

@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../Core/System.php';
-require_once __DIR__ . '/../Core/SmokeTest.php';
 
 use Core\ModuleLoader;
 use Modules\Mailer\Services\MailerService;
@@ -36,9 +35,9 @@ foreach ($locales as $loc) {
     assert(!empty($sName) && !str_starts_with($sName, 'SmokeTest::'), "SmokeTest translation missing for {$loc}");
 }
 
-// 5. Legacy Facade Uyumluluk Testi
-$legacySmoke = new SmokeTest('en');
-assert(method_exists($legacySmoke, 'run'), "Legacy SmokeTest must retain run() method.");
-echo "[PASS] Legacy SmokeTest facade is fully backwards-compatible." . PHP_EOL;
+// 5. SmokeTest Service Doğrulama
+$legacySmoke = new SmokeTestService('en');
+assert(method_exists($legacySmoke, 'run'), "SmokeTestService must retain run() method.");
+echo "[PASS] SmokeTestService is fully operational." . PHP_EOL;
 
 echo "=== ALL MAILER & SMOKETEST TESTS PASSED (100% SUCCESS) ===" . PHP_EOL;

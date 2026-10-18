@@ -3,7 +3,7 @@
 ignore_user_abort(true);
 set_time_limit(35);
 
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 require_once __DIR__ . '/../Model/DataLayer.php';
 
 // Oturumu hemen kapat (Concurrent HTTP istekleri bloke olmasın)

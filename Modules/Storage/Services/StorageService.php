@@ -60,7 +60,7 @@ class StorageService
 
         if (empty($file) || !isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
             $errCode = $file['error'] ?? UPLOAD_ERR_NO_FILE;
-            $msg = __('Storage::upload_error', "Dosya yükleme hatası (Hata kodu: {$errCode}).");
+            $msg = __('\Modules\Storage\Services\StorageService::upload_error', "Dosya yükleme hatası (Hata kodu: {$errCode}).");
             return ['valid' => false, 'error' => $msg];
         }
 
@@ -68,7 +68,7 @@ class StorageService
         $maxBytes = $config['max_size_bytes'] ?? (20 * 1024 * 1024);
         if ($file['size'] > $maxBytes) {
             $maxMb = round($maxBytes / (1024 * 1024));
-            $msg = __('Storage::file_too_large', "Dosya boyutu çok büyük. İzin verilen maksimum: {$maxMb} MB.");
+            $msg = __('\Modules\Storage\Services\StorageService::file_too_large', "Dosya boyutu çok büyük. İzin verilen maksimum: {$maxMb} MB.");
             return ['valid' => false, 'error' => $msg];
         }
 
@@ -78,7 +78,7 @@ class StorageService
         // 2. Dangerous Executable Binary Check
         $disallowed = $config['disallowed_extensions'] ?? ['phtml', 'phar', 'exe', 'sh', 'bat', 'cmd', 'bin', 'vbs', 'scr', 'cgi', 'pl', 'msi', 'com'];
         if (in_array($ext, $disallowed, true)) {
-            $msg = __('Storage::disallowed_extension', "Güvenlik uyarısı: '{$ext}' uzantılı çalıştırılabilir dosyalar yüklenemez.");
+            $msg = __('\Modules\Storage\Services\StorageService::disallowed_extension', "Güvenlik uyarısı: '{$ext}' uzantılı çalıştırılabilir dosyalar yüklenemez.");
             return ['valid' => false, 'error' => $msg];
         }
 
@@ -90,7 +90,7 @@ class StorageService
         }
 
         if (!empty($allowedExts) && !in_array($ext, $allowedExts, true)) {
-            $msg = __('Storage::invalid_extension', "Desteklenmeyen dosya türü.");
+            $msg = __('\Modules\Storage\Services\StorageService::invalid_extension', "Desteklenmeyen dosya türü.");
             return ['valid' => false, 'error' => $msg];
         }
 
@@ -151,7 +151,7 @@ class StorageService
             : (@copy($file['tmp_name'], $destPath) || @rename($file['tmp_name'], $destPath));
 
         if (!$moved) {
-            return ['success' => false, 'error' => __('Storage::upload_error', 'Dosya sunucu dizinine kaydedilemedi.')];
+            return ['success' => false, 'error' => __('\Modules\Storage\Services\StorageService::upload_error', 'Dosya sunucu dizinine kaydedilemedi.')];
         }
 
         $webBase = rtrim($config['disks']['local']['url'] ?? '/taskmanager/Public/uploads', '/');
@@ -188,7 +188,7 @@ class StorageService
 
         $destPath = $targetDir . DIRECTORY_SEPARATOR . $safeName;
         if (file_put_contents($destPath, $content) === false) {
-            return ['success' => false, 'error' => __('Storage::upload_error', 'Dosya içeriği diske yazılamadı.')];
+            return ['success' => false, 'error' => __('\Modules\Storage\Services\StorageService::upload_error', 'Dosya içeriği diske yazılamadı.')];
         }
 
         $webBase = rtrim($config['disks']['local']['url'] ?? '/taskmanager/Public/uploads', '/');

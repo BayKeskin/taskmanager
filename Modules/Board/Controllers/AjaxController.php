@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
-require_once dirname(__DIR__, 3) . '/System/System.php';
+require_once dirname(__DIR__, 3) . '/Core/System.php';
 
 // Dil motorunu başlat (URL parametresi ?lang=, $_POST['lang'] veya kullanıcı tercihi)
 Language::init();
@@ -524,7 +524,7 @@ switch ($action) {
                                 'error'    => $rawFiles['error'][$i],
                                 'size'     => $rawFiles['size'][$i],
                             ];
-                            $upRes = Storage::upload($singleFile, 'tasks');
+                            $upRes = \Modules\Storage\Services\StorageService::upload($singleFile, 'tasks');
                             if ($upRes['success']) {
                                 $db->exec_query("
                                     INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
@@ -543,7 +543,7 @@ switch ($action) {
                     }
                 }
             } elseif (!empty($_FILES['attachment']) && !empty($_FILES['attachment']['tmp_name'])) {
-                $upRes = Storage::upload($_FILES['attachment'], 'tasks');
+                $upRes = \Modules\Storage\Services\StorageService::upload($_FILES['attachment'], 'tasks');
                 if ($upRes['success']) {
                     $db->exec_query("
                         INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
@@ -1125,7 +1125,7 @@ switch ($action) {
                 // Doğrudan dosya yüklendiyse (Sürükle-bırak veya panodan yapıştırma)
                 $file = $_FILES['attachment'] ?? ($_FILES['file'] ?? null);
                 if ($file && !empty($file['tmp_name']) && $file['error'] === UPLOAD_ERR_OK) {
-                    $upRes = Storage::upload($file, 'submissions');
+                    $upRes = \Modules\Storage\Services\StorageService::upload($file, 'submissions');
                     if (!$upRes['success']) {
                         jsonResponse(false, $upRes['error']);
                     }
@@ -1292,7 +1292,7 @@ switch ($action) {
         // Yorum ile birlikte dosya/ekran görüntüsü yüklendiyse
         $file = $_FILES['attachment'] ?? ($_FILES['file'] ?? null);
         if ($file && !empty($file['tmp_name']) && $file['error'] === UPLOAD_ERR_OK) {
-            $upRes = Storage::upload($file, 'comments');
+            $upRes = \Modules\Storage\Services\StorageService::upload($file, 'comments');
             if (!$upRes['success']) {
                 jsonResponse(false, $upRes['error']);
             }
@@ -1509,7 +1509,7 @@ switch ($action) {
         if ($currentUser->role !== 'admin') {
             jsonResponse(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
         }
-        require_once __DIR__ . '/../../System/Telegram.php';
+        require_once __DIR__ . '/../../Core/Telegram.php';
         $testResult = Telegram::testConnection();
         if ($testResult['success']) {
             jsonResponse(true, $testResult['message'], $testResult);
@@ -1522,8 +1522,8 @@ switch ($action) {
         if ($currentUser->role !== 'admin') {
             jsonResponse(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
         }
-        require_once __DIR__ . '/../../System/Mailer.php';
-        $testResult = Mailer::testConnection();
+        require_once __DIR__ . '/../../Core/Mailer.php';
+        $testResult = \Modules\Mailer\Services\MailerService::testConnection();
         if ($testResult['success']) {
             jsonResponse(true, $testResult['message'], $testResult);
         } else {
@@ -1858,7 +1858,7 @@ switch ($action) {
         }
 
         $file = $_FILES['attachment'] ?? $_FILES['file'];
-        $uploadResult = Storage::upload($file, 'tasks');
+        $uploadResult = \Modules\Storage\Services\StorageService::upload($file, 'tasks');
 
         if (!$uploadResult['success']) {
             jsonResponse(false, $uploadResult['error'] ?? 'Dosya yüklenemedi.');
@@ -1932,7 +1932,7 @@ switch ($action) {
         }
 
         // Fiziksel dosyayı Storage üzerinden sil
-        Storage::delete($att->file_path);
+        \Modules\Storage\Services\StorageService::delete($att->file_path);
 
         $db->exec_query("DELETE FROM task_attachments WHERE id = ?", [$attId]);
 
@@ -1966,7 +1966,7 @@ switch ($action) {
         $taskId = (int)($_POST['task_id'] ?? 0);
         $docId = (int)($_POST['doc_id'] ?? 0);
 
-        $uploadResult = Storage::upload($file, $context);
+        $uploadResult = \Modules\Storage\Services\StorageService::upload($file, $context);
         if (!$uploadResult['success']) {
             jsonResponse(false, $uploadResult['error'] ?? 'Dosya yükleme başarısız.');
         }
@@ -2030,7 +2030,7 @@ switch ($action) {
         }
 
         $file = $_FILES['file'] ?? $_FILES['attachment'];
-        $uploadResult = Storage::upload($file, 'docs');
+        $uploadResult = \Modules\Storage\Services\StorageService::upload($file, 'docs');
 
         if (!$uploadResult['success']) {
             jsonResponse(false, $uploadResult['error'] ?? 'Dosya yüklenemedi.');
@@ -2101,7 +2101,7 @@ switch ($action) {
             jsonResponse(false, 'Ek dosya bulunamadı.');
         }
 
-        Storage::delete($docAtt->file_path);
+        \Modules\Storage\Services\StorageService::delete($docAtt->file_path);
         $db->exec_query("DELETE FROM doc_attachments WHERE id = ?", [$docAttId]);
 
         jsonResponse(true, 'Döküman eki silindi!', [
@@ -2502,7 +2502,7 @@ switch ($action) {
         // Dosya yükleme kontrolü
         if (!empty($_FILES['attachment']) || !empty($_FILES['file'])) {
             $f = $_FILES['attachment'] ?? $_FILES['file'];
-            $upRes = Storage::upload($f, 'chat');
+            $upRes = \Modules\Storage\Services\StorageService::upload($f, 'chat');
             if ($upRes['success']) {
                 $attachmentUrl = $upRes['file_path'];
             }

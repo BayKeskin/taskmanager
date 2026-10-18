@@ -101,7 +101,7 @@ class ProjectAnalyzer
         }
 
         // 4. CodeIgniter 3
-        if (file_exists("{$path}/application/config/config.php") && file_exists("{$path}/system/core/CodeIgniter.php")) {
+        if (file_exists("{$path}/application/config/config.php") && file_exists("{$path}/Core/core/CodeIgniter.php")) {
             return [
                 'type'         => 'codeigniter3',
                 'name'         => 'CodeIgniter 3',

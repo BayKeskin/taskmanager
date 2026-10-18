@@ -3,7 +3,7 @@
  * TaskManager - Hakediş & İş Teslim Raporu (PDF Baskı ve Önizleme Şablonu)
  * TSK-194: Müşteri Portalı ve Raporlar İçin Efor, Maliyet ve Hakediş Özeti
  */
-require_once __DIR__ . '/../../System/System.php';
+require_once __DIR__ . '/../../Core/System.php';
 require_once __DIR__ . '/../../Controller/ReportController.php';
 
 if (session_status() === PHP_SESSION_NONE) {
