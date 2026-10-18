@@ -1,0 +1,9 @@
+{
+  "name": "Excel & CSV Report Exporter",
+  "slug": "excel-export",
+  "version": "1.0.0",
+  "description": "Kanban görevlerini UTF-8 BOM destekli Excel ve CSV formatında dışa aktarma modülü.",
+  "active": true,
+  "author": "TaskManager Architecture Team",
+  "requires": []
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Visual Bug Pins & Feedback",
+  "slug": "visual-pins",
+  "version": "1.0.0",
+  "description": "In-house BugHerd alternatifi; görsel hata pinleri, DOM konumlandırma ve ekran görüntüsü geri bildirim modülü.",
+  "active": true,
+  "author": "TaskManager Architecture Team",
+  "requires": []
+}

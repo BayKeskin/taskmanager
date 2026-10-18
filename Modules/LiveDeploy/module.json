@@ -1,0 +1,9 @@
+{
+  "name": "Live Hosting & Delta FTP Deployment",
+  "slug": "live-deploy",
+  "version": "2.0.0",
+  "description": "Projeleri cPanel, Plesk, CyberPanel veya standart FTP/SSH sunucularına tek tıkla canlıya alan CI/CD dağıtım, Delta senkronizasyon ve cerrahi rollback motoru.",
+  "active": true,
+  "author": "TaskManager Architecture Team",
+  "requires": ["github-devops"]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "GitHub DevOps & Surgical Rollback",
+  "slug": "github-devops",
+  "version": "1.2.0",
+  "description": "Görev tesliminde otomatik atomic commit, GitHub origin push ve .migrations/*_down.sql cerrahi geri alma motoru.",
+  "active": true,
+  "author": "TaskManager DevOps Team",
+  "requires": []
+}

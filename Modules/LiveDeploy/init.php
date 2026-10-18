@@ -1,0 +1,30 @@
+<?php
+/**
+ * LiveDeploy Modülü Başlatıcı (init.php)
+ * Kancaları, Dinleyicileri ve Sayfa Varlıklarını (Assets) Kaydeder.
+ */
+use Core\EventManager;
+use Core\AssetManager;
+use Modules\LiveDeploy\Controllers\DeployController;
+
+// 1. Kanban Araç Çubuğuna "Canlı Dağıtım" butonunu dinamik enjekte et
+EventManager::addFilter('kanban.tools_menu', function(array $items, int $projectId) {
+    $items[] = [
+        'id'       => 'tool-live-deploy',
+        'icon'     => 'fas fa-rocket',
+        'title'    => __('app.live_deployment_wizard', '🚀 Canlı Dağıtım'),
+        'onclick'  => 'openDeployWizard(' . $projectId . ')',
+        'order'    => 20
+    ];
+    return $items;
+});
+
+// 2. Modül Aktifken İlgili JS ve CSS Varlıklarını Kuyruğa Al
+AssetManager::enqueueJs('deploy-wizard', '/taskmanager/Modules/LiveDeploy/Assets/js/deploy-wizard.js');
+AssetManager::enqueueCss('deploy-wizard', '/taskmanager/Modules/LiveDeploy/Assets/css/deploy-wizard.css');
+
+// 3. Sağlık Kontrolü Hook Dinleyicisi
+EventManager::listen('live_deploy.healthcheck', function(string $url) {
+    $controller = new DeployController();
+    return $controller->checkHealth($url);
+});

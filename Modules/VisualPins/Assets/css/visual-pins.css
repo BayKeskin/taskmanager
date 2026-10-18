@@ -1,0 +1,19 @@
+/**
+ * Modules/VisualPins/Assets/css/visual-pins.css
+ */
+.cu-visual-pin-marker {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #ff4757;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(255, 71, 87, 0.5);
+    cursor: pointer;
+    z-index: 99999;
+}
