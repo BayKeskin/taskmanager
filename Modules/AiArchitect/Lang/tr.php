@@ -62,4 +62,6 @@ return array (
   'ai_arch_subtask_title_ph' => 'Alt görev başlığı...',
   'ai_arch_show_details' => 'Detay',
   'ai_arch_hide_details' => 'Gizle',
+  'btn_ai_architect' => 'AI Proje Mimarı',
+  'tooltip_ai_architect' => 'Brif veya sözleşmeden akıllı modüller ve alt görevler ayrıştır',
 );

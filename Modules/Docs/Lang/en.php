@@ -72,4 +72,6 @@ return array (
   'docs_tool_code' => 'Code Block',
   'docs_tool_image' => 'Insert Image',
   'docs_tool_link' => 'Insert Link',
+  'untitled_document' => 'Untitled Document',
+  'start_typing_document' => 'Start typing your document content here...',
 );

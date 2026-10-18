@@ -43,4 +43,13 @@ return array (
   'modal_conv_id_hint' => 'Das aktive Antigravity IDE-Fenster oder ein neuer Tab wird basierend auf dem Arbeitsbereich dynamisch verwaltet. Keine manuelle ID erforderlich.',
   'modal_proj_hourly_rate' => 'Stundensatz (₺/Std.)',
   'modal_proj_hourly_rate_hint' => 'Basis-Stundensatz für Aufwands- und Abrechnungsberichte.',
+  'modal_test_webhook' => 'Webhook testen',
+  'modal_refining_rules' => '⏳ KI Verfeinert...',
+  'modal_rules_architecture_title' => 'Regelhierarchie: Allgemeine Regeln (Doktrin) ➔ Projektregeln (Hier) ➔ Aufgabenanforderungen',
+  'modal_zero_config' => 'Null-Konfiguration:',
+  'modal_rules_doctrine' => 'Allgemeine Doktrin: QA ("Der Benutzer ist kein QA-Tester"), MVC, dreisprachiger Standard (EN, TR, DE), DoD.',
+  'modal_rules_proj_rules' => 'Projektregeln: Für dieses Projekt spezifische Architektur- und Stylingregeln.',
+  'modal_rules_task_reqs' => 'Aufgabenanforderungen: Titel, Beschreibung und Checkliste der Aufgabe.',
+  'invalid_project' => 'Ungültiges Projekt ausgewählt.',
+  'general_project' => 'Allgemeines Projekt',
 );

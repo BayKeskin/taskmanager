@@ -72,4 +72,6 @@ return array (
   'docs_tool_code' => 'Codeblock',
   'docs_tool_image' => 'Bild einfügen',
   'docs_tool_link' => 'Link einfügen',
+  'untitled_document' => 'Unbenanntes Dokument',
+  'start_typing_document' => 'Beginnen Sie hier mit der Eingabe Ihres Dokumentinhalts...',
 );

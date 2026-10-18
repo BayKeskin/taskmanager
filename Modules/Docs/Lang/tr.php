@@ -72,4 +72,6 @@ return array (
   'docs_tool_code' => 'Kod Bloğu',
   'docs_tool_image' => 'Görsel Ekle',
   'docs_tool_link' => 'Bağlantı Ekle',
+  'untitled_document' => 'Başlıksız Döküman',
+  'start_typing_document' => 'Buraya döküman içeriğinizi yazmaya başlayın...',
 );

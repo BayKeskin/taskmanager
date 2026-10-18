@@ -62,4 +62,6 @@ return array (
   'ai_arch_subtask_title_ph' => 'Subtask title...',
   'ai_arch_show_details' => 'Details',
   'ai_arch_hide_details' => 'Hide',
+  'btn_ai_architect' => 'AI Project Architect',
+  'tooltip_ai_architect' => 'Decompose brief or contract into modular functional epics and subtasks',
 );

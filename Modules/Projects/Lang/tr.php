@@ -43,4 +43,13 @@ return array (
   'modal_conv_id_hint' => 'Antigravity IDE açık pencereniz veya yeni sekmeniz çalışma alanına göre dinamik olarak yönetilir. Manuel ID gerekmez.',
   'modal_proj_hourly_rate' => 'Saatlik Birim Ücret (₺/saat)',
   'modal_proj_hourly_rate_hint' => 'Hakediş ve efor raporlarında baz alınacak birim işçilik tutarı.',
+  'modal_test_webhook' => 'Webhook Test Et',
+  'modal_refining_rules' => '⏳ AI Derliyor...',
+  'modal_rules_architecture_title' => 'Kural Hiyerarşisi: Genel Kurallar (Doktrin) ➔ Proje Kuralları (Buradaki) ➔ Görev İsterleri',
+  'modal_zero_config' => 'Sıfır Ayar:',
+  'modal_rules_doctrine' => 'Genel Doktrin: QA ("Kullanıcı test elemanı değildir"), MVC, 3 Dilli Yapı (EN, TR, DE), DoD.',
+  'modal_rules_proj_rules' => 'Proje Kuralları: Tanımladığınız projeye has mimari ve styling kuralları.',
+  'modal_rules_task_reqs' => 'Görev İsterleri: Görevin kendi başlığı, açıklaması ve kontrol listesi.',
+  'invalid_project' => 'Geçersiz proje seçimi.',
+  'general_project' => 'Genel Proje',
 );
