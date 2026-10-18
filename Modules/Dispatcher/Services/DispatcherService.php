@@ -181,7 +181,6 @@ class DispatcherService extends BaseModel
             return null;
         }
 
-        // 1. ÖNCELİK: state.vscdb
         $vscdb = 'C:/Users/DELL/AppData/Roaming/Antigravity IDE/User/globalStorage/state.vscdb';
         if (file_exists($vscdb)) {
             try {
@@ -212,7 +211,6 @@ class DispatcherService extends BaseModel
             } catch (\Throwable $e) {}
         }
 
-        // 2. İKİNCİ AŞAMA: Son 4 saat
         $files = glob($convDir . '/*.db') ?: [];
         usort($files, fn($a, $b) => filemtime($b) - filemtime($a));
 
@@ -244,6 +242,144 @@ class DispatcherService extends BaseModel
     }
 
     /**
+     * Olay tipine göre Antigravity penceresine gidecek bildirim başlığı ve markdown içeriğini oluşturur.
+     */
+    public static function formatAgentMessage(string $event, object $project, array $data): array
+    {
+        $projectCode  = $project->project_code ?? '';
+        $projectTitle = $project->title ?? '';
+        $taskCode     = $data['task_code'] ?? '';
+        $taskTitle    = $data['title'] ?? '';
+        $priority     = $data['priority'] ?? 'normal';
+        $isResumed    = !empty($data['resumed']);
+
+        $agentRules = !empty($project->agent_rules) ? trim($project->agent_rules) : '';
+        if (empty($agentRules) && !empty($project->id)) {
+            $db = $GLOBALS['db'] ?? null;
+            if ($db && !empty($db->connect)) {
+                $agentRules = (string)($db->get_single("projects", "agent_rules", "id", $project->id) ?? '');
+            }
+        }
+
+        $projectRulesBlock = '';
+        if (!empty($agentRules)) {
+            $projectRulesBlock = "\n\n---\n"
+                . "📌 **PROJECT-SPECIFIC AGENT RULES (PROJEYE ÖZEL AJAN KURALLARI):**\n"
+                . "> [!IMPORTANT]\n"
+                . "> The following project-specific technical rules, constraints, and instructions are MANDATORY for [{$projectCode}] {$projectTitle}:\n\n"
+                . $agentRules . "\n";
+        }
+
+        if (in_array($event, ['task.started', 'task.in_progress'], true)) {
+            $titleHeader = $isResumed 
+                ? "🔄 [RESUMING TASK] {$taskCode}: {$taskTitle}" 
+                : "🚀 [IN PROGRESS] {$taskCode}: {$taskTitle}";
+            $desc = !empty($data['description']) ? trim((string)$data['description']) : '*(No description provided)*';
+
+            $checklistMd = '';
+            if (!empty($data['checklists']) && is_array($data['checklists'])) {
+                $checklistMd = "\n\n### ✅ Checklist:\n";
+                foreach ($data['checklists'] as $item) {
+                    $itemObj = is_object($item) ? $item : (object)$item;
+                    $box = !empty($itemObj->is_completed) ? '[x]' : '[ ]';
+                    $itemText = $itemObj->title ?? $itemObj->item_text ?? '';
+                    $checklistMd .= "- {$box} {$itemText}\n";
+                }
+            }
+
+            $attachmentsMd = '';
+            if (!empty($data['attachments']) && is_array($data['attachments'])) {
+                $attachmentsMd = "\n\n### 📎 Task Attachments & Reference Designs:\n"
+                    . "> **MANDATORY ASSET INSPECTION:** Carefully inspect all attached visual designs and reference documents before writing any code.\n";
+                foreach ($data['attachments'] as $att) {
+                    $attObj = is_object($att) ? $att : (object)$att;
+                    $fName = $attObj->file_name ?? basename($attObj->file_path ?? 'attachment');
+                    $fUri  = $attObj->file_uri ?? ('file:///' . ltrim(str_replace('\\', '/', $attObj->abs_path ?? ''), '/'));
+                    $fType = $attObj->file_type ?? '';
+                    $isImg = str_starts_with($fType, 'image/') || preg_match('/\.(png|jpe?g|webp|gif|svg)$/i', $fName);
+                    $icon  = $isImg ? '🖼️' : '📄';
+                    $hint  = $isImg 
+                        ? "*(Reference Image: inspect using `view_file` or visual tools to match design pixel-perfect)*" 
+                        : "*(Attached Document: view using `view_file`)*";
+                    $attachmentsMd .= "- {$icon} [{$fName}]({$fUri}) {$hint}\n";
+                }
+            }
+
+            $assigneesStr = !empty($data['assignees']) ? implode(', ', (array)$data['assignees']) : 'Unassigned';
+            $timeEstimate = $data['time_estimate'] ?? '-';
+            $deadline     = $data['deadline'] ?? '-';
+            $triggeredBy  = $data['triggered_by'] ?? 'User';
+
+            $bannerText = $isResumed
+                ? "🔄 **Interrupted Task Resumed! Returning to the pending task where you left off!**\n\n📌 **Status:** Previous priority/revision task was completed. This task is now un-suspended and running autonomously.\n\n"
+                : "🚀 **TaskManager Task Marked as 'In Progress'!**\n\n";
+
+            $messageText = "{$bannerText}"
+                . "📌 **Project:** [{$projectCode}] {$projectTitle}\n"
+                . "📋 **Task Code:** {$taskCode}\n"
+                . "🏷️ **Title:** {$taskTitle}\n"
+                . "⚡ **Priority:** {$priority} | ⏳ **Estimated Time:** {$timeEstimate} | 📅 **Due Date:** {$deadline}\n"
+                . "👥 **Assignees:** {$assigneesStr} | 👤 **Triggered By:** {$triggeredBy}\n\n"
+                . "### 📝 Task Description & Requirements:\n{$desc}"
+                . "{$checklistMd}"
+                . "{$attachmentsMd}"
+                . "{$projectRulesBlock}\n\n"
+                . "---\n"
+                . "🛡️ **MANDATORY QA DOCTRINE: \"THE USER IS NOT A QA TESTER\"**\n"
+                . "> **🚨 RED LINE RULE:**\n"
+                . "> Before an engineer or AI agent tells the user \"It's done, please check\", \"Try it now\", or marks any task as completed:\n"
+                . "> **The agent is STRICTLY OBLIGATED to autonomously test and verify all screens, every button, every form step, UI visual flaws, and all state transitions in the LIVE ENVIRONMENT using headless browser, curl, PHP/CLI scripts, and API tests.**\n\n"
+                . "📋 **DEFINITION OF DONE & DELIVERY PROTOCOL:**\n"
+                . "1. **What Was Done (Neler Yapıldı):** Added/modified files, methods, DB schema changes.\n"
+                . "2. **Where to Test (Nereden Test Edilir):** Direct testable URLs.\n"
+                . "3. **How to Test (Nasıl Test Edilir):** Step-by-step actions and expected outcomes.\n"
+                . "4. **Autonomous Test Evidence (Otonom Test Kanıtı):** Automated test summary.\n\n"
+                . "🎯 **Directive:** Focus EXCLUSIVELY on this specific task: [{$taskCode}].\n\n"
+                . "🗄️ **DATABASE MIGRATION & ROLLBACK RULE:**\n"
+                . "If your task introduces database modifications, generate a reverse rollback SQL script inside: `.migrations/{$taskCode}_down.sql`.\n\n"
+                . "⚡ **AUTONOMOUS COMPLETION INSTRUCTION:**\n"
+                . self::getAgentSubmitCommandBlock($taskCode);
+        } elseif ($event === 'task.revision_requested' || $event === 'task.modification_requested') {
+            $titleHeader = "⚠️ [REVISION REQUEST] {$taskCode}: {$taskTitle}";
+            $revReason = $data['revision_reason'] ?? '*(No reason specified)*';
+            $desc = !empty($data['description']) ? trim((string)$data['description']) : '';
+
+            $messageText = "⚠️ **TaskManager Revision Request!**\n\n"
+                . "📌 **Project:** [{$projectCode}] {$projectTitle}\n"
+                . "📋 **Task Code:** {$taskCode}\n"
+                . "🏷️ **Title:** {$taskTitle}\n\n"
+                . "🔴 **Requested Revision & Feedback:**\n{$revReason}\n\n"
+                . "### 📝 Original Task Description:\n{$desc}"
+                . "{$projectRulesBlock}\n\n"
+                . "⚡ **AUTONOMOUS COMPLETION INSTRUCTION:**\n"
+                . self::getAgentSubmitCommandBlock($taskCode);
+        } else {
+            $titleHeader = "ℹ️ Task Update: {$event}";
+            $messageText = "ℹ️ **TaskManager Event: {$event}**\n\n"
+                . "- **Project:** [{$projectCode}] {$projectTitle}\n"
+                . "- **Data:** " . json_encode($data, JSON_UNESCAPED_UNICODE);
+        }
+
+        return [$titleHeader, $messageText];
+    }
+
+    /**
+     * Ajanın görev teslim komut bloğunu üretir
+     */
+    public static function getAgentSubmitCommandBlock(string $taskCode): string
+    {
+        $cfg = \Helper::getDynamicApiConfig();
+        $endpoint = "{$cfg['base_url']}/api/tasks/{$taskCode}/workflow/submit";
+        $token    = $cfg['api_token'];
+
+        return "```powershell\n"
+             . "\$headers = @{ 'Authorization' = 'Bearer {$token}'; 'Content-Type' = 'application/json; charset=utf-8' }\n"
+             . "\$body = @{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' } | ConvertTo-Json -Compress\n"
+             . "Invoke-RestMethod -Uri '{$endpoint}' -Method Post -Headers \$headers -Body ([System.Text.Encoding]::UTF8.GetBytes(\$body))\n"
+             . "```";
+    }
+
+    /**
      * Port 4000'e gerek duymadan doğrudan Antigravity Language Server API'yi tetikler.
      */
     public function dispatchDirect(object $project, string $event, array $data = []): array
@@ -262,7 +398,7 @@ class DispatcherService extends BaseModel
             $this->exec("UPDATE projects SET agent_conversation_id = ? WHERE id = ?", [$discoveredCid, $project->id]);
         }
 
-        [$titleHeader, $messageText] = \Helper::formatAgentMessage($event, $project, $data);
+        [$titleHeader, $messageText] = self::formatAgentMessage($event, $project, $data);
 
         if (!empty($targetCid)) {
             $cmd = [$agentExe, 'agentapi', 'send-message', '--title=' . $titleHeader, $targetCid, $messageText];
