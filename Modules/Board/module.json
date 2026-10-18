@@ -1,0 +1,11 @@
+{
+  "id": "board",
+  "name": "Kanban Panosu & İş Akışı",
+  "slug": "board",
+  "version": "1.0.0",
+  "description": "Görev yönetimi, Kanban sütunları (Pending, In Progress, In Review, Completed), alt görevler, filtreleme ve canlı panolar.",
+  "author": "Antigravity HMVC Engine",
+  "active": true,
+  "order": 1,
+  "dependencies": ["projects", "team"]
+}

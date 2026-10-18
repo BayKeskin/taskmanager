@@ -27,6 +27,11 @@ class BoardController extends Controller
      */
     public function index(?int $activeProjectId = null, ?object $currentUser = null): array
     {
+        if (class_exists('Modules\\Board\\Controllers\\BoardController')) {
+            $ctrl = new \Modules\Board\Controllers\BoardController();
+            return $ctrl->index($activeProjectId, $currentUser);
+        }
+
         $currentUser = $currentUser ?? ($_SESSION['user'] ?? (object)['id' => 1, 'role' => 'admin']);
         $isClient = ($currentUser->role === 'client');
         if ($isClient) {
