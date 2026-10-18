@@ -89,28 +89,6 @@
     </div>
 </div>
 
-<script>
-window.MCP_I18N = {
-    badge_required_env: <?= json_encode(__('Mcp::mcp_badge_required_env'), JSON_UNESCAPED_UNICODE) ?>,
-    badge_key_configured: <?= json_encode(__('Mcp::mcp_badge_key_configured'), JSON_UNESCAPED_UNICODE) ?>,
-    badge_ready: <?= json_encode(__('Mcp::mcp_badge_ready'), JSON_UNESCAPED_UNICODE) ?>,
-    btn_details: <?= json_encode(__('Mcp::mcp_btn_details'), JSON_UNESCAPED_UNICODE) ?>,
-    btn_config: <?= json_encode(__('Mcp::mcp_btn_config'), JSON_UNESCAPED_UNICODE) ?>,
-    status_enabled: <?= json_encode(__('Mcp::mcp_status_enabled'), JSON_UNESCAPED_UNICODE) ?>,
-    status_disabled: <?= json_encode(__('Mcp::mcp_status_disabled'), JSON_UNESCAPED_UNICODE) ?>,
-    field_required: <?= json_encode(__('Mcp::mcp_field_required'), JSON_UNESCAPED_UNICODE) ?>,
-    field_optional: <?= json_encode(__('Mcp::mcp_field_optional'), JSON_UNESCAPED_UNICODE) ?>,
-    enter_value: <?= json_encode(__('Mcp::mcp_enter_value'), JSON_UNESCAPED_UNICODE) ?>,
-    active_toast: <?= json_encode(__('Mcp::mcp_active_toast'), JSON_UNESCAPED_UNICODE) ?>,
-    deactive_toast: <?= json_encode(__('Mcp::mcp_deactive_toast'), JSON_UNESCAPED_UNICODE) ?>,
-    no_external_needed_info: <?= json_encode(__('Mcp::mcp_no_external_needed_info'), JSON_UNESCAPED_UNICODE) ?>,
-    not_found: <?= json_encode(__('Mcp::mcp_not_found'), JSON_UNESCAPED_UNICODE) ?>,
-    not_found_hint: <?= json_encode(__('Mcp::mcp_not_found_hint'), JSON_UNESCAPED_UNICODE) ?>,
-    sync_success: <?= json_encode(__('Mcp::mcp_sync_success'), JSON_UNESCAPED_UNICODE) ?>,
-    save_success: <?= json_encode(__('Mcp::mcp_save_success'), JSON_UNESCAPED_UNICODE) ?>
-};
-</script>
-
 <!-- 🧩 7. MCP YAPILANDIRMA MODALI (API Keys / Env Değişkenleri) -->
 <div class="cu-modal-overlay" id="modalMcpConfig" onclick="if(event.target === this) closeModal('modalMcpConfig')" style="z-index:1100;">
     <div class="cu-modal" style="max-width:540px; width:92vw; background:var(--bg-card); border:1px solid rgba(123,104,238,0.5); box-shadow:0 25px 60px rgba(0,0,0,0.8); border-radius:12px; overflow:hidden;">

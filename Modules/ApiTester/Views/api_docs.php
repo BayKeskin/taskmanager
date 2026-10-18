@@ -694,10 +694,10 @@ $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dyn
 
 </div>
 
-<script>
-window.APITESTER_DOCS_I18N = {
-    token_copied: <?= json_encode($t['token_copied']) ?>
-};
-</script>
+<?php
+\Core\AssetManager::localizeScript('api-docs-js', 'APITESTER_DOCS_I18N', [
+    'token_copied' => $t['token_copied']
+]);
+?>
 
 <?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>

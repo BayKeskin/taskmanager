@@ -317,31 +317,6 @@ foreach ($allTasks as $t) {
     <?php endforeach; ?>
 </div>
 
-<script>
-window.BOARD_CONTEXT = {
-    projectId: <?= json_encode($activeProjectId ? (string)$activeProjectId : null) ?>,
-    userEmail: <?= json_encode($currentUser->email ?? '') ?>
-};
-window.BOARD_I18N = {
-    approve_confirm: <?= json_encode(__('tasks.client_approve_confirm', 'Bu görevin teslimatını onaylayıp tamamlandı olarak işaretlemek istiyor musunuz?')) ?>,
-    approve_success: <?= json_encode(__('tasks.client_approve_success', '✅ Teslimat başarıyla onaylandı ve görev tamamlandı!')) ?>,
-    request_prompt: <?= json_encode(__('tasks.client_request_reason_prompt', 'Lütfen yapılmasını istediğiniz düzeltme veya revizyon notunu yazınız:')) ?>,
-    request_success: <?= json_encode(__('tasks.client_request_success', '✅ Düzeltme talebiniz geliştirici ekibe iletildi!')) ?>,
-    analyzing: <?= json_encode(__('tasks.ai_standup_analyzing', 'Yapay zeka son 24 saatin standup özetini analiz ediyor...')) ?>,
-    period: <?= json_encode(__('tasks.ai_standup_period_label', 'Dönem Aralığı')) ?>,
-    last_24h: <?= json_encode(__('tasks.ai_standup_last_24h', 'Son 24 Saat')) ?>,
-    comp_stat: <?= json_encode(__('tasks.ai_standup_completed_stat', '✅ :count Tamamlanan / Teslim')) ?>,
-    in_prog_stat: <?= json_encode(__('tasks.ai_standup_in_progress_stat', '⚡ :count Aktif Çalışılan')) ?>,
-    delayed_stat: <?= json_encode(__('tasks.ai_standup_delayed_stat', '⚠️ :count Riskli / Geciken')) ?>,
-    email_prompt: <?= json_encode(__('tasks.ai_standup_email_prompt', 'Bültenin gönderileceği e-posta adresini giriniz:')) ?>,
-    email_success: <?= json_encode(__('tasks.ai_standup_email_success', '✅ Standup e-posta bülteni başarıyla gönderildi: ')) ?>,
-    err_fetch: <?= json_encode(__('tasks.ai_standup_err_fetch', 'Özet alınamadı: ')) ?>,
-    err_conn: <?= json_encode(__('tasks.ai_standup_err_conn', 'Bağlantı hatası: ')) ?>,
-    server_error: <?= json_encode(__('tasks.server_error', 'Sunucu hatası: ')) ?>,
-    error_prefix: <?= json_encode(__('tasks.error_prefix', '❌ Hata: ')) ?>
-};
-</script>
-
 <!-- GÜNLÜK AI STANDUP MODALI -->
 <?php include __DIR__ . '/modals/ai_standup.php'; ?>
 

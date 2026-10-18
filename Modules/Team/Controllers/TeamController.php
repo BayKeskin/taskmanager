@@ -47,6 +47,13 @@ class TeamController extends BaseController
             $userTaskCounts[$uObj->id] = $this->taskModel ? $this->taskModel->countUserTasks($uObj->id) : 0;
         }
 
+        // Client-side i18n via AssetManager (No inline script in view)
+        \Core\AssetManager::localizeScript('team-js', 'TEAM_I18N', [
+            'confirm_delete' => __('Team::team_confirm_delete', ['name' => '{name}'], ':name isimli ekip üyesini silmek istediğinize emin misiniz?'),
+            'invite_copied'  => __('Team::team_invite_copied', '📋 Müşteri davet metni panoya kopyalandı:'),
+            'invite_prompt'  => __('Team::team_invite_prompt', 'Müşteri davet metni (Kopyalamak için Ctrl+C):')
+        ]);
+
         return [
             'currentUser'    => $currentUser,
             'isAuthorized'   => $isAuthorized,

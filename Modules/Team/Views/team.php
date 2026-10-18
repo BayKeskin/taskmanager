@@ -140,12 +140,4 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
 <!-- 👤 YENİ EKİP ÜYESİ EKLEME MODALI -->
 <?php include __DIR__ . '/modals/new_member.php'; ?>
 
-<script>
-window.TEAM_I18N = {
-    confirm_delete: <?= json_encode(__('Team::team_confirm_delete', ['name' => '{name}'], ':name isimli ekip üyesini silmek istediğinize emin misiniz?')) ?>,
-    invite_copied: <?= json_encode(__('Team::team_invite_copied', '📋 Müşteri davet metni panoya kopyalandı:')) ?>,
-    invite_prompt: <?= json_encode(__('Team::team_invite_prompt', 'Müşteri davet metni (Kopyalamak için Ctrl+C):')) ?>
-};
-</script>
-
 <?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>

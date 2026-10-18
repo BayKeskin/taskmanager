@@ -273,15 +273,11 @@ $sampleTask = $sampleTask ?? 'TASK-1';
             </div>
         </div>
     </div>
-
-        <script>
-        window.APITESTER_CONFIG = {
-            baseUrl: <?= json_encode(rtrim($baseUrl, '/')) ?>,
-            activeToken: <?= json_encode($userToken) ?>,
-            sampleProject: <?= json_encode($sampleProject) ?>,
-            sampleTask: <?= json_encode($sampleTask) ?>
-        };
-    </script>
+    <div id="apitesterConfigCarrier" 
+         data-base-url="<?= htmlspecialchars(rtrim($baseUrl, '/'), ENT_QUOTES, 'UTF-8') ?>"
+         data-active-token="<?= htmlspecialchars($userToken, ENT_QUOTES, 'UTF-8') ?>"
+         data-sample-project="<?= htmlspecialchars($sampleProject, ENT_QUOTES, 'UTF-8') ?>"
+         data-sample-task="<?= htmlspecialchars($sampleTask, ENT_QUOTES, 'UTF-8') ?>"></div>
     <script src="/taskmanager/Modules/ApiTester/Assets/js/api_test.js"></script>
 </body>
 </html>

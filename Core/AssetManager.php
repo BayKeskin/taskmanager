@@ -9,6 +9,15 @@ class AssetManager
 {
     private static array $scripts = [];
     private static array $styles = [];
+    private static array $localized = [];
+
+    /**
+     * JS değişkeni veya i18n objesini ilgili script handle'ına bağlar
+     */
+    public static function localizeScript(string $handle, string $objectName, array $data): void
+    {
+        self::$localized[$handle][$objectName] = $data;
+    }
 
     /**
      * JS dosyasını kuyruğa ekler
@@ -46,12 +55,20 @@ class AssetManager
     }
 
     /**
-     * Footer içinde JS etiketlerini basar
+     * Footer içinde JS etiketlerini ve bağlı local data objelerini basar
      */
     public static function renderScripts(): string
     {
         $html = '';
         foreach (self::$scripts as $handle => $script) {
+            if (!empty(self::$localized[$handle])) {
+                $html .= "<script id=\"cu-localize-{$handle}\">\n";
+                foreach (self::$localized[$handle] as $objName => $objData) {
+                    $json = json_encode($objData, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
+                    $html .= "window.{$objName} = {$json};\n";
+                }
+                $html .= "</script>\n";
+            }
             $src = htmlspecialchars($script['src'], ENT_QUOTES, 'UTF-8');
             $html .= "<script id=\"cu-script-{$handle}\" src=\"{$src}\"></script>\n";
         }
@@ -65,5 +82,6 @@ class AssetManager
     {
         self::$scripts = [];
         self::$styles = [];
+        self::$localized = [];
     }
 }

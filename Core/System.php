@@ -17,12 +17,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 1. Modüllerin Yüklenmesi
-require_once __DIR__ . '/ModuleLoader.php';
-\Core\ModuleLoader::boot(dirname(__DIR__) . '/Modules');
-
+// 1. Dil Motorunun ve DataLayer'ın Yüklenmesi
 require_once __DIR__ . '/DataLayer.php';
 require_once __DIR__ . '/Language.php';
+
+// 2. Modüllerin Yüklenmesi
+require_once __DIR__ . '/ModuleLoader.php';
+\Core\ModuleLoader::boot(dirname(__DIR__) . '/Modules');
 
 // 2. Global Veritabanı ve Temel Ayarlar
 $db = new Database();

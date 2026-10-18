@@ -79,8 +79,8 @@ class Language
         global $db;
         try {
             if (!$db || empty($db->connect)) {
-                require_once __DIR__ . '/../Model/DataLayer.php';
-                $db = new Database();
+                require_once __DIR__ . '/DataLayer.php';
+                $db = new \Database();
             }
             $s = $db->row_query("SELECT default_language FROM settings WHERE id = 1 LIMIT 1");
             if ($s && !empty($s->default_language) && self::isLocaleAvailable($s->default_language)) {

@@ -1,4 +1,10 @@
-const CFG = window.APITESTER_CONFIG || {};
+const _carrierEl = document.getElementById('apitesterConfigCarrier');
+const CFG = window.APITESTER_CONFIG || (_carrierEl ? {
+    baseUrl: _carrierEl.dataset.baseUrl,
+    activeToken: _carrierEl.dataset.activeToken,
+    sampleProject: _carrierEl.dataset.sampleProject,
+    sampleTask: _carrierEl.dataset.sampleTask
+} : {});
 const BASE_API_URL = CFG.baseUrl ? CFG.baseUrl + '/api' : '/taskmanager/api';
 const ACTIVE_TOKEN = CFG.activeToken || '';
 const SAMPLE_PROJECT = CFG.sampleProject || '01';
