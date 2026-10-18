@@ -1,0 +1,12 @@
+/* Modules/Storage/Assets/css/storage.css */
+.cu-storage-dropzone {
+    border: 2px dashed var(--border-subtle);
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+.cu-storage-dropzone.dragover {
+    border-color: var(--brand-primary);
+    background: rgba(123, 104, 238, 0.05);
+}

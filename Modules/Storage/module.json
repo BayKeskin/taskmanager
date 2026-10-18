@@ -1,0 +1,10 @@
+{
+  "id": "storage",
+  "name": "Güvenli Dosya Depolama (Storage)",
+  "slug": "storage",
+  "version": "1.0.0",
+  "description": "Yerel ve AWS S3 / Cloudflare R2 uyumlu, uzantı ve MIME güvenlik doğrulamalı depolama motoru.",
+  "author": "TaskManager Team",
+  "active": true,
+  "dependencies": []
+}

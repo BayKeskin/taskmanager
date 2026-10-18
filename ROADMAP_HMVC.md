@@ -174,7 +174,7 @@ Sistemdeki 24 modülün HMVC (`Modules/`) yapısına taşınma durumu bu tabloda
 | :-: | :--- | :--- | :--- | :---: |
 | **01** | Kanban Panosu & İş Akışı | `Modules/Board/` | `BoardController`, `TaskModel`, `board.php`, `board.js` | ⏳ Bekliyor |
 | **02** | AI Görev Mimarı & Prompt | `Modules/AiArchitect/` | `GeminiClient`, `refine_task_specification` | ⏳ Bekliyor |
-| **03** | Güvenli Dosya Depolama | `Modules/Storage/` | `Storage.php`, `FileValidator.php`, Uploads | ⏳ Bekliyor |
+| **03** | Güvenli Dosya Depolama | `Modules/Storage/` | `Storage.php`, `FileValidator.php`, Uploads | ✅ Taşındı |
 | **04** | GitHub DevOps & Rollback | `Modules/GithubDevops/` | `GitService.php`, `.migrations`, push/commit | ✅ Taşındı |
 | **05** | Antigravity MCP Pazarı | `Modules/Mcp/` | `McpController.php`, MCP manifest & tools | ⏳ Bekliyor |
 | **06** | Otonom Yapay Zeka Köprüsü | `Modules/Dispatcher/` | `dispatcher/`, AI kuyruk ve tetikleme motoru | ⏳ Bekliyor |
