@@ -110,7 +110,10 @@ class Language
     private static function loadConfig(): void
     {
         if (self::$config === null) {
-            $configFile = __DIR__ . '/../config/app.php';
+            $configFile = __DIR__ . '/../Core/Config/app.php';
+            if (!file_exists($configFile)) {
+                $configFile = __DIR__ . '/../config/app.php';
+            }
             if (file_exists($configFile)) {
                 self::$config = require $configFile;
             } else {
