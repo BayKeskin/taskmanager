@@ -38,7 +38,7 @@ class ProjectModel extends Model
      */
     public function createProject(array $data): int
     {
-        $fields = ['project_code', 'title', 'description', 'color', 'workspace_path', 'agent_rules', 'webhook_url', 'agent_conversation_id', 'created_by'];
+        $fields = ['project_code', 'title', 'description', 'color', 'hourly_rate', 'workspace_path', 'agent_rules', 'webhook_url', 'agent_conversation_id', 'created_by'];
         $cols = [];
         $placeholders = [];
         $values = [];
@@ -63,7 +63,7 @@ class ProjectModel extends Model
      */
     public function updateProject(int $id, array $data): bool
     {
-        $fields = ['title', 'description', 'color', 'workspace_path', 'agent_rules', 'webhook_url', 'agent_conversation_id', 'status'];
+        $fields = ['title', 'description', 'color', 'hourly_rate', 'workspace_path', 'agent_rules', 'webhook_url', 'agent_conversation_id', 'status'];
         $setClauses = [];
         $values = [];
 

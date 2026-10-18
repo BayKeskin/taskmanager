@@ -1134,6 +1134,7 @@ function openEditProjectModal(projOrId) {
         document.getElementById('editProjColor').value = projOrId.color || '#7B68EE';
         document.getElementById('editProjDesc').value = projOrId.description || '';
         document.getElementById('editProjWorkspacePath').value = projOrId.workspace_path || '';
+        document.getElementById('editProjHourlyRate').value = projOrId.hourly_rate !== undefined ? projOrId.hourly_rate : '500.00';
         document.getElementById('editProjAgentRules').value = projOrId.agent_rules || '';
         document.getElementById('editProjWebhookUrl').value = projOrId.webhook_url || '';
         document.getElementById('editProjConvId').value = projOrId.agent_conversation_id || '';
@@ -1152,6 +1153,7 @@ function openEditProjectModal(projOrId) {
                     document.getElementById('editProjTitle').value = p.title || '';
                     document.getElementById('editProjCode').value = p.project_code || '';
                     document.getElementById('editProjColor').value = p.color || '#7B68EE';
+                    document.getElementById('editProjHourlyRate').value = p.hourly_rate !== undefined ? p.hourly_rate : '500.00';
                     document.getElementById('editProjDesc').value = p.description || '';
                     document.getElementById('editProjWorkspacePath').value = p.workspace_path || '';
                     document.getElementById('editProjAgentRules').value = p.agent_rules || '';

@@ -56,12 +56,12 @@ class ReportModel extends Model
      * @param float $hourlyRate Saatlik ücret (varsayılan 500 TL veya döviz)
      * @return array
      */
-    public function getProjectBillingSummary(?int $projectId = null, float $hourlyRate = 500.0): array
+    public function getProjectBillingSummary(?int $projectId = null, ?float $customHourlyRate = null): array
     {
         $sql = "
             SELECT t.id, t.project_id, t.task_code, t.title, t.description, t.priority, t.status, 
                    t.time_estimate, t.time_spent, t.created_at, t.completed_at,
-                   p.title as project_title, p.project_code, p.color as project_color,
+                   p.title as project_title, p.project_code, p.color as project_color, p.hourly_rate as project_hourly_rate,
                    u.name as assignee_name,
                    sub.notes as delivery_notes, sub.created_at as delivered_at
             FROM tasks t
@@ -108,8 +108,12 @@ class ReportModel extends Model
             $totalMinutesSpent += $spentMin;
             $totalMinutesEstimated += $estMin;
 
+            $effectiveRate = ($customHourlyRate !== null && $customHourlyRate > 0)
+                ? $customHourlyRate
+                : (!empty($task->project_hourly_rate) && (float)$task->project_hourly_rate > 0 ? (float)$task->project_hourly_rate : 500.0);
+
             $hoursSpent = round($spentMin / 60, 2);
-            $taskCost = round($hoursSpent * $hourlyRate, 2);
+            $taskCost = round($hoursSpent * $effectiveRate, 2);
 
             $detailedTasks[] = [
                 'id'              => $task->id,
@@ -122,6 +126,7 @@ class ReportModel extends Model
                 'time_spent'      => $task->time_spent,
                 'spent_minutes'   => $spentMin,
                 'spent_hours'     => $hoursSpent,
+                'hourly_rate'     => $effectiveRate,
                 'task_cost'       => $taskCost,
                 'completed_at'    => $task->completed_at ?: $task->created_at,
                 'delivery_notes'  => $task->delivery_notes ?: ''
@@ -130,21 +135,36 @@ class ReportModel extends Model
 
         $totalHoursSpent = round($totalMinutesSpent / 60, 2);
         $totalHoursEstimated = round($totalMinutesEstimated / 60, 2);
-        $totalCost = round($totalHoursSpent * $hourlyRate, 2);
+        $totalCost = round(array_sum(array_column($detailedTasks, 'task_cost')), 2);
 
-        // Proje başlığı
+        // Proje başlığı ve genel saatlik ücret
         $projectTitle = 'Tüm Projeler';
         $projectCode = 'ALL';
-        if ($projectId > 0 && !empty($detailedTasks)) {
-            $projectTitle = $detailedTasks[0]['project_title'] ?? 'Proje #' . $projectId;
-            $projectCode = $detailedTasks[0]['project_code'] ?? 'PRJ';
+        $resolvedHourlyRate = ($customHourlyRate !== null && $customHourlyRate > 0) ? $customHourlyRate : 500.0;
+
+        if ($projectId > 0) {
+            if (!empty($detailedTasks)) {
+                $projectTitle = $detailedTasks[0]['project_title'] ?? 'Proje #' . $projectId;
+                $projectCode = $detailedTasks[0]['project_code'] ?? 'PRJ';
+                $resolvedHourlyRate = $detailedTasks[0]['hourly_rate'] ?? $resolvedHourlyRate;
+            } else {
+                // Görev olmasa bile proje başlığını ve saatlik ücretini veritabanından çek
+                $pRow = $this->db->multi_record("projects", ["id"], [$projectId]);
+                if (!empty($pRow[0])) {
+                    $projectTitle = $pRow[0]->title;
+                    $projectCode = $pRow[0]->project_code;
+                    if (!empty($pRow[0]->hourly_rate) && (float)$pRow[0]->hourly_rate > 0) {
+                        $resolvedHourlyRate = (float)$pRow[0]->hourly_rate;
+                    }
+                }
+            }
         }
 
         return [
             'project_id'             => $projectId,
             'project_title'          => $projectTitle,
             'project_code'           => $projectCode,
-            'hourly_rate'            => $hourlyRate,
+            'hourly_rate'            => $resolvedHourlyRate,
             'total_completed_tasks'  => count($detailedTasks),
             'total_hours_spent'      => $totalHoursSpent,
             'total_hours_estimated'  => $totalHoursEstimated,

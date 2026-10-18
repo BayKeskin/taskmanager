@@ -252,6 +252,13 @@ $canUseAiTasks = ($currentUser && $currentUser->role === 'admin') || ($currentUs
                     </div>
                 </div>
                 <div class="cu-form-group">
+                    <label><?= __('app.modal_proj_hourly_rate', 'Saatlik Birim Ücret (₺/saat)') ?></label>
+                    <input type="number" step="0.5" min="0" name="hourly_rate" class="cu-form-control" value="500.00" placeholder="500.00">
+                    <small style="font-size:10.5px; color:var(--text-muted); display:block; margin-top:3px;">
+                        💡 <?= __('app.modal_proj_hourly_rate_hint', 'Hakediş ve efor raporlarında baz alınacak birim işçilik tutarı.') ?>
+                    </small>
+                </div>
+                <div class="cu-form-group">
                     <label><?= __('app.modal_proj_desc') ?></label>
                     <textarea name="description" class="cu-form-control" rows="2" placeholder="<?= htmlspecialchars(__('app.modal_proj_desc_ph')) ?>"></textarea>
                 </div>
@@ -332,6 +339,13 @@ $canUseAiTasks = ($currentUser && $currentUser->role === 'admin') || ($currentUs
                         <label><?= __('app.modal_proj_color') ?></label>
                         <input type="color" name="color" id="editProjColor" class="cu-form-control" style="height:40px; padding:2px;">
                     </div>
+                </div>
+                <div class="cu-form-group">
+                    <label><?= __('app.modal_proj_hourly_rate', 'Saatlik Birim Ücret (₺/saat)') ?></label>
+                    <input type="number" step="0.5" min="0" name="hourly_rate" id="editProjHourlyRate" class="cu-form-control" placeholder="500.00">
+                    <small style="font-size:10.5px; color:var(--text-muted); display:block; margin-top:3px;">
+                        💡 <?= __('app.modal_proj_hourly_rate_hint', 'Hakediş ve efor raporlarında baz alınacak birim işçilik tutarı.') ?>
+                    </small>
                 </div>
                 <div class="cu-form-group">
                     <label><?= __('app.modal_proj_desc') ?></label>

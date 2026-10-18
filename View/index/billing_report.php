@@ -24,7 +24,7 @@ if ($isClient && !empty($currentUser->client_project_id)) {
     $projectId = (int)$currentUser->client_project_id;
 }
 
-$hourlyRate = isset($_GET['rate']) && (float)$_GET['rate'] > 0 ? (float)$_GET['rate'] : 500.0;
+$hourlyRate = isset($_GET['rate']) && (float)$_GET['rate'] > 0 ? (float)$_GET['rate'] : null;
 $billing = $reportController->getBillingData($projectId, $hourlyRate);
 ?>
 <!DOCTYPE html>

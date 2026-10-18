@@ -564,6 +564,10 @@ return array (
   'kanban_tools_desc' => 'Raporlama, DevOps, Dağıtım ve Dışa Aktarma Araçları',
   'export_excel_desc' => 'Görevleri UTF-8 Excel formatında indir',
   'tooltip_sync_github' => 'Projeyi GitHub ile eşitle',
+
+  // Proje Saatlik Ücret & Hakediş Ayarı
+  'modal_proj_hourly_rate' => 'Saatlik Birim Ücret (₺/saat)',
+  'modal_proj_hourly_rate_hint' => 'Hakediş ve efor raporlarında baz alınacak birim işçilik tutarı.',
 );
 
 

@@ -36,7 +36,7 @@ class ReportController extends Controller
     /**
      * Hakediş / Teslimat Raporu verilerini döner
      */
-    public function getBillingData(?int $projectId = null, float $hourlyRate = 500.0): array
+    public function getBillingData(?int $projectId = null, ?float $hourlyRate = null): array
     {
         return $this->reportModel->getProjectBillingSummary($projectId, $hourlyRate);
     }

@@ -676,6 +676,7 @@ switch ($action) {
         $title = trim($_POST['title'] ?? '');
         $projectCode = strtoupper(trim($_POST['project_code'] ?? ''));
         $color = $_POST['color'] ?? '#7B68EE';
+        $hourlyRate = isset($_POST['hourly_rate']) && is_numeric($_POST['hourly_rate']) ? (float)$_POST['hourly_rate'] : 500.00;
         $description = trim($_POST['description'] ?? '');
         $workspacePath = trim($_POST['workspace_path'] ?? '') ?: null;
         $agentRules = trim($_POST['agent_rules'] ?? '') ?: null;
@@ -693,6 +694,7 @@ switch ($action) {
             'title'                 => $title,
             'description'           => $description,
             'color'                 => $color,
+            'hourly_rate'           => $hourlyRate,
             'workspace_path'        => $workspacePath,
             'agent_rules'           => $agentRules,
             'webhook_url'           => $webhookUrl,
@@ -754,6 +756,7 @@ switch ($action) {
         $projectId = (int)($_POST['project_id'] ?? 0);
         $title = trim($_POST['title'] ?? '');
         $color = $_POST['color'] ?? '#7B68EE';
+        $hourlyRate = isset($_POST['hourly_rate']) && is_numeric($_POST['hourly_rate']) ? (float)$_POST['hourly_rate'] : 500.00;
         $description = trim($_POST['description'] ?? '');
         $workspacePath = trim($_POST['workspace_path'] ?? '') ?: null;
         $agentRules = trim($_POST['agent_rules'] ?? '') ?: null;
@@ -770,6 +773,7 @@ switch ($action) {
             'title'                 => $title,
             'description'           => $description,
             'color'                 => $color,
+            'hourly_rate'           => $hourlyRate,
             'workspace_path'        => $workspacePath,
             'agent_rules'           => $agentRules,
             'webhook_url'           => $webhookUrl,

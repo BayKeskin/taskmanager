@@ -564,6 +564,10 @@ return array (
   'kanban_tools_desc' => 'Reporting, DevOps, Deployment, and Export Tools',
   'export_excel_desc' => 'Download tasks in UTF-8 Excel format',
   'tooltip_sync_github' => 'Sync project with GitHub repository',
+
+  // Project Hourly Rate & Billing
+  'modal_proj_hourly_rate' => 'Hourly Rate (₺/hour)',
+  'modal_proj_hourly_rate_hint' => 'Base billing hourly rate used for effort and delivery reports.',
 );
 
 

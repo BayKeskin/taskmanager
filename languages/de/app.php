@@ -564,6 +564,10 @@ return array (
   'kanban_tools_desc' => 'Berichts-, DevOps-, Bereitstellungs- und Export-Tools',
   'export_excel_desc' => 'Aufgaben im UTF-8 Excel-Format herunterladen',
   'tooltip_sync_github' => 'Projekt mit GitHub-Repository synchronisieren',
+
+  // Projekt-Stundensatz & Abrechnung
+  'modal_proj_hourly_rate' => 'Stundensatz (₺/Std.)',
+  'modal_proj_hourly_rate_hint' => 'Basis-Stundensatz für Aufwands- und Abrechnungsberichte.',
 );
 
 
