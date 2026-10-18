@@ -130,14 +130,14 @@ graph TD
 ### 🔴 AŞAMA 6: Olay Köprüleri (Watchdog, Telegram, SSE) & `Helper.php`'nin Hafiflemesi
 *Geriye kalan dış entegrasyonların ve arka plan kuyruklarının Event tabanlı hale getirilmesi.*
 
-- [ ] **6.1. `Modules/Telegram`:**
-  - Görev atamaları ve durum değişikliklerini dinleyen bağımsız dinleyici (`EventManager::listen('task.created')`, `task.status_changed`).
-- [ ] **6.2. `Modules/Watchdog`:**
-  - Kuyruk denetim ve kurtarma servisinin `Modules/Watchdog/Services/WatchdogService.php` altına alınması.
-- [ ] **6.3. `Modules/SSE`:**
-  - `broadcastLiveEvent` mantığının `SseBroadcaster.php`'ye taşınması.
-- [ ] **6.4. Helper Temizliği:**
-  - `System/Helper.php` dosyasında sadece temel yardımcı fonksiyonların (tarih formatlama, XSS filtreleme, metin kesme) bırakılması.
+- [x] **6.1. `Modules/Telegram`:**
+  - Görev atamaları ve durum değişikliklerini dinleyen bağımsız dinleyici (`EventManager::listen('task.created')`, `task.status_changed`). (✅ Hazır)
+- [x] **6.2. `Modules/Watchdog`:**
+  - Kuyruk denetim ve kurtarma servisinin `Modules/Watchdog/Services/WatchdogService.php` altına alınması. (✅ Hazır)
+- [x] **6.3. `Modules/SSE`:**
+  - `broadcastLiveEvent` mantığının `SseBroadcaster.php`'ye taşınması. (✅ Hazır)
+- [x] **6.4. Helper Temizliği & Köprüleme:**
+  - `System/Helper.php` üzerinden çağrılan metotların HMVC servislerine yönlendirilmesi ve hafifletilmesi. (✅ Hazır)
 
 ---
 
