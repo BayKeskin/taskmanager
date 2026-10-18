@@ -7,8 +7,7 @@ use Core\EventManager;
 use Core\AssetManager;
 use Modules\Billing\Controllers\BillingController;
 
-// 1. Varlıkları (CSS / JS) Kuyruğa Al
-AssetManager::enqueueCss('billing-report', '/taskmanager/Modules/Billing/Assets/css/billing-report.css');
+// 1. Varlıklar: billing.js'i genel kuyruğa al (Rapor PDF CSS'i genel sayfalara sızmamalıdır)
 AssetManager::enqueueJs('billing-js', '/taskmanager/Modules/Billing/Assets/js/billing.js');
 
 // 2. Hakediş Özeti Çekme Kancası

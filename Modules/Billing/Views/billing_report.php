@@ -26,8 +26,10 @@ $billing = $billingController->getBillingData($projectId, $hourlyRate);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Billing Report Scoped CSS -->
+    <link rel="stylesheet" href="/taskmanager/Modules/Billing/Assets/css/billing-report.css">
 </head>
-<body>
+<body class="billing-report-page">
 
     <div class="action-bar">
         <a href="/taskmanager/reports" class="btn-back">⬅ <?= __('tasks.btn_back_reports', 'Raporlara Geri Dön') ?></a>
