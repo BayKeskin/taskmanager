@@ -197,6 +197,14 @@ class Language
             return;
         }
 
+        // Modüle özel dil dosyası mı? (Örn: LiveDeploy veya LiveDeploy::key)
+        $baseDir = dirname(__DIR__);
+        $moduleLangPath = $baseDir . "/Modules/{$group}/Lang/{$locale}.php";
+        if (file_exists($moduleLangPath)) {
+            self::$loaded[$locale][$group] = require $moduleLangPath;
+            return;
+        }
+
         $filePath = __DIR__ . "/../languages/{$locale}/{$group}.php";
         if (file_exists($filePath)) {
             self::$loaded[$locale][$group] = require $filePath;
@@ -227,10 +235,15 @@ class Language
         $locale = self::$currentLocale;
         $fallback = self::$fallbackLocale ?? 'en';
 
-        $parts = explode('.', $key);
-        $group = array_shift($parts);
-        if ($group === 'admin') {
-            $group = 'app';
+        if (str_contains($key, '::')) {
+            [$group, $remain] = explode('::', $key, 2);
+            $parts = explode('.', $remain);
+        } else {
+            $parts = explode('.', $key);
+            $group = array_shift($parts);
+            if ($group === 'admin') {
+                $group = 'app';
+            }
         }
 
         // 1. Aktif dilden dene

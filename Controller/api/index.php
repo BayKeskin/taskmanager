@@ -441,138 +441,37 @@ if ($resource === '' || $resource === 'status' || $resource === 'health') {
 // In-House BugHerd Alternative: Ingests client pins, screenshots, DOM paths directly into tasks
 // -----------------------------------------------------------------------------
 if ($resource === 'visual-feedback' && $method === 'POST') {
-    $projectCode = trim($requestData['project_code'] ?? ($requestData['project'] ?? '01'));
-    $proj = resolveProject($db, $projectCode);
-    if (!$proj) {
-        $proj = resolveProject($db, '01');
-    }
-    if (!$proj) {
-        apiError('Geçerli bir proje bulunamadı.', 404);
-    }
-
-    $title = trim($requestData['title'] ?? '📍 Görsel Pin Geri Bildirimi');
-    $userDesc = trim($requestData['description'] ?? '');
-    $selector = trim($requestData['selector'] ?? '');
-    $url = trim($requestData['url'] ?? '');
-    $viewport = trim($requestData['viewport'] ?? '');
-    $userAgent = trim($requestData['user_agent'] ?? ($_SERVER['HTTP_USER_AGENT'] ?? ''));
-    $coords = trim($requestData['coords'] ?? '');
-    $priority = in_array($requestData['priority'] ?? '', ['low', 'normal', 'high', 'urgent']) ? $requestData['priority'] : 'normal';
-
-    // Format Markdown Description
-    $fullDesc = "### 📍 Görsel Pin / Hata Bildirimi (In-House BugHerd)\n\n";
-    if ($userDesc) {
-        $fullDesc .= "#### 📝 Kullanıcı Açıklaması:\n" . $userDesc . "\n\n";
-    }
-    $fullDesc .= "#### 🔍 Teknik Meta Veriler:\n";
-    if ($url) $fullDesc .= "- **Sayfa URL:** " . $url . "\n";
-    if ($selector) $fullDesc .= "- **Hedef Öğe (CSS Selector):** `" . $selector . "`\n";
-    if ($coords) $fullDesc .= "- **Tıklama Koordinatları:** " . $coords . "\n";
-    if ($viewport) $fullDesc .= "- **Çözünürlük (Viewport):** " . $viewport . "\n";
-    if ($userAgent) $fullDesc .= "- **Tarayıcı / İşletim Sistemi:** `" . $userAgent . "`\n";
-
-    // Task Code üret
-    $lastNum = (int)$db->single_query("SELECT MAX(id) FROM tasks") + 1;
-    $taskCode = $proj->project_code . '-' . (100 + $lastNum);
-
-    // İlk kullanıcıyı bul (veya admin)
-    $creatorId = $currentUser->id ?? (int)($db->single_query("SELECT id FROM users WHERE role = 'admin' LIMIT 1") ?: 1);
-
-    // Screenshot İşleme (Base64 -> JPG/PNG Dosyası)
-    $screenshotBase64 = $requestData['screenshot'] ?? '';
-    $screenshotUrl = null;
-    $fileName = null;
-    $ext = 'jpg';
-    $fileSize = 0;
-
-    if (!empty($screenshotBase64) && is_string($screenshotBase64)) {
-        if (preg_match('/^data:image\/(\w+);base64,/', $screenshotBase64, $mType)) {
-            $ext = strtolower($mType[1]);
-            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) $ext = 'jpg';
-            $screenshotBase64 = substr($screenshotBase64, strpos($screenshotBase64, ',') + 1);
-        }
-        $decoded = base64_decode($screenshotBase64);
-        if ($decoded !== false && strlen($decoded) > 100) {
-            $pinsDir = __DIR__ . '/../../Public/uploads/pins';
-            if (!is_dir($pinsDir)) {
-                @mkdir($pinsDir, 0777, true);
-            }
-            $safeCode = preg_replace('/[^a-zA-Z0-9_\-]/', '', $taskCode);
-            $fileName = 'pin_' . $safeCode . '_' . time() . '.' . $ext;
-            $fullFilePath = $pinsDir . '/' . $fileName;
-            if (@file_put_contents($fullFilePath, $decoded)) {
-                $screenshotUrl = '/taskmanager/Public/uploads/pins/' . $fileName;
-                $fileSize = strlen($decoded);
-
-                // Ekran görüntüsünü görevin açıklamasına görsel olarak göm
-                $fullDesc .= "\n#### 📸 Görsel Ekran Görüntüsü & Hata Konumu:\n";
-                $fullDesc .= "![" . $title . "](" . $screenshotUrl . ")\n";
-            }
-        }
-    }
-
-    $db->exec_query("
-        INSERT INTO tasks (
-            project_id, task_code, title, description,
-            tags, priority, status, deadline, time_estimate, time_spent,
-            created_by, assigned_to, created_at, updated_at
-        ) VALUES (
-            ?, ?, ?, ?,
-            'visual_pin,bugherd_alternative', ?, 'assigned', NULL, '2h', '0h',
-            ?, ?, NOW(), NOW()
-        )
-    ", [
-        $proj->id, $taskCode, $title, $fullDesc,
-        $priority, $creatorId, $creatorId
-    ]);
-    $newTaskId = $db->last_insert_id();
-
-    // Atanan admin
-    $db->exec_query("INSERT INTO task_assignees (task_id, user_id, assigned_at) VALUES (?, ?, NOW())", [$newTaskId, $creatorId]);
-
-    // Ekran görüntüsü varsa task_attachments tablosuna kaydet
-    if ($screenshotUrl && $fileName) {
-        $db->exec_query("
-            INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
-        ", [
-            $newTaskId,
-            $creatorId,
-            $fileName,
-            $screenshotUrl,
-            'image/' . $ext,
-            $fileSize
+    $pinController = new \Modules\VisualPins\Controllers\PinController();
+    $result = $pinController->handleFeedback($requestData, $currentUser);
+    if (!empty($result['success'])) {
+        // SSE and Webhook notifications
+        $data = $result['data'];
+        Helper::broadcastLiveEvent('task_created', (int)$data['project_id'], (int)$data['task_id'], $currentUser->id ?? 1, [
+            'task_code'      => $data['task_code'],
+            'title'          => $data['title'],
+            'status'         => 'assigned',
+            'screenshot_url' => $data['screenshot_url']
         ]);
+        Helper::triggerProjectWebhook((int)$data['project_id'], 'task.created', [
+            'task_id'        => $data['task_id'],
+            'task_code'      => $data['task_code'],
+            'title'          => $data['title'],
+            'status'         => 'assigned',
+            'screenshot_url' => $data['screenshot_url']
+        ]);
+
+        apiResponse([
+            'id'             => $data['task_id'],
+            'task_code'      => $data['task_code'],
+            'title'          => $data['title'],
+            'project'        => $data['project_title'],
+            'status'         => 'assigned',
+            'screenshot_url' => $data['screenshot_url'],
+            'url'            => 'http://localhost/taskmanager/board?project_id=' . $data['project_id']
+        ], 'Görsel pin görevi ve ekran görüntüsü başarıyla kaydedildi.', 201);
+    } else {
+        apiError($result['error'] ?? 'Görsel pin kaydedilemedi.', $result['status_code'] ?? 400);
     }
-
-    // Canlı SSE yayını
-    Helper::broadcastLiveEvent('task_created', (int)$proj->id, (int)$newTaskId, $creatorId, [
-        'task_code'      => $taskCode,
-        'title'          => $title,
-        'priority'       => $priority,
-        'status'         => 'assigned',
-        'screenshot_url' => $screenshotUrl
-    ]);
-
-    // Proje AI Ajanı Webhook bildirimi
-    Helper::triggerProjectWebhook((int)$proj->id, 'task.created', [
-        'task_id'        => $newTaskId,
-        'task_code'      => $taskCode,
-        'title'          => $title,
-        'priority'       => $priority,
-        'status'         => 'assigned',
-        'screenshot_url' => $screenshotUrl
-    ]);
-
-    apiResponse([
-        'id'             => $newTaskId,
-        'task_code'      => $taskCode,
-        'title'          => $title,
-        'project'        => $proj->project_code,
-        'status'         => 'assigned',
-        'screenshot_url' => $screenshotUrl,
-        'url'            => 'http://localhost/taskmanager/board?project_id=' . $proj->id
-    ], 'Görsel pin görevi ve ekran görüntüsü başarıyla kaydedildi.', 201);
 }
 
 // -----------------------------------------------------------------------------

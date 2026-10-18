@@ -18,6 +18,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 1. Modüllerin Yüklenmesi
+require_once __DIR__ . '/../Core/ModuleLoader.php';
+\Core\ModuleLoader::boot(__DIR__ . '/../Modules');
+
 require_once __DIR__ . '/../Model/DataLayer.php';
 require_once __DIR__ . '/Helper.php';
 require_once __DIR__ . '/Storage.php';

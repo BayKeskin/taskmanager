@@ -1,0 +1,10 @@
+{
+  "id": "projects",
+  "name": "Proje & Çalışma Alanları (Projects)",
+  "slug": "projects",
+  "version": "1.0.0",
+  "description": "Çalışma alanı (workspace) dizinleri, proje kodları, agent kuralları ve çoklu proje yönetimi.",
+  "author": "TaskManager Team",
+  "active": true,
+  "dependencies": []
+}
