@@ -11,7 +11,10 @@ class StorageService
     public static function getConfig(): array
     {
         if (self::$config === null) {
-            $configFile = dirname(__DIR__, 2) . '/config/storage.php';
+            $configFile = dirname(__DIR__) . '/Config/storage.php';
+            if (!file_exists($configFile)) {
+                $configFile = dirname(__DIR__, 2) . '/Core/Config/storage.php';
+            }
             if (file_exists($configFile)) {
                 self::$config = require $configFile;
             } else {

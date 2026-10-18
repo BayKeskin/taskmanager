@@ -11,7 +11,10 @@ class MailerService
     public function __construct(?array $config = null)
     {
         if ($config === null) {
-            $configFile = dirname(__DIR__, 2) . '/config/mail.php';
+            $configFile = dirname(__DIR__) . '/Config/mail.php';
+            if (!file_exists($configFile)) {
+                $configFile = dirname(__DIR__, 2) . '/Core/Config/mail.php';
+            }
             if (file_exists($configFile)) {
                 $this->config = require $configFile;
             }
