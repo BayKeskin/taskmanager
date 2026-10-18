@@ -1,0 +1,10 @@
+{
+  "id": "reports",
+  "name": "Raporlar & SLA Analitiği",
+  "slug": "reports",
+  "version": "1.0.0",
+  "description": "Görev tamamlama oranları, gecikme analitiği, çalışan performans metrikleri ve SLA paneli.",
+  "author": "TaskManager Team",
+  "active": true,
+  "dependencies": []
+}

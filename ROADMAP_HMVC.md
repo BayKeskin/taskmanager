@@ -187,7 +187,7 @@ Sistemdeki 24 modülün HMVC (`Modules/`) yapısına taşınma durumu bu tabloda
 | **13** | Proje & Çalışma Alanları | `Modules/Projects/` | `ProjectController`, `ProjectModel`, projects view | ⏳ Bekliyor |
 | **14** | Ekip, Rol & İzinler (RBAC) | `Modules/Team/` | `TeamController`, `UserModel`, yetki matrisi | ⏳ Bekliyor |
 | **15** | Takvim & Gantt Çizelgesi | `Modules/Calendar/` | `CalendarController`, Gantt drag-drop, timeline | ✅ Taşındı |
-| **16** | Raporlar & SLA Analitiği | `Modules/Reports/` | `ReportController`, `ReportModel`, Chart.js | ⏳ Bekliyor |
+| **16** | Raporlar & SLA Analitiği | `Modules/Reports/` | `ReportController`, `ReportModel`, Chart.js | ✅ Taşındı |
 | **17** | Sistem Ayarları & i18n | `Modules/Settings/` | `SettingsController`, SettingsModel, 3 dil | ⏳ Bekliyor |
 | **18** | Telegram Bot Entegrasyonu | `Modules/Telegram/` | `TelegramService.php`, push bot bildirimleri | ✅ Taşındı |
 | **19** | E-Posta & SMTP Bildirimleri | `Modules/Mailer/` | `Mailer.php`, HTML email şablonları | ✅ Taşındı |

@@ -25,6 +25,23 @@ class ProjectModel extends Model
     }
 
     /**
+     * Proje bazlı görev istatistiklerini hesaplar
+     */
+    public function getProjectStats(): array
+    {
+        $sql = "
+            SELECT p.id, p.title, p.project_code, p.color,
+                   COUNT(t.id) as total_tasks,
+                   SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) as completed_tasks
+            FROM projects p
+            LEFT JOIN tasks t ON t.project_id = p.id AND t.parent_task_id IS NULL
+            GROUP BY p.id, p.title, p.project_code, p.color
+            ORDER BY p.id ASC
+        ";
+        return $this->db->multi_record_query($sql) ?: [];
+    }
+
+    /**
      * Koda göre tekil proje çeker
      */
     public function getProjectByCode(string $code): ?object

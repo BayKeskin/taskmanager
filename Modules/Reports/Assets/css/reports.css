@@ -1,0 +1,13 @@
+/* Modules/Reports/Assets/css/reports.css */
+.cu-reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.cu-metric-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 16px;
+}
