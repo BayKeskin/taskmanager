@@ -84,4 +84,37 @@ class LayoutManager
             'sysSettings' => $this->settingsModel->getSettings()
         ];
     }
+
+    /**
+     * Aktif modüllerin Views/modals/ dizinlerini otomatik tarayıp ekrana basar (Plug & Play)
+     */
+    public function renderModuleModals(array $data = []): void
+    {
+        extract($data);
+        $baseDir = dirname(__DIR__);
+        $loadedModules = \Core\ModuleLoader::getLoadedModules();
+
+        if (!empty($loadedModules)) {
+            foreach ($loadedModules as $modSlug => $modInfo) {
+                $moduleDir = $modInfo['_dir'] ?? ($baseDir . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . ($modInfo['dir_name'] ?? $modSlug));
+                $modalsDir = $moduleDir . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . 'modals';
+                if (is_dir($modalsDir)) {
+                    $files = glob($modalsDir . DIRECTORY_SEPARATOR . '*.php');
+                    if ($files) {
+                        foreach ($files as $modalFile) {
+                            include $modalFile;
+                        }
+                    }
+                }
+            }
+        } else {
+            // ModuleLoader henüz çalışmadıysa doğrudan Modules altındaki tüm aktif modalları tara
+            $modalFiles = glob($baseDir . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . 'modals' . DIRECTORY_SEPARATOR . '*.php');
+            if ($modalFiles) {
+                foreach ($modalFiles as $modalFile) {
+                    include $modalFile;
+                }
+            }
+        }
+    }
 }
