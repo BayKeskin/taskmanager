@@ -158,12 +158,12 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 ### [01] Task Manager Project Rules
 - **Strict MVC Architecture:** Direct SQL execution or calling `$db` inside any View (`View/**/*.php`) or UI Component (`Components/**/*.php`) is strictly forbidden. All data queries must reside in dedicated `Model` classes, and request coordination must remain within `Controller` classes.
 - **Universal Tri-Lingual Standard (i18n):** All UI texts, error/success messages, and system notifications must be managed via `languages/{lang}/app.php` dictionaries across all 3 languages (TR, EN, DE) and `Config/ajax_translations.php`. Hardcoded single-language strings are strictly prohibited.
-- **HMVC & Modüler İzolasyon Standardı (ZORUNLU):** Sistemdeki tüm yeni ve taşınan modüller `Modules/{ModuleName}/` altında tamamen izole (Self-Contained) olmak zorundadır. Her modül istisnasız şu 5 unsuru kendi klasöründe barındırır:
-  1. `module.json` (Kimlik, versiyon, slug, bağımlılıklar),
-  2. `init.php` (Kancalar ve AssetManager kuyruk kayıtları),
-  3. `Lang/{tr,en,de}.php` (Modülün tüm 3 dilli çevirileri kendi klasöründe olmalı; `__('ModuleName::key')` ile çözümlenmelidir),
-  4. `Assets/js/` ve `Assets/css/` (Modüle ait statik dosyalar modül içinde olmalı; `AssetManager::enqueueJs/Css` ile bağlanmalıdır),
-  5. `Controllers/`, `Models/`, `Views/` (İş mantığı `Core\BaseController` ve `Core\BaseModel`'den türetilmelidir).
+- **HMVC & Modular Isolation Standard (MANDATORY):** All new and migrated modules in the system must be fully isolated (self-contained) under `Modules/{ModuleName}/`. Without exception, each module must contain the following 5 elements in its own folder:
+  1. `module.json` (ID, version, slug, dependencies),
+  2. `init.php` (hooks and AssetManager queue entries),
+  3. `Lang/{tr,en,de}.php` (All three-language translations of the module must be in their own folder; they must be resolved using `__(‘ModuleName::key’)`),
+  4. `Assets/js/` and `Assets/css/` (Static files belonging to the module must be located within the module; they must be enqueued using `AssetManager::enqueueJs/Css`),
+  5. `Controllers/`, `Models/`, `Views/` (Business logic must be derived from `Core\BaseController` and `Core\BaseModel`).
 - **QA Doctrine:** "The User Is Not a QA Tester". Every button, modal, form input, state transition, and AJAX call must be autonomously verified in the live environment using headless browser, curl, and CLI scripts before task completion.
 - **Task Delivery Protocol:** Tasks must be delivered via `Helper::submitTaskDirectly()` following the 4-stage Definition of Done (DoD) format (What Was Done, Where to Test, How to Test, Autonomous Test Evidence).
 - **Documentation Access via REST API:** Project documentation must NOT be stored as loose markdown files in the root directory. AI Agents can query all project documentation via `GET http://localhost/taskmanager/api/projects/{code}/docs` and fetch full document contents using `GET http://localhost/taskmanager/api/docs/{id}` with header `Authorization: Bearer <api_token>`.
