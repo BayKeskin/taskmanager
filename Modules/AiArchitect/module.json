@@ -1,0 +1,11 @@
+{
+  "id": "aiarchitect",
+  "name": "AI Görev Mimarı & Prompt Mühendisliği",
+  "slug": "aiarchitect",
+  "version": "1.0.0",
+  "description": "Kısa kullanıcı yönergelerini ve mockup görsellerini multimodal AI (Gemini, OpenAI, DeepSeek) ile derinlikli teknik şartnamelere dönüştüren yapay zeka mimarı.",
+  "author": "Antigravity HMVC Engine",
+  "active": true,
+  "order": 2,
+  "dependencies": ["storage"]
+}

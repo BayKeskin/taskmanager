@@ -3763,8 +3763,14 @@ CRITICAL ARCHITECTURAL RULES:
         int $projectId,
         string $userInstruction,
         array $referenceImages = [],
-        array $referenceFiles = []
+        array $referenceFiles = [],
+        bool $skipLiveApi = false
     ): array {
+        if (class_exists('Modules\\AiArchitect\\Services\\GeminiClient')) {
+            $client = new \Modules\AiArchitect\Services\GeminiClient();
+            return $client->refineTaskSpecification($projectId, $userInstruction, $referenceImages, $referenceFiles, $skipLiveApi);
+        }
+
         global $db;
         if (!$db || empty($db->connect)) {
             require_once __DIR__ . '/../Model/DataLayer.php';
