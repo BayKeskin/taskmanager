@@ -12,10 +12,10 @@ class WatchdogService
 {
     public static function runInspection(): array
     {
-        $restartSignal = dirname(__DIR__, 3) . '/dispatcher/restart.signal';
+        $restartSignal = dirname(__DIR__, 3) . '/Modules/Dispatcher/Bin/restart.signal';
         if (file_exists($restartSignal)) {
             @unlink($restartSignal);
-            @file_put_contents(dirname(__DIR__, 3) . '/dispatcher/restarted.log', date('Y-m-d H:i:s') . " - Dispatcher restarting by watchdog signal...\n", FILE_APPEND);
+            @file_put_contents(dirname(__DIR__, 3) . '/Modules/Dispatcher/Bin/restarted.log', date('Y-m-d H:i:s') . " - Dispatcher restarting by watchdog signal...\n", FILE_APPEND);
             @pclose(@popen('start "" /b cmd /c "taskkill /F /IM pythonw.exe & timeout /t 1 & cscript //nologo c:\wamp64\www\taskmanager\dispatcher\start_silent.vbs"', 'r'));
         }
 

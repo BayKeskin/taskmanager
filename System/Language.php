@@ -205,7 +205,10 @@ class Language
             return;
         }
 
-        $filePath = __DIR__ . "/../languages/{$locale}/{$group}.php";
+        $filePath = __DIR__ . "/../Core/Lang/{$locale}/{$group}.php";
+        if (!file_exists($filePath)) {
+            $filePath = __DIR__ . "/../languages/{$locale}/{$group}.php";
+        }
         if (file_exists($filePath)) {
             self::$loaded[$locale][$group] = require $filePath;
         } else {

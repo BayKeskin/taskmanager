@@ -18,7 +18,10 @@ class Database
     {
         // 1. Dışarıdan config gönderilmediyse config dosyasından oku
         if ($config === null) {
-            $configFile = __DIR__ . '/../config/database.php';
+            $configFile = __DIR__ . '/Config/database.php';
+            if (!file_exists($configFile)) {
+                $configFile = __DIR__ . '/../config/database.php';
+            }
             if (file_exists($configFile)) {
                 $fileConfig = require $configFile;
                 $config = $fileConfig['default'] ?? [];

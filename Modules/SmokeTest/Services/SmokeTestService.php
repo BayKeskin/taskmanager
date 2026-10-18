@@ -89,7 +89,7 @@ class SmokeTestService
         $this->assert($standupTitle, !empty($standup['success']) && !empty($standup['summary']), $standupDetails);
 
         // 5. Workspaces.json Dynamic Sync Verification
-        $wsFile = dirname(__DIR__, 3) . '/dispatcher/workspaces.json';
+        $wsFile = dirname(__DIR__, 3) . '/Modules/Dispatcher/Bin/workspaces.json';
         $wsExists = file_exists($wsFile);
         $wsTitle = $isTr ? "Workspaces Yapılandırma Dosyası" : "Workspaces Configuration File";
         $this->assert($wsTitle, $wsExists, ($isTr ? "Yol: " : "Path: ") . $wsFile);

@@ -10,7 +10,7 @@ class DispatcherService extends BaseModel
     public function __construct()
     {
         parent::__construct();
-        $this->dispatcherDir = dirname(dirname(__DIR__)) . '/dispatcher';
+        $this->dispatcherDir = dirname(__DIR__) . '/Bin';
     }
 
     /**

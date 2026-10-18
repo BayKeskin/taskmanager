@@ -520,7 +520,7 @@ class Helper
         }
 
         // workspaces.json eşleşme kontrolü
-        $wsFile = dirname(__DIR__) . '/dispatcher/workspaces.json';
+        $wsFile = dirname(__DIR__) . '/Modules/Dispatcher/Bin/workspaces.json';
         if (file_exists($wsFile) && $projectCode) {
             $wsMap = json_decode(file_get_contents($wsFile), true) ?: [];
             if (!empty($wsMap[$projectCode])) {
@@ -860,7 +860,7 @@ class Helper
             return;
         }
         // Siyah pencere açmaması için sadece VBS üzerinden sessiz başlat
-        $vbs = dirname(__DIR__) . '/dispatcher/start_silent.vbs';
+        $vbs = dirname(__DIR__) . '/Modules/Dispatcher/Bin/start_silent.vbs';
         if (file_exists($vbs) && class_exists('COM')) {
             try {
                 $shell = new \COM("WScript.Shell");
@@ -994,7 +994,7 @@ class Helper
     {
         // Python probe ile workspace'e özel dinamik tespit
         $python = 'C:/Users/DELL/AppData/Local/Programs/Python/Python311/python.exe';
-        $script = dirname(__DIR__) . '/dispatcher/dispatcher.py';
+        $script = dirname(__DIR__) . '/Modules/Dispatcher/Bin/dispatcher.py';
         if (file_exists($python) && file_exists($script)) {
             $wsArg = $workspacePath ? ' "' . addslashes($workspacePath) . '"' : '';
             $probeJson = @shell_exec("\"{$python}\" \"{$script}\" --probe{$wsArg}");
@@ -1009,7 +1009,7 @@ class Helper
             }
         }
 
-        $lsEnvFile = dirname(__DIR__) . '/dispatcher/ls_env.json';
+        $lsEnvFile = dirname(__DIR__) . '/Modules/Dispatcher/Bin/ls_env.json';
         if (file_exists($lsEnvFile)) {
             $data = json_decode((string)file_get_contents($lsEnvFile), true) ?: [];
             $addr = $data['address'] ?? '';
@@ -1032,7 +1032,7 @@ class Helper
      */
     public static function getAntigravityLsAddress(): ?string
     {
-        $lsFile = dirname(__DIR__) . '/dispatcher/ls_address.txt';
+        $lsFile = dirname(__DIR__) . '/Modules/Dispatcher/Bin/ls_address.txt';
         if (file_exists($lsFile)) {
             $addr = trim((string)file_get_contents($lsFile));
             if (!empty($addr)) {
@@ -1047,7 +1047,7 @@ class Helper
      */
     public static function removeProjectFromWorkspacesJson(string $projectCode): void
     {
-        $wsFile = dirname(__DIR__) . '/dispatcher/workspaces.json';
+        $wsFile = dirname(__DIR__) . '/Modules/Dispatcher/Bin/workspaces.json';
         if (file_exists($wsFile) && !empty($projectCode)) {
             $wsMap = json_decode(file_get_contents($wsFile), true) ?: [];
             $changed = false;
@@ -1867,7 +1867,7 @@ class Helper
             foreach ($projects as $p) {
                 $jsonMap[$p->project_code] = [$p->workspace_path];
             }
-            $jsonFile = dirname(__DIR__) . '/dispatcher/workspaces.json';
+            $jsonFile = dirname(__DIR__) . '/Modules/Dispatcher/Bin/workspaces.json';
             file_put_contents($jsonFile, json_encode($jsonMap, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
             return true;
         } catch (\Throwable $e) {
