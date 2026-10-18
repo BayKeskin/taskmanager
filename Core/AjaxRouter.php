@@ -100,20 +100,26 @@ class AjaxRouter
         $aliases = [
             'test_telegram_connection' => ['Modules\Settings\Controllers\AjaxController', 'testTelegram'],
             'test_smtp_connection'     => ['Modules\Settings\Controllers\AjaxController', 'testSmtp'],
+            'test_slack_webhook'       => ['Modules\Settings\Controllers\AjaxController', 'testSlack'],
+            'test_discord_webhook'     => ['Modules\Settings\Controllers\AjaxController', 'testDiscord'],
             'save_system_settings'     => ['Modules\Settings\Controllers\AjaxController', 'saveSettings'],
+            'save_github_settings'     => ['Modules\GithubDevops\Controllers\AjaxController', 'saveSettings'],
             'sync_project_github'      => ['Modules\GithubDevops\Controllers\AjaxController', 'syncProject'],
             'bulk_create_hierarchical_tasks' => ['Modules\AiArchitect\Controllers\AjaxController', 'bulkCreateTasks'],
             'decompose_brief_with_ai'  => ['Modules\AiArchitect\Controllers\AjaxController', 'decomposeBrief'],
             'upload_doc_attachment'    => ['Modules\Docs\Controllers\AjaxController', 'uploadAttachment'],
             'get_doc_attachments'      => ['Modules\Docs\Controllers\AjaxController', 'getAttachments'],
             'delete_doc_attachment'    => ['Modules\Docs\Controllers\AjaxController', 'deleteAttachment'],
+            'get_chat_messages'        => ['Modules\Chat\Controllers\AjaxController', 'getMessages'],
+            'send_chat_message'        => ['Modules\Chat\Controllers\AjaxController', 'sendMessage'],
+            'get_chat_conversations'   => ['Modules\Chat\Controllers\AjaxController', 'getConversations'],
+            'get_daily_standup'        => ['Modules\Reports\Controllers\AjaxController', 'getDailyStandup'],
+            'send_standup_email'       => ['Modules\Reports\Controllers\AjaxController', 'sendStandupEmail'],
             'refine_task_specification'=> ['Modules\AiArchitect\Controllers\AiArchitectController', 'refineSpecification'],
         ];
 
         foreach ($aliases as $act => $target) {
-            if (!isset(self::$autoDiscoveredMap[$act])) {
-                self::$autoDiscoveredMap[$act] = $target;
-            }
+            self::$autoDiscoveredMap[$act] = $target;
         }
     }
 
