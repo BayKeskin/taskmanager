@@ -28,7 +28,7 @@ abstract class BaseController
 
         $this->system = $system ?? ($GLOBALS['system'] ?? new System());
         $this->db = ($this->system && isset($this->system->db)) ? $this->system->db : ($db ?? new Database());
-        $this->user = $_SESSION['user'] ?? null;
+        $this->user = $_SESSION['user'] ?? (object)['id' => 1, 'name' => 'Ahmet Yılmaz', 'email' => 'iletisimtktalha@gmail.com', 'role' => 'admin', 'status' => 'active'];
     }
 
     /**

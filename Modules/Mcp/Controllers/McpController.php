@@ -8,14 +8,14 @@ use ProjectModel;
 class McpController extends BaseController
 {
     private McpModel $mcpModel;
-    private ?ProjectModel $projectModel = null;
+    private ?\Modules\Projects\Models\ProjectModel $projectModel = null;
 
     public function __construct()
     {
         parent::__construct();
         $this->mcpModel = new McpModel();
-        if (class_exists('ProjectModel')) {
-            $this->projectModel = new ProjectModel();
+        if (class_exists('Modules\Projects\Models\ProjectModel')) {
+            $this->projectModel = new \Modules\Projects\Models\ProjectModel();
         }
     }
 

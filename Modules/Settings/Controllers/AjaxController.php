@@ -1,0 +1,190 @@
+<?php
+namespace Modules\Settings\Controllers;
+
+use Core\BaseController;
+use Modules\Settings\Models\SettingsModel;
+
+class AjaxController extends BaseController
+{
+    private SettingsModel $settingsModel;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->settingsModel = new SettingsModel();
+    }
+
+    private function respond(bool $success, string $message = '', array $data = []): void
+    {
+        $payload = array_merge(['success' => $success, 'message' => $message], $data);
+        if (!isset($payload['data']) && !empty($data)) {
+            $payload['data'] = $data;
+        }
+        $this->json($payload);
+    }
+
+    public function saveSettings(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, 'Yetkisiz erişim: Sistem ayarlarını yalnızca yöneticiler değiştirebilir.');
+        }
+
+        $title = trim($_POST['title'] ?? 'TaskManager Pro');
+        $siteurl = trim($_POST['siteurl'] ?? 'http://localhost/taskmanager');
+        $employeeCanCreate = !empty($_POST['employee_can_create_tasks']) ? 1 : 0;
+        $employeeCanAi = !empty($_POST['employee_can_ai_tasks']) ? 1 : 0;
+        $defaultLanguage = trim($_POST['default_language'] ?? 'tr');
+        if (!in_array($defaultLanguage, ['tr', 'en', 'de'])) {
+            $defaultLanguage = 'tr';
+        }
+
+        $activeAiProvider = trim($_POST['active_ai_provider'] ?? 'gemini');
+        $defaultAiModel = trim($_POST['default_ai_model'] ?? 'gemini-1.5-pro');
+        $openaiApiKey = trim($_POST['openai_api_key'] ?? '');
+        $anthropicApiKey = trim($_POST['anthropic_api_key'] ?? '');
+        $geminiApiKey = trim($_POST['gemini_api_key'] ?? '');
+        $deepseekApiKey = trim($_POST['deepseek_api_key'] ?? '');
+        $aiSystemPromptPrefix = trim($_POST['ai_system_prompt_prefix'] ?? '');
+
+        $telegramBotToken = trim($_POST['telegram_bot_token'] ?? '');
+        $telegramChatId = trim($_POST['telegram_chat_id'] ?? '');
+        $telegramNotifications = !empty($_POST['telegram_notifications_enabled']) ? 1 : 0;
+        $slackWebhook = trim($_POST['slack_webhook_url'] ?? '');
+        $discordWebhook = trim($_POST['discord_webhook_url'] ?? '');
+
+        $smtpHost = trim($_POST['smtp_host'] ?? '');
+        $smtpPort = (int)($_POST['smtp_port'] ?? 587);
+        $smtpSecure = trim($_POST['smtp_secure'] ?? 'tls');
+        $smtpUser = trim($_POST['smtp_user'] ?? '');
+        $smtpPass = trim($_POST['smtp_pass'] ?? '');
+        $smtpFromEmail = trim($_POST['smtp_from_email'] ?? '');
+        $smtpFromName = trim($_POST['smtp_from_name'] ?? 'TaskManager');
+
+        $bugherdApiKey = trim($_POST['bugherd_api_key'] ?? '');
+        $bugherdProjectId = trim($_POST['bugherd_project_id'] ?? '');
+        $githubToken = trim($_POST['github_token'] ?? '');
+        $githubRepo = trim($_POST['github_repo'] ?? '');
+
+        $sessionTimeout = (int)($_POST['session_timeout_minutes'] ?? 120);
+        $maxFileUpload = (int)($_POST['max_file_upload_mb'] ?? 25);
+        $allowedFileTypes = trim($_POST['allowed_file_types'] ?? 'jpg,png,pdf,zip,docx,xlsx,txt');
+
+        $updated = $this->db->exec_query("
+            UPDATE settings 
+            SET title = ?, siteurl = ?, employee_can_create_tasks = ?, employee_can_ai_tasks = ?, default_language = ?,
+                active_ai_provider = ?, default_ai_model = ?, openai_api_key = ?, anthropic_api_key = ?, gemini_api_key = ?, deepseek_api_key = ?, ai_system_prompt_prefix = ?,
+                telegram_bot_token = ?, telegram_chat_id = ?, telegram_notifications_enabled = ?, slack_webhook_url = ?, discord_webhook_url = ?,
+                smtp_host = ?, smtp_port = ?, smtp_secure = ?, smtp_user = ?, smtp_pass = ?, smtp_from_email = ?, smtp_from_name = ?,
+                bugherd_api_key = ?, bugherd_project_id = ?, github_token = ?, github_repo = ?,
+                session_timeout_minutes = ?, max_file_upload_mb = ?, allowed_file_types = ?
+            WHERE id = 1
+        ", [
+            $title, $siteurl, $employeeCanCreate, $employeeCanAi, $defaultLanguage,
+            $activeAiProvider, $defaultAiModel, $openaiApiKey, $anthropicApiKey, $geminiApiKey, $deepseekApiKey, $aiSystemPromptPrefix,
+            $telegramBotToken, $telegramChatId, $telegramNotifications, $slackWebhook, $discordWebhook,
+            $smtpHost, $smtpPort, $smtpSecure, $smtpUser, $smtpPass, $smtpFromEmail, $smtpFromName,
+            $bugherdApiKey, $bugherdProjectId, $githubToken, $githubRepo,
+            $sessionTimeout, $maxFileUpload, $allowedFileTypes
+        ]);
+
+        if ($updated !== false) {
+            \Language::setSystemDefaultLanguageCache($defaultLanguage);
+            \Modules\SSE\Services\SseBroadcaster::broadcast('system_settings_updated', 0, 0, (int)$this->user->id, [
+                'employee_can_create_tasks' => $employeeCanCreate,
+                'employee_can_ai_tasks'     => $employeeCanAi,
+                'default_language'          => $defaultLanguage,
+                'active_ai_provider'        => $activeAiProvider,
+                'updated_by'                => $this->user->name
+            ]);
+
+            $this->respond(true, 'Tüm sistem ve API yapılandırmaları başarıyla kaydedildi!', [
+                'title'                     => $title,
+                'employee_can_create_tasks' => $employeeCanCreate,
+                'employee_can_ai_tasks'     => $employeeCanAi,
+                'active_ai_provider'        => $activeAiProvider
+            ]);
+        }
+        $this->respond(false, 'Ayarlar kaydedilirken hata oluştu.');
+    }
+
+    public function toggleModuleStatus(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, __('app.settings_modules_toggle_fail', 'Yetkisiz erişim: Modülleri yalnızca yönetici yönetebilir.'));
+        }
+
+        $slug = trim($_POST['slug'] ?? '');
+        $status = !empty($_POST['status']) && ($_POST['status'] === 'true' || $_POST['status'] === '1' || $_POST['status'] === 1);
+
+        if (empty($slug)) {
+            $this->respond(false, 'Geçersiz modül slug değeri.');
+        }
+
+        $res = \Core\ModuleLoader::setModuleStatus($slug, $status);
+        if ($res) {
+            $this->respond(true, __('app.settings_modules_toggle_success', 'Modül durumu güncellendi.'), [
+                'slug'      => $slug,
+                'is_active' => $status
+            ]);
+        }
+        $this->respond(false, __('app.settings_modules_toggle_fail', 'Modül durumu kaydedilemedi.'));
+    }
+
+    public function testTelegram(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
+        }
+        $testResult = \Telegram::testConnection();
+        $this->respond((bool)$testResult['success'], $testResult['message'], $testResult);
+    }
+
+    public function testSmtp(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
+        }
+        $testResult = \Modules\Mailer\Services\MailerService::testConnection();
+        $this->respond((bool)$testResult['success'], $testResult['message'], $testResult);
+    }
+
+    public function testSlack(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
+        }
+        $s = $this->db->row_query("SELECT slack_webhook_url FROM settings WHERE id = 1");
+        $url = trim($s->slack_webhook_url ?? '');
+        if (empty($url)) {
+            $this->respond(false, 'Slack Webhook URL henüz kaydedilmemiş.');
+        }
+        $res = \Modules\RestApi\Services\WebhookService::postJsonWebhook($url, [
+            'text' => '🚀 *TaskManager Slack Entegrasyon Testi:* Bağlantı başarıyla doğrulandı! (Zaman: ' . date('H:i:s') . ')'
+        ]);
+        if ($res['success']) {
+            $this->respond(true, '✅ Slack Webhook bağlantısı başarılı! Test mesajı iletildi.');
+        } else {
+            $this->respond(false, '❌ Slack Webhook hatası (HTTP ' . $res['code'] . '): ' . ($res['body'] ?: $res['error']));
+        }
+    }
+
+    public function testDiscord(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
+        }
+        $s = $this->db->row_query("SELECT discord_webhook_url FROM settings WHERE id = 1");
+        $url = trim($s->discord_webhook_url ?? '');
+        if (empty($url)) {
+            $this->respond(false, 'Discord Webhook URL henüz kaydedilmemiş.');
+        }
+        $res = \Modules\RestApi\Services\WebhookService::postJsonWebhook($url, [
+            'content' => '🚀 **TaskManager Discord Entegrasyon Testi:** Bağlantı başarıyla doğrulandı! (Zaman: ' . date('H:i:s') . ')'
+        ]);
+        if ($res['success']) {
+            $this->respond(true, '✅ Discord Webhook bağlantısı başarılı! Test mesajı iletildi.');
+        } else {
+            $this->respond(false, '❌ Discord Webhook hatası (HTTP ' . $res['code'] . '): ' . ($res['body'] ?: $res['error']));
+        }
+    }
+}

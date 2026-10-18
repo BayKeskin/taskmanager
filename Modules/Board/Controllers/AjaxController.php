@@ -11,6 +11,13 @@ global $db;
 $action = $_GET['action'] ?? ($_POST['action'] ?? '');
 $currentUser = $_SESSION['user'] ?? (object)['id' => 1, 'name' => 'Ahmet Yılmaz', 'role' => 'admin'];
 
+// 🚀 HMVC MODÜLER AJAX YÖNLENDİRİCİSİ (Core\AjaxRouter)
+// Eğer gelen eylem (action) Projects, Team, Settings, Docs, Chat, Mcp, LiveDeploy vb. bir modüle aitse
+// ilgili modülün kendi Controller'ı çalıştırılır ve işlem tamamlanır.
+if (!empty($action) && class_exists('Core\AjaxRouter') && \Core\AjaxRouter::dispatch($action)) {
+    exit;
+}
+
 function translateAjaxMessage(string $msg): string {
     if ($msg === '') {
         return '';
