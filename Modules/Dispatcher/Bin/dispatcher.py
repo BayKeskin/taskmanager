@@ -47,7 +47,7 @@ def watchdog_loop():
 
     while True:
         try:
-            insp_cmd = ['php', '-r', "require 'System/System.php'; Helper::runWatchdogInspection();"]
+            insp_cmd = ['php', '-r', "require 'Core/System.php'; \\Modules\\Watchdog\\Services\\WatchdogService::runInspection();"]
             run_silent(insp_cmd, capture_output=True, text=True, cwd=app_root, timeout=10)
         except Exception:
             pass
@@ -347,7 +347,7 @@ def process_webhook_async(payload, header_conv_id):
         if project_id:
             app_root = os.path.dirname(BASE_DIR)
             fin_id = int(task_id) if task_id else 'null'
-            next_cmd = ['php', '-r', f"require 'System/System.php'; Helper::dispatchNextAiTaskIfAvailable({int(project_id)}, {fin_id});"]
+            next_cmd = ['php', '-r', f"require 'Core/System.php'; \\Modules\\Board\\Services\\TaskLifecycleService::dispatchNextAiTaskIfAvailable({int(project_id)}, {fin_id});"]
             run_silent(next_cmd, capture_output=True, text=True, cwd=app_root, timeout=10)
         return
 

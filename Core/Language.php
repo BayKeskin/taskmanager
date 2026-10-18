@@ -291,21 +291,58 @@ class Language
         }
         return $current;
     }
+
+    /**
+     * Çok dilli tarih formatlayıcı (TR, EN, DE)
+     */
+    public static function formatDateLocalized(string $mysql_datetime, ?string $locale = null): string
+    {
+        $timestamp = strtotime($mysql_datetime);
+        if ($timestamp === false) {
+            $cur = self::current();
+            if ($cur === 'tr') return "Geçersiz Tarih";
+            if ($cur === 'de') return "Ungültiges Datum";
+            return "Invalid Date";
+        }
+
+        $locale = $locale ?? self::current();
+
+        $day = date('j', $timestamp);
+        $month = (int)date('n', $timestamp);
+        $year = date('Y', $timestamp);
+
+        $monthNames = [
+            'tr' => [1 => 'Ocak', 2 => 'Şubat', 3 => 'Mart', 4 => 'Nisan', 5 => 'Mayıs', 6 => 'Haziran', 7 => 'Temmuz', 8 => 'Ağustos', 9 => 'Eylül', 10 => 'Ekim', 11 => 'Kasım', 12 => 'Aralık'],
+            'de' => [1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April', 5 => 'Mai', 6 => 'Juni', 7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'],
+            'en' => [1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'],
+        ];
+
+        $mName = $monthNames[$locale][$month] ?? $monthNames['en'][$month] ?? date('F', $timestamp);
+
+        if ($locale === 'tr') {
+            return "{$day} {$mName} {$year}";
+        } elseif ($locale === 'de') {
+            return "{$day}. {$mName} {$year}";
+        } else {
+            return "{$mName} {$day}, {$year}";
+        }
+    }
 }
 }
 
 /**
  * Global Dil Yardımcısı Fonksiyonu
- *
- * Kullanım Örnekleri:
- * 1. __('messages.home') => 'Anasayfa'
- * 2. __('messages.home', 'Varsayılan') => 'Anasayfa' veya bulunamazsa 'Varsayılan'
- * 3. __('messages.required_field', ['field' => 'Başlık']) => 'Başlık alanı zorunludur.'
- * 4. __('messages.required_field', ['field' => 'Başlık'], 'Varsayılan')
  */
 if (!function_exists('__')) {
     function __(string $key, $replace = [], $default = null): string|array
     {
         return Language::get($key, $replace, $default);
+    }
+}
+
+if (!function_exists('format_date_localized')) {
+    function format_date_localized(string $mysql_datetime, ?string $locale = null): string
+    {
+        return Language::formatDateLocalized($mysql_datetime, $locale);
     }
 }

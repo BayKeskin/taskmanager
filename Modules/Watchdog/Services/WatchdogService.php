@@ -46,7 +46,7 @@ class WatchdogService
                         updated_at DESC
                 ", [$pId]) ?: [];
 
-                $runningAiTasks = array_values(array_filter($allInProgress, fn($t) => Helper::isAiTask($t)));
+                $runningAiTasks = array_values(array_filter($allInProgress, fn($t) => \Modules\Board\Services\TaskLifecycleService::isAiTask($t)));
 
                 if (count($runningAiTasks) >= 1) {
                     $primaryTask = $runningAiTasks[0];
@@ -54,7 +54,7 @@ class WatchdogService
                         for ($i = 1; $i < count($runningAiTasks); $i++) {
                             $extra = $runningAiTasks[$i];
                             $db->exec_query("UPDATE tasks SET status = 'assigned' WHERE id = ?", [$extra->id]);
-                            Helper::broadcastLiveEvent('task_status_changed', $pId, (int)$extra->id, 1, [
+                            \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', $pId, (int)$extra->id, 1, [
                                 'task_id'    => (int)$extra->id,
                                 'task_code'  => $extra->task_code,
                                 'old_status' => 'in_progress',
@@ -63,7 +63,7 @@ class WatchdogService
                         }
                     }
 
-                    Helper::triggerTaskStartedWebhook((int)$primaryTask->id, 'in_progress', [
+                    \Modules\Board\Services\TaskLifecycleService::triggerTaskStartedWebhook((int)$primaryTask->id, 'in_progress', [
                         'resumed'          => true,
                         'watchdog_check'   => true,
                         'triggered_by'     => 'Watchdog'
@@ -74,7 +74,7 @@ class WatchdogService
                         'active' => $primaryTask->task_code
                     ];
                 } else {
-                    $dispatched = Helper::dispatchNextAiTaskIfAvailable($pId);
+                    $dispatched = \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable($pId);
                     if ($dispatched) {
                         $results[$prj->project_code] = [
                             'status'    => 'auto_dispatched',

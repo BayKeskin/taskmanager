@@ -67,4 +67,49 @@ class RestApiService extends BaseModel
         }
         return $res;
     }
+
+    /**
+     * Dinamik API base URL ve token bilgilerini döndürür
+     */
+    public static function getDynamicApiConfig(): array
+    {
+        $baseUrl = 'http://localhost/taskmanager';
+        $apiToken = '';
+
+        try {
+            $db = $GLOBALS['db'] ?? null;
+            if (!$db || empty($db->connect)) {
+                $db = new \Core\DataLayer();
+            }
+
+            $sUrl = $db->single_query("SELECT siteurl FROM settings WHERE id = 1");
+            if (!empty($sUrl)) {
+                $baseUrl = rtrim(trim((string)$sUrl), '/');
+            } elseif (!empty($_SERVER['HTTP_HOST'])) {
+                $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+                $baseUrl = $protocol . $_SERVER['HTTP_HOST'] . '/taskmanager';
+            }
+
+            $adminUser = $db->row_query("
+                SELECT id, api_token 
+                FROM users 
+                WHERE role = 'admin' AND status = 'active' 
+                ORDER BY id ASC LIMIT 1
+            ");
+
+            if ($adminUser) {
+                if (!empty($adminUser->api_token)) {
+                    $apiToken = trim((string)$adminUser->api_token);
+                } else {
+                    $apiToken = 'tm_live_' . bin2hex(random_bytes(16));
+                    $db->exec_query("UPDATE users SET api_token = ? WHERE id = ?", [$apiToken, $adminUser->id]);
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        return [
+            'base_url'  => $baseUrl,
+            'api_token' => $apiToken
+        ];
+    }
 }

@@ -133,7 +133,7 @@ if __name__ == '__main__':
     if not token:
         try:
             root_dir = os.path.dirname(BASE_DIR)
-            php_code = "require_once 'System/System.php'; echo Helper::getDynamicApiConfig()['api_token'];"
+            php_code = "require_once 'Core/System.php'; echo \\Modules\\RestApi\\Services\\RestApiService::getDynamicApiConfig()['api_token'];"
             res = subprocess.run(['php', '-r', php_code], cwd=root_dir, capture_output=True, text=True, timeout=5)
             if res.returncode == 0 and res.stdout.strip():
                 token = res.stdout.strip()

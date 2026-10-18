@@ -80,9 +80,7 @@ function jsonResponse($success, $message = '', $data = []) {
     }
     $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
     if ($json === false) {
-        if (class_exists('Helper') && method_exists('Helper', 'sanitizeUtf8Deep')) {
-            $payload = Helper::sanitizeUtf8Deep($payload);
-        }
+        $payload = \Modules\Board\Services\TaskLifecycleService::sanitizeUtf8Deep($payload);
         $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         if ($json === false) {
             $json = json_encode([
@@ -570,7 +568,7 @@ switch ($action) {
             }
 
             // CANLI SSE YAYINI
-            Helper::broadcastLiveEvent('task_created', $projectId, $newTaskId, (int)$currentUser->id, [
+            \Modules\SSE\Services\SseBroadcaster::broadcast('task_created', $projectId, $newTaskId, (int)$currentUser->id, [
                 'task_id'     => $newTaskId,
                 'task_code'   => $taskCode,
                 'title'       => $title,
@@ -629,9 +627,9 @@ switch ($action) {
         ]);
 
         if ($newId > 0) {
-            Helper::syncWorkspacesJson();
+            (new \Modules\Dispatcher\Services\DispatcherService())->syncWorkspaces();
             if ($workspacePath && $agentRules) {
-                Helper::syncProjectRulesToWorkspace($newId);
+                \Modules\Projects\Services\ProjectService::syncProjectRulesToWorkspace($newId);
             }
             jsonResponse(true, 'Proje başarıyla oluşturuldu!', ['project_id' => $newId]);
         } else {
@@ -707,9 +705,9 @@ switch ($action) {
         ]);
 
         if ($updated) {
-            Helper::syncWorkspacesJson();
+            (new \Modules\Dispatcher\Services\DispatcherService())->syncWorkspaces();
             if ($workspacePath && $agentRules) {
-                Helper::syncProjectRulesToWorkspace($projectId);
+                \Modules\Projects\Services\ProjectService::syncProjectRulesToWorkspace($projectId);
             }
             jsonResponse(true, 'Proje ayarları ve AI webhook bilgisi güncellendi!');
         } else {
@@ -736,7 +734,7 @@ switch ($action) {
             $projectModel->updateProject($projectId, ['agent_rules' => $agentRules]);
         }
 
-        $syncRes = Helper::syncProjectRulesToWorkspace($projectId);
+        $syncRes = \Modules\Projects\Services\ProjectService::syncProjectRulesToWorkspace($projectId);
         if (!empty($syncRes['success'])) {
             jsonResponse(true, 'Proje kural dosyaları (AGENTS.md) başarıyla güncellendi!', $syncRes);
         } else {
@@ -765,7 +763,7 @@ switch ($action) {
             }
         }
 
-        $res = Helper::refineRulesWithAi($rawRules, $projectCode, $projectTitle);
+        $res = (new \Modules\AiArchitect\Services\GeminiClient())->refineRulesWithAi($rawRules, $projectCode, $projectTitle);
         if (!empty($res['success'])) {
             jsonResponse(true, 'Kurallar yapay zeka ile başarıyla derlendi ve yapılandırıldı!', $res);
         } else {
@@ -780,7 +778,7 @@ switch ($action) {
             jsonResponse(false, 'Geçersiz proje ID.');
         }
 
-        $res = Helper::triggerProjectWebhook($projectId, 'project.webhook_test', [
+        $res = \Modules\RestApi\Services\WebhookService::triggerProjectWebhook($projectId, 'project.webhook_test', [
             'message'    => 'Yapay Zeka (AI Agent) test pini başarıyla gönderildi.',
             'test_time'  => date('Y-m-d H:i:s'),
             'user'       => $currentUser->name
@@ -1005,7 +1003,7 @@ switch ($action) {
             // A) KULLANICI GÖREVİ KABUL EDER
             case 'accept':
                 // Diğer çalışan AI görevlerini duraklatarak projede tek aktif görev garantisi sağla
-                if (Helper::isAiTask($task)) {
+                if (\Modules\Board\Services\TaskLifecycleService::isAiTask($task)) {
                     $otherRunning = $db->multi_record_query("
                         SELECT id, task_code FROM tasks 
                         WHERE project_id = ? AND status = 'in_progress' AND id != ?
@@ -1019,7 +1017,7 @@ switch ($action) {
                             $other->id, $currentUser->id, 'status_change', 'in_progress', 'assigned',
                             "⏸️ Araya [{$task->task_code}] AI görevi kabul edildiği için bu görev duraklatıldı ('assigned' sütununa alındı)."
                         ]);
-                        Helper::broadcastLiveEvent('task_status_changed', (int)$task->project_id, (int)$other->id, (int)$currentUser->id, [
+                        \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, (int)$other->id, (int)$currentUser->id, [
                             'task_id'    => (int)$other->id,
                             'task_code'  => $other->task_code,
                             'old_status' => 'in_progress',
@@ -1037,12 +1035,12 @@ switch ($action) {
                 ]);
 
                 // Görev çalışmaya alındı -> Sadece AI görevi ise Ajanı tam açıklama ve checklist ile uyandır
-                if (Helper::isAiTask($task)) {
-                    Helper::triggerTaskStartedWebhook($taskId, 'assigned', ['triggered_by' => $currentUser->name]);
+                if (\Modules\Board\Services\TaskLifecycleService::isAiTask($task)) {
+                    \Modules\Board\Services\TaskLifecycleService::triggerTaskStartedWebhook($taskId, 'assigned', ['triggered_by' => $currentUser->name]);
                 }
 
                 // CANLI SSE YAYINI
-                Helper::broadcastLiveEvent('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
+                \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
                     'task_id'     => $taskId,
                     'task_code'   => $task->task_code,
                     'title'       => $task->title,
@@ -1080,7 +1078,7 @@ switch ($action) {
                 ]);
 
                 // CANLI SSE YAYINI
-                Helper::broadcastLiveEvent('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
+                \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
                     'task_id'     => $taskId,
                     'task_code'   => $task->task_code,
                     'title'       => $task->title,
@@ -1159,7 +1157,7 @@ switch ($action) {
                 ]);
 
                 // CANLI SSE YAYINI
-                Helper::broadcastLiveEvent('task_submitted', (int)$task->project_id, $taskId, (int)$currentUser->id, [
+                \Modules\SSE\Services\SseBroadcaster::broadcast('task_submitted', (int)$task->project_id, $taskId, (int)$currentUser->id, [
                     'task_id'        => $taskId,
                     'task_code'      => $task->task_code,
                     'title'          => $task->title,
@@ -1172,7 +1170,7 @@ switch ($action) {
                 ]);
 
                 // Otonom Kuyruk: '#ai' etiketli sıradaki görev varsa otomatik başlat
-                Helper::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
+                \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
 
                 jsonResponse(true, 'Göreviniz başarıyla yönetici incelemesine teslim edildi!', [
                     'attachment_url' => $attachmentUrl
@@ -1200,7 +1198,7 @@ switch ($action) {
                 ]);
 
                 // CANLI SSE YAYINI
-                Helper::broadcastLiveEvent('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
+                \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
                     'task_id'     => $taskId,
                     'task_code'   => $task->task_code,
                     'title'       => $task->title,
@@ -1211,7 +1209,7 @@ switch ($action) {
                 ]);
 
                 // Otonom Kuyruk: Görev müşteri/admin tarafından onaylandığında sıradaki işi başlat
-                Helper::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
+                \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
 
                 jsonResponse(true, 'Görev teslimatı onaylandı ve tamamlandı olarak işaretlendi!');
                 break;
@@ -1245,7 +1243,7 @@ switch ($action) {
                 ]);
 
                 // CANLI SSE YAYINI
-                Helper::broadcastLiveEvent('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
+                \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
                     'task_id'     => $taskId,
                     'task_code'   => $task->task_code,
                     'title'       => $task->title,
@@ -1256,7 +1254,7 @@ switch ($action) {
                 ]);
 
                 // Revizyon İstendi sütunu bekleme alanıdır, ÇALIŞILIYOR'a çekilene kadar ajanı tetikleme!
-                // Helper::triggerTaskRevisionWebhook($taskId, $reason, ['triggered_by' => $currentUser->name]);
+                // \Modules\Board\Services\TaskLifecycleService::triggerTaskRevisionWebhook($taskId, $reason, ['triggered_by' => $currentUser->name]);
 
                 jsonResponse(true, 'Revizyon talebiniz kaydedildi, görev düzeltilmek üzere geliştiriciye iletildi.');
                 break;
@@ -1321,7 +1319,7 @@ switch ($action) {
             ]);
 
             // CANLI SSE YAYINI
-            Helper::broadcastLiveEvent('new_comment', (int)$taskRow->project_id, $taskId, (int)$currentUser->id, [
+            \Modules\SSE\Services\SseBroadcaster::broadcast('new_comment', (int)$taskRow->project_id, $taskId, (int)$currentUser->id, [
                 'comment_id'     => $commentId,
                 'task_id'        => $taskId,
                 'task_code'      => $taskRow->task_code ?? 'TSK',
@@ -1374,7 +1372,7 @@ switch ($action) {
             ]);
 
             // CANLI SSE YAYINI
-            Helper::broadcastLiveEvent('comment_updated', (int)$comm->project_id, (int)$comm->task_id, (int)$currentUser->id, [
+            \Modules\SSE\Services\SseBroadcaster::broadcast('comment_updated', (int)$comm->project_id, (int)$comm->task_id, (int)$currentUser->id, [
                 'comment_id' => $commentId,
                 'task_id'    => (int)$comm->task_id,
                 'comment'    => $newText,
@@ -1464,7 +1462,7 @@ switch ($action) {
 
         if ($updated !== false) {
             Language::setSystemDefaultLanguageCache($defaultLanguage);
-            Helper::broadcastLiveEvent('system_settings_updated', 0, 0, (int)$currentUser->id, [
+            \Modules\SSE\Services\SseBroadcaster::broadcast('system_settings_updated', 0, 0, (int)$currentUser->id, [
                 'employee_can_create_tasks' => $employeeCanCreate,
                 'employee_can_ai_tasks'     => $employeeCanAi,
                 'default_language'          => $defaultLanguage,
@@ -1540,7 +1538,7 @@ switch ($action) {
         if (empty($url)) {
             jsonResponse(false, 'Slack Webhook URL henüz kaydedilmemiş.');
         }
-        $res = Helper::postJsonWebhook($url, [
+        $res = \Modules\RestApi\Services\WebhookService::postJsonWebhook($url, [
             'text' => '🚀 *TaskManager Slack Entegrasyon Testi:* Bağlantı başarıyla doğrulandı! (Zaman: ' . date('H:i:s') . ')'
         ]);
         if ($res['success']) {
@@ -1559,7 +1557,7 @@ switch ($action) {
         if (empty($url)) {
             jsonResponse(false, 'Discord Webhook URL henüz kaydedilmemiş.');
         }
-        $res = Helper::postJsonWebhook($url, [
+        $res = \Modules\RestApi\Services\WebhookService::postJsonWebhook($url, [
             'content' => '🚀 **TaskManager Discord Entegrasyon Testi:** Bağlantı başarıyla doğrulandı! (Zaman: ' . date('H:i:s') . ')'
         ]);
         if ($res['success']) {
@@ -1619,7 +1617,7 @@ switch ($action) {
             $parentTask = $db->row_query("SELECT id, task_code, title, status FROM tasks WHERE id = ?", [$pId]);
             if ($parentTask && $parentTask->status !== 'in_progress') {
                 $db->update("tasks", ["status"], ["in_progress", $pId], "id");
-                Helper::broadcastLiveEvent('task_status_changed', (int)$taskRow[0]->project_id, $pId, (int)$currentUser->id, [
+                \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$taskRow[0]->project_id, $pId, (int)$currentUser->id, [
                     'task_id'    => $pId,
                     'task_code'  => $parentTask->task_code,
                     'title'      => $parentTask->title,
@@ -1643,7 +1641,7 @@ switch ($action) {
                 if ($parentTask && !in_array($parentTask->status, ['submitted', 'completed'], true)) {
                     $oldPStatus = $parentTask->status;
                     $db->update("tasks", ["status"], ["submitted", $pId], "id");
-                    Helper::broadcastLiveEvent('task_status_changed', (int)$taskRow[0]->project_id, $pId, (int)$currentUser->id, [
+                    \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$taskRow[0]->project_id, $pId, (int)$currentUser->id, [
                         'task_id'    => $pId,
                         'task_code'  => $parentTask->task_code,
                         'title'      => $parentTask->title,
@@ -1663,7 +1661,7 @@ switch ($action) {
         ]);
 
         // CANLI SSE YAYINI
-        Helper::broadcastLiveEvent('task_status_changed', (int)$taskRow[0]->project_id, $taskId, (int)$currentUser->id, [
+        \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$taskRow[0]->project_id, $taskId, (int)$currentUser->id, [
             'task_id'     => $taskId,
             'task_code'   => $taskRow[0]->task_code,
             'title'       => $taskRow[0]->title,
@@ -1674,7 +1672,7 @@ switch ($action) {
         ]);
 
         // Projeye özel Yapay Zeka (AI Agent) webhook'u ve Otonom Kuyruk Yönetimi:
-        $isCurrentTaskAi = Helper::isAiTask($taskRow[0]);
+        $isCurrentTaskAi = \Modules\Board\Services\TaskLifecycleService::isAiTask($taskRow[0]);
         if ($newStatus === 'in_progress' && $oldStatus !== 'in_progress') {
             if ($isCurrentTaskAi) {
                 // Tek Aktif Görev Kuralı: ÇALIŞILIYOR sütununa yeni bir AI görevi çekildiğinde,
@@ -1684,7 +1682,7 @@ switch ($action) {
                     WHERE project_id = ? AND status = 'in_progress' AND id != ?
                 ", [(int)$taskRow[0]->project_id, $taskId]) ?: [];
                 foreach ($otherRunning as $other) {
-                    if (Helper::isAiTask($other)) {
+                    if (\Modules\Board\Services\TaskLifecycleService::isAiTask($other)) {
                         $db->update("tasks", ["status"], ["assigned", $other->id], "id");
                         $db->insert("task_activities", [
                             'task_id', 'user_id', 'action_type', 'old_value', 'new_value', 'comment'
@@ -1692,7 +1690,7 @@ switch ($action) {
                             $other->id, $currentUser->id, 'status_change', 'in_progress', 'assigned',
                             "⏸️ [{$taskRow[0]->task_code}] görevi ÇALIŞILIYOR sütununa alındığı için bu görev sıraya ('Yapılacak İşler') geri alındı."
                         ]);
-                        Helper::broadcastLiveEvent('task_status_changed', (int)$taskRow[0]->project_id, (int)$other->id, (int)$currentUser->id, [
+                        \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$taskRow[0]->project_id, (int)$other->id, (int)$currentUser->id, [
                             'task_id'    => (int)$other->id,
                             'task_code'  => $other->task_code,
                             'old_status' => 'in_progress',
@@ -1705,9 +1703,9 @@ switch ($action) {
                 if ($oldStatus === 'modification_requested') {
                     $lastMod = $db->row_query("SELECT reason FROM task_modifications WHERE task_id = ? ORDER BY id DESC LIMIT 1", [$taskId]);
                     $revReason = $lastMod ? $lastMod->reason : 'Revizyon talep edildi.';
-                    Helper::triggerTaskRevisionWebhook($taskId, $revReason, ['triggered_by' => $currentUser->name]);
+                    \Modules\Board\Services\TaskLifecycleService::triggerTaskRevisionWebhook($taskId, $revReason, ['triggered_by' => $currentUser->name]);
                 } else {
-                    Helper::triggerTaskStartedWebhook($taskId, $oldStatus, ['triggered_by' => $currentUser->name]);
+                    \Modules\Board\Services\TaskLifecycleService::triggerTaskStartedWebhook($taskId, $oldStatus, ['triggered_by' => $currentUser->name]);
                 }
             }
         } elseif ($newStatus === 'modification_requested') {
@@ -1715,7 +1713,7 @@ switch ($action) {
             // Buraya sürüklendiğinde ajan tetiklenmez; görev tekrar ÇALIŞILIYOR sütununa çekildiğinde tetiklenir!
         } elseif ($newStatus === 'submitted' || $newStatus === 'completed') {
             // Görev İNCELEMEDE veya TAMAMLANDI sütununa alındığında sıradaki AI görevini başlat
-            Helper::dispatchNextAiTaskIfAvailable((int)$taskRow[0]->project_id, (int)$taskId);
+            \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$taskRow[0]->project_id, (int)$taskId);
         }
 
         jsonResponse(true, "Görev durumu '{$newStatus}' olarak güncellendi.", ['new_status' => $newStatus]);
@@ -1899,7 +1897,7 @@ switch ($action) {
             'user_name' => $currentUser->name
         ];
 
-        Helper::broadcastLiveEvent('task_attachment_added', $projId, $taskId, (int)$currentUser->id, [
+        \Modules\SSE\Services\SseBroadcaster::broadcast('task_attachment_added', $projId, $taskId, (int)$currentUser->id, [
             'task_id'    => $taskId,
             'attachment' => $attachmentPayload
         ]);
@@ -1945,7 +1943,7 @@ switch ($action) {
         $taskRow = $db->row_query("SELECT project_id FROM tasks WHERE id = ? LIMIT 1", [(int)$att->task_id]);
         $projId = $taskRow ? (int)$taskRow->project_id : 1;
 
-        Helper::broadcastLiveEvent('task_attachment_deleted', $projId, (int)$att->task_id, (int)$currentUser->id, [
+        \Modules\SSE\Services\SseBroadcaster::broadcast('task_attachment_deleted', $projId, (int)$att->task_id, (int)$currentUser->id, [
             'task_id'       => (int)$att->task_id,
             'attachment_id' => $attId
         ]);
@@ -2292,7 +2290,7 @@ switch ($action) {
 
         if ($deleted) {
             // Realtime SSE yayını ile tüm açık ekranlardan görevi anında kaldır
-            Helper::broadcastLiveEvent('task_deleted', $projectId, $taskId, (int)$currentUser->id, [
+            \Modules\SSE\Services\SseBroadcaster::broadcast('task_deleted', $projectId, $taskId, (int)$currentUser->id, [
                 'task_id'    => $taskId,
                 'task_code'  => $taskCode,
                 'title'      => $taskTitle,
@@ -2343,7 +2341,7 @@ switch ($action) {
             jsonResponse(false, 'Geçersiz proje ID.');
         }
 
-        $success = Helper::purgeProject($projectId);
+        $success = \Modules\Projects\Services\ProjectService::purgeProject($projectId);
         if ($success) {
             jsonResponse(true, 'Proje, ilişkili tüm görevler, dökümanlar ve workspaces yapılandırması kalıcı olarak silindi.');
         }
@@ -2553,9 +2551,9 @@ switch ($action) {
 
         // Realtime SSE yayını
         if ($receiverId !== null) {
-            Helper::broadcastLiveEvent('new_direct_message', null, null, (int)$currentUser->id, (array)$newMsg);
+            \Modules\SSE\Services\SseBroadcaster::broadcast('new_direct_message', null, null, (int)$currentUser->id, (array)$newMsg);
         } else {
-            Helper::broadcastLiveEvent('new_chat_message', null, null, (int)$currentUser->id, (array)$newMsg);
+            \Modules\SSE\Services\SseBroadcaster::broadcast('new_chat_message', null, null, (int)$currentUser->id, (array)$newMsg);
         }
 
         jsonResponse(true, 'Mesaj gönderildi.', [
@@ -2626,7 +2624,7 @@ switch ($action) {
     // 26. GÜNLÜK AI STANDUP & BÜLTENİ GETİR
     case 'get_daily_standup':
         $pId = isset($_GET['project_id']) && is_numeric($_GET['project_id']) ? (int)$_GET['project_id'] : null;
-        $res = Helper::generateAiStandupSummary($pId);
+        $res = \Modules\Reports\Services\StandupService::generateAiStandupSummary($pId);
         jsonResponse(true, 'Günlük AI standup özeti hazırlandı.', array_merge($res, ['data' => $res]));
         break;
 
@@ -2637,8 +2635,8 @@ switch ($action) {
         if (empty($email)) {
             jsonResponse(false, 'E-posta adresi belirtilmedi.');
         }
-        $summary = Helper::generateAiStandupSummary($pId);
-        $sent = Helper::sendDailyStandupEmail($email, $summary);
+        $summary = \Modules\Reports\Services\StandupService::generateAiStandupSummary($pId);
+        $sent = \Modules\Reports\Services\StandupService::sendDailyStandupEmail($email, $summary);
         jsonResponse($sent, $sent ? 'Günlük standup e-postası başarıyla iletildi.' : 'E-posta sunucusu yanıt vermedi.');
         break;
 
@@ -2668,11 +2666,11 @@ switch ($action) {
                 jsonResponse(false, $errMsg);
             }
             if ($fErr === UPLOAD_ERR_OK) {
-                $docInfo = Helper::extractContentAndImagesFromDocument($_FILES['brief_file']);
+                $docInfo = \Modules\AiArchitect\Services\TaskDecomposerService::extractContentAndImagesFromDocument($_FILES['brief_file']);
             }
         }
 
-        $res = Helper::decomposeBriefWithAi($brief, $projectId, $docInfo);
+        $res = \Modules\AiArchitect\Services\TaskDecomposerService::decomposeBriefWithAi($brief, $projectId, $docInfo);
         if (!empty($res['success'])) {
             jsonResponse(true, 'Proje brifi ve döküman başarıyla modüllere, uygulama adımlarına ve görsellere ayrıştırıldı!', $res);
         } else {
@@ -2814,7 +2812,7 @@ switch ($action) {
                     }
 
                     // Canlı SSE yayını
-                    Helper::broadcastLiveEvent('task_created', $projectId, $epicId, (int)$currentUser->id, [
+                    \Modules\SSE\Services\SseBroadcaster::broadcast('task_created', $projectId, $epicId, (int)$currentUser->id, [
                         'task_id'   => $epicId,
                         'task_code' => $epicCode,
                         'title'     => $epicTitle,
@@ -2846,7 +2844,7 @@ switch ($action) {
 
     // GITHUB DEVOPS: AYARLARI KAYDET
     case 'save_github_settings':
-        Helper::ensureGithubAndRollbackSchema();
+        \Modules\GithubDevops\Services\GitService::ensureGithubAndRollbackSchema();
         $ghUser  = trim($_POST['github_username'] ?? '');
         $ghToken = trim($_POST['github_token'] ?? '');
 
@@ -2865,7 +2863,7 @@ switch ($action) {
             jsonResponse(false, 'Geçersiz proje ID.');
         }
 
-        $res = Helper::initAndSyncProjectGithubRepo($projectId);
+        $res = \Modules\GithubDevops\Services\GitService::initAndSyncProjectGithubRepo($projectId);
         if (!empty($res['success'])) {
             jsonResponse(true, $res['message'], $res);
         } else {
@@ -2881,7 +2879,7 @@ switch ($action) {
             jsonResponse(false, 'Geçersiz görev ID.');
         }
 
-        $res = Helper::rollbackTaskChanges($taskId, $mode);
+        $res = \Modules\GithubDevops\Services\GitService::rollbackTaskChanges($taskId, $mode);
         if (!empty($res['success'])) {
             jsonResponse(true, $res['message'], $res);
         } else {

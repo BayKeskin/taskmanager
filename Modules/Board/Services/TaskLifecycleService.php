@@ -36,6 +36,31 @@ class TaskLifecycleService extends BaseModel
     }
 
     /**
+     * Recursively sanitize UTF-8 strings in arrays/objects
+     */
+    public static function sanitizeUtf8Deep(mixed $data): mixed
+    {
+        if (is_string($data)) {
+            return mb_convert_encoding($data, 'UTF-8', 'UTF-8');
+        }
+        if (is_array($data)) {
+            $cleaned = [];
+            foreach ($data as $k => $v) {
+                $cleanKey = is_string($k) ? mb_convert_encoding($k, 'UTF-8', 'UTF-8') : $k;
+                $cleaned[$cleanKey] = self::sanitizeUtf8Deep($v);
+            }
+            return $cleaned;
+        }
+        if (is_object($data)) {
+            foreach ($data as $k => $v) {
+                $data->$k = self::sanitizeUtf8Deep($v);
+            }
+            return $data;
+        }
+        return $data;
+    }
+
+    /**
      * Bir görevin Yapay Zeka / Otonom Ajan görevi olup olmadığını denetler.
      */
     public static function isAiTask(mixed $taskOrTags): bool
@@ -205,7 +230,7 @@ class TaskLifecycleService extends BaseModel
             ]);
 
             // 5. Dispatcher'daki aktif görev kilidini temizlemek ve 4sn sonra sıradaki görevi tetiklemek için webhook gönder
-            \Helper::triggerProjectWebhook($projectId, 'task.submitted', [
+            \Modules\RestApi\Services\WebhookService::triggerProjectWebhook($projectId, 'task.submitted', [
                 'task_id'    => $taskId,
                 'task_code'  => $task->task_code,
                 'title'      => $task->title,
@@ -429,7 +454,7 @@ class TaskLifecycleService extends BaseModel
             ", [$taskId]) ?: [];
 
             $baseDir = dirname(__DIR__, 3);
-            $apiCfg = \Helper::getDynamicApiConfig();
+            $apiCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
             $baseUrl = rtrim($apiCfg['base_url'], '/');
 
             $attachments = [];
@@ -472,7 +497,7 @@ class TaskLifecycleService extends BaseModel
                 $desc .= $attachmentsMd;
             }
 
-            $desc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen development and autonomous verification are 100% complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . \Helper::getAgentSubmitCommandBlock($task->task_code);
+            $desc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen development and autonomous verification are 100% complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . \Modules\Dispatcher\Services\DispatcherService::getAgentSubmitCommandBlock($task->task_code);
 
             $payloadData = array_merge([
                 'task_id'       => (int)$task->id,
@@ -491,7 +516,7 @@ class TaskLifecycleService extends BaseModel
                 'resumed'       => $isResumed,
             ], $extra);
 
-            return \Helper::triggerProjectWebhook((int)$task->project_id, 'task.started', $payloadData);
+            return \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.started', $payloadData);
         } catch (\Throwable $e) {
             error_log("triggerTaskStartedWebhook error: " . $e->getMessage());
             return ['sent' => false, 'error' => $e->getMessage()];
@@ -526,7 +551,7 @@ class TaskLifecycleService extends BaseModel
             ", [$taskId]) ?: [];
 
             $baseDir = dirname(__DIR__, 3);
-            $apiCfg = \Helper::getDynamicApiConfig();
+            $apiCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
             $baseUrl = rtrim($apiCfg['base_url'], '/');
 
             $attachments = [];
@@ -569,7 +594,7 @@ class TaskLifecycleService extends BaseModel
             if (!empty($attachmentsMd)) {
                 $revDesc .= $attachmentsMd;
             }
-            $revDesc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen revision fixes and autonomous verification are complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . \Helper::getAgentSubmitCommandBlock($task->task_code);
+            $revDesc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen revision fixes and autonomous verification are complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . \Modules\Dispatcher\Services\DispatcherService::getAgentSubmitCommandBlock($task->task_code);
 
             $payloadData = array_merge([
                 'task_id'         => (int)$task->id,
@@ -584,7 +609,7 @@ class TaskLifecycleService extends BaseModel
                 'new_status'      => 'modification_requested'
             ], $extra);
 
-            return \Helper::triggerProjectWebhook((int)$task->project_id, 'task.revision_requested', $payloadData);
+            return \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.revision_requested', $payloadData);
         } catch (\Throwable $e) {
             error_log("triggerTaskRevisionWebhook error: " . $e->getMessage());
             return ['sent' => false, 'error' => $e->getMessage()];

@@ -259,7 +259,7 @@ $system->title = $t['page_title'];
 include dirname(__DIR__, 3) . '/Core/Views/header.php';
 
 $currentUser = $_SESSION['user'] ?? null;
-$dynCfg = Helper::getDynamicApiConfig();
+$dynCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
 $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dynCfg['api_token'] ?: 'tm_live_demo_token');
 ?>
 

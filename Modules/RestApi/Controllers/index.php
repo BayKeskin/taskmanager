@@ -146,7 +146,7 @@ if (!empty($rawInput)) {
 $requestData = array_merge($_GET, $_POST, is_array($requestBody) ? $requestBody : []);
 array_walk_recursive($requestData, function(&$val) {
     if (is_string($val)) {
-        $val = Helper::fixUtf8Mojibake($val);
+        $val = \Modules\Board\Services\TaskLifecycleService::fixUtf8Mojibake($val);
     }
 });
 
@@ -444,13 +444,13 @@ if ($resource === 'visual-feedback' && $method === 'POST') {
     if (!empty($result['success'])) {
         // SSE and Webhook notifications
         $data = $result['data'];
-        Helper::broadcastLiveEvent('task_created', (int)$data['project_id'], (int)$data['task_id'], $currentUser->id ?? 1, [
+        \Modules\SSE\Services\SseBroadcaster::broadcast('task_created', (int)$data['project_id'], (int)$data['task_id'], $currentUser->id ?? 1, [
             'task_code'      => $data['task_code'],
             'title'          => $data['title'],
             'status'         => 'assigned',
             'screenshot_url' => $data['screenshot_url']
         ]);
-        Helper::triggerProjectWebhook((int)$data['project_id'], 'task.created', [
+        \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$data['project_id'], 'task.created', [
             'task_id'        => $data['task_id'],
             'task_code'      => $data['task_code'],
             'title'          => $data['title'],
@@ -835,7 +835,7 @@ if ($resource === 'projects') {
             apiError("Bu proje için henüz bir webhook_url tanımlanmamış. Lütfen önce 'webhook_url' kaydedin.", 400);
         }
 
-        $res = Helper::triggerProjectWebhook($proj->id, 'project.webhook_test', [
+        $res = \Modules\RestApi\Services\WebhookService::triggerProjectWebhook($proj->id, 'project.webhook_test', [
             'message'               => "Yapay zeka ajanı (AI Agent) test pingi başarıyla iletildi.",
             'project_code'          => $proj->project_code,
             'agent_conversation_id' => $proj->agent_conversation_id,
@@ -1131,7 +1131,7 @@ if ($resource === 'projects') {
 
         $force = ($requestData['force'] ?? false) == true;
         if ($force) {
-            Helper::purgeProject((int)$proj->id);
+            \Modules\Projects\Services\ProjectService::purgeProject((int)$proj->id);
             apiResponse(null, 'Proje ve ilişkili tüm görevler, dökümanlar ve workspaces yapılandırması kalıcı olarak silindi.');
         } else {
             // Arşivle
@@ -1332,7 +1332,7 @@ if ($resource === 'tasks') {
         $formatted = formatTaskDetail($db, $createdTask);
 
         // Projeye bağlı yapay zeka ajanını (AI Agent) webhook ile tetikle
-        Helper::triggerProjectWebhook((int)$createdTask->project_id, 'task.created', [
+        \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$createdTask->project_id, 'task.created', [
             'task_id'       => $newTaskId,
             'task_code'     => $createdTask->task_code,
             'title'         => $createdTask->title,
@@ -1423,7 +1423,7 @@ if ($resource === 'tasks') {
                 ", [$task->id, $currentUser->id, $task->status, "{$currentUser->name} görevi kabul etti ve üzerinde çalışmaya başladı."]);
 
                 $updated = resolveTask($db, $task->id);
-                Helper::triggerProjectWebhook((int)$task->project_id, 'task.accepted', [
+                \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.accepted', [
                     'task_code' => $task->task_code,
                     'title'     => $task->title,
                     'status'    => 'in_progress',
@@ -1451,7 +1451,7 @@ if ($resource === 'tasks') {
                 ", [$task->id, $currentUser->id, $task->status, $newStatus, "{$currentUser->name}: {$note}"]);
 
                 $updated = resolveTask($db, $task->id);
-                Helper::triggerProjectWebhook((int)$task->project_id, 'task.status_changed', [
+                \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.status_changed', [
                     'task_code'  => $task->task_code,
                     'title'      => $task->title,
                     'old_status' => $task->status,
@@ -1460,7 +1460,7 @@ if ($resource === 'tasks') {
 
                 // Otonom Kuyruk: Eğer görev 'submitted' veya 'completed' olduysa sıradaki '#ai' etiketli görevi başlat
                 if ($newStatus === 'submitted' || $newStatus === 'completed') {
-                    Helper::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$task->id);
+                    \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$task->id);
                 }
 
                 apiResponse(formatTaskDetail($db, $updated), "Görev durumu '{$newStatus}' olarak güncellendi.");
@@ -1483,7 +1483,7 @@ if ($resource === 'tasks') {
                 ", [$task->id, $currentUser->id, "{$currentUser->name} revizyon talep etti: {$reason}"]);
 
                 $updated = resolveTask($db, $task->id);
-                Helper::triggerProjectWebhook((int)$task->project_id, 'task.modification_requested', [
+                \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.modification_requested', [
                     'task_code' => $task->task_code,
                     'title'     => $task->title,
                     'reason'    => $reason
@@ -1502,7 +1502,7 @@ if ($resource === 'tasks') {
                 ", [$task->id, $currentUser->id, "{$currentUser->name} revizyonu çözümledi."]);
 
                 $updated = resolveTask($db, $task->id);
-                Helper::triggerProjectWebhook((int)$task->project_id, 'task.modification_resolved', [
+                \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.modification_resolved', [
                     'task_code' => $task->task_code,
                     'title'     => $task->title,
                     'status'    => 'in_progress'
@@ -1518,7 +1518,7 @@ if ($resource === 'tasks') {
                 if (empty($notes)) apiError('Teslim notları (notes) zorunludur.', 400);
 
                 // Merkezi teslimat fonksiyonunu çağır (SSE, Alt Görev Rollup ve Dispatcher 4sn Kuyruk Sinyalini otomatik yönetir)
-                $subRes = Helper::submitTaskDirectly((int)$task->id, $notes);
+                $subRes = \Modules\Board\Services\TaskLifecycleService::submitTaskDirectly((int)$task->id, $notes);
                 if (empty($subRes['success'])) {
                     apiError($subRes['error'] ?? 'Görev teslim edilemedi.', 500);
                 }
@@ -1563,7 +1563,7 @@ if ($resource === 'tasks') {
                     ", [$task->id, $currentUser->id, "{$currentUser->name} teslimatı onayladı: {$feedback}"]);
 
                     // Otonom Kuyruk: Görev onaylandığında sıradaki görevi veya askıdaki görevi başlat
-                    Helper::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$task->id);
+                    \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$task->id);
                 } else {
                     $db->exec_query("UPDATE tasks SET status = 'modification_requested', updated_at = NOW() WHERE id = ?", [$task->id]);
                     $db->exec_query("UPDATE task_submissions SET status = 'rejected', feedback = ?, reviewed_at = NOW() WHERE task_id = ? AND status = 'pending'", [$feedback, $task->id]);
@@ -1573,7 +1573,7 @@ if ($resource === 'tasks') {
                         VALUES (?, ?, 'rejected', ?, NOW())
                     ", [$task->id, $currentUser->id, "{$currentUser->name} teslimatı reddetti ve revizyon istedi: {$feedback}"]);
 
-                    Helper::triggerTaskRevisionWebhook((int)$task->id, $feedback ?: 'Yönetici teslimatı reddetti ve revizyon talep etti.');
+                    \Modules\Board\Services\TaskLifecycleService::triggerTaskRevisionWebhook((int)$task->id, $feedback ?: 'Yönetici teslimatı reddetti ve revizyon talep etti.');
                 }
 
                 $updated = resolveTask($db, $task->id);

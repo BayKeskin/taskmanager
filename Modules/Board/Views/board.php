@@ -93,8 +93,8 @@ foreach ($allTasks as $t) {
                 <?php endif; ?>
 
                 <?php if (!$isClient): 
-                    Helper::ensureGithubAndRollbackSchema();
-                    $ghCreds = Helper::getGithubCredentials();
+                    \Modules\GithubDevops\Services\GitService::ensureGithubAndRollbackSchema();
+                    $ghCreds = \Modules\GithubDevops\Services\GitService::getGithubCredentials();
                 ?>
                     <div style="height:1px; background:rgba(255,255,255,0.08); margin:5px 0;"></div>
 

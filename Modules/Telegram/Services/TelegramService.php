@@ -363,7 +363,7 @@ class Telegram
                 ]);
 
                 if ($newId > 0) {
-                    Helper::broadcastLiveEvent('task_created', $projectId, $newId, 1, [
+                    \Modules\SSE\Services\SseBroadcaster::broadcast('task_created', $projectId, $newId, 1, [
                         'task_id'   => $newId,
                         'task_code' => $nextCode,
                         'title'     => $titleText,
@@ -440,7 +440,7 @@ class Telegram
 
         // Canlı SSE yayını (Masaüstündeki ekranda anında kart kaysın)
         $botUserName = $isTr ? 'Telegram Bot (Mobil)' : 'Telegram Bot (Mobile)';
-        Helper::broadcastLiveEvent('task_status_updated', (int)$task->project_id, (int)$task->id, 1, [
+        \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_updated', (int)$task->project_id, (int)$task->id, 1, [
             'task_id'    => (int)$task->id,
             'task_code'  => $task->task_code,
             'title'      => $task->title,

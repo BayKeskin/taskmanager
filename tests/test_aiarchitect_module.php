@@ -3,7 +3,6 @@
  * Autonomous Verification Test for AiArchitect (#02) Module
  */
 require_once __DIR__ . '/../Core/System.php';
-require_once __DIR__ . '/../Core/Helper.php';
 
 use Core\ModuleLoader;
 use Modules\AiArchitect\Services\GeminiClient;
@@ -36,12 +35,12 @@ if (!empty($specResult['success']) && !empty($specResult['specification'])) {
     exit(1);
 }
 
-// 3. Helper Facade Forwarding Testi
-$facadeResult = Helper::refineTaskPromptToSpecification(1, "Test talebi", [], [], true);
-if (!empty($facadeResult['success']) && !empty($facadeResult['specification'])) {
-    echo "[PASS] Helper::refineTaskPromptToSpecification successfully forwarded to GeminiClient.\n";
+// 3. GeminiClient refineRulesWithAi Testi
+$rulesResult = $client->refineRulesWithAi("1. TDD uygulanmalı\n2. Türkçe ve İngilizce desteklenmeli", "TEST", "Test Projesi");
+if (!empty($rulesResult['success']) && !empty($rulesResult['refined_rules'])) {
+    echo "[PASS] GeminiClient::refineRulesWithAi executed successfully.\n";
 } else {
-    echo "[FAIL] Helper facade delegation failed.\n";
+    echo "[FAIL] GeminiClient::refineRulesWithAi failed.\n";
     exit(1);
 }
 

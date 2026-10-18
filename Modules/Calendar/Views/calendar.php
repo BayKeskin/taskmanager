@@ -306,7 +306,7 @@ $statusColors = [
                              ondragover="handleCalendarDragOver(event)"
                              ondragleave="handleCalendarDragLeave(event)"
                              ondrop="handleCalendarDrop(event, '<?= $dateStr ?>')"
-                             style="background:var(--bg-card); padding:8px; display:flex; flex-direction:column; border-bottom:1px solid var(--border-subtle); border-right:1px solid var(--border-subtle); transition:background 0.2s; <?= $isToday ? 'outline:2px solid var(--brand-primary); z-index:1;' : '' ?>" title="<?= htmlspecialchars(Helper::format_date_localized($dateStr)) ?>">
+                             style="background:var(--bg-card); padding:8px; display:flex; flex-direction:column; border-bottom:1px solid var(--border-subtle); border-right:1px solid var(--border-subtle); transition:background 0.2s; <?= $isToday ? 'outline:2px solid var(--brand-primary); z-index:1;' : '' ?>" title="<?= htmlspecialchars(format_date_localized($dateStr)) ?>">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                                 <span style="font-size:12px; font-weight:<?= $isToday ? '800' : '600' ?>; color:<?= $isToday ? 'var(--brand-primary)' : 'var(--text-secondary)' ?>;">
                                     <?= $d ?>

@@ -31,7 +31,7 @@ class WebhookService extends BaseModel
 
         $targetUrl = !empty($project->webhook_url) ? trim($project->webhook_url) : 'http://localhost:4000/webhook';
 
-        $apiCfg = \Helper::getDynamicApiConfig();
+        $apiCfg = RestApiService::getDynamicApiConfig();
 
         $payload = [
             'event'                 => $event,
@@ -91,7 +91,8 @@ class WebhookService extends BaseModel
         $effectiveConvId = $project->agent_conversation_id;
 
         if (!$sent && (str_contains($targetUrl, 'localhost:4000') || str_contains($targetUrl, '127.0.0.1:4000') || empty($targetUrl))) {
-            $directResult = \Helper::dispatchDirectToAntigravity($project, $event, $data);
+            $dispService = new \Modules\Dispatcher\Services\DispatcherService();
+            $directResult = $dispService->dispatchDirect($project, $event, $data);
             if (!empty($directResult['sent'])) {
                 $sent = true;
                 $httpCode = 200;

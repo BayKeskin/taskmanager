@@ -22,7 +22,6 @@ require_once __DIR__ . '/ModuleLoader.php';
 \Core\ModuleLoader::boot(dirname(__DIR__) . '/Modules');
 
 require_once __DIR__ . '/DataLayer.php';
-require_once __DIR__ . '/Helper.php';
 require_once __DIR__ . '/Language.php';
 
 // 2. Global Veritabanı ve Temel Ayarlar

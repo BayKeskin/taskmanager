@@ -368,7 +368,7 @@ class DispatcherService extends BaseModel
      */
     public static function getAgentSubmitCommandBlock(string $taskCode): string
     {
-        $cfg = \Helper::getDynamicApiConfig();
+        $cfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
         $endpoint = "{$cfg['base_url']}/api/tasks/{$taskCode}/workflow/submit";
         $token    = $cfg['api_token'];
 

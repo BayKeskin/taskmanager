@@ -113,9 +113,6 @@ class ProjectModel extends BaseModel
      */
     public function syncProjectRulesToFile(int $id): array
     {
-        if (class_exists('Helper') && method_exists('Helper', 'syncProjectRulesToWorkspace')) {
-            return Helper::syncProjectRulesToWorkspace($id);
-        }
-        return ['success' => false, 'error' => 'Helper not found'];
+        return \Modules\Projects\Services\ProjectService::syncProjectRulesToWorkspace($id);
     }
 }

@@ -3,7 +3,6 @@
  * Autonomous Verification Test for Dispatcher (#06) Module
  */
 require_once __DIR__ . '/../Core/System.php';
-require_once __DIR__ . '/../Core/Helper.php';
 
 use Core\ModuleLoader;
 use Modules\Dispatcher\Services\DispatcherService;
@@ -34,9 +33,9 @@ if ($syncResult) {
 $lsEnv = $service->getAntigravityLsEnv();
 echo "[PASS] DispatcherService::getAntigravityLsEnv returned address: " . ($lsEnv['address'] ?? 'none') . "\n";
 
-// 3. Helper Facade Forwarding Testi
-Helper::ensureDispatcherRunning();
-echo "[PASS] Helper::ensureDispatcherRunning successfully delegated.\n";
+// 3. DispatcherService ensureRunning Testi
+$service->ensureRunning();
+echo "[PASS] DispatcherService::ensureRunning executed successfully.\n";
 
 // 4. Tri-lingual (TR, EN, DE) Translation Testi
 Language::setLocale('tr');

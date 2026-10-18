@@ -264,7 +264,7 @@ CRITICAL ARCHITECTURAL RULES:
                     $cleaned = trim(preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($text)));
                     $parsed = json_decode($cleaned, true);
                     if (!empty($parsed['epics']) && is_array($parsed['epics'])) {
-                        return \Helper::sanitizeUtf8Deep([
+                        return \Modules\Board\Services\TaskLifecycleService::sanitizeUtf8Deep([
                             'success'        => true,
                             'epics'          => $parsed['epics'],
                             'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],
@@ -278,7 +278,7 @@ CRITICAL ARCHITECTURAL RULES:
 
         // Heuristic fallback
         $epics = self::decomposeBriefDynamicParser($combinedBrief, $projTitle, $projRules);
-        return \Helper::sanitizeUtf8Deep([
+        return \Modules\Board\Services\TaskLifecycleService::sanitizeUtf8Deep([
             'success'        => true,
             'epics'          => $epics,
             'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],

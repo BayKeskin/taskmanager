@@ -10,7 +10,7 @@ class ApiTesterController extends BaseController
      */
     public function index(): void
     {
-        $dynCfg = \Helper::getDynamicApiConfig();
+        $dynCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
         $currentUser = $_SESSION['user'] ?? null;
         $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dynCfg['api_token'] ?: 'tm_live_demo_token');
         $baseUrl = $dynCfg['base_url'];

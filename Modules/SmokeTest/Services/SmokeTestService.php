@@ -81,7 +81,7 @@ class SmokeTestService
         $this->assert($chatReadTitle, $retrieved && $retrieved->message === $testMsgText, $chatReadDetails);
 
         // 4. Standup Aggregation & Summary Verification
-        $standup = Helper::generateAiStandupSummary(1, $this->lang);
+        $standup = \Modules\Reports\Services\StandupService::generateAiStandupSummary(1, $this->lang);
         $standupTitle = $isTr ? "AI Standup Rapor Üretimi" : "AI Standup Report Generation";
         $standupDetails = $isTr 
             ? "Tarih: {$standup['date']}, Tamamlanan: {$standup['raw_data']['completed_count']}"
@@ -101,7 +101,7 @@ class SmokeTestService
         }
 
         // 6. Realtime SSE Live Event Broadcast Verification
-        $broadcast = Helper::broadcastLiveEvent('test_ping', 1, null, 1, ['time' => time(), 'test' => true]);
+        $broadcast = \Modules\SSE\Services\SseBroadcaster::broadcast('test_ping', 1, null, 1, ['time' => time(), 'test' => true]);
         $sseTitle = $isTr ? "SSE Canlı Yayın (broadcastLiveEvent)" : "SSE Live Broadcast (broadcastLiveEvent)";
         $sseDetails = $isTr ? "live_events tablosuna kaydedildi" : "Recorded to live_events table";
         $this->assert($sseTitle, $broadcast, $sseDetails);

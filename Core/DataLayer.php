@@ -1,7 +1,5 @@
 <?php
 
-require_once __DIR__ . '/../Core/Helper.php';
-
 class Database
 {
     private $host;
