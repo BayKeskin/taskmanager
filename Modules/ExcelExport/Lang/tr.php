@@ -1,14 +1,21 @@
 <?php
-return [
-    'export_btn'      => 'Excel (.csv) İndir',
-    'export_task_id'  => 'Görev No',
-    'export_title'    => 'Görev Başlığı',
-    'export_status'   => 'Mevcut Durum',
-    'export_priority' => 'Öncelik',
-    'export_assignee' => 'Atanan',
-    'export_creator'  => 'Oluşturan',
-    'export_start'    => 'Başlangıç Tarihi',
-    'export_due'      => 'Termin Tarihi',
-    'export_progress' => 'İlerleme',
-    'export_created'  => 'Oluşturulma Tarihi'
-];
+return array (
+  'export_btn' => 'Excel (.csv) İndir',
+  'export_task_id' => 'Görev ID',
+  'export_title' => 'Görev Başlığı',
+  'export_status' => 'Mevcut Durum',
+  'export_priority' => 'Öncelik',
+  'export_assignee' => 'Atanan',
+  'export_creator' => 'Oluşturan',
+  'export_start' => 'Başlangıç Tarihi',
+  'export_due' => 'Termin Tarihi',
+  'export_progress' => 'İlerleme',
+  'export_created' => 'Oluşturulma Tarihi',
+  'kanban_export_excel' => 'Excel\'e Aktar',
+  'export_start_date' => 'Başlangıç Tarihi',
+  'export_due_date' => 'Termin Tarihi',
+  'export_created_at' => 'Oluşturulma Tarihi',
+  'export_unassigned' => 'Atanmamış',
+  'export_no_date' => 'Belirtilmedi',
+  'export_excel_desc' => 'Görevleri UTF-8 Excel formatında indir',
+);

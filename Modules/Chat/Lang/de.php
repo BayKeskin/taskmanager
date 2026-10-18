@@ -1,17 +1,20 @@
 <?php
-return [
-    'module_name'           => 'Interner Team-Live-Chat',
-    'chat_title'            => 'Team-Live-Chat - TaskManager',
-    'chat_header_team'      => 'Interner Team-Live-Chat',
-    'chat_header_client'    => 'Kunden- & Team-Kommunikationskanal',
-    'chat_desc_team'        => 'Öffentlicher Teamkanal und sichere Direktnachrichten mit Teamkollegen',
-    'chat_desc_client'      => 'Sichere Direktkommunikation mit den für Ihr Projekt zuständigen Mitgliedern',
-    'chat_btn_chats'        => 'Chats',
-    'chat_sse_active'       => 'Live-Verbindung aktiv',
-    'channel_team'          => 'Öffentlicher Teamkanal',
-    'channel_direct'        => 'Direkte private Nachrichten',
-    'messages_listed'       => 'Nachrichten erfolgreich aufgelistet.',
-    'message_sent'          => 'Nachricht erfolgreich gesendet.',
-    'message_required'      => 'Nachrichtentext oder Anhang erforderlich.',
-    'conversations_listed'  => 'Konversationen erfolgreich aufgelistet.'
-];
+return array (
+  'module_name' => 'Interner Team-Live-Chat',
+  'chat_title' => 'Team-Live-Chat - TaskManager',
+  'chat_header_team' => 'Interner Team-Live-Chat',
+  'chat_header_client' => 'Kunden- & Team-Kommunikationskanal',
+  'chat_desc_team' => 'Öffentlicher Teamkanal und sichere Direktnachrichten mit Teamkollegen',
+  'chat_desc_client' => 'Sichere Direktkommunikation mit den für Ihr Projekt zuständigen Mitgliedern',
+  'chat_btn_chats' => 'Chats',
+  'chat_sse_active' => 'Live-Verbindung aktiv',
+  'channel_team' => 'Öffentlicher Teamkanal',
+  'channel_direct' => 'Direkte private Nachrichten',
+  'messages_listed' => 'Nachrichten erfolgreich aufgelistet.',
+  'message_sent' => 'Nachricht erfolgreich gesendet.',
+  'message_required' => 'Nachrichtentext oder Anhang erforderlich.',
+  'conversations_listed' => 'Konversationen erfolgreich aufgelistet.',
+  'chat_hint_realtime' => '💡 Hinweis: Nachrichten erscheinen sofort per Socket/SSE in Echtzeit.',
+  'chat_no_other_members' => 'Keine weiteren Teammitglieder gefunden.',
+  'chat_default_role' => 'Mitglied',
+);

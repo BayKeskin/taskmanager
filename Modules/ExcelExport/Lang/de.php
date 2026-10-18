@@ -1,14 +1,21 @@
 <?php
-return [
-    'export_btn'      => 'In Excel exportieren (.csv)',
-    'export_task_id'  => 'Aufgaben-ID',
-    'export_title'    => 'Aufgabentitel',
-    'export_status'   => 'Status',
-    'export_priority' => 'Priorität',
-    'export_assignee' => 'Zugewiesen an',
-    'export_creator'  => 'Ersteller',
-    'export_start'    => 'Startdatum',
-    'export_due'      => 'Fälligkeitsdatum',
-    'export_progress' => 'Fortschritt',
-    'export_created'  => 'Erstellungsdatum'
-];
+return array (
+  'export_btn' => 'In Excel exportieren (.csv)',
+  'export_task_id' => 'Aufgaben-ID',
+  'export_title' => 'Aufgabentitel',
+  'export_status' => 'Aktueller Status',
+  'export_priority' => 'Priorität',
+  'export_assignee' => 'Zugewiesen an',
+  'export_creator' => 'Ersteller',
+  'export_start' => 'Startdatum',
+  'export_due' => 'Fälligkeitsdatum',
+  'export_progress' => 'Fortschritt',
+  'export_created' => 'Erstellungsdatum',
+  'kanban_export_excel' => 'Als Excel exportieren',
+  'export_start_date' => 'Startdatum',
+  'export_due_date' => 'Fälligkeitsdatum',
+  'export_created_at' => 'Erstellungsdatum',
+  'export_unassigned' => 'Nicht zugewiesen',
+  'export_no_date' => 'Nicht angegeben',
+  'export_excel_desc' => 'Aufgaben im UTF-8 Excel-Format herunterladen',
+);

@@ -194,6 +194,8 @@ class Language
     {
         if ($group === 'admin') {
             $group = 'app';
+        } elseif ($group === 'tasks') {
+            $group = 'Board';
         }
 
         if (isset(self::$loaded[$locale][$group])) {
@@ -249,6 +251,8 @@ class Language
             $group = array_shift($parts);
             if ($group === 'admin') {
                 $group = 'app';
+            } elseif ($group === 'tasks') {
+                $group = 'Board';
             }
         }
 
@@ -262,7 +266,32 @@ class Language
             $value = self::extractValue(self::$loaded[$fallback][$group] ?? [], $parts);
         }
 
-        // 3. Hala bulunamadıysa default ya da key'i dön
+        // 3. Eğer app grubunda bulunamadıysa, ilgili modüllerin Lang dosyalarında ara
+        if ($value === null && $group === 'app') {
+            static $activeModules = null;
+            if ($activeModules === null) {
+                $activeModules = ['Board', 'Projects', 'Settings', 'Team', 'Docs', 'Chat', 'LiveDeploy', 'ExcelExport', 'AiArchitect', 'Mcp'];
+            }
+            $singlePart = end($parts);
+            foreach ($activeModules as $mod) {
+                self::loadGroup($mod, $locale);
+                if (isset(self::$loaded[$locale][$mod][$singlePart])) {
+                    $value = self::$loaded[$locale][$mod][$singlePart];
+                    break;
+                }
+            }
+            if ($value === null && $locale !== $fallback) {
+                foreach ($activeModules as $mod) {
+                    self::loadGroup($mod, $fallback);
+                    if (isset(self::$loaded[$fallback][$mod][$singlePart])) {
+                        $value = self::$loaded[$fallback][$mod][$singlePart];
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 4. Hala bulunamadıysa default ya da key'i dön
         if ($value === null) {
             $value = $default ?? $key;
         }

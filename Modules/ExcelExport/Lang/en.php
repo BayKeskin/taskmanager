@@ -1,14 +1,21 @@
 <?php
-return [
-    'export_btn'      => 'Export to Excel (.csv)',
-    'export_task_id'  => 'Task ID',
-    'export_title'    => 'Task Title',
-    'export_status'   => 'Status',
-    'export_priority' => 'Priority',
-    'export_assignee' => 'Assignee',
-    'export_creator'  => 'Creator',
-    'export_start'    => 'Start Date',
-    'export_due'      => 'Due Date',
-    'export_progress' => 'Progress',
-    'export_created'  => 'Created At'
-];
+return array (
+  'export_btn' => 'Export to Excel (.csv)',
+  'export_task_id' => 'Task ID',
+  'export_title' => 'Task Title',
+  'export_status' => 'Current Status',
+  'export_priority' => 'Priority',
+  'export_assignee' => 'Assignee',
+  'export_creator' => 'Creator',
+  'export_start' => 'Start Date',
+  'export_due' => 'Due Date',
+  'export_progress' => 'Progress',
+  'export_created' => 'Created At',
+  'kanban_export_excel' => 'Export to Excel',
+  'export_start_date' => 'Start Date',
+  'export_due_date' => 'Due Date',
+  'export_created_at' => 'Created Date',
+  'export_unassigned' => 'Unassigned',
+  'export_no_date' => 'Not Specified',
+  'export_excel_desc' => 'Download tasks in UTF-8 Excel format',
+);
