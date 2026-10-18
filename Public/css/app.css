@@ -898,14 +898,41 @@ body {
     gap: 8px;
 }
 
-.cu-view-header .cu-filter-bar button,
-.cu-view-header .cu-filter-bar .cu-btn-sm,
-.cu-view-header .cu-filter-bar .cu-btn-quick-task {
+.cu-view-header .cu-filter-bar > button,
+.cu-view-header .cu-filter-bar > .cu-btn-sm,
+.cu-view-header .cu-filter-bar > .cu-btn-quick-task,
+.cu-view-header .cu-filter-bar .cu-tools-dropdown-wrap > button {
     height: 32px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     box-sizing: border-box !important;
+}
+
+.cu-tools-dropdown-wrap .cu-tools-item {
+    height: auto !important;
+    min-height: 42px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    padding: 8px 12px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 6px !important;
+    color: var(--text-white) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    text-align: left !important;
+    text-decoration: none !important;
+    box-sizing: border-box !important;
+    transition: background 0.15s ease !important;
+    line-height: 1.3 !important;
+}
+
+.cu-tools-dropdown-wrap .cu-tools-item:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
 }
 
 .cu-filter-select {

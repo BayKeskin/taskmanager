@@ -67,23 +67,17 @@ foreach ($allTasks as $t) {
                 <span><?= __('app.kanban_tools', 'Araçlar') ?></span>
                 <span style="font-size:10px; opacity:0.7; margin-left:2px;">▼</span>
             </button>
-            <div id="kanbanToolsMenu" style="display:none; position:absolute; top:calc(100% + 6px); right:0; min-width:230px; background:var(--bg-card, #1e1e2d); border:1px solid var(--border-subtle, rgba(255,255,255,0.12)); border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.45); padding:6px; z-index:1050; backdrop-filter:blur(10px);">
+            <div id="kanbanToolsMenu" style="display:none; position:absolute; top:calc(100% + 8px); right:0; min-width:260px; background:#1b1d29; border:1px solid rgba(255,255,255,0.14); border-radius:10px; box-shadow:0 14px 35px rgba(0,0,0,0.65); padding:6px; z-index:1050; backdrop-filter:blur(16px);">
                 <!-- PDF Hakediş Raporu -->
-                <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); downloadDeliveryReportPdf(<?= (int)($activeProjectId ?? 0) ?>);" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:var(--text-white); font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(0,184,148,0.12)'" onmouseout="this.style.background='transparent'">
-                    <span style="font-size:15px;">📄</span>
-                    <div style="display:flex; flex-direction:column;">
-                        <span><?= __('tasks.btn_pdf_report', 'PDF Hakediş Raporu') ?></span>
-                        <span style="font-size:10px; color:var(--text-muted);"><?= __('tasks.tooltip_pdf_report', 'Tamamlanan işlerin PDF dökümü') ?></span>
-                    </div>
+                <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); downloadDeliveryReportPdf(<?= (int)($activeProjectId ?? 0) ?>);">
+                    <span style="font-size:16px; width:22px; text-align:center;">📄</span>
+                    <span style="flex:1;"><?= __('tasks.btn_pdf_report', 'PDF Hakediş Raporu') ?></span>
                 </button>
 
                 <!-- AI Standup Özeti -->
-                <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openAiStandupModal();" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:var(--text-white); font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(123,104,238,0.12)'" onmouseout="this.style.background='transparent'">
-                    <span style="font-size:15px;">🤖</span>
-                    <div style="display:flex; flex-direction:column;">
-                        <span><?= __('tasks.btn_ai_standup', 'AI Standup Özeti') ?></span>
-                        <span style="font-size:10px; color:var(--text-muted);"><?= __('tasks.tooltip_ai_standup', 'Son 24 saatin standup bülteni') ?></span>
-                    </div>
+                <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openAiStandupModal();">
+                    <span style="font-size:16px; width:22px; text-align:center;">🤖</span>
+                    <span style="flex:1;"><?= __('tasks.btn_ai_standup', 'AI Standup Özeti') ?></span>
                 </button>
 
                 <?php if (!empty($activeProjectId)): ?>
@@ -92,12 +86,10 @@ foreach ($allTasks as $t) {
                        id="btnExportExcel" 
                        onclick="closeKanbanToolsDropdown()" 
                        target="_blank"
-                       style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:#2ecc71; font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; text-decoration:none; box-sizing:border-box; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(46,204,113,0.12)'" onmouseout="this.style.background='transparent'">
-                        <span style="font-size:15px;">📊</span>
-                        <div style="display:flex; flex-direction:column;">
-                            <span><?= __('app.kanban_export_excel', 'Excel\'e Aktar') ?></span>
-                            <span style="font-size:10px; color:var(--text-muted);"><?= __('app.export_excel_desc', 'Görevleri UTF-8 Excel formatında indir') ?></span>
-                        </div>
+                       class="cu-tools-item"
+                       style="color:#2ecc71 !important;">
+                        <span style="font-size:16px; width:22px; text-align:center;">📊</span>
+                        <span style="flex:1; font-weight:600;"><?= __('app.kanban_export_excel', 'Excel\'e Aktar') ?></span>
                     </a>
                 <?php endif; ?>
 
@@ -105,43 +97,32 @@ foreach ($allTasks as $t) {
                     Helper::ensureGithubAndRollbackSchema();
                     $ghCreds = Helper::getGithubCredentials();
                 ?>
-                    <div style="height:1px; background:var(--border-subtle, rgba(255,255,255,0.08)); margin:4px 0;"></div>
+                    <div style="height:1px; background:rgba(255,255,255,0.08); margin:5px 0;"></div>
 
                     <!-- GitHub Ayarları -->
-                    <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openGithubSettingsModal();" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:var(--text-white); font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='transparent'">
-                        <span style="font-size:15px;">🐙</span>
-                        <div style="display:flex; flex-direction:column;">
-                            <span><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : __('app.btn_connect_github', 'GitHub Bağla') ?></span>
-                            <span style="font-size:10px; color:var(--text-muted);"><?= __('app.modal_github_title', 'GitHub Hesap & DevOps') ?></span>
-                        </div>
+                    <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openGithubSettingsModal();">
+                        <span style="font-size:16px; width:22px; text-align:center;">🐙</span>
+                        <span style="flex:1;"><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : __('app.btn_connect_github', 'GitHub Bağla') ?></span>
+                        <span style="font-size:10px; color:var(--text-muted); background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">DevOps</span>
                     </button>
 
                     <?php if (!empty($activeProjectId)): ?>
                         <!-- GitHub Sync -->
-                        <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); syncProjectToGithub(<?= (int)$activeProjectId ?>);" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:#3fb950; font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(46,160,67,0.12)'" onmouseout="this.style.background='transparent'">
-                            <span style="font-size:15px;">🔄</span>
-                            <div style="display:flex; flex-direction:column;">
-                                <span><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
-                                <span style="font-size:10px; color:var(--text-muted);"><?= __('app.tooltip_sync_github', 'Projeyi GitHub ile eşitle') ?></span>
-                            </div>
+                        <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); syncProjectToGithub(<?= (int)$activeProjectId ?>);" style="color:#3fb950 !important;">
+                            <span style="font-size:16px; width:22px; text-align:center;">🔄</span>
+                            <span style="flex:1; font-weight:600;"><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
                         </button>
 
                         <!-- Canlı Dağıtım (Deploy Wizard) -->
-                        <button type="button" id="btnOpenDeployWizard" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openDeployWizard(<?= (int)$activeProjectId ?>);" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:#00cec9; font-size:12.5px; font-weight:600; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(0,184,148,0.12)'" onmouseout="this.style.background='transparent'">
-                            <span style="font-size:15px;">🚀</span>
-                            <div style="display:flex; flex-direction:column;">
-                                <span><?= __('app.deploy_btn_wizard', 'Canlı Dağıtım') ?></span>
-                                <span style="font-size:10px; color:var(--text-muted);"><?= __('app.deploy_wizard_desc', 'Hosting & Canlı Yayın') ?></span>
-                            </div>
+                        <button type="button" id="btnOpenDeployWizard" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openDeployWizard(<?= (int)$activeProjectId ?>);" style="color:#00cec9 !important;">
+                            <span style="font-size:16px; width:22px; text-align:center;">🚀</span>
+                            <span style="flex:1; font-weight:700;"><?= __('app.deploy_btn_wizard', 'Canlı Dağıtım') ?></span>
                         </button>
 
                         <!-- MCP Tools -->
-                        <button type="button" id="btnOpenProjectMcp" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openProjectMcpModal(<?= (int)$activeProjectId ?>);" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; border-radius:6px; color:#f39c12; font-size:12.5px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(243,156,18,0.12)'" onmouseout="this.style.background='transparent'">
-                            <span style="font-size:15px;">🧩</span>
-                            <div style="display:flex; flex-direction:column;">
-                                <span><?= __('app.mcp_btn_open', 'MCP Tools') ?></span>
-                                <span style="font-size:10px; color:var(--text-muted);"><?= __('app.mcp_marketplace_desc', 'Antigravity Araçları') ?></span>
-                            </div>
+                        <button type="button" id="btnOpenProjectMcp" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openProjectMcpModal(<?= (int)$activeProjectId ?>);" style="color:#f39c12 !important;">
+                            <span style="font-size:16px; width:22px; text-align:center;">🧩</span>
+                            <span style="flex:1; font-weight:600;"><?= __('app.mcp_btn_open', 'MCP Tools') ?></span>
                         </button>
                     <?php endif; ?>
                 <?php endif; ?>
