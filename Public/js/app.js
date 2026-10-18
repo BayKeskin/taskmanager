@@ -5377,6 +5377,10 @@ function executeDeployRollback() {
                 if (logBox) {
                     logBox.innerHTML += '<div style="color:#e74c3c;">[ROLLBACK HATA] ' + res.message + '</div>';
                 }
+                showToast('❌ ' + res.message, 'error');
+            }
+        })
+        .catch(err => showToast('Geri alma hatası: ' + err.message, 'error'));
 }
 
 function downloadDeliveryReportPdf(projectId) {
