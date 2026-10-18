@@ -4,15 +4,15 @@ $teamController = new \Modules\Team\Controllers\TeamController();
 $teamData = $teamController->index();
 if (!$teamData['isAuthorized']) {
     $system->title = __('Team::team_title', 'Ekip Yönetimi - TaskManager');
-    include dirname(__DIR__, 3) . '/Components/header.php';
+    include dirname(__DIR__, 3) . '/Core/Views/header.php';
     echo '<div style="padding:40px; text-align:center; color:var(--text-muted);">' . __('app.team_unauthorized', 'Bu sayfaya erişim yetkiniz bulunmamaktadır.') . '</div>';
-    include dirname(__DIR__, 3) . '/Components/footer.php';
+    include dirname(__DIR__, 3) . '/Core/Views/footer.php';
     exit;
 }
 extract($teamData);
 
 $system->title = __('Team::team_title', 'Ekip Yönetimi - TaskManager');
-include dirname(__DIR__, 3) . '/Components/header.php';
+include dirname(__DIR__, 3) . '/Core/Views/header.php';
 ?>
 
 <div class="cu-view-header">
@@ -371,4 +371,4 @@ function copyClientInvite(name, email, projectTitle) {
 }
 </script>
 
-<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>

@@ -256,7 +256,7 @@ $loc = in_array($currentLang, ['tr', 'en', 'de'], true) ? $currentLang : 'en';
 $t = $translations[$loc] ?? $translations['en'];
 
 $system->title = $t['page_title'];
-include dirname(__DIR__, 3) . '/Components/header.php';
+include dirname(__DIR__, 3) . '/Core/Views/header.php';
 
 $currentUser = $_SESSION['user'] ?? null;
 $dynCfg = Helper::getDynamicApiConfig();
@@ -708,4 +708,4 @@ function copyToken() {
 }
 </script>
 
-<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>

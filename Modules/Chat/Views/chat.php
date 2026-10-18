@@ -6,7 +6,7 @@ $chatData = $chatController->index($initialTargetUserId);
 extract($chatData);
 
 $system->title = __('Chat::chat_title', 'Ekip İçi Sohbet - TaskManager');
-include dirname(__DIR__, 3) . '/Components/header.php';
+include dirname(__DIR__, 3) . '/Core/Views/header.php';
 ?>
 
 <div class="cu-view-header">
@@ -885,4 +885,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>

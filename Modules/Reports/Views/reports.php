@@ -5,7 +5,7 @@ $reportData = $reportController->index();
 extract($reportData);
 
 $system->title = __('Reports::rep_title', 'Raporlar & Analitik Paneli - TaskManager');
-include dirname(__DIR__, 3) . '/Components/header.php';
+include dirname(__DIR__, 3) . '/Core/Views/header.php';
 ?>
 
 <div class="cu-view-header">
@@ -174,4 +174,4 @@ include dirname(__DIR__, 3) . '/Components/header.php';
     </div>
 </div>
 
-<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>

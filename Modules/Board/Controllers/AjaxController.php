@@ -1,8 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/../../System/System.php';
-require_once __DIR__ . '/../Controller.php';
+require_once dirname(__DIR__, 3) . '/System/System.php';
 
 // Dil motorunu başlat (URL parametresi ?lang=, $_POST['lang'] veya kullanıcı tercihi)
 Language::init();
@@ -100,10 +99,9 @@ switch ($action) {
     // 0. KANBAN GÖREVLERİ EXCEL DIŞA AKTARIMI (TSK-1156)
     case 'export_excel':
     case 'kanban_export_excel':
-        require_once __DIR__ . '/../BoardController.php';
-        $bc = new BoardController($system ?? null);
+        $ec = new \Modules\ExcelExport\Controllers\ExcelExportController();
         $projId = (int)($_GET['project_id'] ?? ($_POST['project_id'] ?? 0));
-        $bc->exportExcel($projId, $currentUser);
+        $ec->export($projId, $currentUser);
         exit;
         break;
 

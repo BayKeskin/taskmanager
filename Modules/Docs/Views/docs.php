@@ -9,7 +9,7 @@ extract($docData);
 $isClient = $isClient ?? false;
 
 $system->title = __('Docs::docs_title', 'Dökümanlar - TaskManager');
-include dirname(__DIR__, 3) . '/Components/header.php';
+include dirname(__DIR__, 3) . '/Core/Views/header.php';
 ?>
 
 <!-- Quill.js & Marked.js Kütüphaneleri -->
@@ -1151,4 +1151,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>

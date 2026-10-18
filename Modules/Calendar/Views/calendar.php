@@ -1,7 +1,7 @@
 <?php
 // TaskManager Takvim & Gantt Şeması Görünümü (Calendar & Timeline/Gantt View)
 $system->title = __('Calendar::gantt_title', 'Gantt & Zaman Çizelgesi - TaskManager');
-include dirname(__DIR__, 3) . '/Components/header.php';
+include dirname(__DIR__, 3) . '/Core/Views/header.php';
 
 $year = isset($_GET['year']) ? (int)$_GET['year'] : null;
 $month = isset($_GET['month']) ? (int)$_GET['month'] : null;
@@ -465,5 +465,5 @@ function adjustColorBrightness($hex, $steps) {
     }
     return $return;
 }
-include dirname(__DIR__, 3) . '/Components/footer.php'; 
+include dirname(__DIR__, 3) . '/Core/Views/footer.php'; 
 ?>
