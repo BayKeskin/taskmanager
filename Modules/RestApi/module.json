@@ -1,0 +1,11 @@
+{
+  "id": "restapi",
+  "name": "Enterprise RESTful API",
+  "slug": "restapi",
+  "version": "1.0.0",
+  "description": "Full CRUD, Kanban iş akışı, dökümantasyon, AI ajan tetikleme ve webhook entegrasyonu sağlayan kurumsal RESTful API motoru.",
+  "author": "Antigravity HMVC Engine",
+  "active": true,
+  "order": 8,
+  "dependencies": []
+}
