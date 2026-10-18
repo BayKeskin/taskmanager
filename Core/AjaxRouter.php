@@ -4,98 +4,30 @@ namespace Core;
 class AjaxRouter
 {
     /**
-     * Eylemleri işleyecek modül Controller eşleştirme tablosu
+     * Önceden taranıp hafızaya alınan otomatik eylem eşlemeleri:
+     * ['action_name' => ['ControllerNamespace', 'methodName']]
      */
-    private static array $routeMap = [
-        // Projects Modülü
-        'create_project'            => ['Modules\Projects\Controllers\AjaxController', 'createProject'],
-        'get_project'               => ['Modules\Projects\Controllers\AjaxController', 'getProject'],
-        'update_project'            => ['Modules\Projects\Controllers\AjaxController', 'updateProject'],
-        'sync_project_rules'        => ['Modules\Projects\Controllers\AjaxController', 'syncProjectRules'],
-        'refine_project_rules'      => ['Modules\Projects\Controllers\AjaxController', 'refineProjectRules'],
-        'test_project_webhook'      => ['Modules\Projects\Controllers\AjaxController', 'testProjectWebhook'],
-        'toggle_project_status'     => ['Modules\Projects\Controllers\AjaxController', 'toggleProjectStatus'],
-        'delete_project'            => ['Modules\Projects\Controllers\AjaxController', 'deleteProject'],
-
-        // Team Modülü
-        'create_user'               => ['Modules\Team\Controllers\AjaxController', 'createUser'],
-        'delete_user'               => ['Modules\Team\Controllers\AjaxController', 'deleteUser'],
-        'update_profile'            => ['Modules\Team\Controllers\AjaxController', 'updateProfile'],
-
-        // Settings, Telegram & Mailer
-        'save_system_settings'      => ['Modules\Settings\Controllers\AjaxController', 'saveSettings'],
-        'toggle_module_status'      => ['Modules\Settings\Controllers\AjaxController', 'toggleModuleStatus'],
-        'test_telegram_connection'  => ['Modules\Settings\Controllers\AjaxController', 'testTelegram'],
-        'test_smtp_connection'      => ['Modules\Settings\Controllers\AjaxController', 'testSmtp'],
-        'test_slack_webhook'        => ['Modules\Settings\Controllers\AjaxController', 'testSlack'],
-        'test_discord_webhook'      => ['Modules\Settings\Controllers\AjaxController', 'testDiscord'],
-
-        // Docs Modülü
-        'get_doc'                   => ['Modules\Docs\Controllers\AjaxController', 'getDoc'],
-        'create_doc'                => ['Modules\Docs\Controllers\AjaxController', 'createDoc'],
-        'save_doc'                  => ['Modules\Docs\Controllers\AjaxController', 'saveDoc'],
-        'delete_doc'                => ['Modules\Docs\Controllers\AjaxController', 'deleteDoc'],
-        'upload_doc_attachment'     => ['Modules\Docs\Controllers\AjaxController', 'uploadAttachment'],
-        'get_doc_attachments'       => ['Modules\Docs\Controllers\AjaxController', 'getAttachments'],
-        'delete_doc_attachment'     => ['Modules\Docs\Controllers\AjaxController', 'deleteAttachment'],
-
-        // Chat Modülü
-        'get_chat_messages'         => ['Modules\Chat\Controllers\AjaxController', 'getMessages'],
-        'send_chat_message'         => ['Modules\Chat\Controllers\AjaxController', 'sendMessage'],
-        'get_chat_conversations'    => ['Modules\Chat\Controllers\AjaxController', 'getConversations'],
-
-        // Reports Modülü
-        'get_daily_standup'         => ['Modules\Reports\Controllers\AjaxController', 'getDailyStandup'],
-        'send_standup_email'        => ['Modules\Reports\Controllers\AjaxController', 'sendStandupEmail'],
-
-        // AiArchitect Modülü
-        'refine_task_specification'      => ['Modules\AiArchitect\Controllers\AiArchitectController', 'refineSpecification'],
-        'decompose_brief_with_ai'        => ['Modules\AiArchitect\Controllers\AjaxController', 'decomposeBrief'],
-        'bulk_create_hierarchical_tasks' => ['Modules\AiArchitect\Controllers\AjaxController', 'bulkCreateTasks'],
-
-        // GithubDevops Modülü
-        'save_github_settings'      => ['Modules\GithubDevops\Controllers\AjaxController', 'saveSettings'],
-        'sync_project_github'       => ['Modules\GithubDevops\Controllers\AjaxController', 'syncProject'],
-        'rollback_task'             => ['Modules\GithubDevops\Controllers\AjaxController', 'rollbackTask'],
-
-        // Mcp Modülü
-        'get_project_mcps'          => ['Modules\Mcp\Controllers\AjaxController', 'getProjectMcps'],
-        'save_project_mcp'          => ['Modules\Mcp\Controllers\AjaxController', 'saveProjectMcp'],
-        'toggle_project_mcp'        => ['Modules\Mcp\Controllers\AjaxController', 'toggleProjectMcp'],
-        'sync_project_mcps'         => ['Modules\Mcp\Controllers\AjaxController', 'syncProjectMcps'],
-
-        // LiveDeploy Modülü
-        'analyze_project'           => ['Modules\LiveDeploy\Controllers\AjaxController', 'analyzeProject'],
-        'test_hosting_panel'        => ['Modules\LiveDeploy\Controllers\AjaxController', 'testHostingPanel'],
-        'provision_hosting_db'      => ['Modules\LiveDeploy\Controllers\AjaxController', 'provisionHostingDb'],
-        'generate_live_config'      => ['Modules\LiveDeploy\Controllers\AjaxController', 'generateLiveConfig'],
-        'dump_project_schema'       => ['Modules\LiveDeploy\Controllers\AjaxController', 'dumpProjectSchema'],
-        'delta_diff'                => ['Modules\LiveDeploy\Controllers\AjaxController', 'deltaDiff'],
-        'record_deployment'         => ['Modules\LiveDeploy\Controllers\AjaxController', 'recordDeployment'],
-        'live_healthcheck'          => ['Modules\LiveDeploy\Controllers\AjaxController', 'liveHealthcheck'],
-        'rollback_deployment'       => ['Modules\LiveDeploy\Controllers\AjaxController', 'rollbackDeployment'],
-    ];
+    private static ?array $autoDiscoveredMap = null;
 
     /**
-     * Gelen isteği ilgili modülün Controller'ına yönlendirir.
-     * Eğer harici bir modül bu action'ı sahipleniyorsa onu çalıştırır ve true döner.
-     * Sahiplenmiyorsa false döner (Board modülünün kendi varsayılan AjaxController'ı devam eder).
+     * Gelen eylemi aktif modüllerin Controllers/AjaxController sınıflarında otomatik arar ve çalıştırır.
+     * Hiçbir manuel kod veya liste yazılmasına gerek YOKTUR (Tam Tak-Çalıştır / Zero-Touch).
      */
     public static function dispatch(string $action): bool
     {
-        if (!isset(self::$routeMap[$action])) {
+        if (empty($action)) {
             return false;
         }
 
-        [$controllerClass, $method] = self::$routeMap[$action];
-
-        if (!class_exists($controllerClass)) {
-            // Controller dosyasını dinamik olarak yüklemeyi dene
-            $file = dirname(__DIR__) . '/' . str_replace('\\', '/', $controllerClass) . '.php';
-            if (file_exists($file)) {
-                require_once $file;
-            }
+        if (self::$autoDiscoveredMap === null) {
+            self::discoverAllModuleActions();
         }
+
+        if (!isset(self::$autoDiscoveredMap[$action])) {
+            return false;
+        }
+
+        [$controllerClass, $method] = self::$autoDiscoveredMap[$action];
 
         if (class_exists($controllerClass)) {
             $controller = new $controllerClass();
@@ -109,10 +41,101 @@ class AjaxRouter
     }
 
     /**
-     * Dışarıdan modül bazlı yeni action rota kaydetme (Eklenebilirlik)
+     * Modules/ altındaki tüm aktif modüllerin AjaxController sınıflarını otomatik tarar
+     * ve içlerindeki public metotları eylem (action) olarak kaydeder.
+     */
+    private static function discoverAllModuleActions(): void
+    {
+        self::$autoDiscoveredMap = [];
+        $baseDir = dirname(__DIR__);
+
+        $loadedModules = ModuleLoader::getLoadedModules();
+        if (empty($loadedModules)) {
+            // ModuleLoader henüz tetiklenmediyse Modules klasörünü dinamik tara
+            $modulesDirs = glob($baseDir . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR);
+        } else {
+            $modulesDirs = array_column($loadedModules, '_dir');
+        }
+
+        foreach ($modulesDirs as $moduleDir) {
+            $moduleName = basename($moduleDir);
+            $ajaxControllerFile = $moduleDir . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AjaxController.php';
+
+            if (!file_exists($ajaxControllerFile)) {
+                continue;
+            }
+
+            $className = "Modules\\{$moduleName}\\Controllers\\AjaxController";
+            if (!class_exists($className)) {
+                require_once $ajaxControllerFile;
+            }
+
+            if (!class_exists($className)) {
+                continue;
+            }
+
+            $reflection = new \ReflectionClass($className);
+            $methods = $reflection->getMethods(\ReflectionMethod::IS_PUBLIC);
+
+            foreach ($methods as $methodObj) {
+                // BaseController'dan gelen genel yardımcı metotları atla
+                if ($methodObj->isConstructor() || $methodObj->class === 'Core\BaseController') {
+                    continue;
+                }
+
+                $methodName = $methodObj->getName();
+
+                // 1. camelCase metodu snake_case action'a çevir:
+                // Örn: createProject -> create_project
+                // Örn: syncProjectRules -> sync_project_rules
+                // Örn: testTelegram -> test_telegram (ve test_telegram_connection)
+                $snakeAction = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $methodName));
+
+                self::$autoDiscoveredMap[$snakeAction] = [$className, $methodName];
+                self::$autoDiscoveredMap[$methodName]  = [$className, $methodName]; // Olası birebir camelCase çağrılar için
+            }
+        }
+
+        // 3. Geçmişten gelen özel veya alias adlandırmalar varsa (Geriye Dönük Uyumluluk):
+        $aliases = [
+            'test_telegram_connection' => ['Modules\Settings\Controllers\AjaxController', 'testTelegram'],
+            'test_smtp_connection'     => ['Modules\Settings\Controllers\AjaxController', 'testSmtp'],
+            'save_system_settings'     => ['Modules\Settings\Controllers\AjaxController', 'saveSettings'],
+            'sync_project_github'      => ['Modules\GithubDevops\Controllers\AjaxController', 'syncProject'],
+            'bulk_create_hierarchical_tasks' => ['Modules\AiArchitect\Controllers\AjaxController', 'bulkCreateTasks'],
+            'decompose_brief_with_ai'  => ['Modules\AiArchitect\Controllers\AjaxController', 'decomposeBrief'],
+            'upload_doc_attachment'    => ['Modules\Docs\Controllers\AjaxController', 'uploadAttachment'],
+            'get_doc_attachments'      => ['Modules\Docs\Controllers\AjaxController', 'getAttachments'],
+            'delete_doc_attachment'    => ['Modules\Docs\Controllers\AjaxController', 'deleteAttachment'],
+            'refine_task_specification'=> ['Modules\AiArchitect\Controllers\AiArchitectController', 'refineSpecification'],
+        ];
+
+        foreach ($aliases as $act => $target) {
+            if (!isset(self::$autoDiscoveredMap[$act])) {
+                self::$autoDiscoveredMap[$act] = $target;
+            }
+        }
+    }
+
+    /**
+     * Dışarıdan dinamik rota kaydetme (Gerektiğinde)
      */
     public static function register(string $action, string $controllerClass, string $method): void
     {
-        self::$routeMap[$action] = [$controllerClass, $method];
+        if (self::$autoDiscoveredMap === null) {
+            self::discoverAllModuleActions();
+        }
+        self::$autoDiscoveredMap[$action] = [$controllerClass, $method];
+    }
+
+    /**
+     * Debug amaçlı keşfedilen tüm otomatik eylemleri döner
+     */
+    public static function getDiscoveredActions(): array
+    {
+        if (self::$autoDiscoveredMap === null) {
+            self::discoverAllModuleActions();
+        }
+        return self::$autoDiscoveredMap;
     }
 }
