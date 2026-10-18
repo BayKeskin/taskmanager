@@ -1,0 +1,10 @@
+{
+  "id": "mcp",
+  "name": "Antigravity MCP Pazarı & Yönetimi",
+  "slug": "mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) pazar kataloğu, proje bazlı eklenti yapılandırması ve .agents/plugins/ senkronizasyonu.",
+  "author": "TaskManager Team",
+  "active": true,
+  "dependencies": []
+}

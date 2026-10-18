@@ -1,0 +1,10 @@
+/* Modules/Mcp/Assets/css/mcp.css */
+.cu-mcp-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
