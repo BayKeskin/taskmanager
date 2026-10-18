@@ -130,18 +130,13 @@ class TaskLifecycleService extends BaseModel
      */
     public static function submitTaskDirectly(int|string $taskIdOrCode, string $notes = 'Görev tamamlandı ve test edildi.'): array
     {
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
+        $taskModel = new \Modules\Board\Models\TaskModel();
+        $projectModel = new \Modules\Projects\Models\ProjectModel();
 
         try {
             $notes = self::fixUtf8Mojibake($notes);
 
-            $task = is_numeric($taskIdOrCode)
-                ? $db->row_query("SELECT * FROM tasks WHERE id = ? LIMIT 1", [(int)$taskIdOrCode])
-                : $db->row_query("SELECT * FROM tasks WHERE task_code = ? LIMIT 1", [$taskIdOrCode]);
-
+            $task = $taskModel->findByIdOrCode($taskIdOrCode);
             if (!$task) {
                 return ['success' => false, 'error' => 'Task not found'];
             }
@@ -151,20 +146,17 @@ class TaskLifecycleService extends BaseModel
             $oldStatus = $task->status;
 
             // 1. Görevi İNCELEMEDE ('submitted') durumuna al
-            $db->exec_query("UPDATE tasks SET status = 'submitted', updated_at = NOW() WHERE id = ?", [$taskId]);
+            $taskModel->updateStatus($taskId, 'submitted');
 
             // 1.1 [AI ARCHITECT AUTO-ROLLUP]: Alt görev bittiğinde ve tüm kardeşleri bittiyse Ana Görevi de 'submitted' yap
             if (!empty($task->parent_task_id)) {
                 $parentId = (int)$task->parent_task_id;
-                $remainingSubs = (int)$db->single_query("
-                    SELECT COUNT(*) FROM tasks 
-                    WHERE parent_task_id = ? AND status NOT IN ('submitted', 'completed')
-                ", [$parentId]);
+                $remainingSubs = $taskModel->getRemainingSubtasksCount($parentId);
                 
                 if ($remainingSubs === 0) {
-                    $parentRow = $db->row_query("SELECT id, task_code, title, status FROM tasks WHERE id = ?", [$parentId]);
+                    $parentRow = $taskModel->findByIdOrCode($parentId);
                     if ($parentRow && $parentRow->status !== 'submitted' && $parentRow->status !== 'completed') {
-                        $db->exec_query("UPDATE tasks SET status = 'submitted', updated_at = NOW() WHERE id = ?", [$parentId]);
+                        $taskModel->updateStatus($parentId, 'submitted');
                         SseBroadcaster::broadcast('task_status_changed', $projectId, $parentId, 1, [
                             'task_id'    => $parentId,
                             'task_code'  => $parentRow->task_code,
@@ -181,7 +173,7 @@ class TaskLifecycleService extends BaseModel
             $commitHash = null;
             $attachmentUrl = '';
             try {
-                $projectObj = $db->row_query("SELECT * FROM projects WHERE id = ? LIMIT 1", [$projectId]);
+                $projectObj = $projectModel->getProjectById($projectId);
                 if ($projectObj) {
                     $gitRes = GitService::autoCommitAndPushTask($projectObj, $task);
                     if (!empty($gitRes['success'])) {
@@ -207,16 +199,10 @@ class TaskLifecycleService extends BaseModel
             }
 
             // 2. Teslimat kaydı
-            $db->exec_query("
-                INSERT INTO task_submissions (task_id, submitted_by, notes, attachment_url, commit_hash, rollback_sql, schema_diff_summary, status, created_at)
-                VALUES (?, 1, ?, ?, ?, ?, ?, 'pending', NOW())
-            ", [$taskId, $notes, $attachmentUrl, $commitHash, $rollbackSql, $schemaDiffSummary]);
+            $taskModel->recordSubmission($taskId, 1, $notes, $attachmentUrl, $commitHash, $rollbackSql, $schemaDiffSummary);
 
             // 3. Aktivite kaydı
-            $db->exec_query("
-                INSERT INTO task_activities (task_id, user_id, action_type, old_value, new_value, comment, created_at)
-                VALUES (?, 1, 'submitted', ?, 'submitted', ?, NOW())
-            ", [$taskId, $oldStatus, "🤖 AI Agent görevi tamamladı ve İncelemede sütununa taşıdı: {$notes}"]);
+            $taskModel->logActivity($taskId, 1, 'submitted', $oldStatus, 'submitted', "🤖 AI Agent görevi tamamladı ve İncelemede sütununa taşıdı: {$notes}");
 
             // 4. Canlı SSE yayını
             SseBroadcaster::broadcast('task_submitted', $projectId, $taskId, 1, [

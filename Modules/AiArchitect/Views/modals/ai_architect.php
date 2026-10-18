@@ -1,10 +1,6 @@
 <!-- 🪄 AI PROJE MİMARI & SÜRÜKLE-BIRAK GÖREV AYRIŞTIRMA MODALI -->
 <?php
-$aiArchProjects = $projects ?? [];
-if (empty($aiArchProjects)) {
-    $pm = new \Modules\Projects\Models\ProjectModel();
-    $aiArchProjects = $pm->getProjects();
-}
+$aiArchProjects = $projects ?? ($allProjects ?? []);
 ?>
 <div class="cu-modal-overlay" id="modalAiArchitect" onclick="if(event.target === this) closeModal('modalAiArchitect')">
     <div class="cu-modal cu-ai-arch-modal">

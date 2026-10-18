@@ -49,8 +49,7 @@ class AjaxController extends BaseController
             $this->respond(false, 'Geçerli bir e-posta adresi giriniz.');
         }
 
-        $exists = $this->db->multi_record("users", ["email"], [$email]);
-        if (!empty($exists)) {
+        if ($this->userModel->isEmailTaken($email)) {
             $this->respond(false, 'Bu e-posta adresiyle kayıtlı bir kullanıcı zaten mevcut.');
         }
 
@@ -61,19 +60,24 @@ class AjaxController extends BaseController
 
         $hashPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        $inserted = $this->db->insert("users", [
-            'name', 'email', 'password', 'role', 'client_project_id', 'title', 'avatar_color', 'language', 'status'
-        ], [
-            $name, $email, $hashPassword, $role, $clientProjectId, $title, $avatarColor, $language, 'active'
+        $newUserId = $this->userModel->createUser([
+            'name'              => $name,
+            'email'             => $email,
+            'password'          => $hashPassword,
+            'role'              => $role,
+            'client_project_id' => $clientProjectId,
+            'title'             => $title,
+            'avatar_color'      => $avatarColor,
+            'language'          => $language,
+            'status'            => 'active'
         ]);
 
-        if ($inserted) {
-            $newUserId = $this->db->last_insert_id();
+        if ($newUserId) {
             $this->respond(true, 'Ekip üyesi başarıyla eklendi!', [
                 'user_id' => $newUserId,
-                'name' => $name,
-                'email' => $email,
-                'role' => $role
+                'name'    => $name,
+                'email'   => $email,
+                'role'    => $role
             ]);
         } else {
             $this->respond(false, 'Kullanıcı eklenirken bir hata oluştu.');
@@ -95,12 +99,12 @@ class AjaxController extends BaseController
             $this->respond(false, 'Kendinizi silemezsiniz.');
         }
 
-        $assignedTasks = $this->db->count_record("tasks", ["assigned_to"], [$userId]) ?: 0;
+        $assignedTasks = $this->userModel->getAssignedTaskCount($userId);
         if ($assignedTasks > 0) {
-            $this->db->update("users", ["status"], ["inactive", $userId], "id");
+            $this->userModel->updateStatus($userId, 'inactive');
             $this->respond(true, 'Kullanıcıya atanmış görevler bulunduğu için durumu "Pasif" olarak güncellendi.');
         } else {
-            $deleted = $this->db->delete("users", ["id"], [$userId]);
+            $deleted = $this->userModel->deleteUser($userId);
             if ($deleted) {
                 $this->respond(true, 'Ekip üyesi başarıyla silindi.');
             } else {
@@ -133,13 +137,12 @@ class AjaxController extends BaseController
             $this->respond(false, 'Lütfen geçerli bir e-posta adresi girin.');
         }
 
-        $dbUser = $this->db->row_query("SELECT * FROM users WHERE id = ? LIMIT 1", [$userId]);
+        $dbUser = $this->userModel->getUserById($userId);
         if (!$dbUser) {
             $this->respond(false, 'Kullanıcı bulunamadı.');
         }
 
-        $emailConflict = $this->db->single_query("SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1", [$email, $userId]);
-        if ($emailConflict) {
+        if ($this->userModel->isEmailTaken($email, $userId)) {
             $this->respond(false, 'Bu e-posta adresi başka bir kullanıcı tarafından kullanılmaktadır.');
         }
 
@@ -147,8 +150,12 @@ class AjaxController extends BaseController
             $avatarColor = '#7B68EE';
         }
 
-        $updatePassword = false;
-        $hashedPassword = null;
+        $fieldsToUpdate = [
+            'name'         => $name,
+            'email'        => $email,
+            'title'        => $title,
+            'avatar_color' => $avatarColor,
+        ];
 
         if (!empty($newPassword)) {
             if (empty($currentPassword)) {
@@ -168,23 +175,19 @@ class AjaxController extends BaseController
                 $this->respond(false, 'Yeni şifreler birbiriyle uyuşmuyor.');
             }
 
-            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-            $updatePassword = true;
+            $fieldsToUpdate['password'] = password_hash($newPassword, PASSWORD_DEFAULT);
         }
 
         $language = trim($_POST['language'] ?? 'tr');
         if (!in_array($language, ['tr', 'en', 'de'], true)) {
             $language = 'tr';
         }
+        $fieldsToUpdate['language'] = $language;
 
-        if ($updatePassword) {
-            $success = $this->db->exec_query("UPDATE users SET name = ?, email = ?, title = ?, avatar_color = ?, language = ?, password = ? WHERE id = ?", [$name, $email, $title, $avatarColor, $language, $hashedPassword, $userId]);
-        } else {
-            $success = $this->db->exec_query("UPDATE users SET name = ?, email = ?, title = ?, avatar_color = ?, language = ? WHERE id = ?", [$name, $email, $title, $avatarColor, $language, $userId]);
-        }
+        $success = $this->userModel->updateProfile($userId, $fieldsToUpdate);
 
         if ($success) {
-            $freshUser = $this->db->row_query("SELECT * FROM users WHERE id = ? LIMIT 1", [$userId]);
+            $freshUser = $this->userModel->getUserById($userId);
             $_SESSION['user'] = $freshUser;
             $_SESSION['lang'] = $freshUser->language ?: 'tr';
             $_SESSION['admin_lang'] = $freshUser->language ?: 'tr';
@@ -192,13 +195,13 @@ class AjaxController extends BaseController
 
             $this->respond(true, 'Profil bilgileriniz başarıyla güncellendi.', [
                 'user' => [
-                    'id' => $freshUser->id,
-                    'name' => $freshUser->name,
-                    'email' => $freshUser->email,
-                    'title' => $freshUser->title,
+                    'id'           => $freshUser->id,
+                    'name'         => $freshUser->name,
+                    'email'        => $freshUser->email,
+                    'title'        => $freshUser->title,
                     'avatar_color' => $freshUser->avatar_color,
-                    'language' => $freshUser->language,
-                    'role' => $freshUser->role
+                    'language'     => $freshUser->language,
+                    'role'         => $freshUser->role
                 ]
             ]);
         } else {

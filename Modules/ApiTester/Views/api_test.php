@@ -12,13 +12,9 @@ $currentLang = Language::current();
 $dynCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
 $currentUser = $_SESSION['user'] ?? null;
 $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dynCfg['api_token'] ?: 'tm_live_demo_token');
-$baseUrl = $dynCfg['base_url'];
-
-if (!isset($sampleProject) || !isset($sampleTask)) {
-    $model = new \Modules\ApiTester\Models\ApiTesterModel();
-    $sampleProject = $model->getFirstActiveProjectCode();
-    $sampleTask = $model->getLatestTaskCode();
-}
+$baseUrl = $baseUrl ?? $dynCfg['base_url'];
+$sampleProject = $sampleProject ?? 'PROJECT';
+$sampleTask = $sampleTask ?? 'TASK-1';
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars($currentLang) ?>">

@@ -78,4 +78,76 @@ class UserModel extends BaseModel
             ORDER BY name ASC
         ", [$currentUserId]);
     }
+
+    /**
+     * E-posta adresinin başka kullanıcı tarafından kullanılıp kullanılmadığını kontrol eder
+     */
+    public function isEmailTaken(string $email, ?int $excludeUserId = null): bool
+    {
+        if ($excludeUserId) {
+            $rows = $this->query("SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1", [$email, $excludeUserId]);
+        } else {
+            $rows = $this->query("SELECT id FROM users WHERE email = ? LIMIT 1", [$email]);
+        }
+        return !empty($rows);
+    }
+
+    /**
+     * Yeni kullanıcı ekler
+     */
+    public function createUser(array $data): int|false
+    {
+        $fields = array_keys($data);
+        $placeholders = implode(', ', array_fill(0, count($fields), '?'));
+        $fieldNames = implode(', ', array_map(fn($f) => "`{$f}`", $fields));
+        $sql = "INSERT INTO users ({$fieldNames}) VALUES ({$placeholders})";
+        
+        $stmt = $this->getPdo()->prepare($sql);
+        $res = $stmt->execute(array_values($data));
+        return $res ? (int)$this->getPdo()->lastInsertId() : false;
+    }
+
+    /**
+     * Kullanıcıya atanmış görev sayısını kontrol eder
+     */
+    public function getAssignedTaskCount(int $userId): int
+    {
+        $rows = $this->query("SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to = ?", [$userId]);
+        return !empty($rows) ? (int)$rows[0]->cnt : 0;
+    }
+
+    /**
+     * Kullanıcı durumunu günceller (active/inactive)
+     */
+    public function updateStatus(int $userId, string $status): bool
+    {
+        $stmt = $this->getPdo()->prepare("UPDATE users SET status = ? WHERE id = ?");
+        return $stmt->execute([$status, $userId]);
+    }
+
+    /**
+     * Kullanıcıyı siler
+     */
+    public function deleteUser(int $userId): bool
+    {
+        $stmt = $this->getPdo()->prepare("DELETE FROM users WHERE id = ?");
+        return $stmt->execute([$userId]);
+    }
+
+    /**
+     * Kullanıcı profilini günceller
+     */
+    public function updateProfile(int $userId, array $fields): bool
+    {
+        $setClauses = [];
+        $params = [];
+        foreach ($fields as $col => $val) {
+            $setClauses[] = "`{$col}` = ?";
+            $params[] = $val;
+        }
+        $params[] = $userId;
+        $sql = "UPDATE users SET " . implode(', ', $setClauses) . " WHERE id = ?";
+        $stmt = $this->getPdo()->prepare($sql);
+        return $stmt->execute($params);
+    }
 }

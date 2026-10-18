@@ -92,4 +92,62 @@ class TaskModel extends BaseModel
 
         return $this->query($sql, $params);
     }
+
+    /**
+     * ID veya Görev Koduna göre tek bir görev çeker
+     */
+    public function findByIdOrCode(int|string $taskIdOrCode): ?object
+    {
+        if (is_numeric($taskIdOrCode)) {
+            $rows = $this->query("SELECT * FROM tasks WHERE id = ? LIMIT 1", [(int)$taskIdOrCode]);
+        } else {
+            $rows = $this->query("SELECT * FROM tasks WHERE task_code = ? LIMIT 1", [$taskIdOrCode]);
+        }
+        return !empty($rows) ? (object)$rows[0] : null;
+    }
+
+    /**
+     * Görev durumunu günceller
+     */
+    public function updateStatus(int $taskId, string $status): bool
+    {
+        $stmt = $this->getPdo()->prepare("UPDATE tasks SET status = ?, updated_at = NOW() WHERE id = ?");
+        return $stmt->execute([$status, $taskId]);
+    }
+
+    /**
+     * Bir üst göreve bağlı tamamlanmamış veya teslim edilmemiş alt görev sayısını döner
+     */
+    public function getRemainingSubtasksCount(int $parentTaskId): int
+    {
+        $rows = $this->query("
+            SELECT COUNT(*) as cnt FROM tasks 
+            WHERE parent_task_id = ? AND status NOT IN ('submitted', 'completed')
+        ", [$parentTaskId]);
+        return !empty($rows) ? (int)$rows[0]->cnt : 0;
+    }
+
+    /**
+     * Görev aktivitesi kaydeder
+     */
+    public function logActivity(int $taskId, int $userId, string $actionType, ?string $oldValue, ?string $newValue, string $comment): bool
+    {
+        $stmt = $this->getPdo()->prepare("
+            INSERT INTO task_activities (task_id, user_id, action_type, old_value, new_value, comment, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())
+        ");
+        return $stmt->execute([$taskId, $userId, $actionType, $oldValue, $newValue, $comment]);
+    }
+
+    /**
+     * Görev teslimat kaydı ekler
+     */
+    public function recordSubmission(int $taskId, int $userId, string $notes, string $attachmentUrl = '', ?string $commitHash = null, ?string $rollbackSql = null, ?string $schemaDiffSummary = null): bool
+    {
+        $stmt = $this->getPdo()->prepare("
+            INSERT INTO task_submissions (task_id, submitted_by, notes, attachment_url, commit_hash, rollback_sql, schema_diff_summary, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+        ");
+        return $stmt->execute([$taskId, $userId, $notes, $attachmentUrl, $commitHash, $rollbackSql, $schemaDiffSummary]);
+    }
 }

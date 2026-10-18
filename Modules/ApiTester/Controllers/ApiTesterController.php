@@ -19,7 +19,7 @@ class ApiTesterController extends BaseController
         $sampleProject = $model->getFirstActiveProjectCode();
         $sampleTask = $model->getLatestTaskCode();
 
-        $this->render(__DIR__ . '/../Views/api_test_view.php', [
+        $this->render(__DIR__ . '/../Views/api_test.php', [
             'baseUrl'       => $baseUrl,
             'userToken'     => $userToken,
             'sampleProject' => $sampleProject,
