@@ -1,0 +1,10 @@
+{
+  "id": "team",
+  "name": "Ekip, Rol & İzinler (RBAC)",
+  "slug": "team",
+  "version": "1.0.0",
+  "description": "Kullanıcı rolleri, çalışan yönetimi, müşteri izolasyonu, yetki matrisi ve ekip profilleri.",
+  "author": "TaskManager Team",
+  "active": true,
+  "dependencies": []
+}
