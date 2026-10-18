@@ -1,0 +1,9 @@
+{
+  "name": "Interactive Calendar & Gantt Timeline",
+  "slug": "calendar",
+  "version": "2.1.0",
+  "description": "Görev termin ve zaman planlamasını hem klasik takvim hem de sürükle-bırak Gantt zaman çizelgesiyle sunan modül.",
+  "active": true,
+  "author": "TaskManager Architecture Team",
+  "requires": []
+}

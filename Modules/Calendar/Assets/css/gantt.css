@@ -1,0 +1,20 @@
+/**
+ * Modules/Calendar/Assets/css/gantt.css
+ * Gantt ve Zaman Çizelgesi Stilleri
+ */
+.gantt-container {
+    background: #1e1f29;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow-x: auto;
+}
+.gantt-task-bar {
+    border-radius: 4px;
+    height: 24px;
+    cursor: grab;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.gantt-task-bar:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(123, 104, 238, 0.4);
+}

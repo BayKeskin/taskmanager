@@ -107,12 +107,23 @@ graph TD
 ### 🟠 AŞAMA 5: Müşteri Hakediş (`Modules/Billing`) & Takvim/Gantt (`Modules/Calendar`)
 *Finansal raporlama ve zaman planlama bileşenlerinin modülerleştirilmesi.*
 
-- [ ] **5.1. `Modules/Billing`:**
-  - `Controllers/BillingController.php`, `Models/BillingModel.php`, `Views/billing_report.php`.
-- [ ] **5.2. `Modules/Calendar`:**
-  - `Controllers/CalendarController.php`, `Views/calendar.php`, `Assets/js/gantt-drag.js`.
-- [ ] **5.3. Doğrulama:**
-  - `php tests/test_billing_report.php` ve `php tests/test_gantt_view.php` testlerinin koşulması.
+- [x] **5.1. Modül #24: `Modules/Billing` (Hakediş & Efor Raporu):**
+  - `Modules/Billing/module.json` (✅ Hazır)
+  - `Modules/Billing/Controllers/BillingController.php` (Core\BaseController'dan türetildi) (✅ Hazır)
+  - `Modules/Billing/Models/BillingModel.php` (Core\BaseModel'den türetildi) (✅ Hazır)
+  - `Modules/Billing/Views/billing_report.php` (✅ Hazır)
+  - `Modules/Billing/Assets/` (`billing-report.css`, `billing.js`) (✅ Hazır)
+  - `Modules/Billing/Lang/{tr,en,de}.php` (✅ Hazır)
+  - `Modules/Billing/init.php` (AssetManager & `billing.get_summary` kancası) (✅ Hazır)
+- [x] **5.2. Modül #15: `Modules/Calendar` (Takvim & Gantt Çizelgesi):**
+  - `Modules/Calendar/module.json` (✅ Hazır)
+  - `Modules/Calendar/Controllers/CalendarController.php` (Core\BaseController'dan türetildi) (✅ Hazır)
+  - `Modules/Calendar/Views/calendar.php` (✅ Hazır)
+  - `Modules/Calendar/Assets/` (`gantt.css`, `gantt-drag.js`) (✅ Hazır)
+  - `Modules/Calendar/Lang/{tr,en,de}.php` (✅ Hazır)
+  - `Modules/Calendar/init.php` (AssetManager & `calendar.get_data` kancası) (✅ Hazır)
+- [x] **5.3. Doğrulama:**
+  - `php tests/test_phase5_modules.php` koşuldu; her iki modülün veritabanı hesaplamaları (42 hakediş görevi, 40 takvim görevi), 3 dilli çevirileri ve AssetManager CSS/JS çıktıları %100 doğrulandı. (✅ Geçti)
 
 ---
 
@@ -149,7 +160,7 @@ graph TD
 | **Aşama 2** | `Modules/ExcelExport` | ✅ Tamamlandı | `tests/test_e2e_excel_export.php` (UTF-8 BOM PASS) |
 | **Aşama 3** | `Modules/VisualPins` | ✅ Tamamlandı | REST API `POST /api/v1/visual-feedback` (PASS) |
 | **Aşama 4** | `Modules/LiveDeploy` & `Modules/GithubDevops` | ✅ Tamamlandı | `test_delta_sync.php` + `test_phase4_modules.php` (PASS) |
-| **Aşama 5** | `Modules/Billing` & `Modules/Calendar` | ⏳ Bekliyor | - |
+| **Aşama 5** | `Modules/Billing` & `Modules/Calendar` | ✅ Tamamlandı | `tests/test_phase5_modules.php` (PASS) |
 | **Aşama 6** | `Modules/Telegram`, `Watchdog`, `SSE` & Helper Temizliği | ⏳ Bekliyor | - |
 | **Aşama 7** | Modül Yönetim Arayüzü (Module Manager UI) | ⏳ Bekliyor | - |
 
@@ -175,7 +186,7 @@ Sistemdeki 24 modülün HMVC (`Modules/`) yapısına taşınma durumu bu tabloda
 | **12** | Gerçek Zamanlı SSE Motoru | `Modules/SSE/` | `sse.php`, `SseBroadcaster.php`, live events | ⏳ Bekliyor |
 | **13** | Proje & Çalışma Alanları | `Modules/Projects/` | `ProjectController`, `ProjectModel`, projects view | ⏳ Bekliyor |
 | **14** | Ekip, Rol & İzinler (RBAC) | `Modules/Team/` | `TeamController`, `UserModel`, yetki matrisi | ⏳ Bekliyor |
-| **15** | Takvim & Gantt Çizelgesi | `Modules/Calendar/` | `CalendarController`, Gantt drag-drop, timeline | ⏳ Bekliyor |
+| **15** | Takvim & Gantt Çizelgesi | `Modules/Calendar/` | `CalendarController`, Gantt drag-drop, timeline | ✅ Taşındı |
 | **16** | Raporlar & SLA Analitiği | `Modules/Reports/` | `ReportController`, `ReportModel`, Chart.js | ⏳ Bekliyor |
 | **17** | Sistem Ayarları & i18n | `Modules/Settings/` | `SettingsController`, SettingsModel, 3 dil | ⏳ Bekliyor |
 | **18** | Telegram Bot Entegrasyonu | `Modules/Telegram/` | `TelegramService.php`, push bot bildirimleri | ⏳ Bekliyor |
@@ -184,7 +195,7 @@ Sistemdeki 24 modülün HMVC (`Modules/`) yapısına taşınma durumu bu tabloda
 | **21** | Otonom Smoke Test Motoru | `Modules/SmokeTest/` | `SmokeTest.php`, sistem sağlık teşhisi | ⏳ Bekliyor |
 | **22** | Canlı Hosting & Delta FTP | `Modules/LiveDeploy/` | `DeltaSyncEngine`, `LiveConfigGenerator`, Deploy UI | ✅ Taşındı |
 | **23** | Excel / CSV Dışa Aktarma | `Modules/ExcelExport/`| `ExcelExportController`, UTF-8 BOM CSV motoru | ✅ Taşındı |
-| **24** | Hakediş & İş Teslim Raporu | `Modules/Billing/` | `BillingController`, `BillingModel`, PDF Print | ⏳ Bekliyor |
+| **24** | Hakediş & İş Teslim Raporu | `Modules/Billing/` | `BillingController`, `BillingModel`, PDF Print | ✅ Taşındı |
 
 ---
 

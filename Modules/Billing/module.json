@@ -1,0 +1,9 @@
+{
+  "name": "Client Billing & Progress Delivery Reports",
+  "slug": "billing",
+  "version": "1.0.0",
+  "description": "Tamamlanan görevler ve saatlik ücretler üzerinden müşteri hakediş, efor özeti ve PDF/baskı teslim tutanağı motoru.",
+  "active": true,
+  "author": "TaskManager Architecture Team",
+  "requires": []
+}
