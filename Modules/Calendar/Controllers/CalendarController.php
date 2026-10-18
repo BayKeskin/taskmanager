@@ -40,13 +40,13 @@ class CalendarController extends BaseController
         $startDate = sprintf('%04d-%02d-01', $year, $month);
         $endDate = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
 
-        $taskModel = new \Modules\Board\Models\TaskModel();
+        $calendarModel = new \Modules\Calendar\Models\CalendarModel();
 
         // Standart Takvim görevleri (seçili ay için)
-        $calendarTasks = $taskModel->getTasksForCalendar($startDate, $endDate, $activeProjectId);
+        $calendarTasks = $calendarModel->getCalendarTasks($startDate, $endDate, $activeProjectId);
 
         // Gantt Şeması için tüm aktif/takvimli görevler
-        $allGanttTasks = $taskModel->getTasksForCalendar(null, null, $activeProjectId);
+        $allGanttTasks = $calendarModel->getCalendarTasks(null, null, $activeProjectId);
 
         // Görevleri tarihe göre grupla (YYYY-MM-DD -> [tasks])
         $tasksByDate = [];

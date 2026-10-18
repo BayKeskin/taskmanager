@@ -53,7 +53,7 @@ switch ($page) {
         require_once __DIR__ . '/Modules/Settings/Views/settings.php';
         break;
     case 'api-test':
-        require_once __DIR__ . '/Modules/ApiTester/Views/api_test.php';
+        (new \Modules\ApiTester\Controllers\ApiTesterController())->index();
         break;
     case 'api-docs':
         require_once __DIR__ . '/Modules/ApiTester/Views/api_docs.php';

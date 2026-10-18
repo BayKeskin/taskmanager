@@ -1,21 +1,354 @@
-/* Modules/Docs/Assets/css/docs.css */
-.cu-docs-container {
-    display: flex;
-    gap: 16px;
-    height: 100%;
+/* TaskManager Docs & Quill Dark Theme Customizations */
+.cu-doc-sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.05);
 }
-.cu-doc-sidebar {
-    width: 280px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: 8px;
-    overflow-y: auto;
+.cu-doc-sidebar-item.active {
+    background: rgba(123, 104, 238, 0.16) !important;
+    border-left: 3px solid var(--brand-primary);
 }
-.cu-doc-content {
-    flex: 1;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: 8px;
-    padding: 24px;
-    overflow-y: auto;
+
+.cu-mode-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.cu-mode-btn:hover {
+    color: var(--text-white);
+}
+.cu-mode-btn.active {
+    background: var(--brand-primary);
+    color: #fff !important;
+}
+
+/* Quill Toolbar Theme Support */
+.ql-toolbar.ql-snow {
+    background: var(--bg-card) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    padding: 10px 24px !important;
+    font-family: var(--font-sans) !important;
+}
+.ql-snow .ql-stroke {
+    stroke: var(--text-secondary) !important;
+}
+.ql-snow .ql-fill {
+    fill: var(--text-secondary) !important;
+}
+.ql-snow .ql-picker {
+    color: var(--text-secondary) !important;
+}
+.ql-snow .ql-picker-options {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 6px !important;
+    box-shadow: var(--shadow-modal) !important;
+    padding: 6px !important;
+}
+.ql-snow .ql-picker-item {
+    color: var(--text-primary) !important;
+    padding: 6px 10px !important;
+    border-radius: 4px !important;
+}
+.ql-snow .ql-picker-item:hover {
+    background: rgba(123, 104, 238, 0.15) !important;
+    color: var(--brand-primary) !important;
+}
+.ql-snow .ql-picker.ql-expanded .ql-picker-label {
+    border-color: var(--brand-primary) !important;
+    color: var(--brand-primary) !important;
+}
+.ql-snow button:hover .ql-stroke,
+.ql-snow .ql-picker-label:hover .ql-stroke {
+    stroke: var(--brand-primary) !important;
+}
+.ql-snow button.ql-active .ql-stroke {
+    stroke: var(--brand-primary) !important;
+}
+.ql-snow button:hover .ql-fill,
+.ql-snow button.ql-active .ql-fill {
+    fill: var(--brand-primary) !important;
+}
+
+/* Quill Editor Typography */
+.ql-container.ql-snow {
+    border: none !important;
+    font-family: var(--font-sans) !important;
+    font-size: 15px !important;
+}
+.ql-editor {
+    color: var(--text-primary) !important;
+    line-height: 1.8 !important;
+    font-size: 15px !important;
+}
+.ql-editor.ql-blank::before {
+    color: var(--text-muted) !important;
+    font-style: normal !important;
+}
+
+/* Headings in Editor */
+.ql-editor h1 {
+    font-size: 26px !important;
+    font-weight: 800 !important;
+    color: var(--text-white) !important;
+    margin: 22px 0 12px 0 !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    padding-bottom: 10px !important;
+}
+.ql-editor h2 {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: var(--text-white) !important;
+    margin: 18px 0 10px 0 !important;
+}
+.ql-editor h3 {
+    font-size: 16.5px !important;
+    font-weight: 600 !important;
+    color: var(--text-white) !important;
+    margin: 14px 0 8px 0 !important;
+}
+.ql-editor h4 {
+    font-size: 14.5px !important;
+    font-weight: 600 !important;
+    color: var(--text-white) !important;
+    margin: 12px 0 6px 0 !important;
+}
+.ql-editor p {
+    margin-bottom: 10px !important;
+}
+/* Boş paragrafları (boş veya yalnızca <br> içeren) kompakt hale getir */
+.ql-editor p:empty,
+.ql-editor p:has(> br:only-child) {
+    margin: 2px 0 !important;
+    min-height: 6px !important;
+    line-height: 6px !important;
+}
+/* Peş peşe gelen boş paragrafları TAMAMEN gizle (Aşırı yapay zeka boşluklarını yok et) */
+.ql-editor p:empty + p:empty,
+.ql-editor p:empty + p:has(> br:only-child),
+.ql-editor p:has(> br:only-child) + p:empty,
+.ql-editor p:has(> br:only-child) + p:has(> br:only-child) {
+    display: none !important;
+}
+/* Başlıkların öncesi ve sonrasındaki boş paragrafları gizle */
+.ql-editor h1 + p:has(> br:only-child),
+.ql-editor h2 + p:has(> br:only-child),
+.ql-editor h3 + p:has(> br:only-child),
+.ql-editor h4 + p:has(> br:only-child),
+.ql-editor h1 + p:empty,
+.ql-editor h2 + p:empty,
+.ql-editor h3 + p:empty,
+.ql-editor h4 + p:empty {
+    display: none !important;
+}
+.ql-editor p:has(> br:only-child) + h1,
+.ql-editor p:has(> br:only-child) + h2,
+.ql-editor p:has(> br:only-child) + h3,
+.ql-editor p:has(> br:only-child) + h4,
+.ql-editor p:empty + h1,
+.ql-editor p:empty + h2,
+.ql-editor p:empty + h3,
+.ql-editor p:empty + h4 {
+    display: none !important;
+}
+/* Kod blokları ve Tabloların bitişiğindeki boş paragrafları gizle */
+.ql-editor .ql-code-block-container + p:has(> br:only-child),
+.ql-editor .ql-code-block-container + p:empty,
+.ql-editor p:has(> br:only-child) + .ql-code-block-container,
+.ql-editor p:empty + .ql-code-block-container,
+.ql-editor table + p:has(> br:only-child),
+.ql-editor table + p:empty,
+.ql-editor p:has(> br:only-child) + table,
+.ql-editor p:empty + table {
+    display: none !important;
+}
+/* Kod bloğu içindeki boş satırları yok say */
+.ql-editor .ql-code-block:empty {
+    display: none !important;
+}
+.ql-editor strong {
+    color: var(--text-white) !important;
+    font-weight: 700 !important;
+}
+.ql-editor code {
+    background: rgba(123, 104, 238, 0.12) !important;
+    color: #e84393 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-family: 'Fira Code', monospace !important;
+    font-size: 13px !important;
+}
+.ql-editor .ql-code-block-container,
+.ql-editor pre {
+    background: #11111c !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    padding: 14px 16px !important;
+    color: #69b4ff !important;
+    font-family: 'Fira Code', monospace !important;
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    margin: 12px 0 !important;
+    overflow-x: auto !important;
+}
+.ql-editor .ql-code-block {
+    color: #69b4ff !important;
+    font-family: 'Fira Code', monospace !important;
+    line-height: 1.6 !important;
+}
+.ql-editor blockquote {
+    border-left: 3px solid var(--brand-primary) !important;
+    padding: 10px 18px !important;
+    margin: 16px 0 !important;
+    color: var(--text-secondary) !important;
+    background: rgba(123, 104, 238, 0.08) !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+.ql-editor ul, .ql-editor ol {
+    padding-left: 26px !important;
+    margin-bottom: 16px !important;
+}
+.ql-editor li {
+    margin-bottom: 6px !important;
+}
+.ql-editor a {
+    color: var(--brand-primary) !important;
+    text-decoration: underline !important;
+}
+
+/* Full Width / Geniş Görünüm Modu */
+.cu-doc-paper.full-width,
+#sourcePaperContainer.full-width {
+    max-width: 98% !important;
+}
+
+/* TaskManager Docs Tablo Stilleri & Yatay Kaydırma Desteği */
+.ql-editor {
+    overflow-x: auto !important;
+}
+.ql-editor table {
+    min-width: 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    margin: 20px 0 !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+}
+.ql-editor tr {
+    transition: background 0.15s ease !important;
+}
+.ql-editor tr:hover {
+    background: rgba(123, 104, 238, 0.04) !important;
+}
+.ql-editor td, 
+.ql-editor th {
+    border: 1px solid var(--border-subtle) !important;
+    padding: 10px 14px !important;
+    font-size: 13.5px !important;
+    line-height: 1.55 !important;
+    color: var(--text-primary) !important;
+    vertical-align: middle !important;
+    word-break: normal !important;
+    white-space: normal !important;
+    min-width: 120px !important;
+}
+/* İlk satırı Başlık (Header) olarak vurgula */
+.ql-editor tr:first-child td,
+.ql-editor th {
+    background: var(--bg-card-hover) !important;
+    color: var(--text-white) !important;
+    font-weight: 700 !important;
+    border-bottom: 2px solid var(--brand-primary) !important;
+    font-size: 12.5px !important;
+    letter-spacing: 0.5px !important;
+    white-space: nowrap !important;
+}
+.ql-editor tr:nth-child(even) td {
+    background: rgba(125, 125, 125, 0.03) !important;
+}
+.ql-editor tr:first-child:nth-child(even) td {
+    background: var(--bg-card-hover) !important;
+}
+.ql-editor td code {
+    background: rgba(123, 104, 238, 0.12) !important;
+    color: #e84393 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-family: 'Fira Code', monospace !important;
+    font-size: 12.5px !important;
+    white-space: nowrap !important;
+}
+
+/* Light Theme Overrides for Docs */
+[data-theme="light"] .cu-doc-sidebar-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .cu-doc-paper {
+    background: #ffffff !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+}
+[data-theme="light"] #rawSourceTextarea {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border-color: #cbd5e1 !important;
+}
+[data-theme="light"] .ql-editor .ql-code-block-container,
+[data-theme="light"] .ql-editor pre {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
+}
+[data-theme="light"] .ql-editor .ql-code-block {
+    color: #0f172a !important;
+}
+[data-theme="light"] .ql-editor blockquote {
+    color: #334155 !important;
+    background: rgba(123, 104, 238, 0.07) !important;
+}
+
+/* Responsive / Mobil Docs Stilleri */
+@media (max-width: 768px) {
+    .cu-mobile-docs-toggle {
+        display: inline-flex !important;
+    }
+    .cu-docs-sidebar {
+        display: none !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: 285px !important;
+        max-width: 85vw !important;
+        z-index: 100 !important;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.6) !important;
+        background: var(--bg-card) !important;
+    }
+    .cu-docs-sidebar.mobile-open {
+        display: flex !important;
+    }
+    .ql-toolbar.ql-snow {
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        padding: 8px 12px !important;
+    }
+    .cu-doc-paper {
+        border-radius: 6px !important;
+        margin: 0 !important;
+    }
+    #quillEditor {
+        padding: 16px 14px !important;
+    }
+    #docAttachmentsSection {
+        margin: 16px 14px 20px !important;
+    }
 }

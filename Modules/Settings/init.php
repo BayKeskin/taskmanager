@@ -2,7 +2,6 @@
 use Core\EventManager;
 use Core\AssetManager;
 
-EventManager::listen('app.init', function() {
-    AssetManager::enqueueCss('/Modules/Settings/Assets/css/settings.css');
-    AssetManager::enqueueJs('/Modules/Settings/Assets/js/settings.js');
-});
+// 1. Modül JS ve CSS Varlıklarını Kuyruğa Al
+AssetManager::enqueueCss('settings-styles', '/taskmanager/Modules/Settings/Assets/css/settings.css');
+AssetManager::enqueueJs('settings-js', '/taskmanager/Modules/Settings/Assets/js/settings.js');

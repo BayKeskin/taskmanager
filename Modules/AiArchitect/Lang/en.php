@@ -64,4 +64,5 @@ return array (
   'ai_arch_hide_details' => 'Hide',
   'btn_ai_architect' => 'AI Project Architect',
   'tooltip_ai_architect' => 'Decompose brief or contract into modular functional epics and subtasks',
+  'btn_cancel' => 'Cancel',
 );

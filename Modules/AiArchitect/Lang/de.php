@@ -64,4 +64,5 @@ return array (
   'ai_arch_hide_details' => 'Ausblenden',
   'btn_ai_architect' => 'KI-Projektarchitekt',
   'tooltip_ai_architect' => 'Briefing oder Vertrag in modulare funktionale Epics und Unteraufgaben zerlegen',
+  'btn_cancel' => 'Abbrechen',
 );
