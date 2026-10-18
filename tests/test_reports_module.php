@@ -1,9 +1,5 @@
 <?php
 require_once __DIR__ . '/../System/System.php';
-require_once __DIR__ . '/../Model/TaskModel.php';
-require_once __DIR__ . '/../Model/UserModel.php';
-require_once __DIR__ . '/../Model/ProjectModel.php';
-
 use Core\ModuleLoader;
 use Modules\Reports\Models\ReportModel;
 use Modules\Reports\Controllers\ReportController as ModuleReportController;
@@ -45,12 +41,5 @@ foreach ($locales as $loc) {
     assert(!empty($rTitle) && !str_starts_with($rTitle, 'Reports::'), "Reports translation missing for {$loc}");
     assert(!empty($rTotal) && !str_starts_with($rTotal, 'Reports::'), "Reports translation missing for {$loc}");
 }
-
-// 5. Legacy Controller Facade Testi
-require_once __DIR__ . '/../Controller/ReportController.php';
-$legacyCtrl = new \ReportController($system ?? null);
-$legacyData = $legacyCtrl->index($adminUser);
-assert(isset($legacyData['completionRate']), "Legacy ReportController facade must return identical completionRate.");
-echo "[PASS] Legacy ReportController facade backwards-compatibility verified." . PHP_EOL;
 
 echo "=== ALL REPORTS TESTS PASSED (100% SUCCESS) ===" . PHP_EOL;

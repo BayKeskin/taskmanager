@@ -1,9 +1,8 @@
 <?php
 require_once __DIR__ . '/../System/System.php';
-require_once __DIR__ . '/../Model/ProjectModel.php';
-
 use Core\ModuleLoader;
 use Modules\Docs\Models\DocModel;
+use Modules\Projects\Models\ProjectModel;
 use Modules\Docs\Controllers\DocController as ModuleDocController;
 
 echo "=== AUTONOMOUS TEST: DOCS (#11) MODULE ===" . PHP_EOL;
@@ -46,12 +45,5 @@ foreach ($locales as $loc) {
     assert(!empty($dTitle) && !str_starts_with($dTitle, 'Docs::'), "Docs translation missing for {$loc}");
     assert(!empty($dNew) && !str_starts_with($dNew, 'Docs::'), "Docs translation missing for {$loc}");
 }
-
-// 5. Legacy Controller Facade Testi
-require_once __DIR__ . '/../Controller/DocController.php';
-$legacyCtrl = new \DocController($system ?? null);
-$legacyData = $legacyCtrl->index(null, null, $adminUser);
-assert(isset($legacyData['docsList']), "Legacy DocController facade must return identical docsList.");
-echo "[PASS] Legacy DocController facade backwards-compatibility verified." . PHP_EOL;
 
 echo "=== ALL DOCS TESTS PASSED (100% SUCCESS) ===" . PHP_EOL;

@@ -215,11 +215,11 @@ Sistem mimarisinde en temel bağımlılıklar hiyerarşisi şöyledir:
 
 | Sıra | Modül Kodu & Adı | `old/` Dizinine Alınacak Eski Dosyalar | Taşınacak/Eritilecek Mantık | Otonom Doğrulama & Test Yöntemi | Durum |
 | :---: | :--- | :--- | :--- | :--- | :---: |
-| **8.1** | **`old/` Karantina Kurulumu** | Kök dizindeki eski yapılar için `old/` klasörü açılması | Yedekleme zaten alındı (`.zip`), güvenli ayrıştırma | `Test-Path old/` | ⏳ Bekliyor |
-| **8.2** | **#17 Settings & Auth** | `Controller/SettingsController.php`, `Model/SettingsModel.php`, `Controller/AuthController.php` | Sistem ayarları, i18n dil tercihleri, oturum yönetimi | `php tests/test_settings_module.php` + Session Auth Testi | ⏳ Bekliyor |
-| **8.3** | **#14 Team & RBAC** | `Controller/TeamController.php`, `Model/UserModel.php` | Kullanıcı rolleri (admin, member, client), şifreleme | `php tests/test_team_module.php` + Yetki matrisi | ⏳ Bekliyor |
-| **8.4** | **#13 Projects** | `Controller/ProjectController.php`, `Model/ProjectModel.php` | Çalışma alanı yolları, saatlik ücretler, webhooklar | `php tests/test_projects_module.php` + Proje listeleme | ⏳ Bekliyor |
-| **8.5** | **#01 Board & Tasks (KALP)**| `Controller/BoardController.php`, `Controller/TaskController.php`, `Model/TaskModel.php`, `View/index/board.php` | Kanban sütunları, görev CRUD, sürükle-bırak, alt görevler | `php tests/test_board_module.php` + Canlı Panoya GET isteği | ⏳ Bekliyor |
+| **8.1** | **`old/` Karantina Kurulumu** | Kök dizindeki eski yapılar için `old/` klasörü açılması | Yedekleme zaten alındı (`.zip`), güvenli ayrıştırma | `Test-Path old/` | ✅ Tamamlandı |
+| **8.2** | **#17 Settings & Auth** | `Controller/SettingsController.php`, `Model/SettingsModel.php`, `Controller/AuthController.php` | Sistem ayarları, i18n dil tercihleri, oturum yönetimi | `php tests/test_settings_module.php` + Session Auth Testi | ✅ Tamamlandı |
+| **8.3** | **#14 Team & RBAC** | `Controller/TeamController.php`, `Model/UserModel.php` | Kullanıcı rolleri (admin, member, client), şifreleme | `php tests/test_team_module.php` + Yetki matrisi | ✅ Tamamlandı |
+| **8.4** | **#13 Projects** | `Controller/ProjectController.php`, `Model/ProjectModel.php` | Çalışma alanı yolları, saatlik ücretler, webhooklar | `php tests/test_projects_module.php` + Proje listeleme | ✅ Tamamlandı |
+| **8.5** | **#01 Board & Tasks (KALP)**| `Controller/BoardController.php`, `Controller/TaskController.php`, `Model/TaskModel.php`, `View/index/board.php` | Kanban sütunları, görev CRUD, sürükle-bırak, alt görevler | `php tests/test_board_module.php` + Canlı Panoya GET isteği | ✅ Tamamlandı |
 | **8.6** | **#02 AiArchitect** | `ajax.php` içindeki `refine_task_specification` monolitik bloğu | Prompt mühendisliği, multimodal görsel/kod analizi | `php tests/test_aiarchitect_module.php` | ⏳ Bekliyor |
 | **8.7** | **#15 Calendar & Gantt**| `Controller/CalendarController.php`, `View/index/calendar.php` | Gantt timeline, deadline filtreleri | `php tests/test_gantt_view.php` + `test_phase5_modules.php` | ⏳ Bekliyor |
 | **8.8** | **#24 Billing & Hakediş**| `Controller/BillingController.php`, `Model/BillingModel.php`, `View/index/billing_report.php` | Saatlik hakediş, tamamlanan işler, PDF/Print | `php tests/test_billing_report.php` | ⏳ Bekliyor |

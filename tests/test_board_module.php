@@ -3,8 +3,6 @@
  * Autonomous Verification Test for Board (#01) Module
  */
 require_once __DIR__ . '/../System/System.php';
-require_once __DIR__ . '/../Controller/BoardController.php';
-
 use Core\ModuleLoader;
 use Modules\Board\Models\TaskModel;
 use Modules\Board\Controllers\BoardController;
@@ -37,16 +35,6 @@ if (isset($boardData['allTasks']) && isset($boardData['assigneesMap'])) {
     echo "[PASS] BoardController::index successfully prepared Kanban board dataset.\n";
 } else {
     echo "[FAIL] BoardController data structure incomplete.\n";
-    exit(1);
-}
-
-// 4. Legacy Facade Forwarding Testi
-$legacyCtrl = new \BoardController();
-$legacyData = $legacyCtrl->index();
-if (isset($legacyData['allTasks']) && isset($legacyData['assigneesMap'])) {
-    echo "[PASS] Legacy BoardController facade successfully forwarded to module controller.\n";
-} else {
-    echo "[FAIL] Legacy BoardController facade failed.\n";
     exit(1);
 }
 

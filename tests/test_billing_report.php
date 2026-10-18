@@ -1,14 +1,11 @@
 <?php
 // Test script for TSK-194 Billing Report
-require_once __DIR__ . '/../system/System.php';
-require_once __DIR__ . '/../Model/Model.php';
-require_once __DIR__ . '/../Model/ReportModel.php';
-require_once __DIR__ . '/../Controller/Controller.php';
-require_once __DIR__ . '/../Controller/ReportController.php';
+require_once __DIR__ . '/../System/System.php';
 
-$sys = new System();
-$reportModel = new ReportModel($sys->db);
-$summary = $reportModel->getProjectBillingSummary(1, 600.0);
+use Modules\Billing\Models\BillingModel;
+
+$billingModel = new BillingModel();
+$summary = $billingModel->getProjectBillingSummary(1, 600.0);
 
 echo "=== TSK-194 BILLING REPORT TEST ===" . PHP_EOL;
 echo "Project: " . ($summary['project_title'] ?? 'N/A') . PHP_EOL;

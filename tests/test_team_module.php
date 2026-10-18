@@ -1,10 +1,9 @@
 <?php
 require_once __DIR__ . '/../System/System.php';
-require_once __DIR__ . '/../Model/ProjectModel.php';
-require_once __DIR__ . '/../Model/TaskModel.php';
-
 use Core\ModuleLoader;
 use Modules\Team\Models\UserModel;
+use Modules\Projects\Models\ProjectModel;
+use Modules\Board\Models\TaskModel;
 use Modules\Team\Controllers\TeamController as ModuleTeamController;
 
 echo "=== AUTONOMOUS TEST: TEAM (#14) MODULE ===" . PHP_EOL;
@@ -46,11 +45,6 @@ foreach ($locales as $loc) {
     assert(!empty($tRole) && !str_starts_with($tRole, 'Team::'), "Team translation missing for {$loc}");
 }
 
-// 5. Legacy Controller Facade Testi
-require_once __DIR__ . '/../Controller/TeamController.php';
-$legacyCtrl = new \TeamController($system ?? null);
-$legacyData = $legacyCtrl->index($adminUser);
-assert(count($legacyData['usersList']) === count($viewData['usersList']), "Legacy TeamController facade must return identical users count.");
-echo "[PASS] Legacy TeamController facade backwards-compatibility verified." . PHP_EOL;
+
 
 echo "=== ALL TEAM TESTS PASSED (100% SUCCESS) ===" . PHP_EOL;

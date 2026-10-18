@@ -3,8 +3,6 @@
  * Autonomous Verification Test for Settings (#17) Module
  */
 require_once __DIR__ . '/../System/System.php';
-require_once __DIR__ . '/../Controller/SettingsController.php';
-
 use Core\ModuleLoader;
 use Modules\Settings\Models\SettingsModel;
 use Modules\Settings\Controllers\SettingsController;
@@ -36,16 +34,6 @@ if (!empty($data['s']) && isset($data['availableModules'])) {
     echo "[PASS] SettingsController::index prepared data with " . count($data['availableModules']) . " available modules.\n";
 } else {
     echo "[FAIL] SettingsController failed to prepare data.\n";
-    exit(1);
-}
-
-// 4. Legacy Facade Forwarding Testi
-$legacyCtrl = new \SettingsController();
-$legacyData = $legacyCtrl->index();
-if (!empty($legacyData['s']) && isset($legacyData['availableModules'])) {
-    echo "[PASS] Legacy SettingsController successfully forwarded to module controller.\n";
-} else {
-    echo "[FAIL] Legacy SettingsController facade failed.\n";
     exit(1);
 }
 

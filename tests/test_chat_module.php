@@ -60,11 +60,6 @@ foreach ($locales as $loc) {
     assert(!empty($cTeam) && !str_starts_with($cTeam, 'Chat::'), "Chat translation missing for {$loc}");
 }
 
-// 5. Legacy Controller Facade Testi
-require_once __DIR__ . '/../Controller/ChatController.php';
-$legacyCtrl = new \ChatController($system ?? null);
-$legacyData = $legacyCtrl->index(0, $adminUser);
-assert(isset($legacyData['teamUsers']), "Legacy ChatController facade must return identical data.");
-echo "[PASS] Legacy ChatController facade backwards-compatibility verified." . PHP_EOL;
+
 
 echo "=== ALL CHAT TESTS PASSED (100% SUCCESS) ===" . PHP_EOL;
