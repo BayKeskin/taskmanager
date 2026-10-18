@@ -1,0 +1,11 @@
+{
+  "id": "settings",
+  "name": "Sistem Ayarları & Yapılandırma",
+  "slug": "settings",
+  "version": "1.0.0",
+  "description": "Sistem parametreleri, modül yönetimi, AI sağlayıcı anahtarları ve çok dilli genel yapılandırma motoru.",
+  "author": "Antigravity HMVC Engine",
+  "active": true,
+  "order": 17,
+  "dependencies": []
+}

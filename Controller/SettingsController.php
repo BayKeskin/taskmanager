@@ -18,6 +18,11 @@ class SettingsController extends Controller
      */
     public function index(?object $currentUser = null): array
     {
+        if (class_exists('Modules\\Settings\\Controllers\\SettingsController')) {
+            $ctrl = new \Modules\Settings\Controllers\SettingsController();
+            return $ctrl->index($currentUser);
+        }
+
         $currentUser = $currentUser ?? ($_SESSION['user'] ?? (object)['id' => 1, 'role' => 'admin']);
         $isAuthorized = ($currentUser->role === 'admin');
 
