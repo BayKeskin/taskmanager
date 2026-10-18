@@ -1,0 +1,11 @@
+{
+  "id": "apitester",
+  "name": "REST API Test Konsolu & Dokümantasyon",
+  "slug": "apitester",
+  "version": "1.0.0",
+  "description": "Canlı REST API test laboratuvarı, interaktif Swagger / Postman benzeri konsol ve API kılavuzu.",
+  "author": "Antigravity HMVC Engine",
+  "active": true,
+  "order": 9,
+  "dependencies": ["restapi"]
+}

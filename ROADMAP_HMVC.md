@@ -180,7 +180,7 @@ Sistemdeki 24 modülün HMVC (`Modules/`) yapısına taşınma durumu bu tabloda
 | **06** | Otonom Yapay Zeka Köprüsü | `Modules/Dispatcher/` | `dispatcher/`, AI kuyruk ve tetikleme motoru | ✅ Taşındı |
 | **07** | Watchdog Otonom Kurtarma | `Modules/Watchdog/` | `WatchdogService.php`, kuyruk kurtarma | ✅ Taşındı |
 | **08** | Enterprise RESTful API | `Modules/RestApi/` | `Controller/api/index.php`, API router & JWT | ✅ Taşındı |
-| **09** | REST API Test Konsolu | `Modules/ApiTester/` | API Swagger/Tester arayüzü ve test motoru | ⏳ Bekliyor |
+| **09** | REST API Test Konsolu | `Modules/ApiTester/` | API Swagger/Tester arayüzü ve test motoru | ✅ Taşındı |
 | **10** | Görsel Hata Pinleme (Pins) | `Modules/VisualPins/` | `PinController`, `PinModel`, `visual-pins.js` | ✅ Taşındı |
 | **11** | Dökümantasyon Motoru | `Modules/Docs/` | `DocController`, `DocModel`, Docs view & markdown | ✅ Taşındı |
 | **12** | Gerçek Zamanlı SSE Motoru | `Modules/SSE/` | `sse.php`, `SseBroadcaster.php`, live events | ✅ Taşındı |

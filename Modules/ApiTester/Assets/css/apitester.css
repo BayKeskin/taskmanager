@@ -1,0 +1,15 @@
+/* ApiTester Module Custom Styles */
+.api-tester-header {
+    border-bottom: 1px solid #334155;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+}
+.api-tester-curl-box {
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #38bdf8;
+    overflow-x: auto;
+}
