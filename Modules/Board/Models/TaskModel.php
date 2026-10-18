@@ -57,11 +57,39 @@ class TaskModel extends BaseModel
     {
         $sql = "SELECT task_id, COUNT(*) as count FROM task_attachments GROUP BY task_id";
         $rows = $this->query($sql);
-        $map = [];
         foreach ($rows as $r) {
             $row = (object)$r;
             $map[$row->task_id] = (int)$row->count;
         }
         return $map;
+    }
+
+    /**
+     * Belirli bir ay ve yıl aralığı veya Gantt için takvim görevlerini çeker
+     */
+    public function getTasksForCalendar(?string $startDate = null, ?string $endDate = null, ?int $projectId = null): array
+    {
+        $sql = "
+            SELECT t.*, p.title as project_title, p.color as project_color, u.name as assignee_name, u.avatar_color as assignee_color
+            FROM tasks t
+            LEFT JOIN projects p ON t.project_id = p.id
+            LEFT JOIN users u ON t.assigned_to = u.id
+            WHERE 1=1
+        ";
+        $params = [];
+        if (!empty($startDate) && !empty($endDate)) {
+            $sql .= " AND t.deadline >= ? AND t.deadline <= ? ";
+            $params[] = $startDate;
+            $params[] = $endDate;
+        } else {
+            $sql .= " AND t.deadline IS NOT NULL ";
+        }
+        if ($projectId) {
+            $sql .= " AND t.project_id = ? ";
+            $params[] = $projectId;
+        }
+        $sql .= " ORDER BY t.deadline ASC, t.id ASC ";
+
+        return $this->query($sql, $params);
     }
 }

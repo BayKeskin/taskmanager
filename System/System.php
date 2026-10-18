@@ -21,7 +21,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../Core/ModuleLoader.php';
 \Core\ModuleLoader::boot(__DIR__ . '/../Modules');
 
-require_once __DIR__ . '/../Model/DataLayer.php';
+require_once __DIR__ . '/../Core/DataLayer.php';
 require_once __DIR__ . '/Helper.php';
 require_once __DIR__ . '/Storage.php';
 require_once __DIR__ . '/Auth.php';

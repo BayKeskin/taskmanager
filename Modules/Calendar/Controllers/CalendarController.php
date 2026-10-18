@@ -40,8 +40,7 @@ class CalendarController extends BaseController
         $startDate = sprintf('%04d-%02d-01', $year, $month);
         $endDate = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
 
-        require_once dirname(__DIR__, 3) . '/Model/TaskModel.php';
-        $taskModel = new \TaskModel($this->db);
+        $taskModel = new \Modules\Board\Models\TaskModel();
 
         // Standart Takvim görevleri (seçili ay için)
         $calendarTasks = $taskModel->getTasksForCalendar($startDate, $endDate, $activeProjectId);

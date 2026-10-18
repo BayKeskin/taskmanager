@@ -3,20 +3,8 @@
  * TaskManager - Hakediş & İş Teslim Raporu (PDF Baskı ve Önizleme Şablonu)
  * TSK-194: Müşteri Portalı ve Raporlar İçin Efor, Maliyet ve Hakediş Özeti
  */
-require_once __DIR__ . '/../../System/System.php';
-require_once __DIR__ . '/../../Controller/ReportController.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-if (empty($_SESSION['user'])) {
-    header('Location: /taskmanager/login');
-    exit;
-}
-
-$currentUser = $_SESSION['user'];
-$reportController = new ReportController($system);
+$currentUser = $_SESSION['user'] ?? null;
+$billingController = new \Modules\Billing\Controllers\BillingController();
 
 $projectId = isset($_GET['project_id']) && (int)$_GET['project_id'] > 0 ? (int)$_GET['project_id'] : null;
 $isClient = ($currentUser->role === 'client');
@@ -25,7 +13,7 @@ if ($isClient && !empty($currentUser->client_project_id)) {
 }
 
 $hourlyRate = isset($_GET['rate']) && (float)$_GET['rate'] > 0 ? (float)$_GET['rate'] : null;
-$billing = $reportController->getBillingData($projectId, $hourlyRate);
+$billing = $billingController->getBillingData($projectId, $hourlyRate);
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars(Language::current(), ENT_QUOTES, 'UTF-8') ?>">

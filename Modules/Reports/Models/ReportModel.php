@@ -154,6 +154,7 @@ class ReportModel extends BaseModel
             'total_hours_estimated' => $totalHoursEstimated,
             'total_hours_spent'     => $totalHoursSpent,
             'total_cost'            => $totalCost,
+            'generated_at'          => date('d.m.Y H:i'),
             'tasks'                 => $detailedTasks
         ];
     }

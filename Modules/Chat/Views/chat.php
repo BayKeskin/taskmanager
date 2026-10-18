@@ -1,14 +1,12 @@
 <?php
 // TaskManager Ekip & Birebir Özel Sohbet (Direct Messaging & Channels)
-require_once __DIR__ . '/../../Controller/ChatController.php';
-
-$system->title = __('tasks.chat_title');
-include __DIR__ . '/../../Components/header.php';
-
 $initialTargetUserId = isset($_GET['user_id']) && is_numeric($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
-$chatController = new ChatController($system);
+$chatController = new \Modules\Chat\Controllers\ChatController();
 $chatData = $chatController->index($initialTargetUserId);
 extract($chatData);
+
+$system->title = __('Chat::chat_title', 'Ekip İçi Sohbet - TaskManager');
+include dirname(__DIR__, 3) . '/Components/header.php';
 ?>
 
 <div class="cu-view-header">
@@ -887,4 +885,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include __DIR__ . '/../../Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>

@@ -1,13 +1,11 @@
 <?php
 // TaskManager Raporlar & Analitik Paneli (Reports View)
-require_once __DIR__ . '/../../Controller/ReportController.php';
-
-$system->title = __('tasks.rep_title');
-include __DIR__ . '/../../Components/header.php';
-
-$reportController = new ReportController($system);
+$reportController = new \Modules\Reports\Controllers\ReportController();
 $reportData = $reportController->index();
 extract($reportData);
+
+$system->title = __('Reports::rep_title', 'Raporlar & Analitik Paneli - TaskManager');
+include dirname(__DIR__, 3) . '/Components/header.php';
 ?>
 
 <div class="cu-view-header">
@@ -176,4 +174,4 @@ extract($reportData);
     </div>
 </div>
 
-<?php include __DIR__ . '/../../Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>

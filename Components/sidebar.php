@@ -1,9 +1,7 @@
 <?php
 // TaskManager Sidebar Bileşeni
-require_once __DIR__ . '/../Controller/LayoutController.php';
-
-$layoutCtrl = new \Controllers\LayoutController();
-$sbData = $layoutCtrl->getSidebarData($_SESSION['user'] ?? null);
+$layoutMgr = \Core\LayoutManager::getInstance();
+$sbData = $layoutMgr->getSidebarData($_SESSION['user'] ?? null);
 extract($sbData);
 
 $activeProjectId = $_GET['project_id'] ?? null;

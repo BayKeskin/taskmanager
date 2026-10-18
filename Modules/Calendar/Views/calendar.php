@@ -1,12 +1,7 @@
 <?php
 // TaskManager Takvim & Gantt Şeması Görünümü (Calendar & Timeline/Gantt View)
-require_once __DIR__ . '/../../Controller/CalendarController.php';
-require_once __DIR__ . '/../../System/Language.php';
-require_once __DIR__ . '/../../System/Helper.php';
-
-Language::init();
-$system->title = __('tasks.gantt_title', 'Gantt & Zaman Çizelgesi - TaskManager');
-include __DIR__ . '/../../Components/header.php';
+$system->title = __('Calendar::gantt_title', 'Gantt & Zaman Çizelgesi - TaskManager');
+include dirname(__DIR__, 3) . '/Components/header.php';
 
 $year = isset($_GET['year']) ? (int)$_GET['year'] : null;
 $month = isset($_GET['month']) ? (int)$_GET['month'] : null;
@@ -14,8 +9,8 @@ $activeProjectId = isset($_GET['project_id']) ? (int)$_GET['project_id'] : null;
 $viewTab = isset($_GET['tab']) && $_GET['tab'] === 'calendar' ? 'calendar' : 'gantt'; // Varsayılan modern Gantt
 $ganttScale = isset($_GET['scale']) && in_array($_GET['scale'], ['week', 'month']) ? $_GET['scale'] : 'month';
 
-$calendarController = new CalendarController($system);
-$calendarData = $calendarController->index($year, $month, $activeProjectId, null, $ganttScale);
+$calendarController = new \Modules\Calendar\Controllers\CalendarController();
+$calendarData = $calendarController->index($year, $month, $activeProjectId, $ganttScale);
 extract($calendarData);
 
 // Önceki ve Sonraki Ay Linkleri
@@ -470,5 +465,5 @@ function adjustColorBrightness($hex, $steps) {
     }
     return $return;
 }
-include __DIR__ . '/../../Components/footer.php'; 
+include dirname(__DIR__, 3) . '/Components/footer.php'; 
 ?>

@@ -1,17 +1,15 @@
 <?php
 // TaskManager Modern Dökümanlar & Zengin Metin Editörü (Docs WYSIWYG View)
-require_once __DIR__ . '/../../Controller/DocController.php';
-
-$system->title = __('app.docs_title', 'Dökümanlar - TaskManager');
-include __DIR__ . '/../../Components/header.php';
-
 $activeProjectId = isset($_GET['project_id']) ? (int)$_GET['project_id'] : null;
 $selectedDocId = isset($_GET['doc_id']) ? (int)$_GET['doc_id'] : null;
 
-$docController = new DocController($system);
+$docController = new \Modules\Docs\Controllers\DocController();
 $docData = $docController->index($activeProjectId, $selectedDocId);
 extract($docData);
 $isClient = $isClient ?? false;
+
+$system->title = __('Docs::docs_title', 'Dökümanlar - TaskManager');
+include dirname(__DIR__, 3) . '/Components/header.php';
 ?>
 
 <!-- Quill.js & Marked.js Kütüphaneleri -->
@@ -1153,4 +1151,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<?php include __DIR__ . '/../../Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>

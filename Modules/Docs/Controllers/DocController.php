@@ -3,20 +3,18 @@ namespace Modules\Docs\Controllers;
 
 use Core\BaseController;
 use Modules\Docs\Models\DocModel;
-use ProjectModel;
+use Modules\Projects\Models\ProjectModel;
 
 class DocController extends BaseController
 {
     private DocModel $docModel;
-    private ?ProjectModel $projectModel = null;
+    private ProjectModel $projectModel;
 
     public function __construct()
     {
         parent::__construct();
         $this->docModel = new DocModel();
-        if (class_exists('ProjectModel')) {
-            $this->projectModel = new ProjectModel();
-        }
+        $this->projectModel = new ProjectModel();
     }
 
     /**

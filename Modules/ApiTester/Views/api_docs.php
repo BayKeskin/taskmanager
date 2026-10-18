@@ -1,7 +1,7 @@
 <?php
 // TaskManager Interactive REST API & AI Agent Documentation
-require_once __DIR__ . '/../../System/System.php';
-require_once __DIR__ . '/../../System/Language.php';
+require_once dirname(__DIR__, 3) . '/System/System.php';
+require_once dirname(__DIR__, 3) . '/System/Language.php';
 
 Language::init();
 $currentLang = Language::current(); // 'tr', 'en', 'de'
@@ -256,7 +256,7 @@ $loc = in_array($currentLang, ['tr', 'en', 'de'], true) ? $currentLang : 'en';
 $t = $translations[$loc] ?? $translations['en'];
 
 $system->title = $t['page_title'];
-include __DIR__ . '/../../Components/header.php';
+include dirname(__DIR__, 3) . '/Components/header.php';
 
 $currentUser = $_SESSION['user'] ?? null;
 $dynCfg = Helper::getDynamicApiConfig();
@@ -708,4 +708,4 @@ function copyToken() {
 }
 </script>
 
-<?php include __DIR__ . '/../../Components/footer.php'; ?>
+<?php include dirname(__DIR__, 3) . '/Components/footer.php'; ?>

@@ -1,9 +1,7 @@
 <?php
 // Modallar ve Toast Konteyneri
-require_once __DIR__ . '/../Controller/LayoutController.php';
-
-$layoutCtrl = new \Controllers\LayoutController();
-$modalsData = $layoutCtrl->getModalsData();
+$layoutMgr = \Core\LayoutManager::getInstance();
+$modalsData = $layoutMgr->getModalsData();
 $allUsers = $modalsData['allUsers'];
 $allProjects = $modalsData['allProjects'];
 $sysSettings = $modalsData['sysSettings'];
