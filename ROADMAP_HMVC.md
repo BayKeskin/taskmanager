@@ -161,7 +161,7 @@ graph TD
 | **Aşama 3** | `Modules/VisualPins` | ✅ Tamamlandı | REST API `POST /api/v1/visual-feedback` (PASS) |
 | **Aşama 4** | `Modules/LiveDeploy` & `Modules/GithubDevops` | ✅ Tamamlandı | `test_delta_sync.php` + `test_phase4_modules.php` (PASS) |
 | **Aşama 5** | `Modules/Billing` & `Modules/Calendar` | ✅ Tamamlandı | `tests/test_phase5_modules.php` (PASS) |
-| **Aşama 6** | `Modules/Telegram`, `Watchdog`, `SSE` & Helper Temizliği | ⏳ Bekliyor | - |
+| **Aşama 6** | `Modules/Telegram`, `Watchdog`, `SSE` & Helper Temizliği | ✅ Tamamlandı | `tests/test_phase6_modules.php` (PASS) |
 | **Aşama 7** | Modül Yönetim Arayüzü (Module Manager UI) | ⏳ Bekliyor | - |
 
 ---
@@ -178,18 +178,18 @@ Sistemdeki 24 modülün HMVC (`Modules/`) yapısına taşınma durumu bu tabloda
 | **04** | GitHub DevOps & Rollback | `Modules/GithubDevops/` | `GitService.php`, `.migrations`, push/commit | ✅ Taşındı |
 | **05** | Antigravity MCP Pazarı | `Modules/Mcp/` | `McpController.php`, MCP manifest & tools | ⏳ Bekliyor |
 | **06** | Otonom Yapay Zeka Köprüsü | `Modules/Dispatcher/` | `dispatcher/`, AI kuyruk ve tetikleme motoru | ⏳ Bekliyor |
-| **07** | Watchdog Otonom Kurtarma | `Modules/Watchdog/` | `WatchdogService.php`, kuyruk kurtarma | ⏳ Bekliyor |
+| **07** | Watchdog Otonom Kurtarma | `Modules/Watchdog/` | `WatchdogService.php`, kuyruk kurtarma | ✅ Taşındı |
 | **08** | Enterprise RESTful API | `Modules/RestApi/` | `Controller/api/index.php`, API router & JWT | ⏳ Bekliyor |
 | **09** | REST API Test Konsolu | `Modules/ApiTester/` | API Swagger/Tester arayüzü ve test motoru | ⏳ Bekliyor |
 | **10** | Görsel Hata Pinleme (Pins) | `Modules/VisualPins/` | `PinController`, `PinModel`, `visual-pins.js` | ✅ Taşındı |
 | **11** | Dökümantasyon Motoru | `Modules/Docs/` | `DocController`, `DocModel`, Docs view & markdown | ⏳ Bekliyor |
-| **12** | Gerçek Zamanlı SSE Motoru | `Modules/SSE/` | `sse.php`, `SseBroadcaster.php`, live events | ⏳ Bekliyor |
+| **12** | Gerçek Zamanlı SSE Motoru | `Modules/SSE/` | `sse.php`, `SseBroadcaster.php`, live events | ✅ Taşındı |
 | **13** | Proje & Çalışma Alanları | `Modules/Projects/` | `ProjectController`, `ProjectModel`, projects view | ⏳ Bekliyor |
 | **14** | Ekip, Rol & İzinler (RBAC) | `Modules/Team/` | `TeamController`, `UserModel`, yetki matrisi | ⏳ Bekliyor |
 | **15** | Takvim & Gantt Çizelgesi | `Modules/Calendar/` | `CalendarController`, Gantt drag-drop, timeline | ✅ Taşındı |
 | **16** | Raporlar & SLA Analitiği | `Modules/Reports/` | `ReportController`, `ReportModel`, Chart.js | ⏳ Bekliyor |
 | **17** | Sistem Ayarları & i18n | `Modules/Settings/` | `SettingsController`, SettingsModel, 3 dil | ⏳ Bekliyor |
-| **18** | Telegram Bot Entegrasyonu | `Modules/Telegram/` | `TelegramService.php`, push bot bildirimleri | ⏳ Bekliyor |
+| **18** | Telegram Bot Entegrasyonu | `Modules/Telegram/` | `TelegramService.php`, push bot bildirimleri | ✅ Taşındı |
 | **19** | E-Posta & SMTP Bildirimleri | `Modules/Mailer/` | `Mailer.php`, HTML email şablonları | ⏳ Bekliyor |
 | **20** | Ekip İçi Canlı Sohbet (Chat) | `Modules/Chat/` | `ChatController`, `ChatModel`, chat.php | ⏳ Bekliyor |
 | **21** | Otonom Smoke Test Motoru | `Modules/SmokeTest/` | `SmokeTest.php`, sistem sağlık teşhisi | ⏳ Bekliyor |

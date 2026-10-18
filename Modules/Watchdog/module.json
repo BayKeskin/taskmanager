@@ -1,0 +1,9 @@
+{
+  "name": "Watchdog Autonomous Recovery & Queue Monitor",
+  "slug": "watchdog",
+  "version": "1.1.0",
+  "description": "Tıkanan görev kuyruklarını, kilitlenen yapay zeka ajanlarını ve başarısız iş akışlarını otonom olarak denetleyen ve kurtaran motor.",
+  "active": true,
+  "author": "TaskManager AI Infrastructure",
+  "requires": []
+}

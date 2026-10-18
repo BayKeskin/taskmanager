@@ -2257,22 +2257,7 @@ CRITICAL MANDATES:
      */
     public static function broadcastLiveEvent(string $eventType, ?int $projectId, ?int $taskId, ?int $userId, array $payload): bool
     {
-        global $db;
-        try {
-            if (!$db || empty($db->connect)) {
-                require_once __DIR__ . '/../Model/DataLayer.php';
-                $db = new Database();
-            }
-            $jsonPayload = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            $db->exec_query("
-                INSERT INTO live_events (event_type, project_id, task_id, user_id, payload, created_at)
-                VALUES (?, ?, ?, ?, ?, NOW())
-            ", [$eventType, $projectId, $taskId, $userId, $jsonPayload]);
-            return true;
-        } catch (\Throwable $e) {
-            error_log("broadcastLiveEvent error: " . $e->getMessage());
-            return false;
-        }
+        return \Modules\SSE\Services\SseBroadcaster::broadcast($eventType, $projectId, $taskId, $userId, $payload);
     }
     /**
      * Otonom Arka Plan Kontrol Mekanizması (Watchdog Inspection):
@@ -2285,87 +2270,7 @@ CRITICAL MANDATES:
      */
     public static function runWatchdogInspection(): array
     {
-        $restartSignal = __DIR__ . '/../dispatcher/restart.signal';
-        if (file_exists($restartSignal)) {
-            @unlink($restartSignal);
-            @file_put_contents(__DIR__ . '/../dispatcher/restarted.log', date('Y-m-d H:i:s') . " - Dispatcher restarting by watchdog signal...\n", FILE_APPEND);
-            @pclose(@popen('start "" /b cmd /c "taskkill /F /IM pythonw.exe & timeout /t 1 & cscript //nologo c:\wamp64\www\taskmanager\dispatcher\start_silent.vbs"', 'r'));
-        }
-        global $db;
-        $results = [];
-        try {
-            if (!$db || empty($db->connect)) {
-                require_once __DIR__ . '/../Model/DataLayer.php';
-                $db = new Database();
-            }
-
-            $projects = $db->multi_record_query("SELECT id, project_code, title FROM projects WHERE status = 'active'") ?: [];
-            foreach ($projects as $prj) {
-                $pId = (int)$prj->id;
-                
-                // Projede 'in_progress' durumunda olan AI görevlerini bul
-                $allInProgress = $db->multi_record_query("
-                    SELECT * FROM tasks 
-                    WHERE project_id = ? AND status = 'in_progress'
-                    ORDER BY 
-                        CASE priority 
-                            WHEN 'urgent' THEN 1 
-                            WHEN 'high' THEN 2 
-                            WHEN 'normal' THEN 3 
-                            WHEN 'low' THEN 4 
-                            ELSE 5 
-                        END ASC,
-                        updated_at DESC
-                ", [$pId]) ?: [];
-
-                $runningAiTasks = array_values(array_filter($allInProgress, fn($t) => self::isAiTask($t)));
-
-                if (count($runningAiTasks) >= 1) {
-                    $primaryTask = $runningAiTasks[0];
-                    // Eğer birden fazla AI görevi yanlışlıkla ÇALIŞILIYOR'da kaldıysa, diğerlerini YAPILACAK İŞLER'e geri çek (Tek Görev Kuralı)
-                    if (count($runningAiTasks) > 1) {
-                        for ($i = 1; $i < count($runningAiTasks); $i++) {
-                            $extra = $runningAiTasks[$i];
-                            $db->exec_query("UPDATE tasks SET status = 'assigned' WHERE id = ?", [$extra->id]);
-                            self::broadcastLiveEvent('task_status_changed', $pId, (int)$extra->id, 1, [
-                                'task_id'    => (int)$extra->id,
-                                'task_code'  => $extra->task_code,
-                                'old_status' => 'in_progress',
-                                'new_status' => 'assigned'
-                            ]);
-                        }
-                    }
-
-                    // Aktif AI görevini Dispatcher'a bildir (Dispatcher aynı pencerede çalışıyorsa dokunmaz,
-                    // ancak hesap/sohbet değiştiyse veya ajan durduysa kaldığı yerden devam ettirir!)
-                    self::triggerTaskStartedWebhook((int)$primaryTask->id, 'in_progress', [
-                        'resumed'          => true,
-                        'watchdog_check'   => true,
-                        'triggered_by'     => 'Watchdog'
-                    ]);
-
-                    $results[$prj->project_code] = [
-                        'status' => 'ensured_running',
-                        'active' => $primaryTask->task_code
-                    ];
-                } else {
-                    // ÇALIŞILIYOR sütununda hiç AI görevi yok! YAPILACAK İŞLER'de bekleyen AI görevi varsa başlat:
-                    $dispatched = self::dispatchNextAiTaskIfAvailable($pId);
-                    if ($dispatched) {
-                        $results[$prj->project_code] = [
-                            'status'    => 'auto_dispatched',
-                            'task_code' => $dispatched['task_code'] ?? null
-                        ];
-                    } else {
-                        $results[$prj->project_code] = ['status' => 'idle'];
-                    }
-                }
-            }
-            return ['success' => true, 'projects' => $results];
-        } catch (\Throwable $e) {
-            error_log("runWatchdogInspection error: " . $e->getMessage());
-            return ['success' => false, 'error' => $e->getMessage()];
-        }
+        return \Modules\Watchdog\Services\WatchdogService::runInspection();
     }
 
     /**
@@ -3536,65 +3441,7 @@ CRITICAL ARCHITECTURAL RULES:
     public static function autoCommitAndPushTask(object $project, object $task): array
     {
         self::ensureGithubAndRollbackSchema();
-
-        $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
-        if (empty($ws) || !is_dir($ws)) {
-            return ['success' => false, 'error' => 'Workspace dizini yok.'];
-        }
-
-        $escapedWs = escapeshellarg($ws);
-
-        if (!is_dir($ws . '/.git')) {
-            return ['success' => false, 'error' => 'Git deposu (.git) bulunamadı.'];
-        }
-
-        $commitMsg = "feat({$task->task_code}): " . str_replace(['"', '`', '$'], '', $task->title);
-
-        // Değişiklikleri ekle ve commit at
-        $commitCmd = "cd /d {$escapedWs} && git add -A && git commit -m " . escapeshellarg($commitMsg) . " 2>&1";
-        @shell_exec($commitCmd);
-
-        // Son commit hash'ini al
-        $hash = trim((string)@shell_exec("cd /d {$escapedWs} && git rev-parse HEAD 2>nul"));
-        if (empty($hash) || strlen($hash) < 7) {
-            return ['success' => false, 'error' => 'Commit oluşturulamadı veya dosya değişikliği yok.'];
-        }
-
-        // Aktif branch'i dinamik bul (main/master)
-        $branch = self::detectActiveBranch($ws);
-
-        // Projede github_repo tanımlı mı? Yoksa mevcut remote'u oku
-        $repoSlug = trim((string)($project->github_repo ?? ''));
-        if (empty($repoSlug)) {
-            $existingRemote = trim((string)@shell_exec("cd /d {$escapedWs} && git remote get-url origin 2>nul"));
-            if (!empty($existingRemote) && preg_match('#github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$#i', $existingRemote, $m)) {
-                $repoSlug = trim($m[1]) . '/' . trim($m[2]);
-            }
-        }
-
-        $commitUrl = '';
-        $creds = self::getGithubCredentials();
-
-        if (!empty($repoSlug)) {
-            $commitUrl = "https://github.com/{$repoSlug}/commit/{$hash}";
-
-            // Güvenli push: Token varsa http.extraheader ile gönder
-            if (!empty($creds['token']) && !empty($creds['username'])) {
-                $authHeader = base64_encode("{$creds['username']}:{$creds['token']}");
-                $pushCmd = "cd /d {$escapedWs} && git -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1";
-                @shell_exec($pushCmd);
-            } else {
-                // Token yoksa mevcut sistem git kimliğiyle push dene
-                @shell_exec("cd /d {$escapedWs} && git push origin {$branch} 2>&1");
-            }
-        }
-
-        return [
-            'success'     => true,
-            'commit_hash' => $hash,
-            'commit_url'  => $commitUrl,
-            'branch'      => $branch
-        ];
+        return \Modules\GithubDevops\Services\GitService::autoCommitAndPushTask($project, $task);
     }
 
     /**

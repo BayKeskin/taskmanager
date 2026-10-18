@@ -1,0 +1,9 @@
+{
+  "name": "Telegram Bot & Mobile Alerts",
+  "slug": "telegram",
+  "version": "1.1.0",
+  "description": "Görev atamaları, acil hata bildirimleri ve ajan durum güncellemelerini Telegram gruplarına ileten modül.",
+  "active": true,
+  "author": "TaskManager Architecture Team",
+  "requires": []
+}

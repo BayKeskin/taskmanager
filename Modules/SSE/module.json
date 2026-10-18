@@ -1,0 +1,9 @@
+{
+  "name": "Server-Sent Events (SSE) Live Stream",
+  "slug": "sse",
+  "version": "1.2.0",
+  "description": "Sayfa yenilemeye gerek kalmadan pano hareketlerini, yeni görevleri ve bildirimleri gerçek zamanlı ileten yayın motoru.",
+  "active": true,
+  "author": "TaskManager Architecture Team",
+  "requires": []
+}
