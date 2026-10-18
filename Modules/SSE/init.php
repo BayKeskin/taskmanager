@@ -3,7 +3,11 @@
  * SSE Modülü Başlatıcı (init.php)
  */
 use Core\EventManager;
+use Core\AssetManager;
 use Modules\SSE\Services\SseBroadcaster;
+
+// 1. Canlı SSE Senkronizasyon İstemci Kütüphanesini Kuyruğa Al
+AssetManager::enqueueJs('sse-realtime', '/taskmanager/Modules/SSE/Assets/js/realtime.js');
 
 // Canlı SSE yayını kancası
 EventManager::listen('live_event.broadcast', function(array $data) {

@@ -12,10 +12,10 @@ $system->title = __('Docs::docs_title', 'Dökümanlar - TaskManager');
 include dirname(__DIR__, 3) . '/Core/Views/header.php';
 ?>
 
-<!-- Quill.js & Marked.js Kütüphaneleri -->
-<link rel="stylesheet" href="/taskmanager/Public/css/quill.snow.css">
-<script src="/taskmanager/Public/js/marked.min.js"></script>
-<script src="/taskmanager/Public/js/quill.min.js"></script>
+<!-- Quill.js & Marked.js Kütüphaneleri (Modules/Docs/Assets) -->
+<link rel="stylesheet" href="/taskmanager/Modules/Docs/Assets/css/quill.snow.css">
+<script src="/taskmanager/Modules/Docs/Assets/js/marked.min.js"></script>
+<script src="/taskmanager/Modules/Docs/Assets/js/quill.min.js"></script>
 
 <!-- ÜST GÖRÜNÜM ÇUBUĞU (VIEW HEADER) -->
 <div class="cu-view-header">

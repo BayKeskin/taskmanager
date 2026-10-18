@@ -2,7 +2,6 @@
 use Core\EventManager;
 use Core\AssetManager;
 
-EventManager::listen('app.init', function() {
-    AssetManager::enqueueCss('/Modules/Board/Assets/css/board.css');
-    AssetManager::enqueueJs('/Modules/Board/Assets/js/board.js');
-});
+// 1. Modül JS ve CSS Varlıklarını Kuyruğa Al
+AssetManager::enqueueCss('board-styles', '/taskmanager/Modules/Board/Assets/css/board.css');
+AssetManager::enqueueJs('board-js', '/taskmanager/Modules/Board/Assets/js/board.js');

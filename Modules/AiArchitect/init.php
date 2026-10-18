@@ -2,10 +2,9 @@
 use Core\EventManager;
 use Core\AssetManager;
 
-EventManager::listen('app.init', function() {
-    AssetManager::enqueueCss('/Modules/AiArchitect/Assets/css/aiarchitect.css');
-    AssetManager::enqueueJs('/Modules/AiArchitect/Assets/js/aiarchitect.js');
-});
+// 1. Modül JS ve CSS Varlıklarını Kuyruğa Al
+AssetManager::enqueueCss('aiarchitect-styles', '/taskmanager/Modules/AiArchitect/Assets/css/aiarchitect.css');
+AssetManager::enqueueJs('aiarchitect-js', '/taskmanager/Modules/AiArchitect/Assets/js/aiarchitect.js');
 
 // Modül İçi Yardımcı Fonksiyon
 if (!function_exists('ai_architect')) {

@@ -5,7 +5,6 @@ namespace Modules\Team;
 use Core\EventManager;
 use Core\AssetManager;
 
-EventManager::listen('team.rendered', function() {
-    AssetManager::enqueueCss('/Modules/Team/Assets/css/team.css');
-    AssetManager::enqueueJs('/Modules/Team/Assets/js/team.js');
-});
+// 1. Modül JS ve CSS Varlıklarını Kuyruğa Al
+AssetManager::enqueueCss('team-styles', '/taskmanager/Modules/Team/Assets/css/team.css');
+AssetManager::enqueueJs('team-js', '/taskmanager/Modules/Team/Assets/js/team.js');
