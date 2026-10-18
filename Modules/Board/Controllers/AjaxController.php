@@ -23,9 +23,7 @@ function translateAjaxMessage(string $msg): string {
     
     static $dict = null;
     if ($dict === null) {
-        $dictFile = file_exists(__DIR__ . '/../../config/ajax_translations.php')
-            ? __DIR__ . '/../../config/ajax_translations.php'
-            : __DIR__ . '/../../Config/ajax_translations.php';
+        $dictFile = __DIR__ . '/../Config/ajax_translations.php';
         $dict = file_exists($dictFile) ? require $dictFile : [];
     }
     

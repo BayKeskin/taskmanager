@@ -31,7 +31,7 @@ function translateApiMessage(string $msg): string {
     
     static $dict = null;
     if ($dict === null) {
-        $dictFile = __DIR__ . '/../../Config/api_translations.php';
+        $dictFile = __DIR__ . '/../Config/api_translations.php';
         $dict = file_exists($dictFile) ? require $dictFile : [];
     }
     
