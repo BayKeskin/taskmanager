@@ -234,3 +234,219 @@
     color: var(--text-white);
     outline: none;
 }
+
+/* Modal Structural Layout & Typography */
+.cu-ai-arch-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 16px 22px;
+}
+.cu-ai-arch-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.cu-ai-arch-header-icon {
+    font-size: 24px;
+}
+.cu-ai-arch-header-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-white);
+    margin: 0;
+}
+.cu-ai-arch-header-subtitle {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.cu-ai-arch-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+.cu-ai-arch-close-btn:hover {
+    color: var(--text-white);
+}
+.cu-ai-arch-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+.cu-ai-arch-input-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.cu-ai-arch-label-primary {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 6px;
+}
+.cu-ai-arch-label-white {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-white);
+    display: block;
+    margin-bottom: 6px;
+}
+.cu-ai-arch-drop-icon {
+    font-size: 22px;
+}
+.cu-ai-arch-drop-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin-top: 4px;
+}
+.cu-ai-arch-drop-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.cu-ai-arch-selected-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+}
+.cu-ai-arch-selected-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-white);
+}
+.cu-ai-arch-selected-size {
+    font-size: 10.5px;
+    color: #00b894;
+}
+.cu-ai-arch-btn-remove {
+    background: rgba(255, 71, 87, 0.2);
+    border: none;
+    color: #ff4757;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.cu-ai-arch-btn-remove:hover {
+    background: rgba(255, 71, 87, 0.35);
+}
+.cu-ai-arch-select {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    color: var(--text-white);
+    padding: 8px;
+    font-size: 12.5px;
+    margin-bottom: 12px;
+}
+.cu-ai-arch-guarantee-text {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+.cu-ai-arch-tip-text {
+    font-size: 12.5px;
+    color: var(--text-white);
+    line-height: 1.4;
+}
+.cu-ai-arch-actions-wrap {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.cu-ai-arch-btn-sub {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-white);
+    font-size: 11.5px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.cu-ai-arch-btn-epic {
+    background: rgba(123, 104, 238, 0.2);
+    border: 1px solid #7B68EE;
+    color: #fff;
+    font-size: 11.5px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.cu-ai-arch-btn-back {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.cu-ai-arch-ext-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #d8b4fe;
+    margin-bottom: 8px;
+}
+.cu-ai-arch-ext-list {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+.cu-ai-arch-epics-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.cu-ai-arch-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 22px;
+    border-top: 1px solid var(--border-subtle);
+}
+.cu-ai-arch-badge-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+.cu-ai-arch-footer-actions {
+    display: flex;
+    gap: 10px;
+}
+.cu-ai-arch-btn-cancel {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
+}
+.cu-ai-arch-btn-approve {
+    display: none;
+    background: #00b894;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.cu-ai-arch-btn-approve:hover {
+    background: #00a382;
+}
+.cu-hidden-file-input {
+    display: none;
+}
+.cu-initially-hidden {
+    display: none;
+}

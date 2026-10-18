@@ -343,27 +343,7 @@ window.BOARD_I18N = {
 </script>
 
 <!-- GÜNLÜK AI STANDUP MODALI -->
-<div class="cu-modal-overlay" id="modalAiStandup" onclick="if(event.target === this) closeModal('modalAiStandup')">
-    <div class="cu-modal" style="max-width:680px; max-height:90vh; display:flex; flex-direction:column;">
-        <div class="cu-modal-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-size:20px;">🤖</span>
-                <h3 style="font-size:16px; font-weight:700; color:var(--text-white); margin:0;"><?= __('tasks.ai_standup_modal_title', 'Günlük AI Standup & Görev Özeti') ?></h3>
-            </div>
-            <button type="button" onclick="closeModal('modalAiStandup')" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer;">&times;</button>
-        </div>
-        <div class="cu-modal-body" id="aiStandupContent" style="flex:1; overflow-y:auto; padding:20px;">
-        </div>
-        <div class="cu-modal-footer" style="display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-top:1px solid var(--border-subtle);">
-            <button type="button" class="cu-btn-sm cu-btn-secondary" onclick="sendStandupEmail()" style="display:flex; align-items:center; gap:6px;">
-                <span>📧</span> <span><?= __('tasks.ai_standup_send_email_btn', 'E-Posta Bülteni Gönder') ?></span>
-            </button>
-            <button type="button" class="cu-btn-sm" onclick="closeModal('modalAiStandup')">
-                <?= __('tasks.modal_close', 'Kapat') ?>
-            </button>
-        </div>
-    </div>
-</div>
+<?php include __DIR__ . '/modals/ai_standup.php'; ?>
 
 <!-- 🐙 GITHUB DEVOPS AYARLARI MODALI -->
 

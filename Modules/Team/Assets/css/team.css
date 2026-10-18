@@ -14,3 +14,146 @@
     align-items: center;
     gap: 12px;
 }
+
+/* Team Modal & Form Elements */
+.cu-team-modal {
+    max-width: 480px;
+}
+.cu-team-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.cu-team-modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-team-modal-body {
+    padding: 16px 20px;
+}
+.cu-team-modal-footer {
+    padding: 14px 20px;
+    background: var(--bg-card-hover);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    align-items: center;
+}
+.cu-team-form-group {
+    margin-bottom: 14px;
+}
+.cu-team-form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.cu-team-form-label-inline {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0;
+}
+.cu-team-form-input {
+    width: 100%;
+    height: 38px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0 12px;
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+}
+.cu-team-form-select {
+    width: 100%;
+    height: 38px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0 10px;
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+}
+.cu-team-pwd-label-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.cu-team-btn-random-pwd {
+    background: none;
+    border: none;
+    color: var(--brand-primary);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+}
+.cu-team-form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.cu-team-client-box {
+    margin-bottom: 14px;
+    background: rgba(123, 104, 238, 0.06);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px dashed rgba(123, 104, 238, 0.35);
+}
+.cu-team-client-box-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brand-primary);
+    margin-bottom: 6px;
+}
+.cu-team-client-box-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 6px 0 0 0;
+}
+.cu-team-hint-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    display: block;
+}
+.cu-team-color-picker-wrap {
+    margin-bottom: 10px;
+}
+.cu-team-color-dots-flex {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.cu-team-color-option {
+    cursor: pointer;
+}
+.cu-team-color-radio {
+    display: none;
+}
+.color-dot {
+    display: inline-block;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+}
+.dot-purple { background: #7B68EE; }
+.dot-teal { background: #06D6A0; }
+.dot-amber { background: #f59e0b; }
+.dot-red { background: #ef4444; }
+.dot-blue { background: #3b82f6; }
+.dot-pink { background: #ec4899; }
