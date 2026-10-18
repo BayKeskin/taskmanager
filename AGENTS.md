@@ -18,7 +18,7 @@ Under NO circumstances shall the user ever encounter:
 
 ## 1. USER'S ROLE vs. AGENT'S ROLE
 - **The User's Role:** The user is NOT a QA/test employee. Finding missing parts, broken buttons, or bugs is NEVER the user's responsibility. The user only reviews high-level product vision and user experience.
-- **The Agent's Role:** Verifying and proving that the system functions logically, visually, and operationally with 100% perfection is **100% the Agent's responsibility**.
+- **The Agent's Role:** Verifying and proving that the system functions logically, görsel, and operationally with 100% perfection is **100% the Agent's responsibility**.
 
 ---
 
@@ -50,7 +50,7 @@ Under NO circumstances shall the user ever encounter:
 > ### 🌐 TRI-STAGE LANGUAGE SPECIFICATION:
 > 1. **Input Stage (Task Language):** Accept and comprehend user requests and task descriptions in whatever language they are written (Turkish, German, English, etc.) without altering their semantic intent.
 > 2. **Rule & Guardrail Execution Stage (English Doctrine):** Internalize, reason, and execute all development rules, QA checks, architectural principles, and safety constraints strictly in English for maximal precision and prompt compliance.
-> 3. **Output & Delivery Stage (Task/User Language):** Produce the final task delivery notes (`Helper::submitTaskDirectly` notes), user responses, and test instructions in the language of the task or the creator's default language (e.g., if the task is in Turkish, respond and document in Turkish; if in German, respond in German).
+> 3. **Output & Delivery Stage (Task/User Language):** Produce the final task delivery notes (`\Modules\Board\Services\TaskLifecycleService::submitTaskDirectly()` notes), user responses, and test instructions in the language of the task or the creator's default language (e.g., if the task is in Turkish, respond and document in Turkish; if in German, respond in German).
 
 ---
 
@@ -60,41 +60,42 @@ Every completed task must provide an exhaustive summary formatted as follows:
 2. **Where to Test (Nereden Test Edilir):** Direct testable URLs (e.g., `http://localhost/taskmanager/board?project_id=1`).
 3. **How to Test (Nasıl Test Edilir):** Step-by-step credentials, actions, buttons to click, and expected outcomes.
 4. **Autonomous Test Evidence (Otonom Test Kanıtı):** Summary of automated headless browser and CLI test results.
+5. **Mandatory Architectural Audit Gate (`audit_hmvc.php`):** Before declaring any task finished, submitting a task, or responding to the user, the agent MUST execute `php tests/audit_hmvc.php <ModuleName>` in CLI. If exit code is `1` (any rule violation exists), the agent is STRICTLY FORBIDDEN from stopping or asking the user; it must fix every reported line until the CLI output explicitly states `0 Violations / [PASS]`.
 
 ---
 
 ## 5. MANDATORY TRI-LINGUAL DEVELOPMENT STANDARD (EN, TR, DE)
 
 > ### 🌐 UNIVERSAL I18N MANDATE:
-> **Every single feature, user interface component, button, modal, form input, validation message, API response, notification, email bulletin, and system log developed in this project MUST be completely and seamlessly implemented across all three supported languages:**
+> **Every single feature, user interface component, button, modal, form input, validation message, API response (`$this->respond(...)`), notification, email bulletin, and system log developed in this project MUST be completely and seamlessly implemented across all three supported languages:**
 > 1. **English (`en`):** Default international standard.
 > 2. **Turkish (`tr`):** Primary native locale.
 > 3. **German (`de`):** Primary European enterprise locale.
 
 ### 🚫 STRICT PROHIBITIONS:
-1. **NO Hardcoded Strings:** It is strictly prohibited to hardcode any user-facing text, label, tooltip, confirmation prompt, alert dialog, or error message in any single language in any View (`Modules/**/Views/**/*.php`), Controller (`Modules/**/Controllers/**/*.php`), JavaScript file (`Modules/**/Assets/js/**/*.js`), or Component.
+1. **NO Hardcoded Strings (Acceptance Criterion #3):** It is strictly prohibited to hardcode any user-facing text, label, tooltip, confirmation prompt, alert dialog, or API response message (such as `$this->respond(false, 'Mesaj metni veya dosya eki zorunludur.');`) in any single language in any View (`Modules/**/Views/**/*.php`), Controller (`Modules/**/Controllers/**/*.php`), Service (`Modules/**/Services/**/*.php`), Model (`Modules/**/Models/**/*.php`), JavaScript file (`Modules/**/Assets/js/**/*.js`), or Component. All strings must be connected to the module's own language dictionary files.
 2. **NO Single-Language Fallbacks:** Hardcoded single-language fallbacks (such as `__('ModuleName::key', 'Hardcoded Turkish')`) that ignore the user's active language are strictly forbidden. All fallbacks must dynamically resolve through `Language::current()` or utilize localized default dictionary lookups.
 3. **NO Unregistered Inline Scripts in Views:** Placing raw `<script> window.X = {...}; </script>` blocks inside View templates to expose language strings or context data is strictly prohibited. All client-side i18n data MUST be registered via `AssetManager::localizeScript()`.
 
 ### 📋 DEVELOPER REQUIREMENTS FOR EVERY TASK:
-1. **Module-Isolated Dictionary Files:** Every new or modified translation MUST be defined inside the module's own language files across all 3 languages:
+1. **Module-Isolated Dictionary Files:** Every new or modified translation MUST be defined inside the module's own language files across all 3 languages with 100% identical array keys:
    - `Modules/{ModuleName}/Lang/tr.php`
    - `Modules/{ModuleName}/Lang/en.php`
    - `Modules/{ModuleName}/Lang/de.php`
-   - All string lookups MUST strictly use the module namespace syntax: `__('ModuleName::key')`.
+   - All string lookups MUST strictly use the module namespace syntax: `__('ModuleName::key')` or `$this->lang('ModuleName::key')`.
    - Core dictionaries (`Core/Lang/{tr,en,de}/app.php`) are strictly reserved for global layout elements (Navbar, Sidebar, Command Palette) and must NOT be polluted with module-specific strings.
 2. **Client-Side I18n Bridge via AssetManager:** For dynamic JavaScript interactions (prompts, confirms, alerts, modals, fetch requests), controllers or module `init.php` files must register localized data via:
-   ```php
-   \Core\AssetManager::localizeScript('handle-name', 'OBJECT_NAME', [
-       'key' => __('ModuleName::key')
-   ]);
-   ```
+
+       \Core\AssetManager::localizeScript('handle-name', 'OBJECT_NAME', [
+           'key' => __('ModuleName::key')
+       ]);
+
 3. **Multi-Channel Language Resolution:** All backend endpoints (REST API, AJAX controllers, SSE streams, Webhooks) must actively honor the 4 language detection channels:
    - URL parameter: `?lang=en|tr|de`
    - HTTP Headers: `Accept-Language` or `X-Language: en|tr|de`
    - Request Body: `{"lang": "en"}`
    - User Profile Preference: `$_SESSION['user']->language` or DB setting.
-4. **Mandatory 3-Language Autonomous QA Testing:** Before marking any task as complete or calling `TaskLifecycleService::submitTaskDirectly()`, the agent is strictly obligated to autonomously test the feature across all three languages (`?lang=en`, `?lang=tr`, `?lang=de`) in both CLI test scripts and live headless browser sessions to guarantee zero unlocalized strings or missing translation keys.
+4. **Mandatory 3-Language Autonomous QA Testing:** Before marking any task as complete or calling `\Modules\Board\Services\TaskLifecycleService::submitTaskDirectly()`, the agent is strictly obligated to autonomously test the feature across all three languages (`?lang=en`, `?lang=tr`, `?lang=de`) in both CLI test scripts and live headless browser sessions to guarantee zero unlocalized strings or missing translation keys.
 
 ---
 
@@ -102,28 +103,28 @@ Every completed task must provide an exhaustive summary formatted as follows:
 
 > ### 🛑 ZERO SPAGHETTI RULE:
 > **All feature development, refactoring, and data handling MUST adhere to a strict Modular Model-View-Controller (HMVC) architecture.**
-> **Writing spaghetti code where Views directly communicate with the database, or where Controllers execute raw SQL bypasses, is STRICTLY FORBIDDEN.**
+> **Writing spaghetti code where Views directly communicate with the database/Models, or where Controllers/Services execute raw SQL bypasses, is STRICTLY FORBIDDEN.**
 
 ### 🏛️ MANDATORY HMVC FLOW:
-```
-View (UI Presentation) ➔ Controller (Request & Flow Coordinator) ➔ Model (Business Logic & Domain Queries) ➔ Database (Data Layer)
-                                                                ▲
-Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Data Preparation) ➔ View (Rendered HTML)
-```
 
-### 🚫 STRICT PROHIBITIONS:
-1. **NO Direct Database Calls in Views:** It is strictly prohibited to execute SQL queries, use `$db`, `global $db`, or call DataLayer/PDO methods inside any View file (`Modules/**/Views/**/*.php`) or UI component.
-2. **NO Direct Model Instantiation in Views:** Views are solely presentation templates. Calling `new ...Model()` or invoke model query methods inside view templates is strictly prohibited. All view data MUST be prepared by the Controller and injected cleanly.
-3. **NO Direct Controller/Service-to-SQL Bypasses:** Controllers and Service classes must NOT contain raw inline SQL queries (`$db->query()`, `$db->row_query()`, `$db->exec_query()`, `$db->insert()`, `$db->delete()`). All database queries, schema operations, and entity relationships must be encapsulated within dedicated Model classes (`Modules/{ModuleName}/Models/{ModelName}.php`).
-4. **NO Inline CSS or JavaScript in Views:**
-   - Writing inline `style="..."` attributes in Views and Modals is prohibited. All styles must reside in `Modules/{ModuleName}/Assets/css/` stylesheets.
-   - Embedding `<script>` logic blocks inside Views and Modals is prohibited. All JavaScript code must reside in `Modules/{ModuleName}/Assets/js/`, and client data must be bound via `AssetManager::localizeScript()`.
+    View (UI Presentation) ➔ Controller (Request & Flow Coordinator) ➔ Model (Business Logic & Domain Queries) ➔ Database (Data Layer)
+                                                                    ▲
+    Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Data Preparation) ➔ View (Rendered HTML)
+
+### 🚫 STRICT PROHIBITIONS (THE 4 GOLDEN ACCEPTANCE CRITERIA):
+1. **CRITERION 1 - NO Direct Model or Database Access in Views:** View files (`Modules/**/Views/**/*.php`) and UI components CANNOT access Models or the Database directly. There MUST always be a Controller in between. Executing SQL queries, using `$db`, `global $db`, `$this->db`, calling DataLayer/PDO methods, or calling `new ...Model()` / `Model::` inside any View template is strictly prohibited. All view data MUST be prepared by the Controller and injected cleanly.
+2. **CRITERION 2 - NO SQL Queries or DB Calls in Controllers/Services:** Controllers (`Modules/**/Controllers/**/*.php`), Services (`Modules/**/Services/**/*.php`), and `init.php` files CANNOT execute SQL queries or DB methods that belong inside a Model (such as `$this->db->exec_query()`, `$this->db->query()`, `$this->db->row_query()`, `$this->db->insert()`, `$this->db->delete()`, `->prepare()`, `SELECT`, `INSERT`, `UPDATE`, `DELETE`). All database queries and mutations MUST come from dedicated Model classes (`Modules/{ModuleName}/Models/{ModelName}.php`).
+3. **CRITERION 3 - NO Hardcoded Language Strings Anywhere:** Static Turkish, English, or German strings (such as `$this->respond(false, 'Mesaj metni veya dosya eki zorunludur.');`) CANNOT exist in Controllers, Models, Services, Views, or JS files. Every string must come from the module's own `Lang/{tr,en,de}.php` files via `__('ModuleName::key')`.
+4. **CRITERION 4 - NO Inline or In-File CSS and JS Blocks:**
+   - View files, Modals, and PHP files CANNOT contain inline `style="..."` attributes or in-file `<style>...</style>` blocks. Every style rule must come from the module's own CSS files under `Modules/{ModuleName}/Assets/css/`.
+   - View files, Modals, and PHP files CANNOT contain in-file `<script>...</script>` blocks or inline event attributes (`onclick="..."`, `onchange="..."`, `onsubmit="..."`). Every script and event listener must come from the module's own JS files under `Modules/{ModuleName}/Assets/js/`, with dynamic data passed via `AssetManager::localizeScript()`.
 5. **NO Embedded Modals in Page Views:** Modal dialogs must not be embedded directly inside page templates. Every modal MUST reside in its own dedicated file under `Modules/{ModuleName}/Views/modals/{modal_name}.php`.
 
 ### 📋 DEVELOPER REQUIREMENTS FOR EVERY VIEW & COMPONENT:
 1. **Dedicated Controllers:** Every View template must be backed by a corresponding Controller extending `Core\BaseController` (e.g., `Modules\Board\Controllers\BoardController`).
 2. **Dedicated Models:** All database interactions must be abstracted into Model classes extending `Core\BaseModel` (e.g., `Modules\Board\Models\TaskModel`).
 3. **Clean Variable Injection:** Controllers must pass clean, typed arrays or objects to Views (e.g., via Controller methods returning structured data extracted into the template).
+4. **Automated Gatekeeper Verification:** Every module modification must pass `php tests/audit_hmvc.php <ModuleName>` with zero violations before task completion.
 
 ---
 
@@ -134,7 +135,7 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 
 ### 🚫 STRICT PROHIBITIONS:
 1. **NO Unpushed or Lingering Commits:** It is strictly prohibited to leave code changes uncommitted or unpushed in the local repository after completing work or marking a task as done.
-2. **NO Work Submission Without Push:** Under NO circumstances should `Helper::submitTaskDirectly()`, task workflow API submission, or a user response declaring completion be executed before verifying that `git push` succeeded without errors.
+2. **NO Work Submission Without Push:** Under NO circumstances should `\Modules\Board\Services\TaskLifecycleService::submitTaskDirectly()`, task workflow API submission, or a user response declaring completion be executed before verifying that `git push` succeeded without errors.
 
 ### 📋 DEVELOPER REQUIREMENTS FOR EVERY TASK:
 1. **Atomic & Descriptive Commits:** Every task or logical change must be committed using standard conventional commit formatting (e.g., `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`).
@@ -166,8 +167,8 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 > The following project-specific technical rules, styling constraints, and workflow directives must be strictly observed for project [01] Task Manager:
 
 ### [01] Task Manager Project Rules
-- **Strict HMVC Architecture:** Direct SQL execution, calling `$db`, or instantiating Models inside any View (`Modules/**/Views/**/*.php`) or UI Component is strictly forbidden. All database queries must reside in dedicated Model classes extending `Core\BaseModel`, and request orchestration must remain within Controllers extending `Core\BaseController`. Direct SQL execution inside Controllers or Services is forbidden.
-- **Universal Tri-Lingual Standard (i18n):** All UI texts, error/success messages, and system notifications must be managed via module-isolated `Modules/{ModuleName}/Lang/{lang}.php` dictionaries across all 3 languages (TR, EN, DE). Hardcoded single-language strings and inline translation blocks in views are strictly prohibited.
+- **Strict HMVC Architecture:** Direct SQL execution, calling `$db` / `$this->db`, or instantiating Models inside any View (`Modules/**/Views/**/*.php`) or UI Component is strictly forbidden. All database queries must reside in dedicated Model classes extending `Core\BaseModel`, and request orchestration must remain within Controllers extending `Core\BaseController`. Direct SQL execution (`$this->db->exec_query()`, etc.) inside Controllers, Services, or `init.php` is strictly forbidden.
+- **Universal Tri-Lingual Standard (i18n):** All UI texts, error/success messages (including `$this->respond(...)` payloads), and system notifications must be managed via module-isolated `Modules/{ModuleName}/Lang/{lang}.php` dictionaries across all 3 languages (TR, EN, DE). Hardcoded single-language strings and inline translation blocks in views are strictly prohibited.
 - **HMVC & Modular Isolation Standard (MANDATORY):** All modules in the system must be fully isolated (self-contained) under `Modules/{ModuleName}/`. Without exception, each module must contain the following 5 elements in its own folder:
   1. `module.json` (ID, version, slug, dependencies),
   2. `init.php` (hooks, AssetManager asset and i18n queue entries),
@@ -175,11 +176,12 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
   4. `Assets/js/` and `Assets/css/` (Static files belonging to the module, enqueued using `AssetManager::enqueueJs/Css` with data localized via `AssetManager::localizeScript`),
   5. `Controllers/`, `Models/`, `Views/` (Business logic derived from `Core\BaseController` and `Core\BaseModel`).
 - **Zero Inline Code Doctrine:**
-  - Zero inline CSS (`style="..."` attributes) in Views and Modals; all styles must reside in `Modules/{ModuleName}/Assets/css/`.
-  - Zero inline JavaScript (`<script>` logic blocks) in Views and Modals; all client-side data and i18n strings must be exposed via `AssetManager::localizeScript()`.
+  - Zero inline CSS (`style="..."` attributes or `<style>` blocks) in Views and Modals; all styles must reside in `Modules/{ModuleName}/Assets/css/`.
+  - Zero inline JavaScript (`<script>` logic blocks or `onclick="..."` attributes) in Views and Modals; all client-side data and i18n strings must be exposed via `AssetManager::localizeScript()`.
   - Zero embedded modals in page view templates; all modals must be isolated files in `Modules/{ModuleName}/Views/modals/{modal_name}.php`.
+- **Mandatory Automated HMVC Audit:** Before completing any task, the agent MUST run `php tests/audit_hmvc.php <ModuleName>` (or `ALL`) and resolve every reported violation until the output reports `0 Violations / [PASS]`.
 - **QA Doctrine:** "The User Is Not a QA Tester". Every button, modal, form input, state transition, and AJAX call must be autonomously verified in the live environment using headless browser, curl, and CLI scripts before task completion.
-- **Task Delivery Protocol:** Tasks must be delivered via `\Modules\Board\Services\TaskLifecycleService::submitTaskDirectly()` following the 4-stage Definition of Done (DoD) format (What Was Done, Where to Test, How to Test, Autonomous Test Evidence).
+- **Task Delivery Protocol:** Tasks must be delivered via `\Modules\Board\Services\TaskLifecycleService::submitTaskDirectly()` following the 5-stage Definition of Done (DoD) format (What Was Done, Where to Test, How to Test, Autonomous Test Evidence, HMVC Audit Output).
 - **Documentation Access via REST API:** Project documentation must NOT be stored as loose markdown files in the root directory. AI Agents can query all project documentation via `GET http://localhost/taskmanager/api/projects/{code}/docs` and fetch full document contents using `GET http://localhost/taskmanager/api/docs/{id}` with header `Authorization: Bearer <api_token>`.
 - **Taskmanager Access Credentials:**
   - Email: `iletisimtktalha@gmail.com`
@@ -208,27 +210,21 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 
 ### 💻 Fast Retrieval CLI Examples:
 - **PowerShell (List Docs for Project 01):**
-  ```powershell
-  $headers = @{ 'Authorization' = 'Bearer tm_admin_talha_keskin_token_2026' }
-  (Invoke-RestMethod -Uri 'http://localhost/taskmanager/api/projects/01/docs' -Headers $headers).data | Select-Object id, title
-  ```
+
+      $headers = @{ 'Authorization' = 'Bearer tm_admin_talha_keskin_token_2026' } (Invoke-RestMethod -Uri 'http://localhost/taskmanager/api/projects/01/docs' -Headers$headers).data | Select-Object id, title
+
 - **PowerShell (Read Document Content):**
-  ```powershell
-  $headers = @{ 'Authorization' = 'Bearer tm_admin_talha_keskin_token_2026' }
-  (Invoke-RestMethod -Uri 'http://localhost/taskmanager/api/docs/97' -Headers $headers).data.content
-  ```
+
+      $headers = @{ 'Authorization' = 'Bearer tm_admin_talha_keskin_token_2026' } (Invoke-RestMethod -Uri 'http://localhost/taskmanager/api/docs/97' -Headers$headers).data.content
+
 - **cURL:**
-  ```bash
-  curl -s -H "Authorization: Bearer tm_admin_talha_keskin_token_2026" "http://localhost/taskmanager/api/projects/01/docs"
-  ```
+
+      curl -s -H "Authorization: Bearer tm_admin_talha_keskin_token_2026" "http://localhost/taskmanager/api/projects/01/docs"
+
 - **Python:**
-  ```python
-  import requests
-  headers = {"Authorization": "Bearer tm_admin_talha_keskin_token_2026"}
-  resp = requests.get("http://localhost/taskmanager/api/projects/01/docs", headers=headers).json()
-  for doc in resp.get("data", []):
-      print(f"[{doc['id']}] {doc['title']}")
-  ```
 
-
-
+      import requests
+      headers = {"Authorization": "Bearer tm_admin_talha_keskin_token_2026"}
+      resp = requests.get("http://localhost/taskmanager/api/projects/01/docs", headers=headers).json()
+      for doc in resp.get("data", []):
+          print(f"[{doc['id']}] {doc['title']}")

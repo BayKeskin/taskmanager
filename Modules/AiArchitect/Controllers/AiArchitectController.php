@@ -26,7 +26,7 @@ class AiArchitectController extends BaseController
             $this->json([
                 'status'  => 'error',
                 'success' => false,
-                'message' => __('AiArchitect::empty_instruction', 'Lütfen ne yapmak istediğinize dair kısa bir açıklama veya yönerge girin.')
+                'message' => __('AiArchitect::empty_instruction')
             ]);
             return;
         }
@@ -91,7 +91,7 @@ class AiArchitectController extends BaseController
             $this->json([
                 'status'        => 'success',
                 'success'       => true,
-                'message'       => __('AiArchitect::spec_generated_success', 'Şartname başarıyla üretildi!'),
+                'message'       => __('AiArchitect::spec_generated_success'),
                 'specification' => $result['specification'],
                 'engine'        => $result['engine'] ?? 'ai'
             ]);
@@ -99,7 +99,7 @@ class AiArchitectController extends BaseController
             $this->json([
                 'status'  => 'error',
                 'success' => false,
-                'message' => $result['error'] ?? __('AiArchitect::spec_generate_failed', 'Şartname üretilemedi.')
+                'message' => $result['error'] ?? __('AiArchitect::spec_generate_failed')
             ]);
         }
     }

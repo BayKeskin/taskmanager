@@ -123,7 +123,7 @@ function toggleAllSubtaskDetails() {
 async function runAiBriefDecomposition() {
     const input = document.getElementById('aiArchBriefInput');
     const brief = input ? input.value.trim() : '';
-    const projSelect = document.getElementById('aiArchProjectSelect');
+    const projSelect = document.getElementById('aiArchProjDropdown') || document.getElementById('aiArchProjectSelect');
     const projId = projSelect ? projSelect.value : 1;
 
     const fileInput = document.getElementById('aiArchFileInput');
@@ -391,7 +391,7 @@ async function submitAiArchitectTree() {
         return;
     }
 
-    const projSelect = document.getElementById('aiArchProjectSelect');
+    const projSelect = document.getElementById('aiArchProjDropdown') || document.getElementById('aiArchProjectSelect');
     const projId = projSelect ? projSelect.value : 1;
     const btn = document.getElementById('btnApproveAiArch');
     const origText = btn ? btn.innerHTML : '';
@@ -427,3 +427,79 @@ async function submitAiArchitectTree() {
         }
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('modalAiArchitect');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal('modalAiArchitect');
+            }
+        });
+    }
+
+    const btnCloseHeader = document.getElementById('btnAiArchCloseHeader');
+    if (btnCloseHeader) {
+        btnCloseHeader.addEventListener('click', function() {
+            closeModal('modalAiArchitect');
+        });
+    }
+
+    const btnCancelModal = document.getElementById('btnAiArchCancelModal');
+    if (btnCancelModal) {
+        btnCancelModal.addEventListener('click', function() {
+            closeModal('modalAiArchitect');
+        });
+    }
+
+    const dropzone = document.getElementById('aiArchDropzone');
+    const fileInput = document.getElementById('aiArchFileInput');
+    if (dropzone && fileInput) {
+        dropzone.addEventListener('click', function(e) {
+            if (e.target.closest('#btnAiArchClearFile')) return;
+            fileInput.click();
+        });
+        dropzone.addEventListener('dragover', handleAiArchDragOver);
+        dropzone.addEventListener('dragleave', handleAiArchDragLeave);
+        dropzone.addEventListener('drop', handleAiArchFileDrop);
+
+        fileInput.addEventListener('change', function() {
+            handleAiArchFileSelect(this);
+        });
+    }
+
+    const btnClearFile = document.getElementById('btnAiArchClearFile');
+    if (btnClearFile) {
+        btnClearFile.addEventListener('click', clearAiArchFile);
+    }
+
+    const btnRun = document.getElementById('btnRunAiDecompose');
+    if (btnRun) {
+        btnRun.addEventListener('click', runAiBriefDecomposition);
+    }
+
+    const btnToggleDetails = document.getElementById('btnAiArchToggleAllDetails');
+    if (btnToggleDetails) {
+        btnToggleDetails.addEventListener('click', toggleAllSubtaskDetails);
+    }
+
+    const btnAddEpic = document.getElementById('btnAiArchAddNewEpic');
+    if (btnAddEpic) {
+        btnAddEpic.addEventListener('click', addNewBlankEpic);
+    }
+
+    const btnBack = document.getElementById('btnAiArchBackToStep1');
+    if (btnBack) {
+        btnBack.addEventListener('click', function() {
+            const s1 = document.getElementById('aiArchStep1');
+            const s2 = document.getElementById('aiArchStep2');
+            if (s2) s2.style.display = 'none';
+            if (s1) s1.style.display = 'block';
+        });
+    }
+
+    const btnApprove = document.getElementById('btnApproveAiArch');
+    if (btnApprove) {
+        btnApprove.addEventListener('click', submitAiArchitectTree);
+    }
+});

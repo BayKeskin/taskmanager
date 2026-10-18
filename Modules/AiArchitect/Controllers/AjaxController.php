@@ -2,9 +2,19 @@
 namespace Modules\AiArchitect\Controllers;
 
 use Core\BaseController;
+use Modules\AiArchitect\Models\AiArchitectModel;
+use Modules\AiArchitect\Services\TaskDecomposerService;
 
 class AjaxController extends BaseController
 {
+    private AiArchitectModel $model;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->model = new AiArchitectModel();
+    }
+
     private function respond(bool $success, string $message = '', array $data = []): void
     {
         $payload = array_merge(['success' => $success, 'message' => $message], $data);
@@ -20,7 +30,7 @@ class AjaxController extends BaseController
         @ini_set('max_execution_time', '180');
 
         if ($this->user->role === 'client') {
-            $this->respond(false, 'Yetkisiz erişim.');
+            $this->respond(false, __('AiArchitect::unauthorized'));
         }
 
         $brief = trim($_POST['brief'] ?? '');
@@ -32,31 +42,31 @@ class AjaxController extends BaseController
             if ($fErr !== UPLOAD_ERR_OK && $fErr !== UPLOAD_ERR_NO_FILE) {
                 $maxSize = ini_get('upload_max_filesize') ?: '64M';
                 $errMsg = match ($fErr) {
-                    UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => "Yüklenen döküman boyutu sunucu limitini aşıyor (Maks: {$maxSize}).",
-                    UPLOAD_ERR_PARTIAL   => 'Dosya bağlantı kesintisi nedeniyle sadece kısmen yüklenebildi.',
-                    UPLOAD_ERR_NO_TMP_DIR=> 'Sunucuda geçici dosya yükleme dizini bulunamadı.',
-                    UPLOAD_ERR_CANT_WRITE=> 'Dosya sunucu diskine yazılamadı.',
-                    default              => "Dosya yüklenirken hata oluştu (Kod: {$fErr})."
+                    UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => __('AiArchitect::err_file_size', ['max' => $maxSize]),
+                    UPLOAD_ERR_PARTIAL   => __('AiArchitect::err_file_partial'),
+                    UPLOAD_ERR_NO_TMP_DIR=> __('AiArchitect::err_file_no_tmp'),
+                    UPLOAD_ERR_CANT_WRITE=> __('AiArchitect::err_file_cant_write'),
+                    default              => __('AiArchitect::err_file_upload', ['code' => $fErr])
                 };
                 $this->respond(false, $errMsg);
             }
             if ($fErr === UPLOAD_ERR_OK) {
-                $docInfo = \Modules\AiArchitect\Services\TaskDecomposerService::extractContentAndImagesFromDocument($_FILES['brief_file']);
+                $docInfo = TaskDecomposerService::extractContentAndImagesFromDocument($_FILES['brief_file']);
             }
         }
 
-        $res = \Modules\AiArchitect\Services\TaskDecomposerService::decomposeBriefWithAi($brief, $projectId, $docInfo);
+        $res = TaskDecomposerService::decomposeBriefWithAi($brief, $projectId, $docInfo);
         if (!empty($res['success'])) {
-            $this->respond(true, 'Proje brifi ve döküman başarıyla modüllere, uygulama adımlarına ve görsellere ayrıştırıldı!', $res);
+            $this->respond(true, __('AiArchitect::decompose_success'), $res);
         } else {
-            $this->respond(false, $res['error'] ?? 'Ayrıştırma sırasında hata oluştu.');
+            $this->respond(false, $res['error'] ?? __('AiArchitect::decompose_error'));
         }
     }
 
     public function bulkCreateTasks(): void
     {
         if ($this->user->role === 'client') {
-            $this->respond(false, 'Yetkisiz erişim.');
+            $this->respond(false, __('AiArchitect::unauthorized'));
         }
 
         $projectId = (int)($_POST['project_id'] ?? 1);
@@ -69,7 +79,7 @@ class AjaxController extends BaseController
         $originalDoc   = json_decode($origDocJson, true) ?: null;
 
         if (empty($epics) || !is_array($epics)) {
-            $this->respond(false, 'Kaydedilecek geçerli bir görev ağacı bulunamadı.');
+            $this->respond(false, __('AiArchitect::no_valid_tree'));
         }
 
         $createdEpicsCount = 0;
@@ -77,12 +87,10 @@ class AjaxController extends BaseController
         $defaultDeadline = date('Y-m-d', strtotime('+7 days'));
 
         $useTransaction = false;
-        if (!empty($this->db->connect) && method_exists($this->db->connect, 'beginTransaction')) {
-            try {
-                $this->db->connect->beginTransaction();
-                $useTransaction = true;
-            } catch (\Throwable $e) {}
-        }
+        try {
+            $this->model->beginTransaction();
+            $useTransaction = true;
+        } catch (\Throwable $e) {}
 
         try {
             foreach ($epics as $epic) {
@@ -96,44 +104,42 @@ class AjaxController extends BaseController
 
                 $epicTags = ($execMode === 'gated') ? 'Epic, chain_gated' : 'Epic, chain_auto';
                 if ($execMode === 'gated') {
-                    $epicDesc = "[ONAY_KAPILI] (Bu modüldeki alt görevler yönetici onayıyla adım adım ilerler)\n\n" . $epicDesc;
+                    $epicDesc = __('AiArchitect::gated_prefix_note') . "\n\n" . $epicDesc;
                 }
 
                 if (!empty($extractedImgs)) {
-                    $epicDesc .= "\n\n---\n📎 **Dökümandan Çıkarılan Referans Görseller:**\n";
+                    $epicDesc .= "\n\n---\n" . __('AiArchitect::extracted_images_heading') . "\n";
                     foreach ($extractedImgs as $imgItem) {
-                        $epicDesc .= "- ![" . ($imgItem['file_name'] ?? 'Görsel') . "](" . ($imgItem['file_path'] ?? '') . ")\n";
+                        $imgFallback = __('AiArchitect::image_fallback');
+                        $epicDesc .= "- ![" . ($imgItem['file_name'] ?? $imgFallback) . "](" . ($imgItem['file_path'] ?? '') . ")\n";
                     }
                 }
 
-                $lastId = (int)$this->db->single_query("SELECT MAX(id) FROM tasks") ?: 0;
-                $epicCode = 'TSK-' . str_pad($lastId + 1, 3, '0', STR_PAD_LEFT);
+                $epicCode = $this->model->getNextTaskCode();
 
-                $insEpic = $this->db->insert("tasks", [
-                    'project_id', 'task_code', 'title', 'description', 'tags', 'is_gated', 'priority',
-                    'status', 'deadline', 'created_by', 'assigned_to'
-                ], [
-                    $projectId, $epicCode, $epicTitle, $epicDesc, $epicTags, $isGatedVal, $epicPriority,
-                    'assigned', $defaultDeadline, $this->user->id, $this->user->id
+                $epicId = $this->model->insertEpicTask([
+                    'project_id'  => $projectId,
+                    'task_code'   => $epicCode,
+                    'title'       => $epicTitle,
+                    'description' => $epicDesc,
+                    'tags'        => $epicTags,
+                    'is_gated'    => $isGatedVal,
+                    'priority'    => $epicPriority,
+                    'deadline'    => $defaultDeadline,
+                    'created_by'  => $this->user->id,
+                    'assigned_to' => $this->user->id
                 ]);
 
-                if ($insEpic) {
-                    $epicId = (int)$this->db->last_insert_id();
+                if ($epicId > 0) {
                     $createdEpicsCount++;
-                    $this->db->exec_query("INSERT IGNORE INTO task_assignees (task_id, user_id) VALUES (?, ?)", [$epicId, $this->user->id]);
+                    $this->model->assignUserToTask($epicId, $this->user->id);
 
                     if ($originalDoc && !empty($originalDoc['file_path'])) {
-                        $this->db->exec_query("
-                            INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
-                            VALUES (?, ?, ?, ?, ?, ?, NOW())
-                        ", [$epicId, $this->user->id, $originalDoc['file_name'], $originalDoc['file_path'], $originalDoc['file_type'], (int)$originalDoc['file_size']]);
+                        $this->model->attachFileToTask($epicId, $this->user->id, $originalDoc);
                     }
                     foreach ($extractedImgs as $imgItem) {
                         if (!empty($imgItem['file_path'])) {
-                            $this->db->exec_query("
-                                INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
-                                VALUES (?, ?, ?, ?, ?, ?, NOW())
-                            ", [$epicId, $this->user->id, $imgItem['file_name'], $imgItem['file_path'], $imgItem['file_type'], (int)$imgItem['file_size']]);
+                            $this->model->attachFileToTask($epicId, $this->user->id, $imgItem);
                         }
                     }
 
@@ -158,25 +164,27 @@ class AjaxController extends BaseController
                         }
                         $subTagsStr = implode(', ', array_unique(array_filter($subTagsArr)));
 
-                        $insSub = $this->db->insert("tasks", [
-                            'project_id', 'parent_task_id', 'task_code', 'title', 'description', 'priority',
-                            'status', 'deadline', 'created_by', 'assigned_to', 'tags', 'time_estimate', 'time_spent'
-                        ], [
-                            $projectId, $epicId, $subCode, $subTitle, $subDesc, $subPriority,
-                            'assigned', $defaultDeadline, $this->user->id, $subAssignee, $subTagsStr, $subEstimate, '0m'
+                        $newSubId = $this->model->insertSubTask([
+                            'project_id'     => $projectId,
+                            'parent_task_id' => $epicId,
+                            'task_code'      => $subCode,
+                            'title'          => $subTitle,
+                            'description'    => $subDesc,
+                            'priority'       => $subPriority,
+                            'deadline'       => $defaultDeadline,
+                            'created_by'     => $this->user->id,
+                            'assigned_to'    => $subAssignee,
+                            'tags'           => $subTagsStr,
+                            'time_estimate'  => $subEstimate
                         ]);
 
-                        if ($insSub) {
-                            $newSubId = (int)$this->db->last_insert_id();
+                        if ($newSubId > 0) {
                             $createdSubtasksCount++;
-                            $this->db->exec_query("INSERT IGNORE INTO task_assignees (task_id, user_id) VALUES (?, ?)", [$newSubId, $subAssignee]);
+                            $this->model->assignUserToTask($newSubId, $subAssignee);
 
                             foreach ($extractedImgs as $imgItem) {
                                 if (!empty($imgItem['file_path'])) {
-                                    $this->db->exec_query("
-                                        INSERT INTO task_attachments (task_id, user_id, file_name, file_path, file_type, file_size, created_at)
-                                        VALUES (?, ?, ?, ?, ?, ?, NOW())
-                                    ", [$newSubId, $this->user->id, $imgItem['file_name'], $imgItem['file_path'], $imgItem['file_type'], (int)$imgItem['file_size']]);
+                                    $this->model->attachFileToTask($newSubId, $this->user->id, $imgItem);
                                 }
                             }
                         }
@@ -193,16 +201,19 @@ class AjaxController extends BaseController
             }
 
             if ($useTransaction) {
-                $this->db->connect->commit();
+                $this->model->commit();
             }
         } catch (\Throwable $e) {
             if ($useTransaction) {
-                $this->db->connect->rollBack();
+                $this->model->rollBack();
             }
-            $this->respond(false, 'Toplu kayıt sırasında hata oluştu: ' . $e->getMessage());
+            $this->respond(false, __('AiArchitect::bulk_create_error', ['error' => $e->getMessage()]));
         }
 
-        $this->respond(true, "✅ {$createdEpicsCount} Ana Modül ve {$createdSubtasksCount} Detaylı Alt Görev başarıyla projeye işlendi!", [
+        $this->respond(true, __('AiArchitect::bulk_create_success', [
+            'epics'    => $createdEpicsCount,
+            'subtasks' => $createdSubtasksCount
+        ]), [
             'epics_count'    => $createdEpicsCount,
             'subtasks_count' => $createdSubtasksCount
         ]);

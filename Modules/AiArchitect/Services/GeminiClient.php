@@ -1,13 +1,19 @@
 <?php
 namespace Modules\AiArchitect\Services;
 
-use Core\BaseModel;
+use Modules\AiArchitect\Models\AiArchitectModel;
 
-class GeminiClient extends BaseModel
+class GeminiClient
 {
+    private AiArchitectModel $model;
+
+    public function __construct()
+    {
+        $this->model = new AiArchitectModel();
+    }
+
     /**
-     * Kısa kullanıcı talebini, mockup görsellerini ve kaynak kodları analiz ederek
-     * yüksek disiplinli, detaylı bir teknik şartname (specification prompt) üretir.
+     * Analyzes short developer note, UI mockups, and code files to produce an architectural specification.
      */
     public function refineTaskSpecification(
         int $projectId,
@@ -16,24 +22,16 @@ class GeminiClient extends BaseModel
         array $referenceFiles = [],
         bool $skipLiveApi = false
     ): array {
-        $project = $this->query(
-            "SELECT id, project_code, title, description, agent_rules, workspace_path FROM projects WHERE id = ?",
-            [$projectId]
-        );
-        $projectRow = !empty($project) ? (object)$project[0] : null;
+        $projectRow = $this->model->getProjectDetails($projectId);
+        $settings = $this->model->getAiSettings();
 
-        $settingsRows = $this->query(
-            "SELECT active_ai_provider, default_ai_model, gemini_api_key, openai_api_key, deepseek_api_key FROM settings LIMIT 1"
-        );
-        $settings = !empty($settingsRows) ? (object)$settingsRows[0] : null;
-
-        $projTitle = $projectRow->title ?? 'Proje';
+        $projTitle = $projectRow->title ?? 'Project';
         $projCode  = $projectRow->project_code ?? 'PRJ';
         $projDesc  = $projectRow->description ?? '';
         $projRules = $projectRow->agent_rules ?? '';
 
         $systemPrompt = "You are a Principal Software Architect and elite AI Agent Prompt Engineer.
-Your mission is to examine the provided UI/UX mockup images (wireframes, ChatGPT designs, screenshots), source code files, and user notes, and transform them into an EXTREMELY DETAILED, PIXEL-PERFECT, DEEPLY ANALYZED TECHNICAL SPECIFICATION PROMPT for autonomous coding agents (like Antigravity, Cursor, or Claude Code).
+Your mission is to examine the provided UI/UX mockup images (wireframes, designs, screenshots), source code files, and user notes, and transform them into an EXTREMELY DETAILED, PIXEL-PERFECT, DEEPLY ANALYZED TECHNICAL SPECIFICATION PROMPT for autonomous coding agents (like Antigravity, Cursor, or Claude Code).
 
 CRITICAL VISUAL ANALYSIS DIRECTIVE (WHEN IMAGES ARE PROVIDED):
 You MUST visually analyze the image in extreme detail and explicitly describe every single section you see:
@@ -49,41 +47,41 @@ You MUST visually analyze the image in extreme detail and explicitly describe ev
 MANDATORY RULES:
 1. OUTPUT LANGUAGE: Write the entire specification in the exact language used by the developer in the requirement note (if in Turkish, write completely in Turkish; if German, in German; if English, in English).
 2. TONE & STRUCTURE: Authoritative, structured, and unambiguous. Use clean Markdown with headers, bold points, and code snippets where appropriate:
-   - 🎯 **1. GÖREV AMACI & KAPSAMI** (Purpose & High-level Scope)
-   - 🎨 **2. GÖRSEL TASARIM & UI/UX DETAYLI ANALİZİ** (Exhaustive visual breakdown of EVERY SECTION seen in the image: texts, cards, colors, icons, layout)
-   - 📁 **3. ETKİLENECEK DOSYALAR & MİMARİ YAPI** (Target Files, classes, methods, or DB tables)
-   - 🛠️ **4. ADIM ADIM UYGULAMA YÖNERGESİ** (Concrete step-by-step technical instructions: HTML structure, CSS classes, JS interactions, Mock Data)
-   - 🚫 **5. KESİN YASAKLAR & MİMARİ SINIRLAR** (Prohibitions: No breaking changes, strict project standards, no spaghetti code)
-   - ✅ **6. KABUL & OTONOM DOĞRULAMA KRİTERLERİ (DoD)** (Checklist of verified behaviors: live tests, zero console/PHP errors, responsiveness)
+   - 🎯 **1. SCOPE & OBJECTIVES** (Purpose & High-level Scope)
+   - 🎨 **2. UI/UX VISUAL ANALYSIS** (Exhaustive visual breakdown of EVERY SECTION seen in the image: texts, cards, colors, icons, layout)
+   - 📁 **3. TARGET FILES & ARCHITECTURE** (Target Files, classes, methods, or DB tables)
+   - 🛠️ **4. STEP-BY-STEP IMPLEMENTATION** (Concrete step-by-step technical instructions: HTML structure, CSS classes, JS interactions, Mock Data)
+   - 🚫 **5. STRICT PROHIBITIONS & BOUNDARIES** (No breaking changes, strict project standards, no spaghetti code)
+   - ✅ **6. DEFINITION OF DONE (DoD)** (Checklist of verified behaviors: live tests, zero console/PHP errors, responsiveness)
 3. INCORPORATE ATTACHMENTS: If code files are provided, refer to their actual variables/functions. If images/mockups are provided, describe their visual layout, colors, alignment, and interactive behaviors.
 4. OUTPUT FORMAT: Output ONLY the specification markdown. Do NOT wrap in outer ```markdown code blocks. No conversational greeting or chitchat.";
 
-        $combinedUserPrompt = "PROJE KODU & BAŞLIĞI: [{$projCode}] {$projTitle}\n";
+        $combinedUserPrompt = "PROJECT CODE & TITLE: [{$projCode}] {$projTitle}\n";
         if ($projDesc) {
-            $combinedUserPrompt .= "PROJE ÖZETİ: {$projDesc}\n";
+            $combinedUserPrompt .= "PROJECT OVERVIEW: {$projDesc}\n";
         }
         if ($projRules) {
-            $combinedUserPrompt .= "PROJE KURALLARI & TEKNOLOJİ YIĞINI:\n{$projRules}\n";
+            $combinedUserPrompt .= "PROJECT RULES & TECH STACK:\n{$projRules}\n";
         }
-        $combinedUserPrompt .= "\n--- KULLANICININ TALEBİ / KISA NOTU ---\n{$userInstruction}\n";
+        $combinedUserPrompt .= "\n--- USER INSTRUCTION / REQUIREMENT ---\n{$userInstruction}\n";
 
         if (!empty($referenceFiles)) {
-            $combinedUserPrompt .= "\n--- SAĞLANAN YAZILIM / KOD DOSYALARI ---\n";
+            $combinedUserPrompt .= "\n--- PROVIDED SOURCE CODE FILES ---\n";
             foreach ($referenceFiles as $fInfo) {
-                $fName = $fInfo['name'] ?? 'dosya';
+                $fName = $fInfo['name'] ?? 'file';
                 $fContent = $fInfo['content'] ?? '';
                 if (mb_strlen($fContent) > 25000) {
-                    $fContent = mb_substr($fContent, 0, 25000) . "\n...[Dosya içeriği uzunluğu nedeniyle kırpıldı]...";
+                    $fContent = mb_substr($fContent, 0, 25000) . "\n...[Truncated due to length]...";
                 }
-                $combinedUserPrompt .= "Dosya: `{$fName}`\n```\n{$fContent}\n```\n\n";
+                $combinedUserPrompt .= "File: `{$fName}`\n```\n{$fContent}\n```\n\n";
             }
         }
 
         if (!empty($referenceImages)) {
-            $combinedUserPrompt .= "\nNot: Kullanıcı " . count($referenceImages) . " adet görsel/ekran görüntüsü ekledi. Görseldeki tüm UI bileşenlerini, tipografiyi, renkleri ve etkileşimleri şartnameye yansıt.\n";
+            $combinedUserPrompt .= "\nNote: User attached " . count($referenceImages) . " reference images/screenshots. Reflect all UI components, typography, colors, and interactions into the specification.\n";
         }
 
-        // 1. Google Gemini API Denemesi
+        // 1. Google Gemini API Call
         $apiKey = trim($settings->gemini_api_key ?? '');
         if (!$skipLiveApi && !empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
             $candidateModels = ['gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
@@ -98,25 +96,34 @@ MANDATORY RULES:
                 }
                 $url = "https://generativelanguage.googleapis.com/v1beta/models/{$tryModel}:generateContent?key=" . urlencode($apiKey);
 
-                $userParts = [];
+                $parts = [];
+                $parts[] = ['text' => $combinedUserPrompt];
+
+                // Append reference images as inlineData
                 foreach ($referenceImages as $img) {
-                    if (!empty($img['base64']) && !empty($img['mime'])) {
-                        $userParts[] = [
-                            'inline_data' => [
-                                'mime_type' => $img['mime'],
-                                'data'      => $img['base64']
+                    if (!empty($img['base64'])) {
+                        $parts[] = [
+                            'inlineData' => [
+                                'mimeType' => $img['mime'] ?? 'image/jpeg',
+                                'data'     => $img['base64']
                             ]
                         ];
                     }
                 }
-                $userParts[] = ['text' => $combinedUserPrompt];
 
                 $payload = [
-                    'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
-                    'contents'          => [['role' => 'user', 'parts' => $userParts]],
-                    'generationConfig'  => [
-                        'temperature'     => 0.2,
-                        'maxOutputTokens' => 8192,
+                    'systemInstruction' => [
+                        'parts' => [['text' => $systemPrompt]]
+                    ],
+                    'contents' => [
+                        [
+                            'role'  => 'user',
+                            'parts' => $parts
+                        ]
+                    ],
+                    'generationConfig' => [
+                        'temperature'     => 0.25,
+                        'maxOutputTokens' => 8192
                     ]
                 ];
 
@@ -125,18 +132,18 @@ MANDATORY RULES:
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_POST           => true,
                     CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-                    CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
-                    CURLOPT_TIMEOUT        => 10,
-                    CURLOPT_CONNECTTIMEOUT => 5,
-                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_POSTFIELDS     => json_encode($payload),
+                    CURLOPT_TIMEOUT        => 90,
+                    CURLOPT_SSL_VERIFYPEER => false
                 ]);
+
                 $response = curl_exec($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 curl_close($ch);
 
                 if ($httpCode === 200 && $response) {
-                    $data = json_decode($response, true);
-                    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                    $jsonRes = json_decode($response, true);
+                    $text = $jsonRes['candidates'][0]['content']['parts'][0]['text'] ?? '';
                     if (!empty($text)) {
                         $cleaned = trim(preg_replace('/^```(?:markdown)?\s*|\s*```$/i', '', trim($text)));
                         return [
@@ -149,144 +156,73 @@ MANDATORY RULES:
             }
         }
 
-        // 2. OpenAI / DeepSeek API Denemesi
-        $openAiKey = trim($settings->openai_api_key ?? '');
-        $deepSeekKey = trim($settings->deepseek_api_key ?? '');
-        if (!$skipLiveApi && ((!empty($openAiKey) && !str_contains($openAiKey, 'test_')) || (!empty($deepSeekKey) && !str_contains($deepSeekKey, 'test_')))) {
-            $useDeepSeek = empty($openAiKey) || (($settings->active_ai_provider ?? '') === 'deepseek');
-            $url = $useDeepSeek ? "https://api.deepseek.com/chat/completions" : "https://api.openai.com/v1/chat/completions";
-            $key = $useDeepSeek ? $deepSeekKey : $openAiKey;
-            $model = $useDeepSeek ? 'deepseek-chat' : 'gpt-4o';
-
-            $userContent = [];
-            $userContent[] = ['type' => 'text', 'text' => $combinedUserPrompt];
-
-            if (!$useDeepSeek) {
-                foreach ($referenceImages as $img) {
-                    if (!empty($img['base64']) && !empty($img['mime'])) {
-                        $userContent[] = [
-                            'type'      => 'image_url',
-                            'image_url' => [
-                                'url' => "data:{$img['mime']};base64,{$img['base64']}"
-                            ]
-                        ];
-                    }
-                }
-            }
-
-            $payload = [
-                'model'       => $model,
-                'messages'    => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    ['role' => 'user', 'content' => $useDeepSeek ? $combinedUserPrompt : $userContent]
-                ],
-                'temperature' => 0.3
-            ];
-
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST           => true,
-                CURLOPT_HTTPHEADER     => [
-                    'Content-Type: application/json',
-                    'Authorization: Bearer ' . $key
-                ],
-                CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
-                CURLOPT_TIMEOUT        => 60,
-                CURLOPT_SSL_VERIFYPEER => false,
-            ]);
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpCode === 200 && $response) {
-                $data = json_decode($response, true);
-                $text = $data['choices'][0]['message']['content'] ?? '';
-                if (!empty($text)) {
-                    $cleaned = trim(preg_replace('/^```(?:markdown)?\s*|\s*```$/i', '', trim($text)));
-                    return [
-                        'success'       => true,
-                        'specification' => $cleaned,
-                        'engine'        => $useDeepSeek ? 'deepseek' : 'openai'
-                    ];
-                }
-            }
-        }
-
-        // 3. Fallback Heuristic Specification Generator
-        $fallbackSpec = $this->generateFallbackSpecification(
-            $projTitle,
-            $projCode,
-            $userInstruction,
-            $referenceFiles,
-            !empty($referenceImages)
-        );
-
+        // 2. Fallback Heuristic Generator
+        $fallbackSpec = $this->generateHeuristicSpecification($projCode, $projTitle, $userInstruction, $referenceFiles, !empty($referenceImages));
         return [
             'success'       => true,
             'specification' => $fallbackSpec,
-            'engine'        => 'internal_architect_fallback'
+            'engine'        => 'heuristic_architect'
         ];
     }
 
     /**
-     * API anahtarı girilmediğinde veya servis kapalıyken çalışan dahili mimari fallback motoru
+     * Fallback Heuristic Specification Generator
      */
-    public function generateFallbackSpecification(
-        string $projTitle,
+    private function generateHeuristicSpecification(
         string $projCode,
+        string $projTitle,
         string $instruction,
         array $referenceFiles = [],
         bool $hasImages = false
     ): string {
         $fileListStr = "";
         if (!empty($referenceFiles)) {
-            $fNames = array_map(fn($f) => '`' . ($f['name'] ?? 'dosya') . '`', $referenceFiles);
+            $fNames = array_map(fn($f) => '`' . ($f['name'] ?? 'file') . '`', $referenceFiles);
             $fileListStr = implode(', ', $fNames);
         }
 
-        $spec = "### 🎯 1. GÖREV AMACI & KAPSAMI\n"
-              . "- **Proje:** [{$projCode}] {$projTitle}\n"
-              . "- **Özet:** " . trim($instruction) . "\n\n";
+        $spec = "### 🎯 1. SCOPE & OBJECTIVES\n"
+              . "- **Project:** [{$projCode}] {$projTitle}\n"
+              . "- **Summary:** " . trim($instruction) . "\n\n";
 
-        $spec .= "### 📁 2. ETKİLENECEK DOSYALAR & MİMARİ YAPI\n";
+        $spec .= "### 📁 2. TARGET FILES & ARCHITECTURE\n";
         if ($fileListStr) {
-            $spec .= "- **İncelenecek & Düzenlenecek Kaynak Dosyalar:** {$fileListStr}\n";
+            $spec .= "- **Source Files:** {$fileListStr}\n";
         } else {
-            $spec .= "- Projenin ilgili Controller, Model ve Görünüm (View/Component) dosyaları incelenerek mimariye uygun konumlandırılmalıdır.\n";
+            $spec .= "- Corresponding Controller, Model, and View files must be identified and mapped according to HMVC standards.\n";
         }
-        $spec .= "- Kod mimarisine sadık kalınmalı, projenin mevcut stil ve kodlama standartları korunmalıdır.\n\n";
+        $spec .= "- Strict separation of concerns must be preserved.\n\n";
 
-        $spec .= "### 🛠️ 3. ADIM ADIM UYGULAMA YÖNERGESİ\n";
-        $spec .= "1. **İnceleme & Analiz:** ";
+        $spec .= "### 🛠️ 3. STEP-BY-STEP IMPLEMENTATION\n";
+        $spec .= "1. **Analysis:** ";
         if ($hasImages) {
-            $spec .= "Eklenen referans görselleri dikkatlice incele; layout, renkler, buton hizaları ve responsive davranışları belirle.\n";
+            $spec .= "Examine attached screenshots/mockups; identify layout, colors, typography, and responsive breakpoints.\n";
         } elseif (!empty($referenceFiles)) {
-            $spec .= "Sağlanan kaynak kod dosyalarını inceleyerek mevcut fonksiyonların ve veri yapılarının nasıl çalıştığını anla.\n";
+            $spec .= "Examine source files to map data structures and method signatures.\n";
         } else {
-            $spec .= "Gereksinimleri analiz ederek etkilenen bileşenleri ve veri akışını haritalandır.\n";
+            $spec .= "Analyze requirements and map data flows.\n";
         }
 
-        $spec .= "2. **Geliştirme & Entegrasyon:**\n"
-              . "   - İstenen alanları, metotları veya arayüz bileşenlerini temiz, modüler ve semantik olarak kodla.\n"
-              . "   - Kullanıcı etkileşimlerini (tıklama, form gönderimi, veri doğrulaması) pürüzsüz çalışacak şekilde bağla.\n"
-              . "   - Responsive (Mobil ve Masaüstü) ekran uyumluluğunu tam sağla.\n\n";
+        $spec .= "2. **Development:**\n"
+              . "   - Code requested methods and interface components in a clean, semantic manner.\n"
+              . "   - Connect user interactions (clicks, form submits, validations) seamlessly.\n"
+              . "   - Ensure complete responsiveness across mobile and desktop breakpoints.\n\n";
 
-        $spec .= "### 🚫 4. KESİN YASAKLAR & MİMARİ SINIRLAR\n"
-              . "- Mevcut çalışan diğer fonksiyonları ve bileşenleri bozacak yıkıcı değişiklikler yapmak KESİNLİKLE YASAKTIR.\n"
-              . "- Konsolda JavaScript hatası veya arka planda PHP Warning/Notice bırakılamaz.\n"
-              . "- Hardcoded statik veriler yerine dinamik ve genişletilebilir yapılar tercih edilmelidir.\n\n";
+        $spec .= "### 🚫 4. STRICT PROHIBITIONS & BOUNDARIES\n"
+              . "- Destructive changes breaking existing working features are strictly prohibited.\n"
+              . "- Zero console errors and zero PHP warnings/notices.\n"
+              . "- Zero hardcoded strings; all strings must use localized dictionary lookups.\n\n";
 
-        $spec .= "### ✅ 5. KABUL VE OTONOM DOĞRULAMA KRİTERLERİ (DoD)\n"
-              . "- Geliştirilen özellik canlı ortamda bizzat test edilmeli, formlar ve butonlar tıklanarak doğrulanmalıdır.\n"
-              . "- Hiçbir görsel kayma, taşma veya responsive bozukluk olmamalıdır.\n"
-              . "- İşlem tamamlandığında yapılan değişiklikler açıklayıcı bir özetle teslim edilmelidir.";
+        $spec .= "### ✅ 5. DEFINITION OF DONE (DoD)\n"
+              . "- Feature must be verified live in the browser environment.\n"
+              . "- Zero layout overflows or visual flaws.\n"
+              . "- Comprehensive delivery summary must be generated.";
 
         return $spec;
     }
 
     /**
-     * Kullanıcının yazdığı kural notlarını disiplinli İngilizce kurallara dönüştürür.
+     * Compiles raw developer rules into structured English markdown rules.
      */
     public function refineRulesWithAi(string $rawRules, string $projectCode = '', string $projectTitle = ''): array
     {
@@ -294,40 +230,25 @@ MANDATORY RULES:
         if (empty($rawRules)) {
             return [
                 'success' => false,
-                'error'   => 'Lütfen derlenmesini istediğiniz kural veya kısıtlamaları kısaca yazın.'
+                'error'   => __('AiArchitect::empty_rules_error')
             ];
         }
 
-        $settingsRows = $this->query("SELECT active_ai_provider, default_ai_model, gemini_api_key, openai_api_key, deepseek_api_key FROM settings LIMIT 1");
-        $settings = !empty($settingsRows) ? (object)$settingsRows[0] : null;
+        $settings = $this->model->getAiSettings();
+        $apiKey = trim($settings->gemini_api_key ?? '');
 
-        $systemPrompt = "You are a Principal AI Software Architect and prompt engineer specializing in autonomous coding agents (Antigravity, Cursor, Gemini).
-Your role is to translate and expand brief, informal developer rule notes into strict, authoritative, highly disciplined English project-specific rules for AI coding agents.
+        if (!empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=" . urlencode($apiKey);
+            $prompt = "You are a Principal Software Architect. Transform the following project notes into standard, authoritative project agent rules in English markdown format:\n\n{$rawRules}";
 
-CRITICAL MANDATES:
-1. The rules MUST be written in authoritative, disciplined English.
-2. Ensure explicit prohibitions: If something is forbidden, state it clearly.
-3. Ensure strict architectural boundaries: Define the technology stack, framework conventions.
-4. Ensure autonomous QA verification directives: Remind the agent that 'The user is not a QA tester'.
-5. Output format: Clean markdown bullet points under '### [{$projectCode}] {$projectTitle} Project Rules':
-   - **Platform & Core Framework:** ...
-   - **Strict Architectural & Coding Prohibitions:** ...
-   - **Styling & Design Guidelines:** ...
-   - **Autonomous QA & Verification Directives:** ...
-6. Output ONLY raw markdown list items without code blocks or chatter.";
-
-        $userPrompt = "Project Code: [{$projectCode}]\nProject Title: {$projectTitle}\nDeveloper Notes: {$rawRules}\n\nGenerate the complete, disciplined agent rules in English now:";
-
-        $apiKey = $settings->gemini_api_key ?? '';
-        $isDummyKey = empty($apiKey) || str_contains($apiKey, 'test_') || strlen($apiKey) < 20;
-
-        if (!$isDummyKey && ($settings->active_ai_provider ?? 'gemini') === 'gemini') {
-            $model = !empty($settings->default_ai_model) ? $settings->default_ai_model : 'gemini-3.7-flash';
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
             $payload = [
-                'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
-                'contents'          => [['role' => 'user', 'parts' => [['text' => $userPrompt]]]],
-                'generationConfig'  => ['temperature' => 0.2, 'maxOutputTokens' => 1024]
+                'contents' => [
+                    ['role' => 'user', 'parts' => [['text' => $prompt]]]
+                ],
+                'generationConfig' => [
+                    'temperature'     => 0.2,
+                    'maxOutputTokens' => 4096
+                ]
             ];
 
             $ch = curl_init($url);
@@ -336,16 +257,17 @@ CRITICAL MANDATES:
                 CURLOPT_POST           => true,
                 CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
                 CURLOPT_POSTFIELDS     => json_encode($payload),
-                CURLOPT_TIMEOUT        => 12,
-                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_TIMEOUT        => 60,
+                CURLOPT_SSL_VERIFYPEER => false
             ]);
+
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
             if ($httpCode === 200 && $response) {
-                $data = json_decode($response, true);
-                $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                $jsonRes = json_decode($response, true);
+                $text = $jsonRes['candidates'][0]['content']['parts'][0]['text'] ?? '';
                 if (!empty($text)) {
                     $cleaned = trim(preg_replace('/^```(?:markdown)?\s*|\s*```$/i', '', trim($text)));
                     return [
@@ -366,7 +288,7 @@ CRITICAL MANDATES:
     }
 
     /**
-     * Uzman kural derleyicisi (Heuristic Engine)
+     * Fallback Heuristic Rule Compiler
      */
     public function compileRulesHeuristic(string $raw, string $code = '', string $title = ''): string
     {
@@ -375,16 +297,16 @@ CRITICAL MANDATES:
         $lower = mb_strtolower($raw, 'UTF-8');
         $rules = [];
 
-        if (str_contains($lower, 'gutenberg') || str_contains($lower, 'wordpress') || str_contains($lower, 'block') || str_contains($lower, 'blok')) {
+        if (str_contains($lower, 'gutenberg') || str_contains($lower, 'wordpress') || str_contains($lower, 'block')) {
             $rules[] = "- **Platform & Core Framework:** WordPress Gutenberg Block Architecture. All UI elements MUST be developed natively as Gutenberg Blocks using `@wordpress/block-editor`, `@wordpress/components`, and `@wordpress/element`.";
-            if (str_contains($lower, 'css') && (str_contains($lower, 'yasak') || str_contains($lower, 'kullanma') || str_contains($lower, 'yok') || str_contains($lower, 'prohibit') || str_contains($lower, 'forbidden') || str_contains($lower, 'no css'))) {
-                $rules[] = "- **Strict CSS Prohibition:** Writing raw, global, or inline CSS (`<style>`, external `.css` files, or inline `style=\"...\"` attributes) is STRICTLY FORBIDDEN. All styling and layout variations MUST be controlled solely through WordPress Block Supports (e.g. `theme.json`, standard block attributes for color, typography, spacing) or pre-registered block style variations.";
+            if (str_contains($lower, 'css') && (str_contains($lower, 'prohibit') || str_contains($lower, 'forbidden') || str_contains($lower, 'no css'))) {
+                $rules[] = "- **Block Styling Prohibition:** Writing raw CSS is forbidden. All styling must be controlled via theme tokens.";
             } else {
                 $rules[] = "- **Block Styling Standards:** Adhere strictly to block-level styling and `theme.json` theme tokens; avoid polluting global CSS scopes.";
             }
             $rules[] = "- **Editor Integrity & Component Hygiene:** Custom controls must use standard Gutenberg InspectorControls and BlockControls. Never inject unvetted third-party JavaScript libraries into the editor canvas.";
             $rules[] = "- **Live Block Verification:** Before submitting any task, the agent MUST verify within the WordPress block editor that blocks render cleanly, block attributes persist correctly upon post save, and zero JavaScript console errors occur.";
-        } elseif (str_contains($lower, 'flutter') || str_contains($lower, 'dart') || str_contains($lower, 'mobil') || str_contains($lower, 'mobile')) {
+        } elseif (str_contains($lower, 'flutter') || str_contains($lower, 'dart') || str_contains($lower, 'mobile')) {
             $rules[] = "- **Technology Stack:** Flutter (Dart) cross-platform mobile development for iOS and Android.";
             if (str_contains($lower, 'riverpod')) {
                 $rules[] = "- **State Management:** Riverpod MUST be used as the exclusive state management solution. Avoid mixing conflicting state paradigms.";
@@ -397,22 +319,18 @@ CRITICAL MANDATES:
             $rules[] = "- **Mobile QA Verification:** The user is not a QA tester. Form interactions, navigation transitions, and button states must be autonomously verified in the emulator/test environment.";
         } elseif (str_contains($lower, 'codeigniter') || str_contains($lower, 'ci4') || str_contains($lower, 'laravel') || str_contains($lower, 'mvc') || str_contains($lower, 'php')) {
             $rules[] = "- **Backend Architecture:** Strict Model-View-Controller (MVC) architecture. Controllers coordinate request flow, while Models/Entities encapsulate database queries and business logic.";
-            if (str_contains($lower, 'view') || str_contains($lower, 'sorgu') || str_contains($lower, 'sql') || str_contains($lower, 'db')) {
+            if (str_contains($lower, 'view') || str_contains($lower, 'sql') || str_contains($lower, 'db')) {
                 $rules[] = "- **Zero Direct SQL in Views:** Executing raw SQL queries or database calls inside View templates is strictly forbidden. All data access must pass through dedicated Model classes.";
             }
         } else {
             $rules[] = "- **Architecture & Framework Guidelines:** Follow strict separation of concerns, modular structure, and clean coding standards throughout the codebase.";
         }
 
-        if (!str_contains($lower, 'gutenberg') && str_contains($lower, 'css') && (str_contains($lower, 'yasak') || str_contains($lower, 'kullanma') || str_contains($lower, 'no css') || str_contains($lower, 'inline'))) {
-            $rules[] = "- **Strict CSS Prohibition:** Writing raw custom CSS or inline styling is strictly forbidden. Utilize only the approved design tokens, utilities, or component framework properties.";
-        }
-
         if (str_contains($lower, 'git') || str_contains($lower, 'pull') || str_contains($lower, 'push') || str_contains($lower, 'commit')) {
             $rules[] = "- **Git Synchronization Protocol:** Run `git pull` before beginning work on any task; upon autonomous verification, commit with descriptive messages and push via `git push`.";
         }
 
-        if (str_contains($lower, 'dil') || str_contains($lower, 'i18n') || str_contains($lower, 'çeviri') || str_contains($lower, 'lang') || str_contains($lower, 'translate')) {
+        if (str_contains($lower, 'i18n') || str_contains($lower, 'lang') || str_contains($lower, 'translate')) {
             $rules[] = "- **Mandatory Tri-Lingual Standard (EN, TR, DE):** Zero hardcoded strings. All user-facing labels and messages must resolve dynamically across English, Turkish, and German language dictionaries.";
         }
 

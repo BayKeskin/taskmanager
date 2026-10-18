@@ -1,13 +1,12 @@
 <?php
 namespace Modules\AiArchitect\Services;
 
-use Core\BaseModel;
-use Core\Language;
+use Modules\AiArchitect\Models\AiArchitectModel;
 
 /**
  * TaskDecomposerService - Brif ve dökümanları analiz ederek modüler görev ağaçları üretir.
  */
-class TaskDecomposerService extends BaseModel
+class TaskDecomposerService
 {
     /**
      * Yüklenen Dökümandan (.docx, .doc, .pdf, .txt, .md, görsel) Metin ve Gömülü Resimleri Çıkarır.
@@ -150,12 +149,9 @@ class TaskDecomposerService extends BaseModel
         $combinedBrief = trim($brief . ($docText ? "\n\n--- UPLOADED DOCUMENT CONTENT ---\n" . $docText : ''));
 
         if (empty($combinedBrief) && empty($docInfo['extracted_imgs']) && !$hasDoc) {
-            $isTr = (class_exists('Core\\Language') && Language::current() === 'tr');
             return [
                 'success' => false, 
-                'error' => $isTr 
-                    ? 'Lütfen ayrıştırılacak proje brifini yazın veya bir Word (.docx) / PDF dökümanı yükleyin.' 
-                    : 'Please provide the project brief or upload a Word (.docx) / PDF document to decompose.'
+                'error' => __('AiArchitect::empty_brief_error')
             ];
         }
 
@@ -164,19 +160,15 @@ class TaskDecomposerService extends BaseModel
         }
 
         if (empty($combinedBrief) && $hasDoc) {
-            $docName = $docInfo['original_doc']['file_name'] ?? 'Proje Şartnamesi';
-            $combinedBrief = "Yüklenen dökümanı ([{$docName}]) analiz ederek projenin gereksinim duyduğu modülleri, arayüz geliştirmelerini, teknik altyapıyı ve canlı ortam kabul kriterlerini oluştur.";
+            $docName = $docInfo['original_doc']['file_name'] ?? __('AiArchitect::default_doc_name');
+            $combinedBrief = "Analyze the uploaded document ([{$docName}]) to produce required architecture modules, interface tasks, technical backend, and Definition of Done criteria.";
         }
 
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
+        $model = new AiArchitectModel();
+        $project = $model->getProjectDetails($projectId);
+        $settings = $model->getAiSettings();
 
-        $project = $db->row_query("SELECT project_code, title, description, agent_rules FROM projects WHERE id = ?", [$projectId]);
-        $settings = $db->row_query("SELECT active_ai_provider, default_ai_model, gemini_api_key, openai_api_key, deepseek_api_key FROM settings LIMIT 1");
-
-        $projTitle = $project->title ?? 'Proje';
+        $projTitle = $project->title ?? 'Project';
         $projCode  = $project->project_code ?? 'PRJ';
         $projDesc  = $project->description ?? '';
         $projRules = $project->agent_rules ?? '';
@@ -187,9 +179,9 @@ Your task is to analyze the user's project brief, contract specifications, or up
 
 CRITICAL ARCHITECTURAL RULES:
 1. NEVER output mere titles with empty or generic descriptions! For EVERY Parent Task ('description') and EVERY Subtask ('description'), you MUST provide a detailed, actionable breakdown containing:
-   - Purpose & Functional Scope (Görev Amacı ve Kapsamı)
-   - Step-by-Step Implementation Guide (🛠️ Nasıl Yapılacak / Adımlar)
-   - Acceptance & Test Criteria / Definition of Done (✅ Kabul ve Test Kriterleri)
+   - Purpose & Functional Scope
+   - Step-by-Step Implementation Guide
+   - Acceptance & Test Criteria / Definition of Done
 2. Break features into distinct functional modules.
 3. Subtask category MUST be one of: 'coding', 'design', 'seo', 'marketing', 'legal', 'content'. NEVER assign the 'ai' tag!
 4. 'execution_mode': If automated software infrastructure, mark as 'auto'; if gated, mark as 'gated'.
@@ -205,7 +197,7 @@ CRITICAL ARCHITECTURAL RULES:
       \"subtasks\": [
         {
           \"title\": \"Concrete subtask title\",
-          \"description\": \"🛠️ NASIL YAPILACAK (Uygulama Adımları):\\n1. ...\\n\\n✅ KABUL VE TEST KRİTERLERİ (DoD):\\n- ...\",
+          \"description\": \"Implementation steps and Definition of Done criteria\",
           \"category\": \"coding\",
           \"priority\": \"normal\",
           \"time_estimate\": \"2h\"
@@ -250,80 +242,81 @@ CRITICAL ARCHITECTURAL RULES:
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_POST           => true,
                     CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-                    CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                    CURLOPT_POSTFIELDS     => json_encode($payload),
                     CURLOPT_TIMEOUT        => 90,
-                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYPEER => false
                 ]);
+
                 $response = curl_exec($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 curl_close($ch);
 
                 if ($httpCode === 200 && $response) {
-                    $data = json_decode($response, true);
-                    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                    $cleaned = trim(preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($text)));
-                    $parsed = json_decode($cleaned, true);
-                    if (!empty($parsed['epics']) && is_array($parsed['epics'])) {
-                        return \Modules\Board\Services\TaskLifecycleService::sanitizeUtf8Deep([
-                            'success'        => true,
-                            'epics'          => $parsed['epics'],
-                            'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],
-                            'original_doc'   => $docInfo['original_doc'] ?? null,
-                            'engine'         => 'gemini (' . $tryModel . ')'
-                        ]);
+                    $jsonRes = json_decode($response, true);
+                    $text = $jsonRes['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                    if ($text) {
+                        $parsed = json_decode($text, true);
+                        if (!empty($parsed['epics']) && is_array($parsed['epics'])) {
+                            return [
+                                'success'        => true,
+                                'epics'          => $parsed['epics'],
+                                'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],
+                                'original_doc'   => $docInfo['original_doc'] ?? null,
+                                'engine'         => 'gemini (' . $tryModel . ')'
+                            ];
+                        }
                     }
                 }
             }
         }
 
-        // Heuristic fallback
-        $epics = self::decomposeBriefDynamicParser($combinedBrief, $projTitle, $projRules);
-        return \Modules\Board\Services\TaskLifecycleService::sanitizeUtf8Deep([
+        // 2. Yedek Dinamik Heuristic Ayrıştırıcı
+        $fallbackEpics = self::decomposeBriefDynamicParser($combinedBrief, $projTitle, $projRules);
+        return [
             'success'        => true,
-            'epics'          => $epics,
+            'epics'          => $fallbackEpics,
             'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],
             'original_doc'   => $docInfo['original_doc'] ?? null,
-            'engine'         => 'dynamic_parser'
-        ]);
+            'engine'         => 'heuristic_fallback'
+        ];
     }
 
     /**
      * API Anahtarı olmadığında veya çevrimdışı modda çalışan uzman motor
      */
-    public static function decomposeBriefDynamicParser(string $brief, string $projTitle = 'Proje', string $projRules = ''): array
+    public static function decomposeBriefDynamicParser(string $brief, string $projTitle = 'Project', string $projRules = ''): array
     {
         $epics = [];
         $cleanBrief = str_replace("--- UPLOADED DOCUMENT CONTENT ---", "\n", $brief);
-        $cleanBrief = str_replace("--- YÜKLENEN DÖKÜMAN İÇERİĞİ ---", "\n", $cleanBrief);
-        $rawLines = preg_split('/[\r\n]+/', trim($cleanBrief));
+        $cleanBrief = str_replace("--- DOCUMENT CONTENT ---", "\n", $cleanBrief);
 
         $buildDetailedHowTo = function(string $title, string $context, string $category) use ($projTitle): string {
-            return "🛠️ **NASIL YAPILACAK (Uygulama Adımları):**\n"
-                 . "1. `{$title}` gereksinimleri doğrultusunda ilgili model, controller ve view dosyalarını belirle.\n"
-                 . "2. Temiz, modüler ve güvenli kodlama prensiplerine uygun olarak iş mantığını yaz.\n"
-                 . "3. Veri doğrulaması, hata yakalama ve arayüz entegrasyonunu tamamla.\n\n"
-                 . "✅ **KABUL VE TEST KRİTERLERİ (Definition of Done):**\n"
-                 . "- Canlı ortamda ve tarayıcıda ilgili ekran hatasız açılmalı.\n"
-                 . "- Sıfır console hatası, sıfır PHP warning/notice.\n"
-                 . "- Responsive uyumluluk tam sağlanmalı.";
+            return "### 🛠️ IMPLEMENTATION GUIDE:\n"
+                 . "1. Analyze module dependencies and define corresponding Model, Controller, and View files for `{$title}`.\n"
+                 . "2. Write core business logic adhering to clean, modular, and secure architectural standards.\n"
+                 . "3. Complete data validation, error handling, and UI integration.\n\n"
+                 . "### ✅ DEFINITION OF DONE:\n"
+                 . "- Verify all endpoints and live interface components.\n"
+                 . "- Zero JavaScript console errors and zero PHP notices.\n"
+                 . "- Responsive layout verified across all breakpoints.";
         };
 
         $epics[] = [
-            'title'          => 'Temel Altyapı ve Veri Modeli',
-            'description'    => "{$projTitle} projesinin ana omurgasını ve temel veri akışlarını oluşturur.",
+            'title'          => 'Core Infrastructure & Architecture',
+            'description'    => "Establishes core domain backbone and foundational data flow for {$projTitle}.",
             'priority'       => 'high',
             'execution_mode' => 'auto',
             'subtasks'       => [
                 [
-                    'title'         => 'Veri ve Altyapı Hazırlığı',
-                    'description'   => $buildDetailedHowTo('Veri ve Altyapı', 'İsterler doğrultusunda veritabanı şeması ve model metodlarının oluşturulması.', 'coding'),
+                    'title'         => 'Data Architecture & Models',
+                    'description'   => $buildDetailedHowTo('Data Architecture', 'Database schema migration and Model encapsulation methods.', 'coding'),
                     'category'      => 'coding',
                     'priority'      => 'high',
                     'time_estimate' => '2h'
                 ],
                 [
-                    'title'         => 'Kullanıcı Arayüzü ve İş Akışı Entegrasyonu',
-                    'description'   => $buildDetailedHowTo('Arayüz Entegrasyonu', 'Önyüz bileşenlerinin ve form akışlarının kodlanması.', 'coding'),
+                    'title'         => 'User Interface & Workflow Integration',
+                    'description'   => $buildDetailedHowTo('Interface Integration', 'Frontend components and controller workflow integration.', 'coding'),
                     'category'      => 'coding',
                     'priority'      => 'normal',
                     'time_estimate' => '3h'
