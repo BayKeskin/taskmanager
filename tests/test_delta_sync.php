@@ -2,7 +2,7 @@
 /**
  * Autonomous verification test for TSK-1084 (DeltaSyncEngine, Git Diff, Live Migrations, API, AJAX)
  */
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 echo "=== TSK-1084 AUTONOMOUS TEST SUITE ===\n";
 

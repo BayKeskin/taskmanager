@@ -18,20 +18,16 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 1. Modüllerin Yüklenmesi
-require_once __DIR__ . '/../Core/ModuleLoader.php';
-\Core\ModuleLoader::boot(__DIR__ . '/../Modules');
+require_once __DIR__ . '/ModuleLoader.php';
+\Core\ModuleLoader::boot(dirname(__DIR__) . '/Modules');
 
-require_once __DIR__ . '/../Core/DataLayer.php';
+require_once __DIR__ . '/DataLayer.php';
 require_once __DIR__ . '/Helper.php';
 require_once __DIR__ . '/Storage.php';
 require_once __DIR__ . '/Auth.php';
 require_once __DIR__ . '/Content.php';
 require_once __DIR__ . '/Mailer.php';
 require_once __DIR__ . '/Language.php';
-require_once __DIR__ . '/ProjectAnalyzer.php';
-require_once __DIR__ . '/HostingAdapters/HostingManager.php';
-require_once __DIR__ . '/LiveConfigGenerator.php';
-require_once __DIR__ . '/DeltaSyncEngine.php';
 
 // 2. Global Veritabanı ve Temel Ayarlar
 $db = new Database();

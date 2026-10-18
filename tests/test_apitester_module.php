@@ -2,7 +2,7 @@
 /**
  * Autonomous Verification Test for ApiTester (#09) Module
  */
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 use Core\ModuleLoader;
 use Modules\ApiTester\Controllers\ApiTesterController;

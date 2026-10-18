@@ -8,7 +8,7 @@
  * 5. AJAX: live_healthcheck & rollback_deployment
  * 6. Tri-lingual (TR, EN, DE) response verification
  */
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 echo "=== TSK-1085 AUTONOMOUS TEST SUITE ===\n";
 

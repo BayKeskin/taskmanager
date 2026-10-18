@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 $modules = \Core\ModuleLoader::getLoadedModules();
 echo "TOTAL ACTIVE MODULES LOADED: " . count($modules) . PHP_EOL;

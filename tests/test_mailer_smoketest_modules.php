@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../System/System.php';
-require_once __DIR__ . '/../System/SmokeTest.php';
+require_once __DIR__ . '/../Core/System.php';
+require_once __DIR__ . '/../Core/SmokeTest.php';
 
 use Core\ModuleLoader;
 use Modules\Mailer\Services\MailerService;

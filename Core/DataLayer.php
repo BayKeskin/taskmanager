@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../System/Helper.php';
+require_once __DIR__ . '/../Core/Helper.php';
 
 class Database
 {

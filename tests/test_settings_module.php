@@ -2,7 +2,7 @@
 /**
  * Autonomous Verification Test for Settings (#17) Module
  */
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 use Core\ModuleLoader;
 use Modules\Settings\Models\SettingsModel;
 use Modules\Settings\Controllers\SettingsController;

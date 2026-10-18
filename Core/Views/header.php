@@ -1,6 +1,6 @@
 <?php
-require_once dirname(__DIR__, 2) . '/System/System.php';
-require_once dirname(__DIR__, 2) . '/System/Language.php';
+require_once dirname(__DIR__) . '/System.php';
+require_once dirname(__DIR__) . '/Language.php';
 Language::init();
 
 if (session_status() === PHP_SESSION_NONE) {

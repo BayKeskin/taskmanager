@@ -2,7 +2,7 @@
 /**
  * Autonomous QA Verification for Hosting Panel Adapters (TSK-1082)
  */
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 echo "=== 1. TESTING ADAPTER FACTORY & INTERFACES ===" . PHP_EOL;
 

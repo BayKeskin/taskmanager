@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 $_SESSION['user'] = (object)[
     'id'   => 1,

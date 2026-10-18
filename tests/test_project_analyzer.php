@@ -2,7 +2,7 @@
 /**
  * Test ProjectAnalyzer using synthetic isolated mock fixtures (Workspace Boundary Compliant)
  */
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 echo "=== 1. TEST SYNTHETIC FIXTURES ===" . PHP_EOL;
 

@@ -2,7 +2,7 @@
 /**
  * Autonomous Verification Test for Board (#01) Module
  */
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 use Core\ModuleLoader;
 use Modules\Board\Models\TaskModel;
 use Modules\Board\Controllers\BoardController;

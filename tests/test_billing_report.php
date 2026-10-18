@@ -1,6 +1,6 @@
 <?php
 // Test script for TSK-194 Billing Report
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 use Modules\Billing\Models\BillingModel;
 

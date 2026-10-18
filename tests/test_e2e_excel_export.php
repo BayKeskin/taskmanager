@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 use Modules\ExcelExport\Controllers\ExcelExportController;
 use Modules\ExcelExport\Models\ExcelExportModel;

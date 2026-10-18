@@ -2,8 +2,8 @@
 /**
  * Autonomous Verification Test for AiArchitect (#02) Module
  */
-require_once __DIR__ . '/../System/System.php';
-require_once __DIR__ . '/../System/Helper.php';
+require_once __DIR__ . '/../Core/System.php';
+require_once __DIR__ . '/../Core/Helper.php';
 
 use Core\ModuleLoader;
 use Modules\AiArchitect\Services\GeminiClient;

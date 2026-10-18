@@ -1,6 +1,6 @@
 <?php
 // Test script for 01-104 Gantt & Calendar View
-require_once __DIR__ . '/../system/System.php';
+require_once __DIR__ . '/../Core/System.php';
 require_once __DIR__ . '/../Model/Model.php';
 require_once __DIR__ . '/../Model/TaskModel.php';
 require_once __DIR__ . '/../Controller/Controller.php';

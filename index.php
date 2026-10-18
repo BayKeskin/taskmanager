@@ -3,7 +3,7 @@
  * TaskManager Enterprise Application Entry Point
  * Çekirdek (Core) ve Modül Yönlendiricisi
  */
-require_once __DIR__ . '/System/System.php';
+require_once __DIR__ . '/Core/System.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     @session_start();

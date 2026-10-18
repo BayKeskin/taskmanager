@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 use Core\EventManager;
 use Core\ModuleLoader;

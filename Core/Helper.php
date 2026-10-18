@@ -3478,7 +3478,7 @@ CRITICAL ARCHITECTURAL RULES:
             $ws . '/config/database.php',
             $ws . '/Config/database.php',
             $ws . '/Model/DataLayer.php',
-            $ws . '/System/Database.php',
+            $ws . '/Core/Database.php',
             $ws . '/Config/Database.php',
             $ws . '/config.php',
             $ws . '/wp-config.php'

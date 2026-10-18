@@ -2,7 +2,7 @@
 /**
  * Autonomous QA Verification for LiveConfigGenerator & Schema Dumper (TSK-1083)
  */
-require_once __DIR__ . '/../System/System.php';
+require_once __DIR__ . '/../Core/System.php';
 
 echo "=== 1. TESTING IN-MEMORY LIVE DOTENV GENERATION ===" . PHP_EOL;
 
