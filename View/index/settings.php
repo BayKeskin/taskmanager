@@ -107,6 +107,9 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
         <button type="button" onclick="switchSettingsTab('tab-security', this)" class="cu-settings-tab-btn">
             <span>🛡️</span> <span><?= __('app.settings_tab_security', 'Güvenlik & Depolama') ?></span>
         </button>
+        <button type="button" id="btnTabModules" onclick="switchSettingsTab('tab-modules', this)" class="cu-settings-tab-btn">
+            <span>📦</span> <span><?= __('app.settings_tab_modules', 'Modül Yöneticisi (HMVC)') ?></span>
+        </button>
     </div>
 
     <!-- FORM BAŞLANGICI -->
@@ -510,6 +513,92 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
             </div>
         </div>
 
+        <!-- 7. SEKME: MODÜL YÖNETİCİSİ (HMVC) -->
+        <div id="tab-modules" class="cu-settings-tab-pane">
+            <div class="cu-settings-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:24px; margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; border-bottom:1px solid var(--border-subtle); padding-bottom:14px; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h3 style="font-size:16px; font-weight:700; color:var(--text-white); margin:0; display:flex; align-items:center; gap:8px;">
+                            <span>📦</span> <?= __('app.settings_modules_title', 'Modül Yöneticisi & Eklenti Sistemi') ?>
+                        </h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin:4px 0 0 0;">
+                            <?= __('app.settings_modules_desc', 'Tüm HMVC dikey modüllerini WordPress eklentisi gibi bağımsız açıp kapatın, sürüm ve dizin detaylarını yönetin.') ?>
+                        </p>
+                    </div>
+                    <?php 
+                    $availableModules = $settingsData['availableModules'] ?? [];
+                    $totalModules = count($availableModules);
+                    $activeCount = count(array_filter($availableModules, fn($m) => !empty($m['is_active'])));
+                    $passiveCount = $totalModules - $activeCount;
+                    ?>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span style="font-size:11px; font-weight:700; background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:12px; color:var(--text-primary); border:1px solid var(--border-subtle);">
+                            <?= __('app.settings_modules_count_badge', 'Toplam Modül') ?>: <?= $totalModules ?>
+                        </span>
+                        <span style="font-size:11px; font-weight:700; background:rgba(0,184,148,0.15); padding:4px 10px; border-radius:12px; color:#00b894; border:1px solid rgba(0,184,148,0.3);">
+                            <?= __('app.settings_modules_active_badge', 'Aktif') ?>: <?= $activeCount ?>
+                        </span>
+                        <span style="font-size:11px; font-weight:700; background:rgba(235,87,87,0.15); padding:4px 10px; border-radius:12px; color:#eb5757; border:1px solid rgba(235,87,87,0.3);">
+                            <?= __('app.settings_modules_passive_badge', 'Pasif') ?>: <?= $passiveCount ?>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Modül Listesi Tablosu / Kartları -->
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <?php if (empty($availableModules)): ?>
+                        <div style="padding:24px; text-align:center; color:var(--text-muted); font-size:13px;">
+                            Kayıtlı HMVC modülü bulunamadı.
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($availableModules as $mod): 
+                            $modSlug = htmlspecialchars($mod['slug'] ?? '');
+                            $modName = htmlspecialchars($mod['name'] ?? $modSlug);
+                            $modDesc = htmlspecialchars($mod['description'] ?? '');
+                            $modVer  = htmlspecialchars($mod['version'] ?? '1.0.0');
+                            $modAuthor = htmlspecialchars($mod['author'] ?? 'TaskManager Team');
+                            $modActive = !empty($mod['is_active']);
+                            $modDeps = !empty($mod['dependencies']) ? implode(', ', $mod['dependencies']) : '—';
+                        ?>
+                        <div class="cu-module-item-card" style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); border:1px solid <?= $modActive ? 'rgba(123,104,238,0.3)' : 'var(--border-subtle)' ?>; border-radius:10px; padding:16px 20px; gap:16px; transition:all 0.2s ease;">
+                            <div style="flex:1; min-width:260px;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span style="font-size:18px;">🧩</span>
+                                    <h4 style="margin:0; font-size:14px; font-weight:700; color:var(--text-white);">
+                                        <?= $modName ?>
+                                    </h4>
+                                    <span style="font-size:10px; font-weight:700; background:rgba(123,104,238,0.15); color:var(--brand-primary); padding:2px 8px; border-radius:4px; font-family:monospace;">
+                                        v<?= $modVer ?>
+                                    </span>
+                                    <span style="font-size:10px; color:var(--text-muted); font-family:monospace;">
+                                        (<?= $modSlug ?>)
+                                    </span>
+                                </div>
+                                <p style="font-size:12px; color:var(--text-muted); margin:4px 0 6px 28px; line-height:1.4;">
+                                    <?= $modDesc ?>
+                                </p>
+                                <div style="display:flex; gap:16px; font-size:11px; color:var(--text-muted); margin-left:28px;">
+                                    <span>👤 <strong><?= __('app.settings_modules_col_version', 'Yazar') ?>:</strong> <?= $modAuthor ?></span>
+                                    <span>🔗 <strong><?= __('app.settings_modules_col_deps', 'Bağımlılıklar') ?>:</strong> <?= $modDeps ?></span>
+                                </div>
+                            </div>
+
+                            <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
+                                <span id="badge-status-<?= $modSlug ?>" style="font-size:11.5px; font-weight:700; color:<?= $modActive ? '#00b894' : '#eb5757' ?>;">
+                                    <?= $modActive ? __('app.settings_modules_active_badge', 'Aktif') : __('app.settings_modules_passive_badge', 'Pasif') ?>
+                                </span>
+                                <label class="cu-toggle-switch" title="<?= __('app.settings_modules_col_status', 'Durum / Anahtar') ?>">
+                                    <input type="checkbox" id="toggle-mod-<?= $modSlug ?>" onchange="toggleModuleStatus('<?= $modSlug ?>', this.checked)" <?= $modActive ? 'checked' : '' ?>>
+                                    <span class="cu-toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
         <!-- KAYDET BUTONLARI (ALT) -->
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:10px;">
             <a href="/taskmanager/board" class="cu-btn-sm" style="display:inline-flex; align-items:center; padding:10px 18px; font-size:13px; text-decoration:none; background:transparent; border:1px solid var(--border-subtle); color:var(--text-primary); border-radius:8px;">
@@ -792,6 +881,53 @@ async function handleTestWebhook(type) {
         alert('Webhook test hatası: ' + err.message);
     }
 }
+
+// Modül Durumu Aç / Kapat (Module Manager)
+async function toggleModuleStatus(slug, isActive) {
+    const badge = document.getElementById('badge-status-slug-' + slug) || document.getElementById('badge-status-' + slug);
+    const fd = new FormData();
+    fd.append('slug', slug);
+    fd.append('status', isActive ? '1' : '0');
+
+    try {
+        const res = await fetch('/taskmanager/ajax?action=toggle_module_status', {
+            method: 'POST',
+            body: fd
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (badge) {
+                badge.innerText = isActive ? '<?= __('app.settings_modules_active_badge', 'Aktif') ?>' : '<?= __('app.settings_modules_passive_badge', 'Pasif') ?>';
+                badge.style.color = isActive ? '#00b894' : '#eb5757';
+            }
+            if (typeof showToast === 'function') {
+                showToast(data.message || '<?= __('app.settings_modules_toggle_success', 'Modül durumu güncellendi.') ?>', 'success');
+            }
+        } else {
+            alert(data.message || '<?= __('app.settings_modules_toggle_fail', 'Modül durumu güncellenemedi.') ?>');
+            // Geri al
+            const toggle = document.getElementById('toggle-mod-' + slug);
+            if (toggle) toggle.checked = !isActive;
+        }
+    } catch (err) {
+        alert('Modül toggle hatası: ' + err.message);
+        const toggle = document.getElementById('toggle-mod-' + slug);
+        if (toggle) toggle.checked = !isActive;
+    }
+}
+
+// URL tab parametresi desteği (?tab=modules vb.)
+document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) {
+        const tabPaneId = 'tab-' + tabParam;
+        const targetBtn = document.querySelector(`[onclick*="${tabPaneId}"]`);
+        if (targetBtn) {
+            targetBtn.click();
+        }
+    }
+});
 </script>
 
 <?php include __DIR__ . '/../../Components/footer.php'; ?>

@@ -144,9 +144,9 @@ graph TD
 ### 🔵 AŞAMA 7: Yönetim Paneli "Modül Yöneticisi" (Module Manager UI)
 *WordPress Eklentiler sayfası gibi, sistem modüllerini listeleyen, açıp/kapatan arayüz.*
 
-- [ ] **7.1. Modül Durum Yönetimi:**
-  - `settings` tablosunda veya `config/modules.php` üzerinde aktif/pasif bayraklarının tutulması.
-- [ ] **7.2. Ayarlar Ekranı Entegrasyonu:**
+- [x] **7.1. Modül Durum Yönetimi:**
+  - `settings` tablosunda veya `config/modules.php` üzerinde aktif/pasif bayraklarının tutulması (`enabled_modules` JSON alanı + `ModuleLoader::setModuleStatus`).
+- [x] **7.2. Ayarlar Ekranı Entegrasyonu:**
   - `http://localhost/taskmanager/settings?tab=modules` arayüzünün yapılması.
   - Modül açma/kapama switch'leri ve versiyon/yazar bilgilerinin listelenmesi.
 
@@ -162,7 +162,7 @@ graph TD
 | **Aşama 4** | `Modules/LiveDeploy` & `Modules/GithubDevops` | ✅ Tamamlandı | `test_delta_sync.php` + `test_phase4_modules.php` (PASS) |
 | **Aşama 5** | `Modules/Billing` & `Modules/Calendar` | ✅ Tamamlandı | `tests/test_phase5_modules.php` (PASS) |
 | **Aşama 6** | `Modules/Telegram`, `Watchdog`, `SSE` & Helper Temizliği | ✅ Tamamlandı | `tests/test_phase6_modules.php` (PASS) |
-| **Aşama 7** | Modül Yönetim Arayüzü (Module Manager UI) | ⏳ Bekliyor | - |
+| **Aşama 7** | Modül Yönetim Arayüzü (Module Manager UI) | ✅ Tamamlandı | `tests/test_phase7_module_manager.php` (PASS) |
 
 ---
 

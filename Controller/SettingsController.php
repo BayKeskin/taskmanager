@@ -22,11 +22,13 @@ class SettingsController extends Controller
         $isAuthorized = ($currentUser->role === 'admin');
 
         $settings = $isAuthorized ? $this->settingsModel->getSettings() : (object)[];
+        $modules  = $isAuthorized ? \Core\ModuleLoader::getAllAvailableModules() : [];
 
         return [
-            'currentUser'  => $currentUser,
-            'isAuthorized' => $isAuthorized,
-            's'            => $settings
+            'currentUser'      => $currentUser,
+            'isAuthorized'     => $isAuthorized,
+            's'                => $settings,
+            'availableModules' => $modules
         ];
     }
 }

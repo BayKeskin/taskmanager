@@ -1556,6 +1556,29 @@ switch ($action) {
         jsonResponse(false, 'Ayarlar kaydedilirken hata oluştu.');
         break;
 
+    // 5.2.1 MODÜL AÇMA / KAPAMA (MODULE MANAGER - ADMIN ONLY)
+    case 'toggle_module_status':
+        if ($currentUser->role !== 'admin') {
+            jsonResponse(false, __('app.settings_modules_toggle_fail', 'Yetkisiz erişim: Modülleri yalnızca yönetici yönetebilir.'));
+        }
+
+        $slug = trim($_POST['slug'] ?? '');
+        $status = !empty($_POST['status']) && ($_POST['status'] === 'true' || $_POST['status'] === '1' || $_POST['status'] === 1);
+
+        if (empty($slug)) {
+            jsonResponse(false, 'Geçersiz modül slug değeri.');
+        }
+
+        $res = \Core\ModuleLoader::setModuleStatus($slug, $status);
+        if ($res) {
+            jsonResponse(true, __('app.settings_modules_toggle_success', 'Modül durumu güncellendi.'), [
+                'slug'      => $slug,
+                'is_active' => $status
+            ]);
+        }
+        jsonResponse(false, __('app.settings_modules_toggle_fail', 'Modül durumu kaydedilemedi.'));
+        break;
+
     case 'test_telegram_connection':
         if ($currentUser->role !== 'admin') {
             jsonResponse(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
