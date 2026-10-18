@@ -13,8 +13,8 @@ class SseBroadcaster
         global $db;
         try {
             if (!$db || empty($db->connect)) {
-                require_once dirname(__DIR__, 3) . '/Model/DataLayer.php';
-                $db = new Database();
+                require_once dirname(__DIR__, 3) . '/Core/DataLayer.php';
+                $db = new \Database();
             }
             $jsonPayload = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             $db->exec_query("

@@ -25,8 +25,7 @@ class DeployController extends BaseController
     {
         $this->requireAuth();
 
-        require_once dirname(__DIR__, 3) . '/Model/ProjectModel.php';
-        $project = (new \ProjectModel($this->db))->getProjectById($projectId);
+        $project = (new \Modules\Projects\Models\ProjectModel())->getProjectById($projectId);
         if (!$project) {
             return ['success' => false, 'error' => 'Proje bulunamadı.'];
         }

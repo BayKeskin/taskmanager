@@ -1,8 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/../../Core/System.php';
-require_once __DIR__ . '/../../Core/Telegram.php';
+require_once dirname(__DIR__, 3) . '/Core/System.php';
 
 $rawInput = file_get_contents('php://input');
 if (empty($rawInput)) {

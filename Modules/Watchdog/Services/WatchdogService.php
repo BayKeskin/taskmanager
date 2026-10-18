@@ -24,8 +24,8 @@ class WatchdogService
 
         try {
             if (!$db || empty($db->connect)) {
-                require_once dirname(__DIR__, 3) . '/Model/DataLayer.php';
-                $db = new Database();
+                require_once dirname(__DIR__, 3) . '/Core/DataLayer.php';
+                $db = new \Database();
             }
 
             $projects = $db->multi_record_query("SELECT id, project_code, title FROM projects WHERE status = 'active'") ?: [];

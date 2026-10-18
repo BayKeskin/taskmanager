@@ -25,8 +25,7 @@ class PinController extends BaseController
     {
         $projectCode = trim($requestData['project_code'] ?? ($requestData['project'] ?? '01'));
         
-        require_once dirname(__DIR__, 3) . '/Model/ProjectModel.php';
-        $projectModel = new \ProjectModel($this->db);
+        $projectModel = new \Modules\Projects\Models\ProjectModel();
         $projects = $projectModel->getProjects();
         $proj = null;
         foreach ($projects as $p) {

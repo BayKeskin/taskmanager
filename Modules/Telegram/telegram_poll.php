@@ -10,8 +10,7 @@
  * php bin/telegram_poll.php --once
  */
 
-require_once __DIR__ . '/../Core/System.php';
-require_once __DIR__ . '/../Core/Telegram.php';
+require_once dirname(__DIR__, 2) . '/Core/System.php';
 
 echo "========================================================\n";
 echo "🤖 TaskManager Telegram Localhost Polling Worker\n";

@@ -3,4 +3,4 @@
  * TaskManager Enterprise REST API Bridge
  * Direct entry point for /api.php requests
  */
-require_once __DIR__ . '/Controller/api/index.php';
+require_once __DIR__ . '/Modules/RestApi/Controllers/index.php';

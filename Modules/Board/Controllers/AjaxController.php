@@ -618,8 +618,7 @@ switch ($action) {
             jsonResponse(false, 'Proje adı ve proje kodu zorunludur.');
         }
 
-        require_once __DIR__ . '/../../Model/ProjectModel.php';
-        $projectModel = new ProjectModel();
+        $projectModel = new \Modules\Projects\Models\ProjectModel();
         $newId = $projectModel->createProject([
             'project_code'          => $projectCode,
             'title'                 => $title,
@@ -651,8 +650,7 @@ switch ($action) {
             jsonResponse(false, 'Geçersiz proje ID.');
         }
 
-        require_once __DIR__ . '/../../Model/ProjectModel.php';
-        $projectModel = new ProjectModel();
+        $projectModel = new \Modules\Projects\Models\ProjectModel();
         $proj = $projectModel->getProjectById($projectId);
 
         if (!$proj) {
@@ -698,8 +696,7 @@ switch ($action) {
             jsonResponse(false, 'Geçersiz proje bilgisi.');
         }
 
-        require_once __DIR__ . '/../../Model/ProjectModel.php';
-        $projectModel = new ProjectModel();
+        $projectModel = new \Modules\Projects\Models\ProjectModel();
         $updated = $projectModel->updateProject($projectId, [
             'title'                 => $title,
             'description'           => $description,
@@ -736,8 +733,7 @@ switch ($action) {
         // Eğer textarea'dan güncel kural metni gönderildiyse önce DB'yi güncelle
         if (isset($_POST['agent_rules'])) {
             $agentRules = trim($_POST['agent_rules']) ?: null;
-            require_once __DIR__ . '/../../Model/ProjectModel.php';
-            $projectModel = new ProjectModel();
+            $projectModel = new \Modules\Projects\Models\ProjectModel();
             $projectModel->updateProject($projectId, ['agent_rules' => $agentRules]);
         }
 
@@ -761,8 +757,7 @@ switch ($action) {
         $projectId = (int)($_POST['project_id'] ?? 0);
 
         if ($projectId > 0 && (empty($projectCode) || empty($projectTitle))) {
-            require_once __DIR__ . '/../../Model/ProjectModel.php';
-            $pModel = new ProjectModel();
+            $pModel = new \Modules\Projects\Models\ProjectModel();
             $proj = $pModel->getProjectById($projectId);
             if ($proj) {
                 $projectCode = $projectCode ?: ($proj->project_code ?? '');
@@ -1514,8 +1509,7 @@ switch ($action) {
         if ($currentUser->role !== 'admin') {
             jsonResponse(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
         }
-        require_once __DIR__ . '/../../Core/Telegram.php';
-        $testResult = Telegram::testConnection();
+        $testResult = \Telegram::testConnection();
         if ($testResult['success']) {
             jsonResponse(true, $testResult['message'], $testResult);
         } else {
@@ -1527,7 +1521,6 @@ switch ($action) {
         if ($currentUser->role !== 'admin') {
             jsonResponse(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
         }
-        require_once __DIR__ . '/../../Core/Mailer.php';
         $testResult = \Modules\Mailer\Services\MailerService::testConnection();
         if ($testResult['success']) {
             jsonResponse(true, $testResult['message'], $testResult);
@@ -2898,8 +2891,7 @@ switch ($action) {
     // ANTIGRAVITY MCP MARKETPLACE ENDPOINTS
     // ==========================================
     case 'get_project_mcps':
-        require_once __DIR__ . '/../McpController.php';
-        $mcpCtrl = new McpController();
+        $mcpCtrl = new \Modules\Mcp\Controllers\McpController();
         $pId = (int)($_GET['project_id'] ?? ($_POST['project_id'] ?? 0));
         $res = $mcpCtrl->getProjectMcps($pId);
         if (!empty($res['success'])) {
@@ -2910,8 +2902,7 @@ switch ($action) {
         break;
 
     case 'save_project_mcp':
-        require_once __DIR__ . '/../McpController.php';
-        $mcpCtrl = new McpController();
+        $mcpCtrl = new \Modules\Mcp\Controllers\McpController();
         $pId = (int)($_POST['project_id'] ?? 0);
         $catalogId = (int)($_POST['mcp_catalog_id'] ?? 0);
         $isEnabled = !empty($_POST['is_enabled']);
@@ -2927,8 +2918,7 @@ switch ($action) {
         break;
 
     case 'toggle_project_mcp':
-        require_once __DIR__ . '/../McpController.php';
-        $mcpCtrl = new McpController();
+        $mcpCtrl = new \Modules\Mcp\Controllers\McpController();
         $pId = (int)($_POST['project_id'] ?? 0);
         $catalogId = (int)($_POST['mcp_catalog_id'] ?? 0);
         $isEnabled = !empty($_POST['is_enabled']);
@@ -2942,8 +2932,7 @@ switch ($action) {
         break;
 
     case 'sync_project_mcps':
-        require_once __DIR__ . '/../McpController.php';
-        $mcpCtrl = new McpController();
+        $mcpCtrl = new \Modules\Mcp\Controllers\McpController();
         $pId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
 
         $res = $mcpCtrl->syncFiles($pId);

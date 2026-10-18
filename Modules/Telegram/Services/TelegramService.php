@@ -144,8 +144,8 @@ class Telegram
     {
         global $db;
         if (!$db || empty($db->connect)) {
-            require_once __DIR__ . '/../Model/DataLayer.php';
-            $db = new Database();
+            require_once dirname(__DIR__, 2) . '/Core/DataLayer.php';
+            $db = new \Database();
         }
 
         $isTr = (class_exists('Language') && Language::getCurrentLanguage() === 'tr');

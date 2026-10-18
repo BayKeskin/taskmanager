@@ -30,8 +30,7 @@ class ExcelExportController extends BaseController
         }
 
         // Proje var mı kontrol et
-        require_once dirname(__DIR__, 3) . '/Model/ProjectModel.php';
-        $projectModel = new \ProjectModel($this->db);
+        $projectModel = new \Modules\Projects\Models\ProjectModel();
         $project = $projectModel->getProjectById($projectId);
         if (!$project) {
             echo "Proje bulunamadı.";

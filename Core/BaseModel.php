@@ -25,6 +25,14 @@ abstract class BaseModel
     }
 
     /**
+     * Database nesnesini döndürür
+     */
+    public function getDb(): Database
+    {
+        return $this->db;
+    }
+
+    /**
      * Ham PDO bağlantısını döndürür
      */
     public function getPdo(): \PDO
