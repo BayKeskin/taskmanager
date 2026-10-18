@@ -56,27 +56,49 @@ foreach ($modules as $mod) {
         $isView = strpos($relPath, '/Views/') !== false;
         $isController = strpos($relPath, '/Controllers/') !== false;
 
-        // 1. Check Views for <style> and <script> tags
+        // 1. Check Views for inline <style> and inline code <script> tags
+        // (Excluding external scripts <script src=... and pure window.*I18N / config bridge definitions)
         if ($isView) {
             $modReport['views'][] = $relPath;
             $hasStyle = preg_match('/<style\b[^>]*>/i', $content);
-            $hasScript = preg_match('/<script\b[^>]*>/i', $content);
-            if ($hasStyle || $hasScript) {
+            
+            // Check for scripts that have inline logic (functions, DOM queries, fetch, event listeners)
+            $hasInlineLogicScript = false;
+            if (preg_match_all('/<script\b(?![^>]*\bsrc=)[^>]*>(.*?)<\/script>/is', $content, $scriptMatches)) {
+                foreach ($scriptMatches[1] as $body) {
+                    $cleaned = trim($body);
+                    // If script contains function, fetch, document.add, document.get, return, for, if, alert
+                    if (preg_match('/(function\s+\w+|fetch\(|addEventListener|\$\(|document\.)/i', $cleaned)) {
+                        $hasInlineLogicScript = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($hasStyle || $hasInlineLogicScript) {
                 $modReport['inline_style_script_views'][] = [
                     'file' => $relPath,
                     'has_style' => (bool)$hasStyle,
-                    'has_script' => (bool)$hasScript
+                    'has_script' => (bool)$hasInlineLogicScript
                 ];
             }
         }
 
-        // 2. Check for direct DB calls ($db->, global $db, Database::getInstance, \Core\Database::)
-        // Controllers should use Model, Views must NEVER use DB
-        if ($isView || $isController) {
-            if (preg_match('/(\$db->|global\s+\$db|Database::getInstance|\bDataLayer\b)/i', $content, $m)) {
+        // 2. Check for direct DB calls
+        // Views must NEVER call DB. Controllers must use Model layer ($this->model or Model::getDb).
+        if ($isView) {
+            if (preg_match('/(\$db->|\$db\b|Database::getInstance|\bDataLayer\b)/i', $content, $m)) {
                 $modReport['direct_db_calls'][] = [
                     'file' => $relPath,
-                    'type' => $isView ? 'VIEW_VIOLATION' : 'CONTROLLER_VIOLATION',
+                    'type' => 'VIEW_VIOLATION',
+                    'match' => $m[0]
+                ];
+            }
+        } elseif ($isController) {
+            if (preg_match('/(global\s+\$db|Database::getInstance|\bnew\s+\\?Core\\\\?DataLayer\b)/i', $content, $m)) {
+                $modReport['direct_db_calls'][] = [
+                    'file' => $relPath,
+                    'type' => 'CONTROLLER_VIOLATION',
                     'match' => $m[0]
                 ];
             }

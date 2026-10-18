@@ -1,15 +1,15 @@
 <?php
 // TaskManager Gelişmiş Sistem Ayarları & API Yapılandırma Paneli (Enterprise System Settings)
-$system->title = __('app.settings_title', 'Sistem & API Ayarları - TaskManager');
+$system->title = __('Settings::settings_title', 'Sistem & API Ayarları - TaskManager');
 include dirname(__DIR__, 3) . '/Core/Views/header.php';
 
 $settingsController = new \Modules\Settings\Controllers\SettingsController();
 $settingsData = $settingsController->index();
 if (!$settingsData['isAuthorized']) {
     echo '<div style="padding:40px; text-align:center; color:var(--text-muted);">';
-    echo '<h2>' . __('app.settings_unauthorized_title', '🔒 Yetkisiz Erişim') . '</h2>';
-    echo '<p>' . __('app.settings_unauthorized_desc', 'Sistem ayarlarına yalnızca yönetici rolündeki kullanıcılar erişebilir.') . '</p>';
-    echo '<a href="/taskmanager/board" class="cu-btn cu-btn-primary" style="display:inline-block; margin-top:16px;">' . __('app.settings_btn_back_board', 'Panoya Dön') . '</a>';
+    echo '<h2>' . __('Settings::settings_unauthorized_title', '🔒 Yetkisiz Erişim') . '</h2>';
+    echo '<p>' . __('Settings::settings_unauthorized_desc', 'Sistem ayarlarına yalnızca yönetici rolündeki kullanıcılar erişebilir.') . '</p>';
+    echo '<a href="/taskmanager/board" class="cu-btn cu-btn-primary" style="display:inline-block; margin-top:16px;">' . __('Settings::settings_btn_back_board', 'Panoya Dön') . '</a>';
     echo '</div>';
     include dirname(__DIR__, 3) . '/Core/Views/footer.php';
     exit;
@@ -69,18 +69,18 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 🛠️
             </div>
             <div>
-                <h1 style="font-size:20px; font-weight:800; color:var(--text-white); margin:0;"><?= __('app.settings_header_title', 'Sistem & API Ayarları') ?></h1>
-                <p style="font-size:12.5px; color:var(--text-muted); margin:3px 0 0 0;"><?= __('app.settings_header_desc', 'Yapay zeka motorları, webhooklar, SMTP ve sistem parametreleri') ?></p>
+                <h1 style="font-size:20px; font-weight:800; color:var(--text-white); margin:0;"><?= __('Settings::settings_header_title', 'Sistem & API Ayarları') ?></h1>
+                <p style="font-size:12.5px; color:var(--text-muted); margin:3px 0 0 0;"><?= __('Settings::settings_header_desc', 'Yapay zeka motorları, webhooklar, SMTP ve sistem parametreleri') ?></p>
             </div>
         </div>
 
         <div style="display:flex; align-items:center; gap:10px;">
             <a href="/taskmanager/board" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; text-decoration:none; background:transparent; border:1px solid var(--border-subtle); color:var(--text-primary); border-radius:8px;">
-                <?= __('app.settings_btn_back_board', 'Panoya Dön') ?>
+                <?= __('Settings::settings_btn_back_board', 'Panoya Dön') ?>
             </a>
             <button type="button" onclick="handleSaveSettings(event)" id="btnSaveSettingsTop" class="cu-btn cu-btn-primary" style="display:inline-flex; align-items:center; gap:8px; padding:9px 20px; font-size:13px; font-weight:600; border-radius:8px; box-shadow:0 4px 14px rgba(123,104,238,0.35);">
                 <span>💾</span>
-                <span><?= __('app.settings_btn_save', 'Değişiklikleri Kaydet') ?></span>
+                <span><?= __('Settings::settings_btn_save', 'Değişiklikleri Kaydet') ?></span>
             </button>
         </div>
     </div>
@@ -88,25 +88,25 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
     <!-- AYARLAR YATAY SEKMELERİ (TABS) -->
     <div class="cu-settings-tabs-bar" style="display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:12px; border-bottom:1px solid var(--border-subtle); margin-bottom:20px;">
         <button type="button" onclick="switchSettingsTab('tab-general', this)" class="cu-settings-tab-btn active">
-            <span>👥</span> <span><?= __('app.settings_tab_general', 'Genel & İzinler') ?></span>
+            <span>👥</span> <span><?= __('Settings::settings_tab_general', 'Genel & İzinler') ?></span>
         </button>
         <button type="button" onclick="switchSettingsTab('tab-ai', this)" class="cu-settings-tab-btn">
-            <span>🤖</span> <span><?= __('app.settings_tab_ai', 'Yapay Zeka (AI / LLM)') ?></span>
+            <span>🤖</span> <span><?= __('Settings::settings_tab_ai', 'Yapay Zeka (AI / LLM)') ?></span>
         </button>
         <button type="button" onclick="switchSettingsTab('tab-webhooks', this)" class="cu-settings-tab-btn">
-            <span>🔔</span> <span><?= __('app.settings_tab_webhooks', 'Bildirim & Webhook') ?></span>
+            <span>🔔</span> <span><?= __('Settings::settings_tab_webhooks', 'Bildirim & Webhook') ?></span>
         </button>
         <button type="button" onclick="switchSettingsTab('tab-email', this)" class="cu-settings-tab-btn">
-            <span>✉️</span> <span><?= __('app.settings_tab_email', 'E-Posta (SMTP)') ?></span>
+            <span>✉️</span> <span><?= __('Settings::settings_tab_email', 'E-Posta (SMTP)') ?></span>
         </button>
         <button type="button" onclick="switchSettingsTab('tab-integrations', this)" class="cu-settings-tab-btn">
-            <span>🔗</span> <span><?= __('app.settings_tab_integrations', 'Entegrasyonlar') ?></span>
+            <span>🔗</span> <span><?= __('Settings::settings_tab_integrations', 'Entegrasyonlar') ?></span>
         </button>
         <button type="button" onclick="switchSettingsTab('tab-security', this)" class="cu-settings-tab-btn">
-            <span>🛡️</span> <span><?= __('app.settings_tab_security', 'Güvenlik & Depolama') ?></span>
+            <span>🛡️</span> <span><?= __('Settings::settings_tab_security', 'Güvenlik & Depolama') ?></span>
         </button>
         <button type="button" id="btnTabModules" onclick="switchSettingsTab('tab-modules', this)" class="cu-settings-tab-btn">
-            <span>📦</span> <span><?= __('app.settings_tab_modules', 'Modül Yöneticisi (HMVC)') ?></span>
+            <span>📦</span> <span><?= __('Settings::settings_tab_modules', 'Modül Yöneticisi (HMVC)') ?></span>
         </button>
     </div>
 
@@ -119,8 +119,8 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
                     <span style="font-size:18px;">👥</span>
                     <div>
-                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('app.settings_emp_permissions', 'Görev & Çalışan İzinleri') ?></h3>
-                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('app.settings_emp_permissions_sub', 'Yönetici dışındaki çalışanların yetkileri') ?></p>
+                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('Settings::settings_emp_permissions', 'Görev & Çalışan İzinleri') ?></h3>
+                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('Settings::settings_emp_permissions_sub', 'Yönetici dışındaki çalışanların yetkileri') ?></p>
                     </div>
                 </div>
 
@@ -129,10 +129,10 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:14px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:var(--radius-sm);">
                         <div style="flex:1; padding-right:20px;">
                             <label for="switchEmployeeCreate" style="font-size:13.5px; font-weight:700; color:var(--text-white); display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:4px;">
-                                <span>➕</span> <?= __('app.settings_emp_can_create', 'Çalışanlar Görev Açabilsin') ?>
+                                <span>➕</span> <?= __('Settings::settings_emp_can_create', 'Çalışanlar Görev Açabilsin') ?>
                             </label>
                             <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.45;">
-                                <?= __('app.settings_emp_can_create_sub', 'Açık olduğunda çalışanlar Kanban panosundan yeni görev oluşturabilir. Kapalı olduğunda yalnızca yöneticiler görev açabilir.') ?>
+                                <?= __('Settings::settings_emp_can_create_sub', 'Açık olduğunda çalışanlar Kanban panosundan yeni görev oluşturabilir. Kapalı olduğunda yalnızca yöneticiler görev açabilir.') ?>
                             </p>
                         </div>
                         <label class="cu-toggle-switch">
@@ -145,10 +145,10 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:14px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:var(--radius-sm);">
                         <div style="flex:1; padding-right:20px;">
                             <label for="switchEmployeeAi" style="font-size:13.5px; font-weight:700; color:var(--text-white); display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:4px;">
-                                <span>🤖</span> <?= __('app.settings_emp_can_ai', 'Çalışanlar AI Otonom Görev Açabilsin (#ai Yetkisi)') ?>
+                                <span>🤖</span> <?= __('Settings::settings_emp_can_ai', 'Çalışanlar AI Otonom Görev Açabilsin (#ai Yetkisi)') ?>
                             </label>
                             <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.45;">
-                                <?= __('app.settings_emp_can_ai_sub', 'Kapalı olduğunda çalışanların açtığı görevlerde AI otonom ajanları tetiklenmez. Yalnızca yönetici `#ai` etiketini kullanabilir.') ?>
+                                <?= __('Settings::settings_emp_can_ai_sub', 'Kapalı olduğunda çalışanların açtığı görevlerde AI otonom ajanları tetiklenmez. Yalnızca yönetici `#ai` etiketini kullanabilir.') ?>
                             </p>
                         </div>
                         <label class="cu-toggle-switch">
@@ -164,30 +164,30 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
                     <span style="font-size:18px;">⚙️</span>
                     <div>
-                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('app.settings_app_info', 'Uygulama Bilgileri') ?></h3>
-                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('app.settings_app_info_sub', 'Başlık ve ana erişim URL adresi') ?></p>
+                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('Settings::settings_app_info', 'Uygulama Bilgileri') ?></h3>
+                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('Settings::settings_app_info_sub', 'Başlık ve ana erişim URL adresi') ?></p>
                     </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_app_title', 'Uygulama Başlığı') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_app_title', 'Uygulama Başlığı') ?></label>
                         <input type="text" name="title" value="<?= htmlspecialchars($title) ?>" class="cu-form-control" required>
                     </div>
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_app_url', "Site / Sunucu URL'si") ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_app_url', "Site / Sunucu URL'si") ?></label>
                         <input type="text" name="siteurl" value="<?= htmlspecialchars($siteurl) ?>" class="cu-form-control" required>
                     </div>
                     <div class="cu-form-group">
                         <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                            <span>🌐</span> <span><?= __('app.settings_default_lang', 'Sistem Varsayılan Dili') ?></span>
+                            <span>🌐</span> <span><?= __('Settings::settings_default_lang', 'Sistem Varsayılan Dili') ?></span>
                         </label>
                         <select name="default_language" id="selectDefaultLanguage" class="cu-form-control" style="cursor:pointer;">
                             <option value="tr" <?= ($defaultLanguage === 'tr') ? 'selected' : '' ?>>🇹🇷 Türkçe</option>
                             <option value="en" <?= ($defaultLanguage === 'en') ? 'selected' : '' ?>>🇬🇧 English</option>
                             <option value="de" <?= ($defaultLanguage === 'de') ? 'selected' : '' ?>>🇩🇪 Deutsch</option>
                         </select>
-                        <p style="font-size:11px; color:var(--text-muted); margin:4px 0 0 0;"><?= __('app.settings_default_lang_sub', 'Oturum açmamış veya profilinde dil tercihi bulunmayan tüm kullanıcılara varsayılan olarak uygulanır.') ?></p>
+                        <p style="font-size:11px; color:var(--text-muted); margin:4px 0 0 0;"><?= __('Settings::settings_default_lang_sub', 'Oturum açmamış veya profilinde dil tercihi bulunmayan tüm kullanıcılara varsayılan olarak uygulanır.') ?></p>
                     </div>
                 </div>
             </div>
@@ -199,14 +199,14 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
                     <span style="font-size:18px;">🤖</span>
                     <div>
-                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('app.settings_ai_provider_heading', 'AI Servis Sağlayıcı & Varsayılan Motor') ?></h3>
-                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('app.settings_ai_provider_sub', 'Otonom görev işleme ve içerik üretimi için kullanılacak yapay zeka servisi') ?></p>
+                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('Settings::settings_ai_provider_heading', 'AI Servis Sağlayıcı & Varsayılan Motor') ?></h3>
+                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('Settings::settings_ai_provider_sub', 'Otonom görev işleme ve içerik üretimi için kullanılacak yapay zeka servisi') ?></p>
                     </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:20px;">
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_ai_active_provider', 'Aktif AI Sağlayıcı') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_ai_active_provider', 'Aktif AI Sağlayıcı') ?></label>
                         <select name="active_ai_provider" class="cu-form-control" style="height:38px;">
                             <option value="gemini" <?= $activeAiProvider === 'gemini' ? 'selected' : '' ?>>🌟 Google Gemini (Önerilen / Varsayılan)</option>
                             <option value="openai" <?= $activeAiProvider === 'openai' ? 'selected' : '' ?>>🟢 OpenAI (GPT-4o / GPT-4o-mini)</option>
@@ -216,21 +216,21 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                     </div>
 
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_ai_model_name', 'Varsayılan Model Adı') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_ai_model_name', 'Varsayılan Model Adı') ?></label>
                         <input type="text" name="default_ai_model" value="<?= htmlspecialchars($defaultAiModel) ?>" placeholder="Örn: gemini-1.5-pro, gpt-4o, claude-3-5-sonnet" class="cu-form-control">
                     </div>
                 </div>
 
                 <!-- API ANAHTARLARI GRİDİ -->
                 <div style="border-top:1px solid var(--border-subtle); padding-top:16px;">
-                    <h4 style="font-size:13.5px; font-weight:700; color:var(--text-white); margin:0 0 14px 0;"><?= __('app.settings_ai_keys_heading', '🔑 LLM API Anahtarları (Secret Keys)') ?></h4>
+                    <h4 style="font-size:13.5px; font-weight:700; color:var(--text-white); margin:0 0 14px 0;"><?= __('Settings::settings_ai_keys_heading', '🔑 LLM API Anahtarları (Secret Keys)') ?></h4>
                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
                         
                         <!-- Google Gemini API Key -->
                         <div class="cu-form-group">
                             <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:flex; justify-content:space-between;">
                                 <span>Google Gemini API Key</span>
-                                <span style="color:#00b894; font-weight:600; font-size:11px;"><?= __('app.settings_ai_active_badge', 'Aktif') ?></span>
+                                <span style="color:#00b894; font-weight:600; font-size:11px;"><?= __('Settings::settings_ai_active_badge', 'Aktif') ?></span>
                             </label>
                             <div style="position:relative;">
                                 <input type="password" id="input_gemini_api_key" name="gemini_api_key" value="<?= htmlspecialchars($geminiApiKey) ?>" placeholder="AIzaSy..." class="cu-form-control" style="padding-right:36px;">
@@ -270,9 +270,9 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <!-- SİSTEM PROMPT ÖN EKİ -->
                 <div style="border-top:1px solid var(--border-subtle); padding-top:16px; margin-top:16px;">
                     <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;">
-                        <?= __('app.settings_ai_prompt_prefix', '🧠 Şirket & Ajan Sistem Prompt Ön Eki (System Instructions)') ?>
+                        <?= __('Settings::settings_ai_prompt_prefix', '🧠 Şirket & Ajan Sistem Prompt Ön Eki (System Instructions)') ?>
                     </label>
-                    <textarea name="ai_system_prompt_prefix" rows="3" placeholder="<?= htmlspecialchars(__('app.settings_ai_prompt_prefix_ph', 'Yapay zekanın tüm görev çözümlemelerinde uyacağı kurum kuralları, dil tonu veya mimari ilkeler...'), ENT_QUOTES, 'UTF-8') ?>" class="cu-form-control" style="font-family:monospace; font-size:12px;"><?= htmlspecialchars($aiSystemPromptPrefix) ?></textarea>
+                    <textarea name="ai_system_prompt_prefix" rows="3" placeholder="<?= htmlspecialchars(__('Settings::settings_ai_prompt_prefix_ph', 'Yapay zekanın tüm görev çözümlemelerinde uyacağı kurum kuralları, dil tonu veya mimari ilkeler...'), ENT_QUOTES, 'UTF-8') ?>" class="cu-form-control" style="font-family:monospace; font-size:12px;"><?= htmlspecialchars($aiSystemPromptPrefix) ?></textarea>
                 </div>
             </div>
         </div>
@@ -283,15 +283,15 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
                     <span style="font-size:18px;">✈️</span>
                     <div>
-                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('app.settings_telegram_title', 'Telegram Bot Entegrasyonu') ?></h3>
-                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('app.settings_telegram_sub', 'Yeni görevler, SLA gecikmeleri ve durum değişimleri anında Telegram kanalınıza iletilir') ?></p>
+                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('Settings::settings_telegram_title', 'Telegram Bot Entegrasyonu') ?></h3>
+                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('Settings::settings_telegram_sub', 'Yeni görevler, SLA gecikmeleri ve durum değişimleri anında Telegram kanalınıza iletilir') ?></p>
                     </div>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); margin-bottom:16px;">
                     <div>
-                        <span style="font-size:13px; font-weight:700; color:var(--text-white);"><?= __('app.settings_telegram_enable', 'Telegram Bildirimlerini Etkinleştir') ?></span>
-                        <div style="font-size:11.5px; color:var(--text-muted);"><?= __('app.settings_telegram_enable_sub', 'Görev olayları bot üzerinden canlı mesaj olarak gönderilsin') ?></div>
+                        <span style="font-size:13px; font-weight:700; color:var(--text-white);"><?= __('Settings::settings_telegram_enable', 'Telegram Bildirimlerini Etkinleştir') ?></span>
+                        <div style="font-size:11.5px; color:var(--text-muted);"><?= __('Settings::settings_telegram_enable_sub', 'Görev olayları bot üzerinden canlı mesaj olarak gönderilsin') ?></div>
                     </div>
                     <label class="cu-toggle-switch">
                         <input type="checkbox" name="telegram_notifications_enabled" value="1" <?= $telegramNotifications ? 'checked' : '' ?>>
@@ -301,7 +301,7 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:14px;">
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_telegram_token', 'Telegram Bot Token') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_telegram_token', 'Telegram Bot Token') ?></label>
                         <div style="position:relative;">
                             <input type="password" id="input_telegram_bot_token" name="telegram_bot_token" value="<?= htmlspecialchars($telegramBotToken) ?>" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" class="cu-form-control" style="padding-right:36px;">
                             <button type="button" onclick="togglePasswordVisibility('input_telegram_bot_token', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px;">👁️</button>
@@ -309,7 +309,7 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                     </div>
 
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_telegram_chat_id', 'Telegram Grup / Chat ID') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_telegram_chat_id', 'Telegram Grup / Chat ID') ?></label>
                         <input type="text" name="telegram_chat_id" value="<?= htmlspecialchars($telegramChatId) ?>" placeholder="-1001234567890 veya @kanaladi" class="cu-form-control">
                     </div>
                 </div>
@@ -318,14 +318,14 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 14px; background:rgba(123, 104, 238, 0.08); border:1px solid rgba(123, 104, 238, 0.25); border-radius:var(--radius-sm); margin-bottom:10px;">
                     <div>
                         <strong style="font-size:12.5px; color:var(--text-white); display:flex; align-items:center; gap:6px;">
-                            <span>💡</span> <span><?= __('app.settings_telegram_model_title', 'Localhost & Canlı Sunucu Çalışma Modeli') ?></span>
+                            <span>💡</span> <span><?= __('Settings::settings_telegram_model_title', 'Localhost & Canlı Sunucu Çalışma Modeli') ?></span>
                         </strong>
                         <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; line-height:1.4;">
-                            <?= __('app.settings_telegram_model_desc') ?>
+                            <?= __('Settings::settings_telegram_model_desc') ?>
                         </div>
                     </div>
                     <button type="button" onclick="handleTestTelegram()" id="btnTestTelegram" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:6px; background:var(--brand-primary); color:#fff; border:none; padding:7px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">
-                        <span>📡</span> <span><?= __('app.settings_telegram_test_btn', 'Bağlantıyı Test Et') ?></span>
+                        <span>📡</span> <span><?= __('Settings::settings_telegram_test_btn', 'Bağlantıyı Test Et') ?></span>
                     </button>
                 </div>
             </div>
@@ -335,29 +335,29 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
                     <span style="font-size:18px;">💬</span>
                     <div>
-                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('app.settings_slack_discord_title', 'Slack & Discord Webhook Kanalları') ?></h3>
-                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('app.settings_slack_discord_sub', 'Ekip iletişim kanallarına giden otomatik bildirim bağlantıları') ?></p>
+                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('Settings::settings_slack_discord_title', 'Slack & Discord Webhook Kanalları') ?></h3>
+                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('Settings::settings_slack_discord_sub', 'Ekip iletişim kanallarına giden otomatik bildirim bağlantıları') ?></p>
                     </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_slack_url', 'Slack Incoming Webhook URL') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_slack_url', 'Slack Incoming Webhook URL') ?></label>
                         <input type="text" name="slack_webhook_url" value="<?= htmlspecialchars($slackWebhook) ?>" placeholder="https://hooks.slack.com/services/..." class="cu-form-control">
                     </div>
 
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_discord_url', 'Discord Webhook URL') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_discord_url', 'Discord Webhook URL') ?></label>
                         <input type="text" name="discord_webhook_url" value="<?= htmlspecialchars($discordWebhook) ?>" placeholder="https://discord.com/api/webhooks/..." class="cu-form-control">
                     </div>
                 </div>
 
                 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border-subtle);">
                     <button type="button" onclick="handleTestWebhook('slack')" id="btnTestSlack" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:6px; background:#4A154B; color:#fff; border:none; padding:7px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">
-                        <span>💬</span> <span><?= __('app.settings_test_slack', 'Slack Test Gönder') ?></span>
+                        <span>💬</span> <span><?= __('Settings::settings_test_slack', 'Slack Test Gönder') ?></span>
                     </button>
                     <button type="button" onclick="handleTestWebhook('discord')" id="btnTestDiscord" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:6px; background:#5865F2; color:#fff; border:none; padding:7px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">
-                        <span>🎮</span> <span><?= __('app.settings_test_discord', 'Discord Test Gönder') ?></span>
+                        <span>🎮</span> <span><?= __('Settings::settings_test_discord', 'Discord Test Gönder') ?></span>
                     </button>
                 </div>
             </div>
@@ -369,37 +369,37 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
                     <span style="font-size:18px;">✉️</span>
                     <div>
-                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('app.settings_smtp_title', 'SMTP E-Posta Sunucu Yapılandırması') ?></h3>
-                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('app.settings_smtp_sub', 'Şifre sıfırlama, kullanıcı davetleri ve görev e-posta bildirimleri için SMTP ayarları') ?></p>
+                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('Settings::settings_smtp_title', 'SMTP E-Posta Sunucu Yapılandırması') ?></h3>
+                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('Settings::settings_smtp_sub', 'Şifre sıfırlama, kullanıcı davetleri ve görev e-posta bildirimleri için SMTP ayarları') ?></p>
                     </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-bottom:16px;">
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_smtp_host', 'SMTP Host (Sunucu)') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_smtp_host', 'SMTP Host (Sunucu)') ?></label>
                         <input type="text" name="smtp_host" value="<?= htmlspecialchars($smtpHost) ?>" placeholder="smtp.gmail.com / mail.site.com" class="cu-form-control">
                     </div>
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_smtp_port', 'SMTP Port') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_smtp_port', 'SMTP Port') ?></label>
                         <input type="number" name="smtp_port" value="<?= htmlspecialchars((string)$smtpPort) ?>" placeholder="587 veya 465" class="cu-form-control">
                     </div>
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_smtp_security', 'Güvenlik Protokolü') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_smtp_security', 'Güvenlik Protokolü') ?></label>
                         <select name="smtp_secure" class="cu-form-control" style="height:38px;">
                             <option value="tls" <?= $smtpSecure === 'tls' ? 'selected' : '' ?>>TLS (Port 587)</option>
                             <option value="ssl" <?= $smtpSecure === 'ssl' ? 'selected' : '' ?>>SSL (Port 465)</option>
-                            <option value="none" <?= $smtpSecure === 'none' ? 'selected' : '' ?>><?= __('app.settings_smtp_sec_none', 'Yok / Düz Bağlantı') ?></option>
+                            <option value="none" <?= $smtpSecure === 'none' ? 'selected' : '' ?>><?= __('Settings::settings_smtp_sec_none', 'Yok / Düz Bağlantı') ?></option>
                         </select>
                     </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-bottom:16px;">
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_smtp_user', 'SMTP Kullanıcı Adı / E-Posta') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_smtp_user', 'SMTP Kullanıcı Adı / E-Posta') ?></label>
                         <input type="text" name="smtp_user" value="<?= htmlspecialchars($smtpUser) ?>" placeholder="bildirim@sirketiniz.com" class="cu-form-control">
                     </div>
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_smtp_pass', 'SMTP Parolası') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_smtp_pass', 'SMTP Parolası') ?></label>
                         <div style="position:relative;">
                             <input type="password" id="input_smtp_pass" name="smtp_pass" value="<?= htmlspecialchars($smtpPass) ?>" placeholder="••••••••••••" class="cu-form-control" style="padding-right:36px;">
                             <button type="button" onclick="togglePasswordVisibility('input_smtp_pass', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px;">👁️</button>
@@ -409,18 +409,18 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px;">
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_smtp_from_email', 'Gönderen E-Posta Adresi (From Email)') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_smtp_from_email', 'Gönderen E-Posta Adresi (From Email)') ?></label>
                         <input type="email" name="smtp_from_email" value="<?= htmlspecialchars($smtpFromEmail) ?>" placeholder="noreply@sirketiniz.com" class="cu-form-control">
                     </div>
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_smtp_from_name', 'Gönderen Başlığı (From Name)') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_smtp_from_name', 'Gönderen Başlığı (From Name)') ?></label>
                         <input type="text" name="smtp_from_name" value="<?= htmlspecialchars($smtpFromName) ?>" placeholder="TaskManager Ekibi" class="cu-form-control">
                     </div>
                 </div>
 
                 <div style="display:flex; justify-content:flex-end; margin-top:14px; padding-top:12px; border-top:1px solid var(--border-subtle);">
                     <button type="button" onclick="handleTestSmtp()" id="btnTestSmtp" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:6px; background:var(--brand-primary); color:#fff; border:none; padding:7px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">
-                        <span>✉️</span> <span><?= __('app.settings_smtp_test_btn', 'SMTP Bağlantısını Test Et') ?></span>
+                        <span>✉️</span> <span><?= __('Settings::settings_smtp_test_btn', 'SMTP Bağlantısını Test Et') ?></span>
                     </button>
                 </div>
             </div>
@@ -432,21 +432,21 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
                     <span style="font-size:18px;">🐞</span>
                     <div>
-                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('app.settings_bugherd_title', 'BugHerd Canlı Hata Takip Entegrasyonu') ?></h3>
-                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('app.settings_bugherd_sub', 'Web sitenizden açılan görsel pin hatalarının otomatik TaskManager görevi haline getirilmesi') ?></p>
+                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('Settings::settings_bugherd_title', 'BugHerd Canlı Hata Takip Entegrasyonu') ?></h3>
+                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('Settings::settings_bugherd_sub', 'Web sitenizden açılan görsel pin hatalarının otomatik TaskManager görevi haline getirilmesi') ?></p>
                     </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_bugherd_api_key', 'BugHerd API Key') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_bugherd_api_key', 'BugHerd API Key') ?></label>
                         <div style="position:relative;">
                             <input type="password" id="input_bugherd_api_key" name="bugherd_api_key" value="<?= htmlspecialchars($bugherdApiKey) ?>" placeholder="bh_api_..." class="cu-form-control" style="padding-right:36px;">
                             <button type="button" onclick="togglePasswordVisibility('input_bugherd_api_key', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px;">👁️</button>
                         </div>
                     </div>
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_bugherd_project_id', 'BugHerd Proje ID') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_bugherd_project_id', 'BugHerd Proje ID') ?></label>
                         <input type="text" name="bugherd_project_id" value="<?= htmlspecialchars($bugherdProjectId) ?>" placeholder="Örn: 984521" class="cu-form-control">
                     </div>
                 </div>
@@ -457,21 +457,21 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
                     <span style="font-size:18px;">🐙</span>
                     <div>
-                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('app.settings_github_title', 'GitHub / Git Deposu Bağlantısı') ?></h3>
-                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('app.settings_github_sub', 'Commit mesajlarındaki TSK kodları üzerinden otomatik durum kapatma ve branch takibi') ?></p>
+                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('Settings::settings_github_title', 'GitHub / Git Deposu Bağlantısı') ?></h3>
+                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('Settings::settings_github_sub', 'Commit mesajlarındaki TSK kodları üzerinden otomatik durum kapatma ve branch takibi') ?></p>
                     </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_github_token', 'GitHub Personal Access Token (PAT)') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_github_token', 'GitHub Personal Access Token (PAT)') ?></label>
                         <div style="position:relative;">
                             <input type="password" id="input_github_token" name="github_token" value="<?= htmlspecialchars($githubToken) ?>" placeholder="ghp_..." class="cu-form-control" style="padding-right:36px;">
                             <button type="button" onclick="togglePasswordVisibility('input_github_token', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px;">👁️</button>
                         </div>
                     </div>
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_github_repo', 'Hedef Depo (Repository: owner/repo)') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_github_repo', 'Hedef Depo (Repository: owner/repo)') ?></label>
                         <input type="text" name="github_repo" value="<?= htmlspecialchars($githubRepo) ?>" placeholder="organizasyon/proje-adi" class="cu-form-control">
                     </div>
                 </div>
@@ -484,28 +484,28 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
                     <span style="font-size:18px;">🛡️</span>
                     <div>
-                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('app.settings_security_title', 'Güvenlik, Oturum & Dosya Yükleme Limitleri') ?></h3>
-                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('app.settings_security_sub', 'Oturum süreleri, ek dosya formatları ve kota kontrolleri') ?></p>
+                        <h3 style="font-size:15px; font-weight:700; color:var(--text-white); margin:0;"><?= __('Settings::settings_security_title', 'Güvenlik, Oturum & Dosya Yükleme Limitleri') ?></h3>
+                        <p style="font-size:11.5px; color:var(--text-muted); margin:2px 0 0 0;"><?= __('Settings::settings_security_sub', 'Oturum süreleri, ek dosya formatları ve kota kontrolleri') ?></p>
                     </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_session_timeout', 'Oturum Zaman Aşımı (Dakika)') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_session_timeout', 'Oturum Zaman Aşımı (Dakika)') ?></label>
                         <input type="number" name="session_timeout_minutes" value="<?= htmlspecialchars((string)$sessionTimeout) ?>" class="cu-form-control">
-                        <small style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;"><?= __('app.settings_session_timeout_hint', 'İşlem yapılmadığında otomatik çıkış süresi') ?></small>
+                        <small style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;"><?= __('Settings::settings_session_timeout_hint', 'İşlem yapılmadığında otomatik çıkış süresi') ?></small>
                     </div>
 
                     <div class="cu-form-group">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_max_upload', 'Maksimum Görev Dosya Boyutu (MB)') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_max_upload', 'Maksimum Görev Dosya Boyutu (MB)') ?></label>
                         <input type="number" name="max_file_upload_mb" value="<?= htmlspecialchars((string)$maxFileUpload) ?>" class="cu-form-control">
-                        <small style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;"><?= __('app.settings_max_upload_hint', 'Tek seferde yüklenebilecek en yüksek dosya boyutu') ?></small>
+                        <small style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;"><?= __('Settings::settings_max_upload_hint', 'Tek seferde yüklenebilecek en yüksek dosya boyutu') ?></small>
                     </div>
 
                     <div class="cu-form-group" style="grid-column:1 / -1;">
-                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('app.settings_allowed_files', 'İzin Verilen Dosya Uzantıları') ?></label>
+                        <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;"><?= __('Settings::settings_allowed_files', 'İzin Verilen Dosya Uzantıları') ?></label>
                         <input type="text" name="allowed_file_types" value="<?= htmlspecialchars($allowedFileTypes) ?>" class="cu-form-control">
-                        <small style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;"><?= __('app.settings_allowed_files_hint', 'Virgülle ayrılmış uzantılar (örn: jpg, png, pdf, zip, docx, xlsx, txt)') ?></small>
+                        <small style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;"><?= __('Settings::settings_allowed_files_hint', 'Virgülle ayrılmış uzantılar (örn: jpg, png, pdf, zip, docx, xlsx, txt)') ?></small>
                     </div>
                 </div>
             </div>
@@ -517,10 +517,10 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; border-bottom:1px solid var(--border-subtle); padding-bottom:14px; flex-wrap:wrap; gap:12px;">
                     <div>
                         <h3 style="font-size:16px; font-weight:700; color:var(--text-white); margin:0; display:flex; align-items:center; gap:8px;">
-                            <span>📦</span> <?= __('app.settings_modules_title', 'Modül Yöneticisi & Eklenti Sistemi') ?>
+                            <span>📦</span> <?= __('Settings::settings_modules_title', 'Modül Yöneticisi & Eklenti Sistemi') ?>
                         </h3>
                         <p style="font-size:12px; color:var(--text-muted); margin:4px 0 0 0;">
-                            <?= __('app.settings_modules_desc', 'Tüm HMVC dikey modüllerini WordPress eklentisi gibi bağımsız açıp kapatın, sürüm ve dizin detaylarını yönetin.') ?>
+                            <?= __('Settings::settings_modules_desc', 'Tüm HMVC dikey modüllerini WordPress eklentisi gibi bağımsız açıp kapatın, sürüm ve dizin detaylarını yönetin.') ?>
                         </p>
                     </div>
                     <?php 
@@ -531,13 +531,13 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                     ?>
                     <div style="display:flex; gap:8px; align-items:center;">
                         <span style="font-size:11px; font-weight:700; background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:12px; color:var(--text-primary); border:1px solid var(--border-subtle);">
-                            <?= __('app.settings_modules_count_badge', 'Toplam Modül') ?>: <?= $totalModules ?>
+                            <?= __('Settings::settings_modules_count_badge', 'Toplam Modül') ?>: <?= $totalModules ?>
                         </span>
                         <span style="font-size:11px; font-weight:700; background:rgba(0,184,148,0.15); padding:4px 10px; border-radius:12px; color:#00b894; border:1px solid rgba(0,184,148,0.3);">
-                            <?= __('app.settings_modules_active_badge', 'Aktif') ?>: <?= $activeCount ?>
+                            <?= __('Settings::settings_modules_active_badge', 'Aktif') ?>: <?= $activeCount ?>
                         </span>
                         <span style="font-size:11px; font-weight:700; background:rgba(235,87,87,0.15); padding:4px 10px; border-radius:12px; color:#eb5757; border:1px solid rgba(235,87,87,0.3);">
-                            <?= __('app.settings_modules_passive_badge', 'Pasif') ?>: <?= $passiveCount ?>
+                            <?= __('Settings::settings_modules_passive_badge', 'Pasif') ?>: <?= $passiveCount ?>
                         </span>
                     </div>
                 </div>
@@ -576,16 +576,16 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                                     <?= $modDesc ?>
                                 </p>
                                 <div style="display:flex; gap:16px; font-size:11px; color:var(--text-muted); margin-left:28px;">
-                                    <span>👤 <strong><?= __('app.settings_modules_col_version', 'Yazar') ?>:</strong> <?= $modAuthor ?></span>
-                                    <span>🔗 <strong><?= __('app.settings_modules_col_deps', 'Bağımlılıklar') ?>:</strong> <?= $modDeps ?></span>
+                                    <span>👤 <strong><?= __('Settings::settings_modules_col_version', 'Yazar') ?>:</strong> <?= $modAuthor ?></span>
+                                    <span>🔗 <strong><?= __('Settings::settings_modules_col_deps', 'Bağımlılıklar') ?>:</strong> <?= $modDeps ?></span>
                                 </div>
                             </div>
 
                             <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
                                 <span id="badge-status-<?= $modSlug ?>" style="font-size:11.5px; font-weight:700; color:<?= $modActive ? '#00b894' : '#eb5757' ?>;">
-                                    <?= $modActive ? __('app.settings_modules_active_badge', 'Aktif') : __('app.settings_modules_passive_badge', 'Pasif') ?>
+                                    <?= $modActive ? __('Settings::settings_modules_active_badge', 'Aktif') : __('Settings::settings_modules_passive_badge', 'Pasif') ?>
                                 </span>
-                                <label class="cu-toggle-switch" title="<?= __('app.settings_modules_col_status', 'Durum / Anahtar') ?>">
+                                <label class="cu-toggle-switch" title="<?= __('Settings::settings_modules_col_status', 'Durum / Anahtar') ?>">
                                     <input type="checkbox" id="toggle-mod-<?= $modSlug ?>" onchange="toggleModuleStatus('<?= $modSlug ?>', this.checked)" <?= $modActive ? 'checked' : '' ?>>
                                     <span class="cu-toggle-slider"></span>
                                 </label>
@@ -600,11 +600,11 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
         <!-- KAYDET BUTONLARI (ALT) -->
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:10px;">
             <a href="/taskmanager/board" class="cu-btn-sm" style="display:inline-flex; align-items:center; padding:10px 18px; font-size:13px; text-decoration:none; background:transparent; border:1px solid var(--border-subtle); color:var(--text-primary); border-radius:8px;">
-                <?= __('app.settings_btn_cancel', 'İptal / Panoya Dön') ?>
+                <?= __('Settings::settings_btn_cancel', 'İptal / Panoya Dön') ?>
             </a>
             <button type="submit" id="btnSaveSettingsBottom" class="cu-btn cu-btn-primary" style="display:inline-flex; align-items:center; gap:8px; padding:10px 24px; font-size:13px; font-weight:600; border-radius:8px; box-shadow:0 4px 14px rgba(123,104,238,0.35);">
                 <span>💾</span>
-                <span><?= __('app.settings_btn_save', 'Değişiklikleri Kaydet') ?></span>
+                <span><?= __('Settings::settings_btn_save', 'Değişiklikleri Kaydet') ?></span>
             </button>
         </div>
 

@@ -110,7 +110,7 @@ class AjaxController extends BaseController
     public function toggleModuleStatus(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, __('app.settings_modules_toggle_fail', 'Yetkisiz erişim: Modülleri yalnızca yönetici yönetebilir.'));
+            $this->respond(false, __('Settings::settings_modules_toggle_fail', 'Yetkisiz erişim: Modülleri yalnızca yönetici yönetebilir.'));
         }
 
         $slug = trim($_POST['slug'] ?? '');
@@ -122,12 +122,12 @@ class AjaxController extends BaseController
 
         $res = \Core\ModuleLoader::setModuleStatus($slug, $status);
         if ($res) {
-            $this->respond(true, __('app.settings_modules_toggle_success', 'Modül durumu güncellendi.'), [
+            $this->respond(true, __('Settings::settings_modules_toggle_success', 'Modül durumu güncellendi.'), [
                 'slug'      => $slug,
                 'is_active' => $status
             ]);
         }
-        $this->respond(false, __('app.settings_modules_toggle_fail', 'Modül durumu kaydedilemedi.'));
+        $this->respond(false, __('Settings::settings_modules_toggle_fail', 'Modül durumu kaydedilemedi.'));
     }
 
     public function testTelegram(): void

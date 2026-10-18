@@ -25,7 +25,7 @@ class AuthController extends BaseController
         if (empty($email) || empty($password)) {
             return [
                 'success' => false,
-                'error'   => function_exists('__') ? __('app.auth_err_empty', 'Lütfen tüm alanları doldurun.') : 'Lütfen tüm alanları doldurun.'
+                'error'   => function_exists('__') ? __('Team::auth_err_empty', 'Lütfen tüm alanları doldurun.') : 'Lütfen tüm alanları doldurun.'
             ];
         }
 
@@ -52,7 +52,7 @@ class AuthController extends BaseController
 
         return [
             'success' => false,
-            'error'   => function_exists('__') ? __('app.auth_err_invalid', 'E-posta adresi veya şifre hatalı.') : 'E-posta adresi veya şifre hatalı.'
+            'error'   => function_exists('__') ? __('Team::auth_err_invalid', 'E-posta adresi veya şifre hatalı.') : 'E-posta adresi veya şifre hatalı.'
         ];
     }
 }

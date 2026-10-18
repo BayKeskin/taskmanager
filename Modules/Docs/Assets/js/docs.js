@@ -88,7 +88,7 @@ function togglePaperWidth() {
     if (sourcePaper) sourcePaper.classList.toggle('full-width', isFull);
     
     if (btn) {
-        btn.innerText = isFull ? <?= json_encode(__('app.docs_width_standard', '📄 Standart Genişlik')) ?> : <?= json_encode(__('app.docs_width_wide', '↔️ Geniş Görünüm')) ?>;
+        btn.innerText = isFull ? <?= json_encode(__('Docs::docs_width_standard', '📄 Standart Genişlik')) ?> : <?= json_encode(__('Docs::docs_width_wide', '↔️ Geniş Görünüm')) ?>;
         btn.classList.toggle('active', isFull);
     }
 }
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 toolbar: '#quillToolbar',
                 table: true
             },
-            placeholder: <?= json_encode(__('app.docs_editor_placeholder', 'Dökümanınızı buraya yazmaya başlayın...')) ?>
+            placeholder: <?= json_encode(__('Docs::docs_editor_placeholder', 'Dökümanınızı buraya yazmaya başlayın...')) ?>
         });
 
         // İlk içeriği yükle
@@ -123,7 +123,7 @@ function markDocUnsaved() {
     isDocSaved = false;
     const status = document.getElementById('docSaveStatus');
     if (status) {
-        status.innerText = <?= json_encode('● ' . __('app.docs_save_status_unsaved', 'Kaydedilmedi')) ?>;
+        status.innerText = <?= json_encode('● ' . __('Docs::docs_save_status_unsaved', 'Kaydedilmedi')) ?>;
         status.style.color = '#f39c12';
     }
 }
@@ -175,7 +175,7 @@ async function selectDoc(docId) {
         const res = await fetch(`/taskmanager/ajax?action=get_doc&id=${docId}`);
         const data = await res.json();
         if (!data.success) {
-            showToast(data.message || <?= json_encode(__('app.docs_toast_load_err', 'Döküman yüklenemedi')) ?>, 'error');
+            showToast(data.message || <?= json_encode(__('Docs::docs_toast_load_err', 'Döküman yüklenemedi')) ?>, 'error');
             return;
         }
 
@@ -206,12 +206,12 @@ async function selectDoc(docId) {
         isDocSaved = true;
         const status = document.getElementById('docSaveStatus');
         if (status) {
-            status.innerText = <?= json_encode('✓ ' . __('app.docs_save_status_saved', 'Kaydedildi')) ?>;
+            status.innerText = <?= json_encode('✓ ' . __('Docs::docs_save_status_saved', 'Kaydedildi')) ?>;
             status.style.color = 'var(--text-muted)';
         }
     } catch (e) {
         console.error(e);
-        showToast(<?= json_encode(__('app.docs_toast_conn_err', 'Bağlantı hatası')) ?>, 'error');
+        showToast(<?= json_encode(__('Docs::docs_toast_conn_err', 'Bağlantı hatası')) ?>, 'error');
     }
 }
 
@@ -231,7 +231,7 @@ async function saveActiveDoc() {
     }
 
     if (!docId || !title) {
-        showToast(<?= json_encode(__('app.docs_toast_title_req', 'Başlık zorunludur')) ?>, 'error');
+        showToast(<?= json_encode(__('Docs::docs_toast_title_req', 'Başlık zorunludur')) ?>, 'error');
         return;
     }
 
@@ -244,7 +244,7 @@ async function saveActiveDoc() {
 
     const status = document.getElementById('docSaveStatus');
     if (status) {
-        status.innerText = <?= json_encode('⏳ ' . __('app.docs_save_status_saving', 'Kaydediliyor...')) ?>;
+        status.innerText = <?= json_encode('⏳ ' . __('Docs::docs_save_status_saving', 'Kaydediliyor...')) ?>;
         status.style.color = 'var(--brand-primary)';
     }
 
@@ -257,10 +257,10 @@ async function saveActiveDoc() {
         if (data.success) {
             isDocSaved = true;
             if (status) {
-                status.innerText = <?= json_encode('✓ ' . __('app.docs_save_status_saved', 'Kaydedildi')) ?>;
+                status.innerText = <?= json_encode('✓ ' . __('Docs::docs_save_status_saved', 'Kaydedildi')) ?>;
                 status.style.color = '#00b894';
             }
-            showToast(<?= json_encode(__('app.docs_toast_save_success', '✅ Döküman kaydedildi!')) ?>, 'success');
+            showToast(<?= json_encode(__('Docs::docs_toast_save_success', '✅ Döküman kaydedildi!')) ?>, 'success');
             
             // Sidebar başlık ve ikon güncelle
             const sideTitle = document.getElementById(`docSidebarTitle-${docId}`);
@@ -268,17 +268,17 @@ async function saveActiveDoc() {
             const sideIcon = document.getElementById(`docIconBadge-${docId}`);
             if (sideIcon) sideIcon.innerText = icon;
         } else {
-            showToast(data.message || <?= json_encode(__('app.docs_toast_save_fail', 'Kayıt başarısız')) ?>, 'error');
+            showToast(data.message || <?= json_encode(__('Docs::docs_toast_save_fail', 'Kayıt başarısız')) ?>, 'error');
         }
     } catch (e) {
         console.error(e);
-        showToast(<?= json_encode(__('app.docs_toast_conn_err', 'Bağlantı hatası')) ?>, 'error');
+        showToast(<?= json_encode(__('Docs::docs_toast_conn_err', 'Bağlantı hatası')) ?>, 'error');
     }
 }
 
 // 6. Yeni Döküman Oluşturma
 async function openNewDocPrompt() {
-    const title = prompt(<?= json_encode(__('app.docs_create_prompt', 'Yeni Döküman Başlığı:')) ?>, <?= json_encode(__('app.docs_create_default', 'Yeni Doküman')) ?>);
+    const title = prompt(<?= json_encode(__('Docs::docs_create_prompt', 'Yeni Döküman Başlığı:')) ?>, <?= json_encode(__('Docs::docs_create_default', 'Yeni Doküman')) ?>);
     if (!title) return;
 
     const formData = new FormData();
@@ -295,10 +295,10 @@ async function openNewDocPrompt() {
         });
         const data = await res.json();
         if (data.success) {
-            showToast(<?= json_encode(__('app.docs_toast_created', '✅ Yeni döküman oluşturuldu!')) ?>, 'success');
+            showToast(<?= json_encode(__('Docs::docs_toast_created', '✅ Yeni döküman oluşturuldu!')) ?>, 'success');
             window.location.reload();
         } else {
-            showToast(data.message || <?= json_encode(__('app.docs_toast_create_fail', 'Oluşturulamadı')) ?>, 'error');
+            showToast(data.message || <?= json_encode(__('Docs::docs_toast_create_fail', 'Oluşturulamadı')) ?>, 'error');
         }
     } catch (e) {
         console.error(e);
@@ -310,7 +310,7 @@ async function deleteActiveDoc() {
     const docId = document.getElementById('activeDocId')?.value;
     if (!docId) return;
 
-    if (!confirm(<?= json_encode(__('app.docs_confirm_delete', 'Bu dökümanı silmek istediğinize emin misiniz?')) ?>)) return;
+    if (!confirm(<?= json_encode(__('Docs::docs_confirm_delete', 'Bu dökümanı silmek istediğinize emin misiniz?')) ?>)) return;
 
     const formData = new FormData();
     formData.append('id', docId);
@@ -322,10 +322,10 @@ async function deleteActiveDoc() {
         });
         const data = await res.json();
         if (data.success) {
-            showToast(<?= json_encode(__('app.docs_toast_deleted', 'Döküman silindi')) ?>, 'success');
+            showToast(<?= json_encode(__('Docs::docs_toast_deleted', 'Döküman silindi')) ?>, 'success');
             window.location.href = '/taskmanager/docs';
         } else {
-            showToast(data.message || <?= json_encode(__('app.docs_toast_delete_fail', 'Silinemedi')) ?>, 'error');
+            showToast(data.message || <?= json_encode(__('Docs::docs_toast_delete_fail', 'Silinemedi')) ?>, 'error');
         }
     } catch (e) {
         console.error(e);
@@ -363,7 +363,7 @@ function renderDocAttachments(attachments) {
 
     list.innerHTML = '';
     if (currentDocAttachments.length === 0) {
-        list.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:12px; color:var(--text-muted); font-size:12px; font-style:italic;"><?= addslashes(__('app.docs_attachments_empty', 'Bu dökümana henüz ek dosya veya görsel eklenmemiş.')) ?></div>';
+        list.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:12px; color:var(--text-muted); font-size:12px; font-style:italic;"><?= addslashes(__('Docs::docs_attachments_empty', 'Bu dökümana henüz ek dosya veya görsel eklenmemiş.')) ?></div>';
         return;
     }
 
@@ -389,8 +389,8 @@ function renderDocAttachments(attachments) {
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:4px;">
-                <a href="${att.file_path}" download target="_blank" style="color:var(--brand-primary); padding:4px; text-decoration:none; font-size:13px;" title="<?= htmlspecialchars(__('app.docs_attachment_download', 'İndir'), ENT_QUOTES, 'UTF-8') ?>">⬇️</a>
-                <button type="button" onclick="deleteDocAttachment(${att.id})" style="background:none; border:none; color:#e74c3c; cursor:pointer; padding:4px; font-size:13px;" title="<?= htmlspecialchars(__('app.docs_btn_delete', 'Sil'), ENT_QUOTES, 'UTF-8') ?>">🗑️</button>
+                <a href="${att.file_path}" download target="_blank" style="color:var(--brand-primary); padding:4px; text-decoration:none; font-size:13px;" title="<?= htmlspecialchars(__('Docs::docs_attachment_download', 'İndir'), ENT_QUOTES, 'UTF-8') ?>">⬇️</a>
+                <button type="button" onclick="deleteDocAttachment(${att.id})" style="background:none; border:none; color:#e74c3c; cursor:pointer; padding:4px; font-size:13px;" title="<?= htmlspecialchars(__('Docs::docs_btn_delete', 'Sil'), ENT_QUOTES, 'UTF-8') ?>">🗑️</button>
             </div>
         `;
         list.appendChild(item);
@@ -456,7 +456,7 @@ async function handleDocFileUpload(input) {
 async function uploadDocFile(file) {
     const docId = document.getElementById('activeDocId')?.value;
     if (!docId) {
-        showToast(<?= json_encode(__('app.docs_toast_select_first', 'Önce bir döküman seçmelisiniz')) ?>, 'error');
+        showToast(<?= json_encode(__('Docs::docs_toast_select_first', 'Önce bir döküman seçmelisiniz')) ?>, 'error');
         return;
     }
 
@@ -464,7 +464,7 @@ async function uploadDocFile(file) {
     formData.append('doc_id', docId);
     formData.append('file', file);
 
-    showToast(<?= json_encode(__('app.docs_toast_uploading', 'Dosya yükleniyor...')) ?>, 'info');
+    showToast(<?= json_encode(__('Docs::docs_toast_uploading', 'Dosya yükleniyor...')) ?>, 'info');
 
     try {
         const res = await fetch('/taskmanager/ajax?action=upload_doc_attachment', {
@@ -474,20 +474,20 @@ async function uploadDocFile(file) {
         const d = await res.json();
         const attData = d.data || d.attachment || (d.id ? d : null);
         if (d.success && attData) {
-            showToast(<?= json_encode(__('app.docs_toast_upload_success', '✅ Dosya dökümana eklendi!')) ?>, 'success');
+            showToast(<?= json_encode(__('Docs::docs_toast_upload_success', '✅ Dosya dökümana eklendi!')) ?>, 'success');
             currentDocAttachments = currentDocAttachments.filter(a => a.id != attData.id);
             currentDocAttachments.unshift(attData);
             renderDocAttachments(currentDocAttachments);
         } else {
-            showToast(d.message || <?= json_encode(__('app.docs_toast_upload_fail', 'Yükleme başarısız')) ?>, 'error');
+            showToast(d.message || <?= json_encode(__('Docs::docs_toast_upload_fail', 'Yükleme başarısız')) ?>, 'error');
         }
     } catch(e) {
-        showToast(<?= json_encode(__('app.docs_toast_conn_err', 'Bağlantı hatası oluştu')) ?>, 'error');
+        showToast(<?= json_encode(__('Docs::docs_toast_conn_err', 'Bağlantı hatası oluştu')) ?>, 'error');
     }
 }
 
 async function deleteDocAttachment(attId) {
-    if (!confirm(<?= json_encode(__('app.docs_confirm_delete_att', 'Bu eki silmek istediğinize emin misiniz?')) ?>)) return;
+    if (!confirm(<?= json_encode(__('Docs::docs_confirm_delete_att', 'Bu eki silmek istediğinize emin misiniz?')) ?>)) return;
 
     const formData = new FormData();
     formData.append('attachment_id', attId);
@@ -499,14 +499,14 @@ async function deleteDocAttachment(attId) {
         });
         const d = await res.json();
         if (d.success) {
-            showToast(<?= json_encode(__('app.docs_toast_att_deleted', 'Ek dosya silindi!')) ?>, 'success');
+            showToast(<?= json_encode(__('Docs::docs_toast_att_deleted', 'Ek dosya silindi!')) ?>, 'success');
             currentDocAttachments = currentDocAttachments.filter(a => a.id != attId);
             renderDocAttachments(currentDocAttachments);
         } else {
-            showToast(d.message || <?= json_encode(__('app.docs_toast_delete_fail', 'Silinemedi')) ?>, 'error');
+            showToast(d.message || <?= json_encode(__('Docs::docs_toast_delete_fail', 'Silinemedi')) ?>, 'error');
         }
     } catch(e) {
-        showToast(<?= json_encode(__('app.docs_toast_conn_err', 'Bağlantı hatası')) ?>, 'error');
+        showToast(<?= json_encode(__('Docs::docs_toast_conn_err', 'Bağlantı hatası')) ?>, 'error');
     }
 }
 
@@ -524,7 +524,7 @@ window.addEventListener('paste', async (e) => {
             const blob = item.getAsFile();
             const safeFile = new File([blob], `doc_screenshot_${Date.now()}.png`, { type: blob.type });
             await uploadDocFile(safeFile);
-            showToast(<?= json_encode(__('app.docs_toast_paste_success', '📋 Ekran görüntüsü dökümana eklendi!')) ?>, 'success');
+            showToast(<?= json_encode(__('Docs::docs_toast_paste_success', '📋 Ekran görüntüsü dökümana eklendi!')) ?>, 'success');
             break;
         }
     }

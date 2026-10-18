@@ -3157,3 +3157,150 @@ function downloadDeliveryReportPdf(projectId) {
     const url = '/taskmanager/billing-report' + (projectId ? '?project_id=' + projectId : '');
     window.open(url, '_blank');
 }
+
+// Kanban Tools Dropdown
+function toggleKanbanToolsDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('kanbanToolsMenu');
+    if (!menu) return;
+    const isVisible = (menu.style.display === 'block');
+    menu.style.display = isVisible ? 'none' : 'block';
+}
+
+function closeKanbanToolsDropdown() {
+    const menu = document.getElementById('kanbanToolsMenu');
+    if (menu) menu.style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+    const dropdownWrap = document.querySelector('.cu-tools-dropdown-wrap');
+    if (dropdownWrap && !dropdownWrap.contains(e.target)) {
+        closeKanbanToolsDropdown();
+    }
+});
+
+// Client Workflow Actions
+function clientApproveTask(taskId) {
+    const i18n = window.BOARD_I18N || {};
+    if (!confirm(i18n.approve_confirm || 'Onaylamak istiyor musunuz?')) return;
+    const fd = new FormData();
+    fd.append('action', 'task_workflow');
+    fd.append('workflow_action', 'approve');
+    fd.append('task_id', taskId);
+    fetch('/taskmanager/ajax/task_workflow', { method:'POST', body:fd })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                alert(i18n.approve_success || 'Teslimat onaylandı');
+                location.reload();
+            } else {
+                alert((i18n.error_prefix || 'Hata: ') + res.message);
+            }
+        })
+        .catch(err => alert((i18n.server_error || 'Sunucu hatası: ') + err.message));
+}
+
+function clientRequestChanges(taskId) {
+    const i18n = window.BOARD_I18N || {};
+    const reason = prompt(i18n.request_prompt || 'Düzeltme notunu girin:');
+    if (!reason || !reason.trim()) return;
+    const fd = new FormData();
+    fd.append('action', 'task_workflow');
+    fd.append('workflow_action', 'request_changes');
+    fd.append('task_id', taskId);
+    fd.append('feedback', reason.trim());
+    fetch('/taskmanager/ajax/task_workflow', { method:'POST', body:fd })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                alert(i18n.request_success || 'Düzeltme talebiniz iletildi');
+                location.reload();
+            } else {
+                alert((i18n.error_prefix || 'Hata: ') + res.message);
+            }
+        })
+        .catch(err => alert((i18n.server_error || 'Sunucu hatası: ') + err.message));
+}
+
+// AI Standup
+function openAiStandupModal() {
+    const i18n = window.BOARD_I18N || {};
+    const modal = document.getElementById('modalAiStandup');
+    const content = document.getElementById('aiStandupContent');
+    if (!modal || !content) return;
+    openModal('modalAiStandup');
+    content.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);"><div style="font-size:32px; margin-bottom:12px;">🤖</div><strong>${i18n.analyzing || 'Analiz ediliyor...'}</strong></div>`;
+
+    const projId = (window.BOARD_CONTEXT && window.BOARD_CONTEXT.projectId) ? window.BOARD_CONTEXT.projectId : '';
+    fetch('/taskmanager/ajax/get_daily_standup' + (projId ? '?project_id=' + projId : ''))
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                const d = (res.data || res);
+                const raw = d.raw_data || {};
+                const period = raw.period || d.date || (i18n.last_24h || 'Son 24 Saat');
+                const compCount = raw.completed_count !== undefined ? raw.completed_count : 0;
+                const inProgCount = raw.in_progress_count !== undefined ? raw.in_progress_count : 0;
+                const delayedCount = raw.delayed_count !== undefined ? raw.delayed_count : 0;
+                const summaryText = d.summary || '';
+
+                let normalizedText = (summaryText || '').replace(/\r\n/g, '\n');
+                let formattedSummary = escapeHtml(normalizedText)
+                    .replace(/^\s*###\s*(.*$)/gim, '<div style="font-size:13px; font-weight:700; color:var(--brand-primary); margin-top:16px; margin-bottom:8px; border-bottom:1px solid var(--border-subtle); padding-bottom:4px;">$1</div>')
+                    .replace(/^\s*#\s*(.*$)/gim, '<div style="font-size:15px; font-weight:800; color:var(--text-white); margin-bottom:10px;">$1</div>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text-white);">$1</strong>')
+                    .replace(/_(.*?)_/g, '<em style="color:var(--text-muted);">$1</em>')
+                    .replace(/^\s*-\s*(.*$)/gim, '<div style="margin-left:8px; margin-bottom:6px; display:flex; align-items:flex-start; gap:8px;"><span style="color:var(--brand-primary);">•</span><span>$1</span></div>');
+
+                const compLabel = (i18n.comp_stat || ':count Tamamlanan').replace(':count', compCount);
+                const inProgLabel = (i18n.in_prog_stat || ':count Aktif').replace(':count', inProgCount);
+                const delayedLabel = (i18n.delayed_stat || ':count Geciken').replace(':count', delayedCount);
+
+                content.innerHTML = `
+                    <div style="background:rgba(123,104,238,0.08); border:1px solid rgba(123,104,238,0.25); border-radius:8px; padding:16px; margin-bottom:18px;">
+                        <div style="font-size:11px; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">${i18n.period || 'Dönem Aralığı'}</div>
+                        <div style="font-size:13px; color:var(--text-white); font-weight:600;">📅 ${period}</div>
+                        <div style="display:flex; gap:12px; margin-top:12px; flex-wrap:wrap;">
+                            <div style="background:rgba(0,184,148,0.15); border:1px solid rgba(0,184,148,0.3); border-radius:6px; padding:6px 12px; font-size:12px; color:#00b894; font-weight:700;">${compLabel}</div>
+                            <div style="background:rgba(155,93,229,0.15); border:1px solid rgba(155,93,229,0.3); border-radius:6px; padding:6px 12px; font-size:12px; color:#9b5de5; font-weight:700;">${inProgLabel}</div>
+                            <div style="background:rgba(231,76,60,0.15); border:1px solid rgba(231,76,60,0.3); border-radius:6px; padding:6px 12px; font-size:12px; color:#e74c3c; font-weight:700;">${delayedLabel}</div>
+                        </div>
+                    </div>
+                    <div style="background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:8px; padding:18px; font-size:13px; line-height:1.6; color:var(--text-primary); max-height:360px; overflow-y:auto;">
+                        ${formattedSummary}
+                    </div>
+                `;
+            } else {
+                content.innerHTML = '<div style="padding:30px; text-align:center; color:#e74c3c;">' + (i18n.err_fetch || 'Hata: ') + (res.message || '') + '</div>';
+            }
+        })
+        .catch(err => {
+            content.innerHTML = '<div style="padding:30px; text-align:center; color:#e74c3c;">' + (i18n.err_conn || 'Bağlantı hatası: ') + err.message + '</div>';
+        });
+}
+
+function sendStandupEmail() {
+    const i18n = window.BOARD_I18N || {};
+    const defaultEmail = (window.BOARD_CONTEXT && window.BOARD_CONTEXT.userEmail) ? window.BOARD_CONTEXT.userEmail : '';
+    const email = prompt(i18n.email_prompt || 'E-posta giriniz:', defaultEmail);
+    if (!email || !email.trim()) return;
+
+    const fd = new FormData();
+    fd.append('action', 'send_standup_email');
+    fd.append('email', email.trim());
+    if (window.BOARD_CONTEXT && window.BOARD_CONTEXT.projectId) {
+        fd.append('project_id', window.BOARD_CONTEXT.projectId);
+    }
+
+    fetch('/taskmanager/ajax/send_standup_email', { method:'POST', body:fd })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                alert((i18n.email_success || 'Gönderildi: ') + email);
+            } else {
+                alert((i18n.error_prefix || 'Hata: ') + res.message);
+            }
+        })
+        .catch(err => alert((i18n.server_error || 'Sunucu hatası: ') + err.message));
+}
+

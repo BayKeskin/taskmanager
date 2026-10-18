@@ -695,17 +695,9 @@ $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dyn
 </div>
 
 <script>
-function copyToken() {
-    const text = document.getElementById('tokenText').innerText;
-    const msg = <?= json_encode($t['token_copied']) ?>;
-    navigator.clipboard.writeText(text).then(() => {
-        if (typeof showToast === 'function') {
-            showToast(msg, 'success');
-        } else {
-            alert(msg);
-        }
-    });
-}
+window.APITESTER_DOCS_I18N = {
+    token_copied: <?= json_encode($t['token_copied']) ?>
+};
 </script>
 
 <?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>

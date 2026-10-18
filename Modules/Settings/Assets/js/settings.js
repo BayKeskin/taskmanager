@@ -45,15 +45,15 @@ async function handleSaveSettings(e) {
 
         if (data.success) {
             if (typeof showToast === 'function') {
-                showToast(<?= json_encode(__('app.settings_saved_success')) ?>, 'success');
+                showToast(<?= json_encode(__('Settings::settings_saved_success')) ?>, 'success');
             } else {
-                alert(<?= json_encode(__('app.settings_saved_success')) ?>);
+                alert(<?= json_encode(__('Settings::settings_saved_success')) ?>);
             }
         } else {
             if (typeof showToast === 'function') {
-                showToast(data.message || <?= json_encode(__('app.settings_saved_fail')) ?>, 'error');
+                showToast(data.message || <?= json_encode(__('Settings::settings_saved_fail')) ?>, 'error');
             } else {
-                alert('Hata: ' + (data.message || <?= json_encode(__('app.settings_saved_fail')) ?>));
+                alert('Hata: ' + (data.message || <?= json_encode(__('Settings::settings_saved_fail')) ?>));
             }
         }
     } catch (err) {
@@ -196,14 +196,14 @@ async function toggleModuleStatus(slug, isActive) {
         const data = await res.json();
         if (data.success) {
             if (badge) {
-                badge.innerText = isActive ? '<?= __('app.settings_modules_active_badge', 'Aktif') ?>' : '<?= __('app.settings_modules_passive_badge', 'Pasif') ?>';
+                badge.innerText = isActive ? '<?= __('Settings::settings_modules_active_badge', 'Aktif') ?>' : '<?= __('Settings::settings_modules_passive_badge', 'Pasif') ?>';
                 badge.style.color = isActive ? '#00b894' : '#eb5757';
             }
             if (typeof showToast === 'function') {
-                showToast(data.message || '<?= __('app.settings_modules_toggle_success', 'Modül durumu güncellendi.') ?>', 'success');
+                showToast(data.message || '<?= __('Settings::settings_modules_toggle_success', 'Modül durumu güncellendi.') ?>', 'success');
             }
         } else {
-            alert(data.message || '<?= __('app.settings_modules_toggle_fail', 'Modül durumu güncellenemedi.') ?>');
+            alert(data.message || '<?= __('Settings::settings_modules_toggle_fail', 'Modül durumu güncellenemedi.') ?>');
             // Geri al
             const toggle = document.getElementById('toggle-mod-' + slug);
             if (toggle) toggle.checked = !isActive;

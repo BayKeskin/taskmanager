@@ -54,16 +54,16 @@ foreach ($allTasks as $t) {
 
     <div class="cu-filter-bar" style="display:flex; align-items:center; gap:8px;">
         <?php if ($canCreateTask && !$isClient): ?>
-            <button type="button" class="cu-btn-sm" onclick="openAiArchitectModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, #7B68EE, #e056fd); border:none; color:#ffffff; font-weight:700; padding:0 14px; font-size:12px; border-radius:6px; cursor:pointer; box-shadow:0 4px 12px rgba(123,104,238,0.35); box-sizing:border-box;" title="<?= htmlspecialchars(__('app.tooltip_ai_architect')) ?>">
-                <span>🪄</span> <span><?= __('app.btn_ai_architect') ?></span>
+            <button type="button" class="cu-btn-sm" onclick="openAiArchitectModal()" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, #7B68EE, #e056fd); border:none; color:#ffffff; font-weight:700; padding:0 14px; font-size:12px; border-radius:6px; cursor:pointer; box-shadow:0 4px 12px rgba(123,104,238,0.35); box-sizing:border-box;" title="<?= htmlspecialchars(__('AiArchitect::tooltip_ai_architect', 'AI Mimar ile Görev Oluştur')) ?>">
+                <span>🪄</span> <span><?= __('AiArchitect::btn_ai_architect', 'AI Mimar') ?></span>
             </button>
         <?php endif; ?>
 
         <!-- 🛠️ ARAÇLAR (TOOLS) DROPDOWN -->
         <div class="cu-tools-dropdown-wrap" style="position:relative; display:inline-block;">
-            <button type="button" id="btnKanbanTools" class="cu-btn-sm" onclick="toggleKanbanToolsDropdown(event)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:var(--text-white); font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box; transition:all 0.2s ease;" title="<?= htmlspecialchars(__('app.kanban_tools_desc', 'Raporlama, DevOps, Dağıtım ve Dışa Aktarma Araçları')) ?>">
+            <button type="button" id="btnKanbanTools" class="cu-btn-sm" onclick="toggleKanbanToolsDropdown(event)" style="height:32px; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:var(--text-white); font-weight:600; padding:0 12px; font-size:12px; border-radius:6px; cursor:pointer; box-sizing:border-box; transition:all 0.2s ease;" title="<?= htmlspecialchars(__('Board::kanban_tools_desc', 'Raporlama, DevOps, Dağıtım ve Dışa Aktarma Araçları')) ?>">
                 <span>🛠️</span>
-                <span><?= __('app.kanban_tools', 'Araçlar') ?></span>
+                <span><?= __('Board::kanban_tools', 'Araçlar') ?></span>
                 <span style="font-size:10px; opacity:0.7; margin-left:2px;">▼</span>
             </button>
             <div id="kanbanToolsMenu" style="display:none; position:absolute; top:calc(100% + 8px); right:0; min-width:260px; background:#1b1d29; border:1px solid rgba(255,255,255,0.14); border-radius:10px; box-shadow:0 14px 35px rgba(0,0,0,0.65); padding:6px; z-index:1050; backdrop-filter:blur(16px);">
@@ -88,7 +88,7 @@ foreach ($allTasks as $t) {
                        class="cu-tools-item"
                        style="color:#2ecc71 !important;">
                         <span style="font-size:16px; width:22px; text-align:center;">📊</span>
-                        <span style="flex:1; font-weight:600;"><?= __('app.kanban_export_excel', 'Excel\'e Aktar') ?></span>
+                        <span style="flex:1; font-weight:600;"><?= __('Board::kanban_export_excel', 'Excel\'e Aktar') ?></span>
                     </a>
                 <?php endif; ?>
 
@@ -101,7 +101,7 @@ foreach ($allTasks as $t) {
                     <!-- GitHub Ayarları -->
                     <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openGithubSettingsModal();">
                         <span style="font-size:16px; width:22px; text-align:center;">🐙</span>
-                        <span style="flex:1;"><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : __('app.btn_connect_github', 'GitHub Bağla') ?></span>
+                        <span style="flex:1;"><?= !empty($ghCreds['username']) ? htmlspecialchars($ghCreds['username']) : __('Board::btn_connect_github', 'GitHub Bağla') ?></span>
                         <span style="font-size:10px; color:var(--text-muted); background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">DevOps</span>
                     </button>
 
@@ -109,19 +109,19 @@ foreach ($allTasks as $t) {
                         <!-- GitHub Sync -->
                         <button type="button" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); syncProjectToGithub(<?= (int)$activeProjectId ?>);" style="color:#3fb950 !important;">
                             <span style="font-size:16px; width:22px; text-align:center;">🔄</span>
-                            <span style="flex:1; font-weight:600;"><?= __('app.btn_sync_github', 'GitHub Sync') ?></span>
+                            <span style="flex:1; font-weight:600;"><?= __('Board::btn_sync_github', 'GitHub Sync') ?></span>
                         </button>
 
                         <!-- Canlı Dağıtım (Deploy Wizard) -->
                         <button type="button" id="btnOpenDeployWizard" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openDeployWizard(<?= (int)$activeProjectId ?>);" style="color:#00cec9 !important;">
                             <span style="font-size:16px; width:22px; text-align:center;">🚀</span>
-                            <span style="flex:1; font-weight:700;"><?= __('app.deploy_btn_wizard', 'Canlı Dağıtım') ?></span>
+                            <span style="flex:1; font-weight:700;"><?= __('Board::deploy_btn_wizard', 'Canlı Dağıtım') ?></span>
                         </button>
 
                         <!-- MCP Tools -->
                         <button type="button" id="btnOpenProjectMcp" class="cu-tools-item" onclick="closeKanbanToolsDropdown(); openProjectMcpModal(<?= (int)$activeProjectId ?>);" style="color:#f39c12 !important;">
                             <span style="font-size:16px; width:22px; text-align:center;">🧩</span>
-                            <span style="flex:1; font-weight:600;"><?= __('app.mcp_btn_open', 'MCP Tools') ?></span>
+                            <span style="flex:1; font-weight:600;"><?= __('Board::mcp_btn_open', 'MCP Tools') ?></span>
                         </button>
                     <?php endif; ?>
                 <?php endif; ?>
@@ -136,27 +136,6 @@ foreach ($allTasks as $t) {
     </div>
 </div>
 
-<script>
-function toggleKanbanToolsDropdown(e) {
-    if (e) e.stopPropagation();
-    const menu = document.getElementById('kanbanToolsMenu');
-    if (!menu) return;
-    const isVisible = (menu.style.display === 'block');
-    menu.style.display = isVisible ? 'none' : 'block';
-}
-
-function closeKanbanToolsDropdown() {
-    const menu = document.getElementById('kanbanToolsMenu');
-    if (menu) menu.style.display = 'none';
-}
-
-document.addEventListener('click', function(e) {
-    const dropdownWrap = document.querySelector('.cu-tools-dropdown-wrap');
-    if (dropdownWrap && !dropdownWrap.contains(e.target)) {
-        closeKanbanToolsDropdown();
-    }
-});
-</script>
 
 <!-- TaskManager YAN YANA FİLTRE & SIRALAMA TOOLBAR'I -->
 <?php include dirname(__DIR__, 3) . '/Core/Views/filter_toolbar.php'; ?>
@@ -339,6 +318,10 @@ document.addEventListener('click', function(e) {
 </div>
 
 <script>
+window.BOARD_CONTEXT = {
+    projectId: <?= json_encode($activeProjectId ? (string)$activeProjectId : null) ?>,
+    userEmail: <?= json_encode($currentUser->email ?? '') ?>
+};
 window.BOARD_I18N = {
     approve_confirm: <?= json_encode(__('tasks.client_approve_confirm', 'Bu görevin teslimatını onaylayıp tamamlandı olarak işaretlemek istiyor musunuz?')) ?>,
     approve_success: <?= json_encode(__('tasks.client_approve_success', '✅ Teslimat başarıyla onaylandı ve görev tamamlandı!')) ?>,
@@ -357,130 +340,6 @@ window.BOARD_I18N = {
     server_error: <?= json_encode(__('tasks.server_error', 'Sunucu hatası: ')) ?>,
     error_prefix: <?= json_encode(__('tasks.error_prefix', '❌ Hata: ')) ?>
 };
-
-function clientApproveTask(taskId) {
-    if (!confirm(window.BOARD_I18N.approve_confirm)) return;
-    const fd = new FormData();
-    fd.append('action', 'task_workflow');
-    fd.append('workflow_action', 'approve');
-    fd.append('task_id', taskId);
-    fetch('/taskmanager/ajax/task_workflow', { method:'POST', body:fd })
-        .then(r => r.json())
-        .then(res => {
-            if (res.success) {
-                alert(window.BOARD_I18N.approve_success);
-                location.reload();
-            } else {
-                alert(window.BOARD_I18N.error_prefix + res.message);
-            }
-        })
-        .catch(err => alert(window.BOARD_I18N.server_error + err.message));
-}
-
-function clientRequestChanges(taskId) {
-    const reason = prompt(window.BOARD_I18N.request_prompt);
-    if (!reason || !reason.trim()) return;
-    const fd = new FormData();
-    fd.append('action', 'task_workflow');
-    fd.append('workflow_action', 'request_changes');
-    fd.append('task_id', taskId);
-    fd.append('feedback', reason.trim());
-    fetch('/taskmanager/ajax/task_workflow', { method:'POST', body:fd })
-        .then(r => r.json())
-        .then(res => {
-            if (res.success) {
-                alert(window.BOARD_I18N.request_success);
-                location.reload();
-            } else {
-                alert(window.BOARD_I18N.error_prefix + res.message);
-            }
-        })
-        .catch(err => alert(window.BOARD_I18N.server_error + err.message));
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.innerText = text;
-    return div.innerHTML;
-}
-
-function openAiStandupModal() {
-    const modal = document.getElementById('modalAiStandup');
-    const content = document.getElementById('aiStandupContent');
-    if (!modal || !content) return;
-    openModal('modalAiStandup');
-    content.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);"><div style="font-size:32px; margin-bottom:12px;">🤖</div><strong>${window.BOARD_I18N.analyzing}</strong></div>`;
-
-    fetch('/taskmanager/ajax/get_daily_standup<?= $activeProjectId ? "?project_id=".$activeProjectId : "" ?>')
-        .then(r => r.json())
-        .then(res => {
-            if (res.success) {
-                const d = (res.data || res);
-                const raw = d.raw_data || {};
-                const period = raw.period || d.date || window.BOARD_I18N.last_24h;
-                const compCount = raw.completed_count !== undefined ? raw.completed_count : 0;
-                const inProgCount = raw.in_progress_count !== undefined ? raw.in_progress_count : 0;
-                const delayedCount = raw.delayed_count !== undefined ? raw.delayed_count : 0;
-                const summaryText = d.summary || '';
-
-                let normalizedText = (summaryText || '').replace(/\r\n/g, '\n');
-                let formattedSummary = escapeHtml(normalizedText)
-                    .replace(/^\s*###\s*(.*$)/gim, '<div style="font-size:13px; font-weight:700; color:var(--brand-primary); margin-top:16px; margin-bottom:8px; border-bottom:1px solid var(--border-subtle); padding-bottom:4px;">$1</div>')
-                    .replace(/^\s*#\s*(.*$)/gim, '<div style="font-size:15px; font-weight:800; color:var(--text-white); margin-bottom:10px;">$1</div>')
-                    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text-white);">$1</strong>')
-                    .replace(/_(.*?)_/g, '<em style="color:var(--text-muted);">$1</em>')
-                    .replace(/^\s*-\s*(.*$)/gim, '<div style="margin-left:8px; margin-bottom:6px; display:flex; align-items:flex-start; gap:8px;"><span style="color:var(--brand-primary);">•</span><span>$1</span></div>');
-
-                const compLabel = window.BOARD_I18N.comp_stat.replace(':count', compCount);
-                const inProgLabel = window.BOARD_I18N.in_prog_stat.replace(':count', inProgCount);
-                const delayedLabel = window.BOARD_I18N.delayed_stat.replace(':count', delayedCount);
-
-                content.innerHTML = `
-                    <div style="background:rgba(123,104,238,0.08); border:1px solid rgba(123,104,238,0.25); border-radius:8px; padding:16px; margin-bottom:18px;">
-                        <div style="font-size:11px; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">${window.BOARD_I18N.period}</div>
-                        <div style="font-size:13px; color:var(--text-white); font-weight:600;">📅 ${period}</div>
-                        <div style="display:flex; gap:12px; margin-top:12px; flex-wrap:wrap;">
-                            <div style="background:rgba(0,184,148,0.15); border:1px solid rgba(0,184,148,0.3); border-radius:6px; padding:6px 12px; font-size:12px; color:#00b894; font-weight:700;">${compLabel}</div>
-                            <div style="background:rgba(155,93,229,0.15); border:1px solid rgba(155,93,229,0.3); border-radius:6px; padding:6px 12px; font-size:12px; color:#9b5de5; font-weight:700;">${inProgLabel}</div>
-                            <div style="background:rgba(231,76,60,0.15); border:1px solid rgba(231,76,60,0.3); border-radius:6px; padding:6px 12px; font-size:12px; color:#e74c3c; font-weight:700;">${delayedLabel}</div>
-                        </div>
-                    </div>
-                    <div style="background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:8px; padding:18px; font-size:13px; line-height:1.6; color:var(--text-primary); max-height:360px; overflow-y:auto;">
-                        ${formattedSummary}
-                    </div>
-                `;
-            } else {
-                content.innerHTML = '<div style="padding:30px; text-align:center; color:#e74c3c;">' + window.BOARD_I18N.err_fetch + (res.message || '') + '</div>';
-            }
-        })
-        .catch(err => {
-            content.innerHTML = '<div style="padding:30px; text-align:center; color:#e74c3c;">' + window.BOARD_I18N.err_conn + err.message + '</div>';
-        });
-}
-
-function sendStandupEmail() {
-    const email = prompt(window.BOARD_I18N.email_prompt, '<?= htmlspecialchars($currentUser->email ?? '') ?>');
-    if (!email || !email.trim()) return;
-
-    const fd = new FormData();
-    fd.append('action', 'send_standup_email');
-    fd.append('email', email.trim());
-    <?php if ($activeProjectId): ?>
-        fd.append('project_id', '<?= (int)$activeProjectId ?>');
-    <?php endif; ?>
-
-    fetch('/taskmanager/ajax/send_standup_email', { method:'POST', body:fd })
-        .then(r => r.json())
-        .then(res => {
-            if (res.success) {
-                alert(window.BOARD_I18N.email_success + email);
-            } else {
-                alert(window.BOARD_I18N.error_prefix + res.message);
-            }
-        })
-        .catch(err => alert(window.BOARD_I18N.server_error + err.message));
-}
 </script>
 
 <!-- GÜNLÜK AI STANDUP MODALI -->

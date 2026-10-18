@@ -6,7 +6,9 @@ require_once dirname(__DIR__, 3) . '/Core/System.php';
 // Dil motorunu başlat (URL parametresi ?lang=, $_POST['lang'] veya kullanıcı tercihi)
 Language::init();
 
-global $db;
+
+$taskModel = new \Modules\Board\Models\TaskModel();
+$db = $taskModel->getDb();
 
 $action = $_GET['action'] ?? ($_POST['action'] ?? '');
 $currentUser = $_SESSION['user'] ?? (object)['id' => 1, 'name' => 'Ahmet Yılmaz', 'role' => 'admin'];
@@ -123,7 +125,7 @@ switch ($action) {
 
         // Proje Bilgisi
         $proj = $db->multi_record("projects", ["id"], [$task->project_id]);
-        $task->project_title = $proj[0]->title ?? __('app.general_project', [], 'Genel Proje');
+        $task->project_title = $proj[0]->title ?? __('Board::general_project', [], 'Genel Proje');
         $task->project_color = $proj[0]->color ?? '#7B68EE';
 
         // Bağlı olduğu ana görev (Nested Subtask parent context)
@@ -349,7 +351,7 @@ switch ($action) {
                 <div style="display:flex; align-items:center; gap:8px;">
                     <div class="cu-deadline <?= $isOverdue ? 'overdue' : '' ?>" style="font-size:11px;">
                         <span><?= $isOverdue ? '⚠️ ' : '📅 ' ?></span>
-                        <span><?= htmlspecialchars($task->deadline ?: __('app.none', [], 'Yok')) ?></span>
+                        <span><?= htmlspecialchars($task->deadline ?: __('Board::none', [], 'Yok')) ?></span>
                     </div>
                     <?php if ($attCount > 0): ?>
                         <span style="font-size:10.5px; color:var(--text-muted); display:inline-flex; align-items:center; gap:2px; font-weight:600;" title="<?= $attCount ?> adet resim/ek dosya">
@@ -393,7 +395,7 @@ switch ($action) {
 
                 <div class="cu-task-title">
                     <span class="cu-badge-project" style="color:<?= htmlspecialchars($task->project_color ?? '#7B68EE') ?>; margin-right:6px;">
-                        <?= htmlspecialchars($task->project_title ?? __('app.general', [], 'Genel')) ?>
+                        <?= htmlspecialchars($task->project_title ?? __('Board::general', [], 'Genel')) ?>
                     </span>
                     <?= htmlspecialchars($task->title) ?>
                     <?php if ($isAiTask): ?>
@@ -411,7 +413,7 @@ switch ($action) {
 
                 <div class="cu-deadline <?= $isOverdue ? 'overdue' : '' ?>">
                     <span><?= $isOverdue ? '⚠️ ' : '📅 ' ?></span>
-                    <span><?= htmlspecialchars($task->deadline ?: __('app.no_date', [], 'Tarih Yok')) ?></span>
+                    <span><?= htmlspecialchars($task->deadline ?: __('Board::no_date', [], 'Tarih Yok')) ?></span>
                 </div>
 
                 <div class="cu-task-assignee" style="display:flex; align-items:center; gap:4px; max-width:140px; overflow:hidden;">
@@ -1488,7 +1490,7 @@ switch ($action) {
     // 5.2.1 MODÜL AÇMA / KAPAMA (MODULE MANAGER - ADMIN ONLY)
     case 'toggle_module_status':
         if ($currentUser->role !== 'admin') {
-            jsonResponse(false, __('app.settings_modules_toggle_fail', 'Yetkisiz erişim: Modülleri yalnızca yönetici yönetebilir.'));
+            jsonResponse(false, __('Board::settings_modules_toggle_fail', 'Yetkisiz erişim: Modülleri yalnızca yönetici yönetebilir.'));
         }
 
         $slug = trim($_POST['slug'] ?? '');
@@ -1500,12 +1502,12 @@ switch ($action) {
 
         $res = \Core\ModuleLoader::setModuleStatus($slug, $status);
         if ($res) {
-            jsonResponse(true, __('app.settings_modules_toggle_success', 'Modül durumu güncellendi.'), [
+            jsonResponse(true, __('Board::settings_modules_toggle_success', 'Modül durumu güncellendi.'), [
                 'slug'      => $slug,
                 'is_active' => $status
             ]);
         }
-        jsonResponse(false, __('app.settings_modules_toggle_fail', 'Modül durumu kaydedilemedi.'));
+        jsonResponse(false, __('Board::settings_modules_toggle_fail', 'Modül durumu kaydedilemedi.'));
         break;
 
     case 'test_telegram_connection':
@@ -2212,7 +2214,7 @@ switch ($action) {
 
     // 15. TaskManager YENİ DOKÜMAN OLUŞTUR
     case 'create_doc':
-        $defaultDocTitle = __('app.untitled_document', [], 'Başlıksız Döküman');
+        $defaultDocTitle = __('Board::untitled_document', [], 'Başlıksız Döküman');
         $title = trim($_POST['title'] ?? $defaultDocTitle);
         if (empty($title)) {
             $title = $defaultDocTitle;
@@ -2220,7 +2222,7 @@ switch ($action) {
         $projectId = !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null;
         $icon = trim($_POST['icon'] ?? '📄');
 
-        $defaultDocContent = __('app.start_typing_document', [], 'Buraya döküman içeriğinizi yazmaya başlayın...');
+        $defaultDocContent = __('Board::start_typing_document', [], 'Buraya döküman içeriğinizi yazmaya başlayın...');
         $initialContent = "<h2>{$title}</h2><p>{$defaultDocContent}</p>";
 
         $saved = $db->exec_query("INSERT INTO docs (project_id, title, icon, content, created_by) VALUES (?, ?, ?, ?, ?)", [

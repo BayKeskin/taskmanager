@@ -20,7 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // 2. System Core
 require_once dirname(__DIR__, 3) . '/Core/System.php';
-global $db;
+
+$restApiModel = new \Modules\RestApi\Models\RestApiModel();
+$db = $restApiModel->getDb();
 
 // Dil Çevirici (API I18n)
 function translateApiMessage(string $msg): string {

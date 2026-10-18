@@ -18,7 +18,7 @@ EventManager::addFilter('kanban.tools_menu', function(array $items, int $project
     $items[] = [
         'id'       => 'tool-live-deploy',
         'icon'     => 'fas fa-rocket',
-        'title'    => __('app.live_deployment_wizard', '🚀 Canlı Dağıtım'),
+        'title'    => __('LiveDeploy::deploy_btn_wizard', '🚀 Canlı Dağıtım'),
         'onclick'  => 'openDeployWizard(' . $projectId . ')',
         'order'    => 20
     ];

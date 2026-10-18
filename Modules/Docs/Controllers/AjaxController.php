@@ -55,7 +55,7 @@ class AjaxController extends BaseController
 
     public function createDoc(): void
     {
-        $defaultDocTitle = __('app.untitled_document', [], 'Başlıksız Döküman');
+        $defaultDocTitle = __('Docs::untitled_document', [], 'Başlıksız Döküman');
         $title = trim($_POST['title'] ?? $defaultDocTitle);
         if (empty($title)) {
             $title = $defaultDocTitle;
@@ -63,7 +63,7 @@ class AjaxController extends BaseController
         $projectId = !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null;
         $icon = trim($_POST['icon'] ?? '📄');
 
-        $defaultDocContent = __('app.start_typing_document', [], 'Buraya döküman içeriğinizi yazmaya başlayın...');
+        $defaultDocContent = __('Docs::start_typing_document', [], 'Buraya döküman içeriğinizi yazmaya başlayın...');
         $initialContent = "<h2>{$title}</h2><p>{$defaultDocContent}</p>";
 
         $saved = $this->db->exec_query("INSERT INTO docs (project_id, title, icon, content, created_by) VALUES (?, ?, ?, ?, ?)", [

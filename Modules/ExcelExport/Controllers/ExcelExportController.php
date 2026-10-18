@@ -56,16 +56,16 @@ class ExcelExportController extends BaseController
 
         // Başlık Satırı
         $headers = [
-            __('app.export_task_id', 'Görev No'),
-            __('app.export_title', 'Görev Başlığı'),
-            __('app.export_status', 'Mevcut Durum'),
-            __('app.export_priority', 'Öncelik'),
-            __('app.export_assignee', 'Atanan'),
-            __('app.export_creator', 'Oluşturan'),
-            __('app.export_start_date', 'Başlangıç Tarihi'),
-            __('app.export_due_date', 'Termin Tarihi'),
-            __('tasks.gantt_task_progress', 'İlerleme'),
-            __('app.export_created_at', 'Oluşturulma Tarihi')
+            __('ExcelExport::export_task_id', 'Görev No'),
+            __('ExcelExport::export_title', 'Görev Başlığı'),
+            __('ExcelExport::export_status', 'Mevcut Durum'),
+            __('ExcelExport::export_priority', 'Öncelik'),
+            __('ExcelExport::export_assignee', 'Atanan'),
+            __('ExcelExport::export_creator', 'Oluşturan'),
+            __('ExcelExport::export_start_date', 'Başlangıç Tarihi'),
+            __('ExcelExport::export_due_date', 'Termin Tarihi'),
+            __('ExcelExport::export_progress', 'İlerleme'),
+            __('ExcelExport::export_created_at', 'Oluşturulma Tarihi')
         ];
         fputcsv($output, $headers, ';');
 
@@ -104,10 +104,10 @@ class ExcelExportController extends BaseController
                 $tObj->title,
                 $statusTitles[$tObj->status] ?? $tObj->status,
                 $priorityTitles[$tObj->priority] ?? $tObj->priority,
-                !empty($tObj->assignee_name) ? trim($tObj->assignee_name) : __('app.export_unassigned', 'Atanmamış'),
+                !empty($tObj->assignee_name) ? trim($tObj->assignee_name) : __('ExcelExport::export_unassigned', 'Atanmamış'),
                 !empty($tObj->creator_name) ? trim($tObj->creator_name) : '-',
-                !empty($tObj->created_at) ? date('Y-m-d', strtotime($tObj->created_at)) : __('app.export_no_date', 'Belirtilmedi'),
-                !empty($tObj->deadline) ? date('Y-m-d', strtotime($tObj->deadline)) : __('app.export_no_date', 'Belirtilmedi'),
+                !empty($tObj->created_at) ? date('Y-m-d', strtotime($tObj->created_at)) : __('ExcelExport::export_no_date', 'Belirtilmedi'),
+                !empty($tObj->deadline) ? date('Y-m-d', strtotime($tObj->deadline)) : __('ExcelExport::export_no_date', 'Belirtilmedi'),
                 $progressStr,
                 date('Y-m-d H:i', strtotime($tObj->created_at))
             ], ';');
