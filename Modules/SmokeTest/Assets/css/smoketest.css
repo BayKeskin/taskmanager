@@ -1,0 +1,9 @@
+/* Modules/SmokeTest/Assets/css/smoketest.css */
+.cu-smoke-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 11px;
+}
+.cu-smoke-pass { background: rgba(0, 184, 148, 0.15); color: #00b894; border: 1px solid rgba(0, 184, 148, 0.3); }
+.cu-smoke-fail { background: rgba(235, 87, 87, 0.15); color: #eb5757; border: 1px solid rgba(235, 87, 87, 0.3); }

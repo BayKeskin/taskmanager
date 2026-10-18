@@ -1,0 +1,10 @@
+{
+  "id": "smoketest",
+  "name": "Otonom Smoke Test Motoru",
+  "slug": "smoketest",
+  "version": "1.0.0",
+  "description": "Veritabanı tabloları, rol izolasyonları, canlı chat, AI entegrasyonu ve SSE bağlantısını otonom doğrulayan teşhis motoru.",
+  "author": "TaskManager Team",
+  "active": true,
+  "dependencies": []
+}

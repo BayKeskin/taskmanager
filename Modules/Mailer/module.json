@@ -1,0 +1,10 @@
+{
+  "id": "mailer",
+  "name": "E-Posta & SMTP Bildirimleri",
+  "slug": "mailer",
+  "version": "1.0.0",
+  "description": "PHPMailer tabanlı HTML email gönderimi, SMTP bağlantı teşhisi ve otomatik şablon motoru.",
+  "author": "TaskManager Team",
+  "active": true,
+  "dependencies": []
+}

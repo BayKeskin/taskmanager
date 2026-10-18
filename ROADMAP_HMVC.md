@@ -190,9 +190,9 @@ Sistemdeki 24 modülün HMVC (`Modules/`) yapısına taşınma durumu bu tabloda
 | **16** | Raporlar & SLA Analitiği | `Modules/Reports/` | `ReportController`, `ReportModel`, Chart.js | ⏳ Bekliyor |
 | **17** | Sistem Ayarları & i18n | `Modules/Settings/` | `SettingsController`, SettingsModel, 3 dil | ⏳ Bekliyor |
 | **18** | Telegram Bot Entegrasyonu | `Modules/Telegram/` | `TelegramService.php`, push bot bildirimleri | ✅ Taşındı |
-| **19** | E-Posta & SMTP Bildirimleri | `Modules/Mailer/` | `Mailer.php`, HTML email şablonları | ⏳ Bekliyor |
+| **19** | E-Posta & SMTP Bildirimleri | `Modules/Mailer/` | `Mailer.php`, HTML email şablonları | ✅ Taşındı |
 | **20** | Ekip İçi Canlı Sohbet (Chat) | `Modules/Chat/` | `ChatController`, `ChatModel`, chat.php | ⏳ Bekliyor |
-| **21** | Otonom Smoke Test Motoru | `Modules/SmokeTest/` | `SmokeTest.php`, sistem sağlık teşhisi | ⏳ Bekliyor |
+| **21** | Otonom Smoke Test Motoru | `Modules/SmokeTest/` | `SmokeTest.php`, sistem sağlık teşhisi | ✅ Taşındı |
 | **22** | Canlı Hosting & Delta FTP | `Modules/LiveDeploy/` | `DeltaSyncEngine`, `LiveConfigGenerator`, Deploy UI | ✅ Taşındı |
 | **23** | Excel / CSV Dışa Aktarma | `Modules/ExcelExport/`| `ExcelExportController`, UTF-8 BOM CSV motoru | ✅ Taşındı |
 | **24** | Hakediş & İş Teslim Raporu | `Modules/Billing/` | `BillingController`, `BillingModel`, PDF Print | ✅ Taşındı |
