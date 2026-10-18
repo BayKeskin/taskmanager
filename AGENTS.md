@@ -1,4 +1,4 @@
-﻿# 🛡️ PROJECT AGENT INSTRUCTIONS & EXECUTION DOCTRINE (AGENTS.md)
+# 🛡️ PROJECT AGENT INSTRUCTIONS & EXECUTION DOCTRINE (AGENTS.md)
 
 ## 0. CORE DOCTRINE: "THE USER IS NOT A QA TESTER"
 
@@ -72,47 +72,57 @@ Every completed task must provide an exhaustive summary formatted as follows:
 > 3. **German (`de`):** Primary European enterprise locale.
 
 ### 🚫 STRICT PROHIBITIONS:
-1. **NO Hardcoded Strings:** It is strictly prohibited to hardcode any user-facing text, label, tooltip, confirmation prompt, alert dialog, or error message in any single language (especially Turkish or English) in any View (`View/**/*.php`), Controller (`Controller/**/*.php`), JavaScript file (`Public/js/**/*.js`), or Component (`Components/**/*.php`).
-2. **NO Single-Language Fallbacks:** Hardcoded single-language fallbacks (such as `__('key', 'Hardcoded Turkish')`) that ignore the user's active language are strictly forbidden. All fallbacks must dynamically resolve through `Language::current()` or utilize localized default dictionary lookups.
+1. **NO Hardcoded Strings:** It is strictly prohibited to hardcode any user-facing text, label, tooltip, confirmation prompt, alert dialog, or error message in any single language in any View (`Modules/**/Views/**/*.php`), Controller (`Modules/**/Controllers/**/*.php`), JavaScript file (`Modules/**/Assets/js/**/*.js`), or Component.
+2. **NO Single-Language Fallbacks:** Hardcoded single-language fallbacks (such as `__('ModuleName::key', 'Hardcoded Turkish')`) that ignore the user's active language are strictly forbidden. All fallbacks must dynamically resolve through `Language::current()` or utilize localized default dictionary lookups.
+3. **NO Unregistered Inline Scripts in Views:** Placing raw `<script> window.X = {...}; </script>` blocks inside View templates to expose language strings or context data is strictly prohibited. All client-side i18n data MUST be registered via `AssetManager::localizeScript()`.
 
 ### 📋 DEVELOPER REQUIREMENTS FOR EVERY TASK:
-1. **Synchronized Dictionary Updates:** When introducing any new UI string, status label, or message, the key MUST be simultaneously added to all 3 dictionary files:
-   - `languages/en/*.php`
-   - `languages/tr/*.php`
-   - `languages/de/*.php`
-   - `Config/ajax_translations.php` (for AJAX responses)
-   - `Config/api_translations.php` (for REST API responses)
-2. **Client-Side I18n Bridge:** For dynamic JavaScript interactions (prompts, confirms, alerts, modals, fetch requests), views must expose a localized data object (e.g., `window.PAGE_I18N = { ... }`) rendered via `__('group.key')` or use global fetch headers with `X-Language: CURRENT_LANG`.
+1. **Module-Isolated Dictionary Files:** Every new or modified translation MUST be defined inside the module's own language files across all 3 languages:
+   - `Modules/{ModuleName}/Lang/tr.php`
+   - `Modules/{ModuleName}/Lang/en.php`
+   - `Modules/{ModuleName}/Lang/de.php`
+   - All string lookups MUST strictly use the module namespace syntax: `__('ModuleName::key')`.
+   - Core dictionaries (`Core/Lang/{tr,en,de}/app.php`) are strictly reserved for global layout elements (Navbar, Sidebar, Command Palette) and must NOT be polluted with module-specific strings.
+2. **Client-Side I18n Bridge via AssetManager:** For dynamic JavaScript interactions (prompts, confirms, alerts, modals, fetch requests), controllers or module `init.php` files must register localized data via:
+   ```php
+   \Core\AssetManager::localizeScript('handle-name', 'OBJECT_NAME', [
+       'key' => __('ModuleName::key')
+   ]);
+   ```
 3. **Multi-Channel Language Resolution:** All backend endpoints (REST API, AJAX controllers, SSE streams, Webhooks) must actively honor the 4 language detection channels:
    - URL parameter: `?lang=en|tr|de`
    - HTTP Headers: `Accept-Language` or `X-Language: en|tr|de`
    - Request Body: `{"lang": "en"}`
    - User Profile Preference: `$_SESSION['user']->language` or DB setting.
-4. **Mandatory 3-Language Autonomous QA Testing:** Before marking any task as complete or calling `Helper::submitTaskDirectly`, the agent is strictly obligated to autonomously test the feature across all three languages (`?lang=en`, `?lang=tr`, `?lang=de`) in both CLI test scripts and live headless browser sessions to guarantee zero unlocalized strings or missing translation keys.
+4. **Mandatory 3-Language Autonomous QA Testing:** Before marking any task as complete or calling `TaskLifecycleService::submitTaskDirectly()`, the agent is strictly obligated to autonomously test the feature across all three languages (`?lang=en`, `?lang=tr`, `?lang=de`) in both CLI test scripts and live headless browser sessions to guarantee zero unlocalized strings or missing translation keys.
 
 ---
 
 ## 6. STRICT MVC ARCHITECTURE & ZERO SPAGHETTI DOCTRINE
 
 > ### 🛑 ZERO SPAGHETTI RULE:
-> **All feature development, refactoring, and data handling MUST adhere to a strict Model-View-Controller (MVC) architecture.**
-> **Writing spaghetti code where Views directly communicate with the database is STRICTLY FORBIDDEN.**
+> **All feature development, refactoring, and data handling MUST adhere to a strict Modular Model-View-Controller (HMVC) architecture.**
+> **Writing spaghetti code where Views directly communicate with the database, or where Controllers execute raw SQL bypasses, is STRICTLY FORBIDDEN.**
 
-### 🏛️ MANDATORY MVC FLOW:
+### 🏛️ MANDATORY HMVC FLOW:
 ```
-View (UI Presentation) ➔ Controller (Request & Flow Coordinator) ➔ Model (Business Logic & Database Queries) ➔ Database (Data Layer)
+View (UI Presentation) ➔ Controller (Request & Flow Coordinator) ➔ Model (Business Logic & Domain Queries) ➔ Database (Data Layer)
                                                                 ▲
 Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Data Preparation) ➔ View (Rendered HTML)
 ```
 
 ### 🚫 STRICT PROHIBITIONS:
-1. **NO Direct Database Calls in Views:** It is strictly prohibited to execute SQL queries, use `$db`, `global $db`, or call DataLayer methods (`$db->query()`, `$db->multi_record()`, `$db->single_record()`, `$db->count_record()`, `$db->row_query()`) inside any View file (`View/**/*.php`) or UI component (`Components/**/*.php`).
-2. **NO Business Logic in Views:** Views are solely presentation templates. Formatting, data calculation, metrics aggregation, authorization checks, and database access MUST reside in Controllers and Models.
-3. **NO Direct Controller-to-SQL Bypasses:** Controllers must NOT contain raw inline SQL queries. All SQL statements, table operations, and entity relationships must be encapsulated within dedicated Model classes (`Model/*Model.php`).
+1. **NO Direct Database Calls in Views:** It is strictly prohibited to execute SQL queries, use `$db`, `global $db`, or call DataLayer/PDO methods inside any View file (`Modules/**/Views/**/*.php`) or UI component.
+2. **NO Direct Model Instantiation in Views:** Views are solely presentation templates. Calling `new ...Model()` or invoke model query methods inside view templates is strictly prohibited. All view data MUST be prepared by the Controller and injected cleanly.
+3. **NO Direct Controller/Service-to-SQL Bypasses:** Controllers and Service classes must NOT contain raw inline SQL queries (`$db->query()`, `$db->row_query()`, `$db->exec_query()`, `$db->insert()`, `$db->delete()`). All database queries, schema operations, and entity relationships must be encapsulated within dedicated Model classes (`Modules/{ModuleName}/Models/{ModelName}.php`).
+4. **NO Inline CSS or JavaScript in Views:**
+   - Writing inline `style="..."` attributes in Views and Modals is prohibited. All styles must reside in `Modules/{ModuleName}/Assets/css/` stylesheets.
+   - Embedding `<script>` logic blocks inside Views and Modals is prohibited. All JavaScript code must reside in `Modules/{ModuleName}/Assets/js/`, and client data must be bound via `AssetManager::localizeScript()`.
+5. **NO Embedded Modals in Page Views:** Modal dialogs must not be embedded directly inside page templates. Every modal MUST reside in its own dedicated file under `Modules/{ModuleName}/Views/modals/{modal_name}.php`.
 
 ### 📋 DEVELOPER REQUIREMENTS FOR EVERY VIEW & COMPONENT:
-1. **Dedicated Controllers:** Every View template must be backed by a corresponding Controller (e.g., `BoardController`, `TaskController`, `CalendarController`, `ReportController`, `TeamController`, `DocController`, `ChatController`, `SettingsController`, `AuthController`).
-2. **Dedicated Models:** All database interactions must be abstracted into Model classes extending `Model` (e.g., `TaskModel`, `ProjectModel`, `UserModel`, `ReportModel`, `DocModel`, `SettingsModel`).
+1. **Dedicated Controllers:** Every View template must be backed by a corresponding Controller extending `Core\BaseController` (e.g., `Modules\Board\Controllers\BoardController`).
+2. **Dedicated Models:** All database interactions must be abstracted into Model classes extending `Core\BaseModel` (e.g., `Modules\Board\Models\TaskModel`).
 3. **Clean Variable Injection:** Controllers must pass clean, typed arrays or objects to Views (e.g., via Controller methods returning structured data extracted into the template).
 
 ---
@@ -156,20 +166,24 @@ Database (Result Rows) ➔ Model (Domain Entity / Clean Data) ➔ Controller (Da
 > The following project-specific technical rules, styling constraints, and workflow directives must be strictly observed for project [01] Task Manager:
 
 ### [01] Task Manager Project Rules
-- **Strict MVC Architecture:** Direct SQL execution or calling `$db` inside any View (`View/**/*.php`) or UI Component (`Components/**/*.php`) is strictly forbidden. All data queries must reside in dedicated `Model` classes, and request coordination must remain within `Controller` classes.
-- **Universal Tri-Lingual Standard (i18n):** All UI texts, error/success messages, and system notifications must be managed via `languages/{lang}/app.php` dictionaries across all 3 languages (TR, EN, DE) and `Config/ajax_translations.php`. Hardcoded single-language strings are strictly prohibited.
-- **HMVC & Modular Isolation Standard (MANDATORY):** All new and migrated modules in the system must be fully isolated (self-contained) under `Modules/{ModuleName}/`. Without exception, each module must contain the following 5 elements in its own folder:
+- **Strict HMVC Architecture:** Direct SQL execution, calling `$db`, or instantiating Models inside any View (`Modules/**/Views/**/*.php`) or UI Component is strictly forbidden. All database queries must reside in dedicated Model classes extending `Core\BaseModel`, and request orchestration must remain within Controllers extending `Core\BaseController`. Direct SQL execution inside Controllers or Services is forbidden.
+- **Universal Tri-Lingual Standard (i18n):** All UI texts, error/success messages, and system notifications must be managed via module-isolated `Modules/{ModuleName}/Lang/{lang}.php` dictionaries across all 3 languages (TR, EN, DE). Hardcoded single-language strings and inline translation blocks in views are strictly prohibited.
+- **HMVC & Modular Isolation Standard (MANDATORY):** All modules in the system must be fully isolated (self-contained) under `Modules/{ModuleName}/`. Without exception, each module must contain the following 5 elements in its own folder:
   1. `module.json` (ID, version, slug, dependencies),
-  2. `init.php` (hooks and AssetManager queue entries),
-  3. `Lang/{tr,en,de}.php` (All three-language translations of the module must be in their own folder; they must be resolved using `__(‘ModuleName::key’)`),
-  4. `Assets/js/` and `Assets/css/` (Static files belonging to the module must be located within the module; they must be enqueued using `AssetManager::enqueueJs/Css`),
-  5. `Controllers/`, `Models/`, `Views/` (Business logic must be derived from `Core\BaseController` and `Core\BaseModel`).
+  2. `init.php` (hooks, AssetManager asset and i18n queue entries),
+  3. `Lang/{tr,en,de}.php` (All three-language translations of the module in its own folder, resolved using `__('ModuleName::key')`),
+  4. `Assets/js/` and `Assets/css/` (Static files belonging to the module, enqueued using `AssetManager::enqueueJs/Css` with data localized via `AssetManager::localizeScript`),
+  5. `Controllers/`, `Models/`, `Views/` (Business logic derived from `Core\BaseController` and `Core\BaseModel`).
+- **Zero Inline Code Doctrine:**
+  - Zero inline CSS (`style="..."` attributes) in Views and Modals; all styles must reside in `Modules/{ModuleName}/Assets/css/`.
+  - Zero inline JavaScript (`<script>` logic blocks) in Views and Modals; all client-side data and i18n strings must be exposed via `AssetManager::localizeScript()`.
+  - Zero embedded modals in page view templates; all modals must be isolated files in `Modules/{ModuleName}/Views/modals/{modal_name}.php`.
 - **QA Doctrine:** "The User Is Not a QA Tester". Every button, modal, form input, state transition, and AJAX call must be autonomously verified in the live environment using headless browser, curl, and CLI scripts before task completion.
-- **Task Delivery Protocol:** Tasks must be delivered via `Helper::submitTaskDirectly()` following the 4-stage Definition of Done (DoD) format (What Was Done, Where to Test, How to Test, Autonomous Test Evidence).
+- **Task Delivery Protocol:** Tasks must be delivered via `\Modules\Board\Services\TaskLifecycleService::submitTaskDirectly()` following the 4-stage Definition of Done (DoD) format (What Was Done, Where to Test, How to Test, Autonomous Test Evidence).
 - **Documentation Access via REST API:** Project documentation must NOT be stored as loose markdown files in the root directory. AI Agents can query all project documentation via `GET http://localhost/taskmanager/api/projects/{code}/docs` and fetch full document contents using `GET http://localhost/taskmanager/api/docs/{id}` with header `Authorization: Bearer <api_token>`.
-- **Taskmanager access user
-email iletisimtktalha@gmail.com
-password 145236
+- **Taskmanager Access Credentials:**
+  - Email: `iletisimtktalha@gmail.com`
+  - Password: `145236`
 <!-- PROJECT_RULES_END -->
 
 ---
