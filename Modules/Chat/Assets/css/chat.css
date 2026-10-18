@@ -1,0 +1,35 @@
+/* Modules/Chat/Assets/css/chat.css */
+.cu-chat-wrapper {
+    flex: 1;
+    display: flex;
+    gap: 16px;
+    padding: 16px 20px;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    position: relative;
+}
+.cu-chat-channel-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+}
+.cu-chat-channel-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+.cu-chat-channel-btn.active {
+    background: rgba(123, 104, 238, 0.14);
+    border-color: rgba(123, 104, 238, 0.35);
+    color: var(--text-white);
+    font-weight: 700;
+}

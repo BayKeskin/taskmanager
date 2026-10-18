@@ -1,0 +1,10 @@
+{
+  "id": "chat",
+  "name": "Ekip İçi Canlı Sohbet (Chat)",
+  "slug": "chat",
+  "version": "1.0.0",
+  "description": "Ekip içi genel kanal, birebir özel şifreli mesajlaşma, dosya paylaşımı ve SSE gerçek zamanlı sohbet motoru.",
+  "author": "TaskManager Team",
+  "active": true,
+  "dependencies": ["sse"]
+}
