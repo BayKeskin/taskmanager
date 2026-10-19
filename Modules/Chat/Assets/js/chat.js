@@ -2,6 +2,7 @@ window.CURRENT_USER_ID = (window.CHAT_APP_DATA && window.CHAT_APP_DATA.currentUs
 window.IS_CLIENT_ROLE = (window.CHAT_APP_DATA && window.CHAT_APP_DATA.currentUser) ? window.CHAT_APP_DATA.currentUser.isClient : false;
 window.I18N_CHAT = (window.CHAT_APP_DATA && window.CHAT_APP_DATA.i18n) ? window.CHAT_APP_DATA.i18n : {};
 
+const chatBaseUrl = (typeof window.BASE_URL !== 'undefined') ? window.BASE_URL.replace(/\/+$/, '') : '';
 const currentUserId = window.CURRENT_USER_ID;
 
 let activeDirectUserId = (typeof window.INITIAL_TARGET_USER_ID !== 'undefined' && window.INITIAL_TARGET_USER_ID > 0) ? window.INITIAL_TARGET_USER_ID : null;
@@ -19,7 +20,7 @@ const btnScrollBottom = document.getElementById('btnScrollBottom');
 // 1. Konuşmalar Listesini Çek (Sol Panel)
 async function loadConversations() {
     try {
-        const res = await fetch('/taskmanager/ajax?action=get_chat_conversations');
+        const res = await fetch(`${chatBaseUrl}/ajax?action=get_chat_conversations`);
         const data = await res.json();
         if (data.success && data.conversations) {
             renderConversationsList(data.conversations);
@@ -171,7 +172,7 @@ function selectDirectChat(targetId, targetName, avatarColor, title) {
 // 4. Sohbet Geçmişini Çek (Genel veya DM)
 function loadChatHistory() {
     chatStatusText.innerText = window.I18N_CHAT?.loading_messages || 'Loading messages...';
-    let url = '/taskmanager/ajax?action=get_chat_messages';
+    let url = `${chatBaseUrl}/ajax?action=get_chat_messages`;
     if (activeDirectUserId) {
         url += `&receiver_id=${activeDirectUserId}`;
     }
@@ -459,7 +460,7 @@ function handleSendChatMessage(e) {
         fd.append('attachment', selectedChatFile);
     }
 
-    fetch('/taskmanager/ajax?action=send_chat_message', {
+    fetch(`${chatBaseUrl}/ajax?action=send_chat_message`, {
         method: 'POST',
         body: fd
     })
@@ -530,7 +531,7 @@ window.handleIncomingDirectMessage = function(msg) {
 // 8. Kesintisiz Çift Katmanlı Senkronizasyon (Background Sync Polling)
 function checkIncomingMessages() {
     if (lastChatMsgId <= 0) return;
-    let url = '/taskmanager/ajax?action=get_chat_messages&last_id=' + lastChatMsgId;
+    let url = `${chatBaseUrl}/ajax?action=get_chat_messages&last_id=` + lastChatMsgId;
     if (activeDirectUserId) {
         url += '&receiver_id=' + activeDirectUserId;
     }
@@ -640,7 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (activeDirectUserId) {
         // Belirli bir kullanıcı açıldıysa onun DM penceresini yükle
-        fetch(`/taskmanager/ajax?action=get_chat_messages&receiver_id=${activeDirectUserId}`)
+        fetch(`${chatBaseUrl}/ajax?action=get_chat_messages&receiver_id=${activeDirectUserId}`)
             .then(r => r.json())
             .then(data => {
                 if (data.target_user) {
@@ -654,7 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     } else if (isClientRole) {
         // Müşteri için: Genel sohbet gizli olduğundan ilk yetkili ekip üyesini otomatik seç
-        fetch('/taskmanager/ajax?action=get_chat_conversations')
+        fetch(`${chatBaseUrl}/ajax?action=get_chat_conversations`)
             .then(r => r.json())
             .then(data => {
                 const list = data.conversations || (data.data && data.data.conversations) || [];
