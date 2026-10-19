@@ -1,5 +1,8 @@
 <!-- 4.1 KULLANICI PROFİL AYARLARI MODALI -->
-<?php if ($currentUser): ?>
+<?php 
+$currentUser = $currentUser ?? ($_SESSION['user'] ?? null);
+if ($currentUser): 
+?>
 <div class="cu-modal-overlay" id="modalProfileSettings">
     <div class="cu-modal cu-profile-modal-box">
         <div class="cu-modal-header cu-profile-modal-header">
