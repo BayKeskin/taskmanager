@@ -27,35 +27,24 @@ class AjaxController extends BaseController
     {
         $docId = (int)($_GET['id'] ?? 0);
         if ($docId <= 0) {
-            $this->respond(false, 'Geçersiz doküman ID.');
+            $this->respond(false, __('Docs::docs_invalid_id'));
+            return;
         }
 
-        $doc = $this->db->row_query("
-            SELECT d.*, p.title as project_title, p.color as project_color, u.name as author_name
-            FROM docs d
-            LEFT JOIN projects p ON d.project_id = p.id
-            LEFT JOIN users u ON d.created_by = u.id
-            WHERE d.id = ?
-        ", [$docId]);
-
+        $doc = $this->docModel->getDocById($docId);
         if (!$doc) {
-            $this->respond(false, 'Doküman bulunamadı.');
+            $this->respond(false, __('Docs::docs_not_found'));
+            return;
         }
 
-        $attachments = $this->db->multi_record_query("
-            SELECT da.*, u.name as user_name
-            FROM doc_attachments da
-            LEFT JOIN users u ON da.user_id = u.id
-            WHERE da.doc_id = ?
-            ORDER BY da.id DESC
-        ", [$docId]) ?: [];
+        $attachments = $this->docModel->getDocAttachments($docId);
 
         $this->respond(true, '', ['doc' => $doc, 'attachments' => $attachments]);
     }
 
     public function createDoc(): void
     {
-        $defaultDocTitle = __('Docs::untitled_document', [], 'Başlıksız Döküman');
+        $defaultDocTitle = __('Docs::untitled_document');
         $title = trim($_POST['title'] ?? $defaultDocTitle);
         if (empty($title)) {
             $title = $defaultDocTitle;
@@ -63,18 +52,16 @@ class AjaxController extends BaseController
         $projectId = !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null;
         $icon = trim($_POST['icon'] ?? '📄');
 
-        $defaultDocContent = __('Docs::start_typing_document', [], 'Buraya döküman içeriğinizi yazmaya başlayın...');
+        $defaultDocContent = __('Docs::start_typing_document');
         $initialContent = "<h2>{$title}</h2><p>{$defaultDocContent}</p>";
 
-        $saved = $this->db->exec_query("INSERT INTO docs (project_id, title, icon, content, created_by) VALUES (?, ?, ?, ?, ?)", [
-            $projectId, $title, $icon, $initialContent, $this->user->id
-        ]);
+        $newId = $this->docModel->createDoc($projectId, $title, $icon, $initialContent, (int)$this->user->id);
 
-        if ($saved) {
-            $newId = (int)$this->db->last_insert_id();
-            $this->respond(true, 'Doküman oluşturuldu!', ['doc_id' => $newId]);
+        if ($newId > 0) {
+            $this->respond(true, __('Docs::docs_created'), ['doc_id' => $newId]);
+            return;
         }
-        $this->respond(false, 'Doküman oluşturulamadı.');
+        $this->respond(false, __('Docs::docs_create_error'));
     }
 
     public function saveDoc(): void
@@ -86,59 +73,60 @@ class AjaxController extends BaseController
         $projectId = !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null;
 
         if ($docId <= 0 || empty($title)) {
-            $this->respond(false, 'Geçersiz parametreler.');
+            $this->respond(false, __('Docs::docs_invalid_params'));
+            return;
         }
 
-        $updated = $this->db->exec_query("UPDATE docs SET title = ?, content = ?, icon = ?, project_id = ? WHERE id = ?", [
-            $title, $content, $icon, $projectId, $docId
-        ]);
+        $updated = $this->docModel->updateDoc($docId, $title, $content, $icon, $projectId);
 
         if ($updated) {
-            $this->respond(true, 'Döküman başarıyla kaydedildi.');
+            $this->respond(true, __('Docs::doc_saved'));
+            return;
         }
-        $this->respond(false, 'Kayıt sırasında hata oluştu.');
+        $this->respond(false, __('Docs::docs_save_error'));
     }
 
     public function deleteDoc(): void
     {
         $docId = (int)($_POST['id'] ?? 0);
         if ($docId <= 0) {
-            $this->respond(false, 'Geçersiz doküman ID.');
+            $this->respond(false, __('Docs::docs_invalid_id'));
+            return;
         }
-        $this->db->exec_query("DELETE FROM docs WHERE id = ?", [$docId]);
-        $this->respond(true, 'Döküman silindi.');
+        $this->docModel->deleteDoc($docId);
+        $this->respond(true, __('Docs::doc_deleted'));
     }
 
     public function uploadAttachment(): void
     {
         $docId = (int)($_POST['doc_id'] ?? 0);
         if ($docId <= 0) {
-            $this->respond(false, 'Geçersiz döküman ID.');
+            $this->respond(false, __('Docs::docs_invalid_id'));
+            return;
         }
 
         if (empty($_FILES['file']) && empty($_FILES['attachment'])) {
-            $this->respond(false, 'Yüklenecek dosya seçilmedi.');
+            $this->respond(false, __('Docs::docs_no_file_selected'));
+            return;
         }
 
         $file = $_FILES['file'] ?? $_FILES['attachment'];
         $uploadResult = \Modules\Storage\Services\StorageService::upload($file, 'docs');
 
         if (!$uploadResult['success']) {
-            $this->respond(false, $uploadResult['error'] ?? 'Dosya yüklenemedi.');
+            $errMsg = $uploadResult['error'] ?? __('Docs::docs_upload_error');
+            $this->respond(false, $errMsg);
+            return;
         }
 
-        $this->db->exec_query("
-            INSERT INTO doc_attachments (doc_id, user_id, file_name, file_path, file_type, file_size, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
-        ", [
+        $docAttId = $this->docModel->addAttachment(
             $docId,
-            $this->user->id,
+            (int)$this->user->id,
             $uploadResult['file_name'],
             $uploadResult['file_path'],
             $uploadResult['file_type'],
-            $uploadResult['file_size']
-        ]);
-        $docAttId = (int)$this->db->last_insert_id();
+            (int)$uploadResult['file_size']
+        );
 
         $docAttPayload = [
             'id'        => $docAttId,
@@ -152,7 +140,7 @@ class AjaxController extends BaseController
             'user_name' => $this->user->name
         ];
 
-        $this->respond(true, 'Döküman eki yüklendi!', [
+        $this->respond(true, __('Docs::docs_att_uploaded'), [
             'data'       => $docAttPayload,
             'attachment' => $docAttPayload,
             ...$docAttPayload
@@ -163,16 +151,11 @@ class AjaxController extends BaseController
     {
         $docId = (int)($_GET['doc_id'] ?? ($_POST['doc_id'] ?? 0));
         if ($docId <= 0) {
-            $this->respond(false, 'Geçersiz döküman ID.');
+            $this->respond(false, __('Docs::docs_invalid_id'));
+            return;
         }
 
-        $docAttachments = $this->db->multi_record_query("
-            SELECT da.*, u.name as user_name
-            FROM doc_attachments da
-            LEFT JOIN users u ON da.user_id = u.id
-            WHERE da.doc_id = ?
-            ORDER BY da.id DESC
-        ", [$docId]) ?: [];
+        $docAttachments = $this->docModel->getDocAttachments($docId);
 
         $this->respond(true, '', [
             'attachments' => $docAttachments,
@@ -184,18 +167,20 @@ class AjaxController extends BaseController
     {
         $docAttId = (int)($_POST['attachment_id'] ?? 0);
         if ($docAttId <= 0) {
-            $this->respond(false, 'Geçersiz ek ID.');
+            $this->respond(false, __('Docs::docs_invalid_att_id'));
+            return;
         }
 
-        $docAtt = $this->db->row_query("SELECT * FROM doc_attachments WHERE id = ? LIMIT 1", [$docAttId]);
+        $docAtt = $this->docModel->getAttachmentById($docAttId);
         if (!$docAtt) {
-            $this->respond(false, 'Ek dosya bulunamadı.');
+            $this->respond(false, __('Docs::docs_att_not_found'));
+            return;
         }
 
         \Modules\Storage\Services\StorageService::delete($docAtt->file_path);
-        $this->db->exec_query("DELETE FROM doc_attachments WHERE id = ?", [$docAttId]);
+        $this->docModel->deleteAttachment($docAttId);
 
-        $this->respond(true, 'Döküman eki silindi!', [
+        $this->respond(true, __('Docs::docs_att_deleted'), [
             'attachment_id' => $docAttId,
             'data'          => ['attachment_id' => $docAttId]
         ]);

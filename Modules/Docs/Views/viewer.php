@@ -4,10 +4,10 @@
 <div class="cu-doc-content">
     <?php if (!empty($firstDoc)): ?>
         <h2><?= htmlspecialchars($firstDoc->title ?? '') ?></h2>
-        <div class="cu-doc-body" style="line-height:1.6; margin-top:16px;">
+        <div class="cu-doc-body cu-doc-body-view">
             <?= $firstDoc->content ?? '' ?>
         </div>
     <?php else: ?>
-        <p><?= htmlspecialchars(__('Docs::select_doc', 'Bir döküman seçin.')) ?></p>
+        <p><?= htmlspecialchars(__('Docs::select_doc')) ?></p>
     <?php endif; ?>
 </div>

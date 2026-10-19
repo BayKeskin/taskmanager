@@ -9,28 +9,26 @@ let currentMode = 'visual'; // 'visual' | 'source'
 let quill = null;
 const availableIcons = ['📄', '🔑', '🚀', '🏛️', '🗄️', '🤖', '⚙️', '📝', '💡', '📑', '📊', '🛡️', '📦'];
 
+function getDocI18n(key, fallback) {
+    if (window.DOCS_I18N && window.DOCS_I18N[key]) {
+        return window.DOCS_I18N[key];
+    }
+    return fallback || key;
+}
+
 // 1. Markdown to HTML Auto-Converter & Boşluk / Tablo Normalizasyonu
 function processToHtml(rawText) {
     if (!rawText) return '<p></p>';
     
-    // A) RAW METİN ÖN TEMİZLİĞİ (Yapay zeka dökümanlarındaki aşırı boşlukları ve ayraçları sıkılaştır):
-    // 1. Satır sonlarını standardize et
+    // A) RAW METİN ÖN TEMİZLİĞİ:
     let cleaned = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    
-    // 2. 3 veya daha fazla ardışık boş satırı en fazla 2 satıra indir
     cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-    
-    // 3. Kod bloklarının bitimindeki gereksiz boşlukları temizle
     cleaned = cleaned.replace(/```\s*\n{3,}/g, '```\n\n');
-    
-    // 4. Ayraç çizgilerini (---, ***, ___) ve çevresindeki aşırı boşlukları sıkılaştır
     cleaned = cleaned.replace(/\n\s*([-*_]\s*){3,}\n/g, '\n\n---\n\n');
     cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
 
     // Zaten zengin HTML etiketleri içeriyorsa
     const hasHtmlTags = /<\/?(h[1-6]|p|ul|ol|li|pre|code|table|blockquote)[^>]*>/i.test(cleaned);
-    
-    // Markdown desenleri (#, **, -, `, |, [) içeriyorsa marked.js ile ayrıştır
     const hasMarkdown = cleaned.includes('#') || cleaned.includes('**') || cleaned.includes('- ') || cleaned.includes('```') || cleaned.includes('|');
     
     let html = cleaned;
@@ -45,24 +43,12 @@ function processToHtml(rawText) {
     }
 
     // B) HTML SONRASI NORMALİZASYON:
-    // 1) Quill'de blot karşılığı olmayan ve boşluk üreten <hr> etiketlerini kaldır
     html = html.replace(/<hr\s*\/?>/gi, '');
-
-    // 2) TABLO NORMALİZASYONU (Quill 2.0 için):
-    // <th> etiketlerini <td><strong>...</strong></td> formatına çevir ki Quill header hücrelerini eksiltmesin
     html = html.replace(/<th\b([^>]*)>(.*?)<\/th>/gi, '<td$1><strong>$2</strong></td>');
-    // <thead> ve <tbody> etiketlerini temizle ki tüm satırlar tek ve kesintisiz tablo olarak Quill'e aktarılsın
     html = html.replace(/<\/?thead>/gi, '').replace(/<\/?tbody>/gi, '');
-
-    // 3) BOŞLUK VE PARAGRAF SIKIŞTIRMA:
-    // Ardışık boş paragrafları tek boş paragrafa indir
     html = html.replace(/(<p>\s*(<br\s*\/?>|&nbsp;|\s)*<\/p>\s*){2,}/gi, '<p><br></p>');
-    
-    // Başlıkların (h1-h6) hemen öncesindeki veya sonrasındaki boş paragrafları temizle
     html = html.replace(/(<p>\s*(<br\s*\/?>|&nbsp;|\s)*<\/p>\s*)+(?=<h[1-6])/gi, '');
     html = html.replace(/(<\/h[1-6]>)\s*(<p>\s*(<br\s*\/?>|&nbsp;|\s)*<\/p>\s*)+/gi, '$1');
-    
-    // Kod bloklarının (pre) hemen öncesindeki veya sonrasındaki boş paragrafları temizle
     html = html.replace(/(<p>\s*(<br\s*\/?>|&nbsp;|\s)*<\/p>\s*)+(?=<pre|<table|<ul|<ol)/gi, '');
     html = html.replace(/(<\/pre>|<\/table>|<\/ul>|<\/ol>)\s*(<p>\s*(<br\s*\/?>|&nbsp;|\s)*<\/p>\s*)+(?=<h[1-6])/gi, '$1');
     
@@ -88,42 +74,16 @@ function togglePaperWidth() {
     if (sourcePaper) sourcePaper.classList.toggle('full-width', isFull);
     
     if (btn) {
-        btn.innerText = isFull ? <?= json_encode(__('Docs::docs_width_standard', '📄 Standart Genişlik')) ?> : <?= json_encode(__('Docs::docs_width_wide', '↔️ Geniş Görünüm')) ?>;
+        btn.innerText = isFull ? getDocI18n('docs_width_standard', '📄 Standart Genişlik') : getDocI18n('docs_width_wide', '↔️ Geniş Görünüm');
         btn.classList.toggle('active', isFull);
     }
 }
-
-// 2. Quill Editör Başlatma
-document.addEventListener('DOMContentLoaded', () => {
-    const editorElem = document.getElementById('quillEditor');
-    if (editorElem) {
-        quill = new Quill('#quillEditor', {
-            theme: 'snow',
-            modules: {
-                toolbar: '#quillToolbar',
-                table: true
-            },
-            placeholder: <?= json_encode(__('Docs::docs_editor_placeholder', 'Dökümanınızı buraya yazmaya başlayın...')) ?>
-        });
-
-        // İlk içeriği yükle
-        const rawInitial = document.getElementById('initialRawContent')?.value || '';
-        loadDocContent(rawInitial);
-
-        // Değişiklik dinleyici
-        quill.on('text-change', (delta, oldDelta, source) => {
-            if (source === 'user') {
-                markDocUnsaved();
-            }
-        });
-    }
-});
 
 function markDocUnsaved() {
     isDocSaved = false;
     const status = document.getElementById('docSaveStatus');
     if (status) {
-        status.innerText = <?= json_encode('● ' . __('Docs::docs_save_status_unsaved', 'Kaydedilmedi')) ?>;
+        status.innerText = '● ' + getDocI18n('docs_save_status_unsaved', 'Kaydedilmedi');
         status.style.color = '#f39c12';
     }
 }
@@ -145,16 +105,16 @@ function switchEditorMode(mode) {
         quillWrapper.style.display = 'none';
         sourceWrapper.style.display = 'flex';
 
-        btnVisual.classList.remove('active');
-        btnSource.classList.add('active');
+        if (btnVisual) btnVisual.classList.remove('active');
+        if (btnSource) btnSource.classList.add('active');
     } else {
         // Kaynak Koddan Görsele Geçiş
         loadDocContent(textarea.value);
         sourceWrapper.style.display = 'none';
         quillWrapper.style.display = 'flex';
 
-        btnSource.classList.remove('active');
-        btnVisual.classList.add('active');
+        if (btnSource) btnSource.classList.remove('active');
+        if (btnVisual) btnVisual.classList.add('active');
     }
 }
 
@@ -175,7 +135,7 @@ async function selectDoc(docId) {
         const res = await fetch(`/taskmanager/ajax?action=get_doc&id=${docId}`);
         const data = await res.json();
         if (!data.success) {
-            showToast(data.message || <?= json_encode(__('Docs::docs_toast_load_err', 'Döküman yüklenemedi')) ?>, 'error');
+            showToast(data.message || getDocI18n('docs_toast_load_err', 'Döküman yüklenemedi'), 'error');
             return;
         }
 
@@ -206,12 +166,12 @@ async function selectDoc(docId) {
         isDocSaved = true;
         const status = document.getElementById('docSaveStatus');
         if (status) {
-            status.innerText = <?= json_encode('✓ ' . __('Docs::docs_save_status_saved', 'Kaydedildi')) ?>;
+            status.innerText = '✓ ' + getDocI18n('docs_save_status_saved', 'Kaydedildi');
             status.style.color = 'var(--text-muted)';
         }
     } catch (e) {
         console.error(e);
-        showToast(<?= json_encode(__('Docs::docs_toast_conn_err', 'Bağlantı hatası')) ?>, 'error');
+        showToast(getDocI18n('docs_toast_conn_err', 'Bağlantı hatası'), 'error');
     }
 }
 
@@ -231,7 +191,7 @@ async function saveActiveDoc() {
     }
 
     if (!docId || !title) {
-        showToast(<?= json_encode(__('Docs::docs_toast_title_req', 'Başlık zorunludur')) ?>, 'error');
+        showToast(getDocI18n('docs_toast_title_req', 'Başlık zorunludur'), 'error');
         return;
     }
 
@@ -244,7 +204,7 @@ async function saveActiveDoc() {
 
     const status = document.getElementById('docSaveStatus');
     if (status) {
-        status.innerText = <?= json_encode('⏳ ' . __('Docs::docs_save_status_saving', 'Kaydediliyor...')) ?>;
+        status.innerText = '⏳ ' + getDocI18n('docs_save_status_saving', 'Kaydediliyor...');
         status.style.color = 'var(--brand-primary)';
     }
 
@@ -257,10 +217,10 @@ async function saveActiveDoc() {
         if (data.success) {
             isDocSaved = true;
             if (status) {
-                status.innerText = <?= json_encode('✓ ' . __('Docs::docs_save_status_saved', 'Kaydedildi')) ?>;
+                status.innerText = '✓ ' + getDocI18n('docs_save_status_saved', 'Kaydedildi');
                 status.style.color = '#00b894';
             }
-            showToast(<?= json_encode(__('Docs::docs_toast_save_success', '✅ Döküman kaydedildi!')) ?>, 'success');
+            showToast(getDocI18n('docs_toast_save_success', '✅ Döküman kaydedildi!'), 'success');
             
             // Sidebar başlık ve ikon güncelle
             const sideTitle = document.getElementById(`docSidebarTitle-${docId}`);
@@ -268,25 +228,28 @@ async function saveActiveDoc() {
             const sideIcon = document.getElementById(`docIconBadge-${docId}`);
             if (sideIcon) sideIcon.innerText = icon;
         } else {
-            showToast(data.message || <?= json_encode(__('Docs::docs_toast_save_fail', 'Kayıt başarısız')) ?>, 'error');
+            showToast(data.message || getDocI18n('docs_toast_save_fail', 'Kayıt başarısız'), 'error');
         }
     } catch (e) {
         console.error(e);
-        showToast(<?= json_encode(__('Docs::docs_toast_conn_err', 'Bağlantı hatası')) ?>, 'error');
+        showToast(getDocI18n('docs_toast_conn_err', 'Bağlantı hatası'), 'error');
     }
 }
 
 // 6. Yeni Döküman Oluşturma
 async function openNewDocPrompt() {
-    const title = prompt(<?= json_encode(__('Docs::docs_create_prompt', 'Yeni Döküman Başlığı:')) ?>, <?= json_encode(__('Docs::docs_create_default', 'Yeni Doküman')) ?>);
+    const title = prompt(getDocI18n('docs_create_prompt', 'Yeni Döküman Başlığı:'), getDocI18n('docs_create_default', 'Yeni Doküman'));
     if (!title) return;
+
+    const activeProjectEl = document.getElementById('activeDocProject');
+    const projId = activeProjectEl ? activeProjectEl.value : '';
 
     const formData = new FormData();
     formData.append('title', title);
     formData.append('icon', '📄');
-    <?php if ($activeProjectId): ?>
-        formData.append('project_id', '<?= $activeProjectId ?>');
-    <?php endif; ?>
+    if (projId) {
+        formData.append('project_id', projId);
+    }
 
     try {
         const res = await fetch('/taskmanager/ajax?action=create_doc', {
@@ -295,10 +258,10 @@ async function openNewDocPrompt() {
         });
         const data = await res.json();
         if (data.success) {
-            showToast(<?= json_encode(__('Docs::docs_toast_created', '✅ Yeni döküman oluşturuldu!')) ?>, 'success');
+            showToast(getDocI18n('docs_toast_created', '✅ Yeni döküman oluşturuldu!'), 'success');
             window.location.reload();
         } else {
-            showToast(data.message || <?= json_encode(__('Docs::docs_toast_create_fail', 'Oluşturulamadı')) ?>, 'error');
+            showToast(data.message || getDocI18n('docs_toast_create_fail', 'Oluşturulamadı'), 'error');
         }
     } catch (e) {
         console.error(e);
@@ -310,7 +273,7 @@ async function deleteActiveDoc() {
     const docId = document.getElementById('activeDocId')?.value;
     if (!docId) return;
 
-    if (!confirm(<?= json_encode(__('Docs::docs_confirm_delete', 'Bu dökümanı silmek istediğinize emin misiniz?')) ?>)) return;
+    if (!confirm(getDocI18n('docs_confirm_delete', 'Bu dökümanı silmek istediğinize emin misiniz?'))) return;
 
     const formData = new FormData();
     formData.append('id', docId);
@@ -322,10 +285,10 @@ async function deleteActiveDoc() {
         });
         const data = await res.json();
         if (data.success) {
-            showToast(<?= json_encode(__('Docs::docs_toast_deleted', 'Döküman silindi')) ?>, 'success');
+            showToast(getDocI18n('docs_toast_deleted', 'Döküman silindi'), 'success');
             window.location.href = '/taskmanager/docs';
         } else {
-            showToast(data.message || <?= json_encode(__('Docs::docs_toast_delete_fail', 'Silinemedi')) ?>, 'error');
+            showToast(data.message || getDocI18n('docs_toast_delete_fail', 'Silinemedi'), 'error');
         }
     } catch (e) {
         console.error(e);
@@ -341,14 +304,6 @@ function filterDocsList(q) {
     });
 }
 
-// 9. Ctrl + S ile Hızlı Kaydetme
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        saveActiveDoc();
-    }
-});
-
 // ==========================================================================
 // 10. DÖKÜMAN EKLERİ & BULUT DEPOLAMA YÖNETİMİ
 // ==========================================================================
@@ -363,34 +318,34 @@ function renderDocAttachments(attachments) {
 
     list.innerHTML = '';
     if (currentDocAttachments.length === 0) {
-        list.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:12px; color:var(--text-muted); font-size:12px; font-style:italic;"><?= addslashes(__('Docs::docs_attachments_empty', 'Bu dökümana henüz ek dosya veya görsel eklenmemiş.')) ?></div>';
+        list.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:12px; color:var(--text-muted); font-size:12px; font-style:italic;">${getDocI18n('docs_attachments_empty', 'Bu dökümana henüz ek dosya veya görsel eklenmemiş.')}</div>`;
         return;
     }
 
     currentDocAttachments.forEach(att => {
         const item = document.createElement('div');
-        item.style.cssText = 'background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px; padding:10px; display:flex; align-items:center; gap:10px; transition:border-color 0.2s;';
+        item.className = 'cu-doc-att-item';
         
         const isImg = /\.(jpg|jpeg|png|gif|webp|svg)($|\?)/i.test(att.file_path);
         const iconHtml = isImg 
-            ? `<img src="${att.file_path}" alt="${att.file_name}" onclick="openImageLightbox('${att.file_path}', '${escape(att.file_name)}')" style="width:38px; height:38px; border-radius:6px; object-fit:cover; cursor:zoom-in; border:1px solid var(--border-subtle);">`
-            : `<div style="width:38px; height:38px; border-radius:6px; background:rgba(123, 104, 238, 0.15); display:flex; align-items:center; justify-content:center; font-size:18px;">📄</div>`;
+            ? `<img src="${att.file_path}" alt="${att.file_name}" data-lightbox-src="${att.file_path}" data-lightbox-title="${escape(att.file_name)}" class="cu-doc-att-thumb">`
+            : `<div class="cu-doc-att-icon-box">📄</div>`;
 
         const sizeKb = att.file_size ? Math.round(att.file_size / 1024) + ' KB' : '';
 
         item.innerHTML = `
             ${iconHtml}
             <div style="flex:1; overflow:hidden;">
-                <div style="font-size:12px; font-weight:600; color:var(--text-white); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${att.file_name}">
+                <div class="cu-doc-att-name" title="${att.file_name}">
                     ${att.file_name}
                 </div>
-                <div style="font-size:10.5px; color:var(--text-muted); margin-top:2px;">
+                <div class="cu-doc-att-size">
                     ${sizeKb}
                 </div>
             </div>
-            <div style="display:flex; align-items:center; gap:4px;">
-                <a href="${att.file_path}" download target="_blank" style="color:var(--brand-primary); padding:4px; text-decoration:none; font-size:13px;" title="<?= htmlspecialchars(__('Docs::docs_attachment_download', 'İndir'), ENT_QUOTES, 'UTF-8') ?>">⬇️</a>
-                <button type="button" onclick="deleteDocAttachment(${att.id})" style="background:none; border:none; color:#e74c3c; cursor:pointer; padding:4px; font-size:13px;" title="<?= htmlspecialchars(__('Docs::docs_btn_delete', 'Sil'), ENT_QUOTES, 'UTF-8') ?>">🗑️</button>
+            <div class="cu-doc-att-actions">
+                <a href="${att.file_path}" download target="_blank" class="cu-doc-att-dl" title="${getDocI18n('docs_attachment_download', 'İndir')}">⬇️</a>
+                <button type="button" data-delete-att-id="${att.id}" class="cu-doc-att-del" title="${getDocI18n('docs_btn_delete', 'Sil')}">🗑️</button>
             </div>
         `;
         list.appendChild(item);
@@ -456,7 +411,7 @@ async function handleDocFileUpload(input) {
 async function uploadDocFile(file) {
     const docId = document.getElementById('activeDocId')?.value;
     if (!docId) {
-        showToast(<?= json_encode(__('Docs::docs_toast_select_first', 'Önce bir döküman seçmelisiniz')) ?>, 'error');
+        showToast(getDocI18n('docs_toast_select_first', 'Önce bir döküman seçmelisiniz'), 'error');
         return;
     }
 
@@ -464,7 +419,7 @@ async function uploadDocFile(file) {
     formData.append('doc_id', docId);
     formData.append('file', file);
 
-    showToast(<?= json_encode(__('Docs::docs_toast_uploading', 'Dosya yükleniyor...')) ?>, 'info');
+    showToast(getDocI18n('docs_toast_uploading', 'Dosya yükleniyor...'), 'info');
 
     try {
         const res = await fetch('/taskmanager/ajax?action=upload_doc_attachment', {
@@ -474,20 +429,20 @@ async function uploadDocFile(file) {
         const d = await res.json();
         const attData = d.data || d.attachment || (d.id ? d : null);
         if (d.success && attData) {
-            showToast(<?= json_encode(__('Docs::docs_toast_upload_success', '✅ Dosya dökümana eklendi!')) ?>, 'success');
+            showToast(getDocI18n('docs_toast_upload_success', '✅ Dosya dökümana eklendi!'), 'success');
             currentDocAttachments = currentDocAttachments.filter(a => a.id != attData.id);
             currentDocAttachments.unshift(attData);
             renderDocAttachments(currentDocAttachments);
         } else {
-            showToast(d.message || <?= json_encode(__('Docs::docs_toast_upload_fail', 'Yükleme başarısız')) ?>, 'error');
+            showToast(d.message || getDocI18n('docs_toast_upload_fail', 'Yükleme başarısız'), 'error');
         }
     } catch(e) {
-        showToast(<?= json_encode(__('Docs::docs_toast_conn_err', 'Bağlantı hatası oluştu')) ?>, 'error');
+        showToast(getDocI18n('docs_toast_conn_err', 'Bağlantı hatası oluştu'), 'error');
     }
 }
 
 async function deleteDocAttachment(attId) {
-    if (!confirm(<?= json_encode(__('Docs::docs_confirm_delete_att', 'Bu eki silmek istediğinize emin misiniz?')) ?>)) return;
+    if (!confirm(getDocI18n('docs_confirm_delete_att', 'Bu eki silmek istediğinize emin misiniz?'))) return;
 
     const formData = new FormData();
     formData.append('attachment_id', attId);
@@ -499,14 +454,14 @@ async function deleteDocAttachment(attId) {
         });
         const d = await res.json();
         if (d.success) {
-            showToast(<?= json_encode(__('Docs::docs_toast_att_deleted', 'Ek dosya silindi!')) ?>, 'success');
+            showToast(getDocI18n('docs_toast_att_deleted', 'Ek dosya silindi!'), 'success');
             currentDocAttachments = currentDocAttachments.filter(a => a.id != attId);
             renderDocAttachments(currentDocAttachments);
         } else {
-            showToast(d.message || <?= json_encode(__('Docs::docs_toast_delete_fail', 'Silinemedi')) ?>, 'error');
+            showToast(d.message || getDocI18n('docs_toast_delete_fail', 'Silinemedi'), 'error');
         }
     } catch(e) {
-        showToast(<?= json_encode(__('Docs::docs_toast_conn_err', 'Bağlantı hatası')) ?>, 'error');
+        showToast(getDocI18n('docs_toast_conn_err', 'Bağlantı hatası'), 'error');
     }
 }
 
@@ -524,13 +479,160 @@ window.addEventListener('paste', async (e) => {
             const blob = item.getAsFile();
             const safeFile = new File([blob], `doc_screenshot_${Date.now()}.png`, { type: blob.type });
             await uploadDocFile(safeFile);
-            showToast(<?= json_encode(__('Docs::docs_toast_paste_success', '📋 Ekran görüntüsü dökümana eklendi!')) ?>, 'success');
+            showToast(getDocI18n('docs_toast_paste_success', '📋 Ekran görüntüsü dökümana eklendi!'), 'success');
             break;
         }
     }
 });
 
-// Sayfa yüklendiğinde döküman eklerini çek
+// Sayfa yüklendiğinde ve Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
+    // 2. Quill Editör Başlatma
+    const editorElem = document.getElementById('quillEditor');
+    if (editorElem && typeof Quill !== 'undefined') {
+        quill = new Quill('#quillEditor', {
+            theme: 'snow',
+            modules: {
+                toolbar: '#quillToolbar',
+                table: true
+            },
+            placeholder: getDocI18n('docs_editor_placeholder', 'Dökümanınızı buraya yazmaya başlayın...')
+        });
+
+        // İlk içeriği yükle
+        const rawInitial = document.getElementById('initialRawContent')?.value || '';
+        loadDocContent(rawInitial);
+
+        // Değişiklik dinleyici
+        quill.on('text-change', (delta, oldDelta, source) => {
+            if (source === 'user') {
+                markDocUnsaved();
+            }
+        });
+    }
+
+    // Mobil Gezgin Butonu
+    const btnToggleSidebar = document.querySelector('.cu-mobile-docs-toggle');
+    if (btnToggleSidebar) {
+        btnToggleSidebar.addEventListener('click', toggleDocsSidebar);
+    }
+
+    // Yeni Döküman Butonları
+    document.querySelectorAll('.cu-btn-trigger-new-doc').forEach(btn => {
+        btn.addEventListener('click', openNewDocPrompt);
+    });
+
+    // İkon Değiştirme
+    const btnIcon = document.getElementById('btnDocIcon');
+    if (btnIcon) {
+        btnIcon.addEventListener('click', cycleDocIcon);
+    }
+
+    // Başlık ve Proje Değişikliği
+    const titleInput = document.getElementById('activeDocTitle');
+    if (titleInput) {
+        titleInput.addEventListener('input', markDocUnsaved);
+    }
+    const projectSelect = document.getElementById('activeDocProject');
+    if (projectSelect) {
+        projectSelect.addEventListener('change', markDocUnsaved);
+    }
+
+    // Editör Mod Butonları
+    const btnVisual = document.getElementById('btnModeVisual');
+    if (btnVisual) {
+        btnVisual.addEventListener('click', () => switchEditorMode('visual'));
+    }
+    const btnSource = document.getElementById('btnModeSource');
+    if (btnSource) {
+        btnSource.addEventListener('click', () => switchEditorMode('source'));
+    }
+
+    // Geniş Görünüm Butonu
+    const btnWidth = document.getElementById('btnToggleWidth');
+    if (btnWidth) {
+        btnWidth.addEventListener('click', togglePaperWidth);
+    }
+
+    // Kaydet ve Sil Butonları
+    const btnSave = document.getElementById('btnSaveActiveDoc');
+    if (btnSave) {
+        btnSave.addEventListener('click', saveActiveDoc);
+    }
+    const btnDelete = document.getElementById('btnDeleteActiveDoc');
+    if (btnDelete) {
+        btnDelete.addEventListener('click', deleteActiveDoc);
+    }
+
+    // Dosya Yükleme Tetikleyici Butonu
+    const btnTriggerUpload = document.getElementById('btnTriggerDocUpload');
+    const fileInput = document.getElementById('docFileInput');
+    if (btnTriggerUpload && fileInput) {
+        btnTriggerUpload.addEventListener('click', () => fileInput.click());
+    }
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            handleDocFileUpload(this);
+        });
+    }
+
+    // Dropzone Dinleyicileri
+    const dropzone = document.getElementById('docDropzone');
+    if (dropzone) {
+        dropzone.addEventListener('dragover', handleDocDropzoneOver);
+        dropzone.addEventListener('dragleave', handleDocDropzoneLeave);
+        dropzone.addEventListener('drop', handleDocDropzoneDrop);
+        dropzone.addEventListener('click', () => {
+            if (fileInput) fileInput.click();
+        });
+    }
+
+    // Ham Kaynak Metin Alanı Değişikliği
+    const rawTextarea = document.getElementById('rawSourceTextarea');
+    if (rawTextarea) {
+        rawTextarea.addEventListener('input', markDocUnsaved);
+    }
+
+    // Arama Girişi
+    const searchInput = document.getElementById('docSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            filterDocsList(this.value);
+        });
+    }
+
+    // Sidebar Tıklama Delegation
+    document.addEventListener('click', (e) => {
+        const item = e.target.closest('[data-select-doc-id]');
+        if (item) {
+            const id = parseInt(item.getAttribute('data-select-doc-id'), 10);
+            if (id) selectDoc(id);
+            return;
+        }
+
+        const delBtn = e.target.closest('[data-delete-att-id]');
+        if (delBtn) {
+            const attId = parseInt(delBtn.getAttribute('data-delete-att-id'), 10);
+            if (attId) deleteDocAttachment(attId);
+            return;
+        }
+
+        const thumb = e.target.closest('[data-lightbox-src]');
+        if (thumb && typeof openImageLightbox === 'function') {
+            const src = thumb.getAttribute('data-lightbox-src');
+            const title = thumb.getAttribute('data-lightbox-title') || '';
+            openImageLightbox(src, title);
+            return;
+        }
+    });
+
+    // Ctrl + S ile Hızlı Kaydetme
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+            e.preventDefault();
+            saveActiveDoc();
+        }
+    });
+
     loadCurrentDocAttachments();
 });
