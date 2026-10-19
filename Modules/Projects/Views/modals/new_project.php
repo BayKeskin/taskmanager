@@ -80,7 +80,7 @@
             </div>
             <div class="cu-modal-footer cu-proj-modal-footer">
                 <button type="button" class="cu-btn-sm" data-close-modal="modalNewProject"><?= __('Projects::btn_cancel') ?></button>
-                <button type="submit" class="cu-btn-quick-task"><?= __('Projects::modal_create_project') ?></button>
+                <button type="submit" id="btnSubmitNewProject" class="cu-btn-quick-task"><?= __('Projects::modal_create_project') ?></button>
             </div>
         </form>
     </div>

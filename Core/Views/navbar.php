@@ -72,7 +72,7 @@ $currentUser = $_SESSION['user'] ?? null;
         </div>
 
         <?php if ($currentUser && $currentUser->role === 'admin'): ?>
-            <button type="button" class="cu-btn-quick-task" onclick="openNewProjectModal()" style="height:34px; padding:0 14px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border-subtle); background:rgba(255,255,255,0.08); color:var(--text-white); box-shadow:none; cursor:pointer; transition:var(--transition);" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+            <button type="button" id="btnOpenNewProjectModal" class="cu-btn-quick-task" onclick="openNewProjectModal()" style="height:34px; padding:0 14px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border-subtle); background:rgba(255,255,255,0.08); color:var(--text-white); box-shadow:none; cursor:pointer; transition:var(--transition);" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
                 <span>📁</span>
                 <span><?= __('app.layout_btn_project') ?></span>
             </button>
