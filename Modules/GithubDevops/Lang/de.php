@@ -61,4 +61,5 @@ IHRE AUFGABE:
   'rollback_success' => 'Rollback erfolgreich abgeschlossen.',
   'rollback_failed' => 'Rollback fehlgeschlagen.',
   'default_schema_tables' => 'Standard-Schematabellen',
+  'toggle_token_title' => 'Token anzeigen oder verbergen',
 );

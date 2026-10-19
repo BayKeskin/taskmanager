@@ -24,6 +24,16 @@ class AjaxController extends BaseController
         $this->json($payload);
     }
 
+    public function getSettings(): void
+    {
+        $this->model->ensureGithubAndRollbackSchema();
+        $creds = $this->model->getGithubCredentials();
+        $this->respond(true, '', [
+            'username' => $creds['username'],
+            'token'    => $creds['token']
+        ]);
+    }
+
     public function saveSettings(): void
     {
         $this->model->ensureGithubAndRollbackSchema();

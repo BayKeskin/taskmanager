@@ -1,11 +1,9 @@
-# ApiTester (API Kılavuzu & api-docs) Onarım Takip Listesi (ONARIM_TAKIP.md)
+# GithubDevops Modülü Onarım Takip Listesi (ONARIM_TAKIP.md)
 
-## Tespit Edilen Durum ve İyileştirme Maddeleri
+## Tespit Edilen Görsel ve İşlevsel Eksikler
 
-- [x] 1. [Statik Varlıklar & CSS/JS Entegrasyonu] `Modules/ApiTester/init.php` içindeki `AssetManager::enqueueCss` ve `enqueueJs` çağrıları handle adları ve doğru yollarla standardize edildi (`apitester-css`, `apitester-js`); `api-docs` sayfasının CSS stillerinin sayfaya kusursuz yüklenmesi sağlandı.
-- [x] 2. [Token Kopyalama & Etkileşim] `api_docs.php` sayfasındaki Token Kopyalama butonu (`#btnCopyApiToken`) ve `tokenText` alanı `Modules/ApiTester/Assets/js/apitester.js` içindeki `ApiTester.copyToken` metoduna `AssetManager::localizeScript('apitester-js', ...)` üzerinden bağlandı.
-- [x] 3. [Eski Sistem Navigasyon Butonları Eşleştirmesi] Eski sistemdeki (`old/View/index/api_docs.php`) tüm üst başlık butonları (`🧪 Canlı API Test Konsolu`, `📄 Markdown Olarak İndir`, `🟢 API Sağlık Kontrolü`, `TR / EN / DE Hızlı Dil Değiştirici`) eksiksiz geri getirildi.
-- [x] 4. [Kart Yapısı & Çok Dilli Destek] API Erişim & Token Kartı, Canlı Test Konsolu Bannerı, Çok Dilli Destek Kartı, Antigravity Agent Görev İşleme Senaryosu ve 6 kategorideki 41 API uç noktasının tamamı TR, EN ve DE dillerinde test edildi.
-- [x] 5. [Canlı API Test Konsolu (api-test)] `Modules/ApiTester/init.php` içinde `apitester-live-css` ve `apitester-live-js` kaydedildi, `ApiTesterController.php` içinde 41 uç noktalı katalog `AssetManager::localizeScript('apitester-live-js', 'APITESTER_LIVE_DATA', ...)` ile JS ortamına aktarıldı, sol menüdeki tüm kategoriler ve uç noktalar eski sistemdeki gibi dinamik ve etkileşimli hale getirildi.
-- [x] 6. [HMVC & Sıfır İhlal] `php tests/audit_module.php ApiTester` çalıştırılarak 0 kural ihlali (`[PASS]`) doğrulandı.
-
+- [x] 1. [Görsel/CSS] GitHub Ayarları Modalında (`#modalGithubSettings`) koyu tema uyumsuzluğu ve donuk tasarım; input alanları, odaklanma efektleri (`:focus`), başlık ve butonlar ClickUp karanlık tema tokenları (`var(--bg-card)`, `var(--brand-primary)`, `var(--border-subtle)`) ile uyumlu değil, kutu gölgeleri ve degrade vurguları eksik.
+- [x] 2. [İşlev/Veri] GitHub Ayarları Modalı açıldığında veritabanında (`settings` tablosunda) kayıtlı `github_username` ve `github_token` değerleri modal inputlarına (`#ghUsernameInput`, `#ghTokenInput`) otomatik doldurulmuyor (pre-fill eksik).
+- [x] 3. [İşlev/JS] Modaldaki şifre gizleme/gösterme (göz ikonu / toggle password visibility) özelliği eksik; Personal Access Token (PAT) girilirken veya kontrol edilirken kullanıcı tokenını göremiyor.
+- [x] 4. [Görsel/Etkileşim] Görev Detay Çekmecesi (`task_drawer.php`) içindeki "Cerrahi Rollback" (`rollbackTask`) butonu ve Git Commit/Diff bağlantısı için stil sınıfları ad-hoc inline stiller yerine `Modules/GithubDevops/Assets/css/githubdevops.css` içine taşınmalı ve modern rozet görünümüne kavuşturulmalı.
+- [x] 5. [HMVC & Denetim Kilidi] Yapılan tüm görsel ve işlevsel onarımların ardından `php tests/audit_module.php GithubDevops` çalıştırılarak 0 kural ihlali (`[PASS]`) doğrulanmalı ve canlı tarayıcıda test kanıtı sunulmalı.

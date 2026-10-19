@@ -61,4 +61,5 @@ GÖREVİN:
   'rollback_success' => 'Geri alma işlemi başarılı.',
   'rollback_failed' => 'Geri alma başarısız.',
   'default_schema_tables' => 'Varsayılan şema tabloları',
+  'toggle_token_title' => 'Şifreyi / Tokenı Göster veya Gizle',
 );

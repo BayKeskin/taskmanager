@@ -2,9 +2,27 @@
  * Modules/GithubDevops/Assets/js/github-devops.js
  * GitHub Entegrasyonu ve Cerrahi Rollback İstemci Mantığı
  */
-window.openGithubSettingsModal = function() {
+window.openGithubSettingsModal = async function() {
     if (typeof openModal === 'function') {
         openModal('modalGithubSettings');
+    }
+    
+    // Veritabanındaki güncel GitHub ayarlarını çek ve doldur
+    try {
+        const res = await fetch('/taskmanager/ajax?action=get_settings');
+        const data = await res.json();
+        if (data && data.success && data.data) {
+            const userInput = document.getElementById('ghUsernameInput');
+            const tokenInput = document.getElementById('ghTokenInput');
+            if (userInput && data.data.username) {
+                userInput.value = data.data.username;
+            }
+            if (tokenInput && data.data.token) {
+                tokenInput.value = data.data.token;
+            }
+        }
+    } catch (err) {
+        console.warn('Could not pre-fill github settings:', err);
     }
 };
 
@@ -127,6 +145,22 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnSave) {
         btnSave.addEventListener('click', function() {
             window.saveGithubSettings();
+        });
+    }
+
+    const btnToggleToken = document.getElementById('btnGhToggleToken');
+    if (btnToggleToken) {
+        btnToggleToken.addEventListener('click', function() {
+            const tokenInput = document.getElementById('ghTokenInput');
+            if (tokenInput) {
+                if (tokenInput.type === 'password') {
+                    tokenInput.type = 'text';
+                    this.textContent = '🔒';
+                } else {
+                    tokenInput.type = 'password';
+                    this.textContent = '👁️';
+                }
+            }
         });
     }
 });

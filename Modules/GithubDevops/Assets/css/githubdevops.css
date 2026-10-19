@@ -2,92 +2,227 @@
 .github-devops-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     font-size: 11px;
-    padding: 2px 6px;
+    font-weight: 700;
+    padding: 3px 8px;
     border-radius: 4px;
-    background: rgba(30, 41, 59, 0.8);
-    color: #94a3b8;
+    background: rgba(123, 104, 238, 0.15);
+    border: 1px solid rgba(123, 104, 238, 0.35);
+    color: #a29bfe;
 }
 
 .gh-modal-dialog {
-    max-width: 500px;
+    max-width: 520px;
     display: flex;
     flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(123, 104, 238, 0.15);
+    overflow: hidden;
+    animation: ghModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ghModalPop {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .gh-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(123, 104, 238, 0.05));
 }
 
 .gh-header-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .gh-header-icon {
-    font-size: 20px;
+    font-size: 22px;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
 }
 
 .gh-modal-title {
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-white);
     margin: 0;
+    letter-spacing: -0.2px;
 }
 
 .gh-close-btn {
     background: none;
     border: none;
     color: var(--text-muted);
-    font-size: 20px;
+    font-size: 22px;
     cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.gh-close-btn:hover {
+    color: var(--text-white);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .gh-modal-body {
-    padding: 20px;
+    padding: 22px;
 }
 
 .gh-desc-text {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 16px;
-    line-height: 1.5;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 18px;
+    line-height: 1.55;
+    background: rgba(15, 23, 42, 0.5);
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
 }
 
 .gh-form-group {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .gh-label {
     display: block;
     font-size: 12px;
-    font-weight: 600;
-    color: var(--text-secondary);
+    font-weight: 700;
+    color: var(--text-white);
     margin-bottom: 6px;
+}
+
+.gh-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
 }
 
 .gh-input-field {
     width: 100%;
-    padding: 8px 12px;
-    background: var(--bg-main);
+    padding: 10px 14px;
+    background: var(--bg-base);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border-radius: 8px;
     color: var(--text-white);
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.gh-input-password {
+    padding-right: 42px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.gh-input-field:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(123, 104, 238, 0.25);
+    background: rgba(15, 17, 26, 0.95);
+}
+
+.gh-btn-toggle-pwd {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gh-btn-toggle-pwd:hover {
+    color: var(--text-white);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .gh-modal-footer {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    padding: 14px 20px;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 22px;
     border-top: 1px solid var(--border-subtle);
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .gh-save-btn {
     background: #2ea043;
     color: #fff;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 10px rgba(46, 160, 67, 0.35);
+    transition: all 0.2s ease;
+}
+
+.gh-save-btn:hover {
+    background: #3fb950;
+    box-shadow: 0 4px 14px rgba(46, 160, 67, 0.5);
+    transform: translateY(-1px);
+}
+
+/* Görev Çekmecesi Rollback ve Diff Rozetleri */
+.gh-rollback-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 71, 87, 0.15);
+    border: 1px solid rgba(255, 71, 87, 0.4);
+    color: #ff4757;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.gh-rollback-btn:hover {
+    background: rgba(255, 71, 87, 0.25);
+    border-color: #ff4757;
+    transform: translateY(-1px);
+}
+
+.gh-diff-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-white);
+    font-size: 11.5px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.gh-diff-link:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
 }

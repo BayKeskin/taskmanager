@@ -188,12 +188,12 @@ async function openTaskDrawer(taskId) {
 
                         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                             ${repoUrl ? `
-                                <a href="${repoUrl}" target="_blank" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:var(--text-white); font-size:11px; text-decoration:none; padding:4px 8px; border-radius:4px;">
+                                <a href="${repoUrl}" target="_blank" class="gh-diff-link">
                                     <span>🔗</span> ${escapeHtml(dI18n.view_diff || _bI18n.view_diff || 'View Diff')}
                                 </a>
                             ` : ''}
                             ${!isReverted && submission.commit_hash ? `
-                                <button type="button" class="cu-btn-sm" onclick="rollbackTask(${task.id}, 'safe')" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,71,87,0.15); border:1px solid rgba(255,71,87,0.4); color:#ff4757; font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer;" title="${escapeHtml(dI18n.btn_rollback || _bI18n.btn_rollback || 'Rollback Changes')}">
+                                <button type="button" class="gh-rollback-btn" onclick="rollbackTask(${task.id}, 'safe')" title="${escapeHtml(dI18n.btn_rollback || _bI18n.btn_rollback || 'Rollback Changes')}">
                                     <span>⏪</span> ${escapeHtml(dI18n.btn_rollback || _bI18n.btn_rollback || 'Rollback Changes')}
                                 </button>
                             ` : ''}

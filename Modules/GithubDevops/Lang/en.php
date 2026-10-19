@@ -61,4 +61,5 @@ YOUR TASK:
   'rollback_success' => 'Rollback completed successfully.',
   'rollback_failed' => 'Rollback failed.',
   'default_schema_tables' => 'Default schema tables',
+  'toggle_token_title' => 'Show or Hide Token',
 );
