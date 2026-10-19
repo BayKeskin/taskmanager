@@ -26,6 +26,215 @@ window.AiArchitect = {
     }
 };
 
+window.aiArchitectFiles = [];
+
+function toggleAiArchitectPanel() {
+    const body = document.getElementById('aiArchitectPanelBody');
+    const icon = document.getElementById('aiArchitectToggleIcon');
+    if (!body) return;
+    const isHidden = body.style.display === 'none' || body.style.display === '';
+    body.style.display = isHidden ? 'block' : 'none';
+    if (icon) icon.innerText = isHidden ? '▲' : '▼';
+    if (isHidden) {
+        setTimeout(() => {
+            const txt = document.getElementById('aiArchitectInstruction');
+            if (txt) txt.focus();
+        }, 50);
+    }
+}
+
+function handleAiArchitectFiles(files) {
+    if (!files || files.length === 0) return;
+    for (let i = 0; i < files.length; i++) {
+        window.aiArchitectFiles.push(files[i]);
+    }
+    renderAiArchitectFiles();
+    const fileInput = document.getElementById('aiArchitectFileInput');
+    if (fileInput) fileInput.value = '';
+
+    // Eklenen dosyaları/görselleri otomatik olarak görevin ana eklerine de dahil et
+    if (typeof handleModalNewTaskFiles === 'function') {
+        handleModalNewTaskFiles(files);
+    }
+}
+
+function removeAiArchitectFile(index) {
+    if (index >= 0 && index < window.aiArchitectFiles.length) {
+        window.aiArchitectFiles.splice(index, 1);
+        renderAiArchitectFiles();
+    }
+}
+
+function renderAiArchitectFiles() {
+    const previewContainer = document.getElementById('aiArchitectFilesPreview');
+    if (!previewContainer) return;
+    previewContainer.innerHTML = '';
+
+    const removeText = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.ai_arch_remove_file) ? window.AI_ARCHITECT_I18N.ai_arch_remove_file : 'Kaldır';
+
+    window.aiArchitectFiles.forEach((file, idx) => {
+        const item = document.createElement('div');
+        item.style.cssText = 'position:relative; display:flex; align-items:center; gap:5px; background:var(--bg-card); border:1px solid rgba(123, 104, 238, 0.3); border-radius:var(--radius-sm); padding:3px 8px; font-size:11px; max-width:200px;';
+
+        const isImage = file.type.startsWith('image/');
+        const isCode = /\.(php|js|blade\.php|sql|html|css|json|txt|py)$/i.test(file.name);
+        const iconSpan = document.createElement('span');
+        iconSpan.innerText = isImage ? '🖼️' : (isCode ? '💻' : '📄');
+
+        const nameSpan = document.createElement('span');
+        nameSpan.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; color:var(--text-white); font-weight:500; font-size:10.5px;';
+        nameSpan.innerText = file.name;
+        nameSpan.title = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.innerHTML = '✕';
+        delBtn.style.cssText = 'background:none; border:none; color:#ff4757; cursor:pointer; font-size:11px; font-weight:700; padding:0 2px;';
+        delBtn.title = removeText;
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            removeAiArchitectFile(idx);
+        };
+
+        item.appendChild(iconSpan);
+        item.appendChild(nameSpan);
+        item.appendChild(delBtn);
+        previewContainer.appendChild(item);
+    });
+}
+
+function handleAiArchitectDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dz = document.getElementById('aiArchitectDropzone');
+    if (dz) {
+        dz.style.borderColor = 'var(--brand-primary)';
+        dz.style.background = 'rgba(123, 104, 238, 0.15)';
+    }
+}
+
+function handleAiArchitectDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dz = document.getElementById('aiArchitectDropzone');
+    if (dz) {
+        dz.style.borderColor = 'rgba(123, 104, 238, 0.35)';
+        dz.style.background = 'rgba(0,0,0,0.1)';
+    }
+}
+
+function handleAiArchitectDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    handleAiArchitectDragLeave(e);
+    if (e.dataTransfer && e.dataTransfer.files) {
+        handleAiArchitectFiles(e.dataTransfer.files);
+    }
+}
+
+async function runAiArchitect() {
+    const instEl = document.getElementById('aiArchitectInstruction');
+    const instruction = instEl ? instEl.value.trim() : '';
+    const promptReqText = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.empty_instruction) ? window.AI_ARCHITECT_I18N.empty_instruction : 'Lütfen ne yapmak istediğinize dair kısa bir açıklama girin.';
+    if (!instruction) {
+        if (typeof showToast === 'function') {
+            showToast(promptReqText, 'warning');
+        } else {
+            alert(promptReqText);
+        }
+        if (instEl) instEl.focus();
+        return;
+    }
+
+    const projSelect = document.getElementById('modalNewTaskProjectSelect') || document.querySelector('#modalNewTask select[name="project_id"]');
+    const projectId = projSelect ? projSelect.value : 1;
+
+    const btn = document.getElementById('btnRunAiArchitect');
+    const btnText = document.getElementById('btnRunAiArchitectText');
+    const origText = btnText ? btnText.innerText : 'Şartname Üret';
+
+    if (btn) btn.disabled = true;
+    if (btnText) btnText.innerText = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.analyzing_btn) ? window.AI_ARCHITECT_I18N.analyzing_btn : 'Mimar analiz ediyor...';
+
+    const formData = new FormData();
+    formData.append('project_id', projectId);
+    formData.append('instruction', instruction);
+
+    // Eklenen referans görseller ve kod dosyalarını ayırarak ekle
+    window.aiArchitectFiles.forEach(file => {
+        if (file.type.startsWith('image/')) {
+            formData.append('images[]', file);
+        } else {
+            formData.append('code_files[]', file);
+        }
+    });
+
+    try {
+        const res = await fetch('/taskmanager/ajax?action=refine_task_specification', {
+            method: 'POST',
+            body: formData
+        });
+        const d = await res.json();
+
+        if (d.success && d.data && d.data.specification) {
+            const descArea = document.getElementById('modalNewTaskDescription');
+            if (descArea) {
+                descArea.value = d.data.specification;
+                descArea.style.borderColor = 'var(--brand-primary)';
+                descArea.style.boxShadow = '0 0 0 3px rgba(123, 104, 238, 0.2)';
+                setTimeout(() => {
+                    descArea.style.borderColor = '';
+                    descArea.style.boxShadow = '';
+                }, 2000);
+            }
+
+            // Görev başlığı henüz boşsa veya varsayılansa, kısa nottan anlamlı bir başlık ata
+            const titleInput = document.getElementById('modalNewTaskTitleInput');
+            if (titleInput && (!titleInput.value.trim() || titleInput.value.length < 5)) {
+                let cleanTitle = instruction.split('\n')[0].replace(/[.,;:].*$/, '').trim();
+                if (cleanTitle.length > 60) cleanTitle = cleanTitle.substring(0, 57) + '...';
+                titleInput.value = cleanTitle;
+            }
+
+            // Ayrıca yüklenen resimler varsa, doğrudan görevin eklerine de otomatik kopyala
+            if (window.aiArchitectFiles.length > 0) {
+                const imgFiles = window.aiArchitectFiles.filter(f => f.type.startsWith('image/'));
+                if (imgFiles.length > 0 && typeof handleModalNewTaskFiles === 'function') {
+                    handleModalNewTaskFiles(imgFiles);
+                }
+            }
+
+            const successMsg = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.spec_generated_success) ? window.AI_ARCHITECT_I18N.spec_generated_success : 'Teknik şartname üretildi!';
+            if (typeof showToast === 'function') {
+                showToast(successMsg, 'success');
+            }
+        } else {
+            const failMsg = d.message || ((window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.spec_generate_failed) ? window.AI_ARCHITECT_I18N.spec_generate_failed : 'Şartname üretilemedi.');
+            if (typeof showToast === 'function') {
+                showToast(failMsg, 'error');
+            }
+        }
+    } catch(err) {
+        const connErr = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.conn_error_toast) ? window.AI_ARCHITECT_I18N.conn_error_toast : 'Bağlantı hatası';
+        if (typeof showToast === 'function') {
+            showToast(connErr, 'error');
+        }
+    } finally {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.innerText = origText;
+    }
+}
+
+// Global scope export
+window.toggleAiArchitectPanel = toggleAiArchitectPanel;
+window.handleAiArchitectFiles = handleAiArchitectFiles;
+window.removeAiArchitectFile = removeAiArchitectFile;
+window.renderAiArchitectFiles = renderAiArchitectFiles;
+window.handleAiArchitectDragOver = handleAiArchitectDragOver;
+window.handleAiArchitectDragLeave = handleAiArchitectDragLeave;
+window.handleAiArchitectDrop = handleAiArchitectDrop;
+window.runAiArchitect = runAiArchitect;
+
 /* ==========================================================================
    AI PROJE MİMARI & SÜRÜKLE-BIRAK GÖREV AĞACI (TASK DECOMPOSER)
    ========================================================================== */
@@ -535,4 +744,31 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnApprove) {
         btnApprove.addEventListener('click', submitAiArchitectTree);
     }
+
+    // New Task Modal AI Architect Paneli & Buton Dinleyicileri
+    const btnTogglePanel = document.getElementById('btnToggleAiArchitectPanel');
+    if (btnTogglePanel) {
+        btnTogglePanel.addEventListener('click', toggleAiArchitectPanel);
+    }
+
+    const archDropzone = document.getElementById('aiArchitectDropzone');
+    const archFileInput = document.getElementById('aiArchitectFileInput');
+    if (archDropzone && archFileInput) {
+        archDropzone.addEventListener('click', function() {
+            archFileInput.click();
+        });
+        archDropzone.addEventListener('dragover', handleAiArchitectDragOver);
+        archDropzone.addEventListener('dragleave', handleAiArchitectDragLeave);
+        archDropzone.addEventListener('drop', handleAiArchitectDrop);
+
+        archFileInput.addEventListener('change', function() {
+            handleAiArchitectFiles(this.files);
+        });
+    }
+
+    const btnRunArchitect = document.getElementById('btnRunAiArchitect');
+    if (btnRunArchitect) {
+        btnRunArchitect.addEventListener('click', runAiArchitect);
+    }
 });
+
