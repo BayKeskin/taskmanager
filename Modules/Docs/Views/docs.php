@@ -20,7 +20,7 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
     </div>
 
     <div class="cu-filter-bar cu-docs-filter-bar">
-        <button type="button" class="cu-btn-sm cu-mobile-docs-toggle cu-hidden">
+        <button type="button" class="cu-btn-sm cu-mobile-docs-toggle">
             <span>📂</span> <span><?= __('Docs::docs_mobile_btn') ?></span>
         </button>
         <?php if (!$isClient): ?>
