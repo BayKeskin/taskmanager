@@ -99,7 +99,7 @@ class RestApiController extends BaseController
         }
         $segments = $path !== '' ? explode('/', $path) : [];
 
-        $publicRoutes = ['', 'health', 'status', 'auth/login', 'webhooks/listener', 'visual-feedback'];
+        $publicRoutes = ['', 'health', 'status', 'auth/login', 'webhooks/listener', 'visual-feedback', 'dispatcher', 'dispatcher/status'];
         $isPublic = in_array($path, $publicRoutes) 
             || (count($segments) >= 2 && $segments[0] === 'auth' && $segments[1] === 'login') 
             || (count($segments) >= 2 && $segments[0] === 'webhooks' && $segments[1] === 'listener');
@@ -162,10 +162,17 @@ class RestApiController extends BaseController
         if ($resource === 'dispatcher') {
             $dispatcherService = new \Modules\Dispatcher\Services\DispatcherService();
             $running = $dispatcherService->isRunning();
+            $dispatcherModel = new \Modules\Dispatcher\Models\DispatcherModel();
+            $queuedAiTasks = $dispatcherModel->getQueuedAiTasks();
+
             $this->apiResponse([
-                'status'  => 'success',
-                'running' => $running,
-                'message' => $running ? 'Dispatcher is active and running' : 'Dispatcher is currently stopped'
+                'status'           => 'success',
+                'running'          => $running,
+                'port'             => 4000,
+                'webhook_endpoint' => 'http://localhost:4000/webhook',
+                'queued_count'     => count($queuedAiTasks),
+                'queued_tasks'     => $queuedAiTasks,
+                'message'          => $running ? 'Dispatcher is active and running' : 'Dispatcher is currently stopped'
             ], __('RestApi::operation_successful'));
         }
 

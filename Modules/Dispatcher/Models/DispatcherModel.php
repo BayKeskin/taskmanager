@@ -10,10 +10,19 @@ class DispatcherModel extends BaseModel
      */
     public function getQueuedAiTasks(?int $projectId = null): array
     {
-        $sql = "SELECT t.*, p.project_code, p.title as project_title, p.workspace_path 
+        $sql = "SELECT t.id, t.project_id, t.task_code, t.title, t.tags, t.status, t.priority,
+                       p.project_code, p.title as project_title, p.workspace_path 
                 FROM tasks t
                 JOIN projects p ON t.project_id = p.id
-                WHERE t.status = 'assigned' AND t.is_ai = 1";
+                WHERE t.status = 'assigned'
+                  AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = t.id)
+                  AND (
+                      LOWER(t.tags) LIKE '%ai%' 
+                      OR LOWER(t.tags) LIKE '%otonom%' 
+                      OR LOWER(t.tags) LIKE '%agent%'
+                      OR LOWER(t.tags) LIKE '%yapay zeka%'
+                      OR LOWER(t.tags) LIKE '%antigravity%'
+                  )";
         $params = [];
         if ($projectId) {
             $sql .= " AND t.project_id = ?";

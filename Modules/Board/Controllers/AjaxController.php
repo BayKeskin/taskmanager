@@ -318,6 +318,10 @@ switch ($action) {
                 'user_name'   => $currentUser->name
             ]);
 
+            if (\Modules\Board\Services\TaskLifecycleService::isAiTask($tags)) {
+                \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable($projectId);
+            }
+
             jsonResponse(true, __('Board::task_created_success'), ['task_id' => $newTaskId, 'task_code' => $taskCode]);
         } else {
             jsonResponse(false, __('Board::task_create_error'));
