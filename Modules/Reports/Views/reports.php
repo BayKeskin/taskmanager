@@ -111,14 +111,14 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
                 <div class="cu-rep-proj-item">
                     <div class="cu-rep-proj-header">
                         <div class="cu-rep-proj-meta">
-                            <span class="cu-rep-proj-dot"></span>
+                            <span class="cu-rep-proj-dot" data-color="<?= htmlspecialchars($ps->color ?: '#7B68EE') ?>"></span>
                             <span class="cu-rep-proj-name"><?= htmlspecialchars($ps->title) ?></span>
                             <span class="cu-rep-proj-code">(<?= htmlspecialchars($ps->project_code) ?>)</span>
                         </div>
                         <span class="cu-rep-proj-rate-text"><?= str_replace([':rate', ':completed', ':total'], [$pRate, $ps->completed_tasks, $ps->total_tasks], __('Reports::rep_proj_completed_info')) ?></span>
                     </div>
                     <div class="cu-rep-proj-track">
-                        <div class="cu-rep-proj-bar"></div>
+                        <div class="cu-rep-proj-bar" data-rate="<?= (float)$pRate ?>" data-color="<?= htmlspecialchars($ps->color ?: '#7B68EE') ?>"></div>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -149,7 +149,7 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
                     ?>
                         <tr class="cu-rep-tbody-row">
                             <td class="cu-rep-td cu-rep-td-member">
-                                <div class="cu-avatar cu-rep-avatar">
+                                <div class="cu-avatar cu-rep-avatar" data-avatar-color="<?= htmlspecialchars($member->avatar_color ?: '#7B68EE') ?>">
                                     <?= mb_substr($member->name, 0, 1) ?>
                                 </div>
                                 <span class="cu-rep-member-name"><?= htmlspecialchars($member->name) ?></span>

@@ -157,7 +157,7 @@
 /* KPI Grid */
 .cu-rep-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 16px;
     margin-bottom: 24px;
 }
@@ -166,9 +166,20 @@
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     padding: 18px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+.cu-rep-kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(123, 104, 238, 0.35);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 .cu-rep-kpi-card-danger {
     border-color: rgba(255, 71, 87, 0.3);
+}
+.cu-rep-kpi-card-danger:hover {
+    border-color: rgba(255, 71, 87, 0.6);
+    box-shadow: 0 8px 24px rgba(255, 71, 87, 0.2);
 }
 .cu-rep-kpi-label {
     font-size: 11.5px;
@@ -213,6 +224,7 @@
     border-radius: var(--radius-md);
     padding: 20px;
     margin-bottom: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 .cu-rep-section-title {
     font-size: 14px;
@@ -233,6 +245,11 @@
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     padding: 14px;
+    transition: all 0.2s ease;
+}
+.cu-rep-proj-item:hover {
+    border-color: rgba(123, 104, 238, 0.3);
+    background: rgba(255, 255, 255, 0.02);
 }
 .cu-rep-proj-header {
     display: flex;
@@ -250,6 +267,7 @@
     width: 10px;
     height: 10px;
     border-radius: 3px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
 .cu-rep-proj-name {
     font-weight: 600;

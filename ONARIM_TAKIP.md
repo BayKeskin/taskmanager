@@ -1,8 +1,8 @@
-# Projects Modülü Onarım ve Fark Takip Listesi (`Modules/Projects`)
+# Reports Modülü Onarım ve Fark Takip Listesi (`Modules/Reports`)
 
-Bu dosya, Projects modülündeki görsel/CSS, mimari ve işlevsel eksiklikleri adım adım çözmek ve takip etmek için oluşturulmuştur.
+Bu dosya, Reports modülündeki görsel/CSS, mimari ve işlevsel eksiklikleri adım adım çözmek ve takip etmek için oluşturulmuştur.
 
-- [x] 1. [Görsel/CSS] Yeni Proje (`#modalNewProject`) ve Proje Düzenleme (`#modalEditProject`) modallarına ClickUp koyu teması ile tam uyumlu modern gölgelendirme (`box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 30px rgba(123, 104, 238, 0.15)`), kart/modal pop-in açılış animasyonu (`projModalPopIn`) ve belirgin border vurgusu eklendi.
-- [x] 2. [Görsel/CSS] Proje Düzenleme modalındaki eylem butonları (`#btnRefineRulesEdit`, `#btnSyncRulesEdit`, `#btnOpenDeployWizardEdit`, `#btnOpenMcpModalEdit`, `#btnTestWebhookEdit`) için modern hover/focus geçişleri, ikon hizalamaları ve mikro-etkileşim stilleri güçlendirildi.
-- [x] 3. [Görsel/CSS] `projects_list.php` içindeki proje kartları (`.cu-project-card`) için hover kalkma animasyonu (`translateY(-2px)`), gölge (`box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3)`), mor kod rozeti (`.cu-proj-card-code`) ve nokta parlama efekti ClickUp standartlarına taşındı.
-- [x] 4. [Denetim & Doğrulama] `php tests/audit_module.php Projects` denetimi çalıştırılarak sıfır ihlal (`[PASS]`) doğrulandı ve canlı sistemde modallar test edildi.
+- [x] 1. [İşlev/CSS] `reports.php` içindeki proje ilerleme çubukları (`.cu-rep-proj-bar`) ve proje renk noktaları (`.cu-rep-proj-dot`) veritabanındaki dinamik proje rengi ve tamamlama oranını yansıtması sağlandı; `data-rate`, `data-color` öznitelikleri ve `reports.js` dinamik DOM senkronizasyonu ile canlandırıldı.
+- [x] 2. [İşlev/CSS] Ekip üyesi performans tablosundaki avatarlar (`.cu-rep-avatar`) veritabanındaki kullanıcı renklerini (`data-avatar-color`) alacak şekilde yapılandırıldı; `reports.js` ile dinamik arka plan rengi ve harf kontrastı uygulandı.
+- [x] 3. [Görsel/CSS] KPI metrik kartları (`.cu-rep-kpi-card`), Hakediş Özeti kutusu (`.cu-rep-billing-box`) ve analitik bölümleri için modern kart gölgeleri, hover derinlik efektleri (`translateY(-2px)`) ve duyarlı (responsive) ızgara kuralları eklendi.
+- [x] 4. [Denetim & Doğrulama] `php tests/audit_module.php Reports` denetimi çalıştırılarak sıfır ihlal (`[PASS]`) doğrulandı ve canlı sistemde `http://localhost/taskmanager/reports` sayfası test edildi.
