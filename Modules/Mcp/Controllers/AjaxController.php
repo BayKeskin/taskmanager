@@ -28,9 +28,9 @@ class AjaxController extends BaseController
         $pId = (int)($_GET['project_id'] ?? ($_POST['project_id'] ?? 0));
         $res = $this->mcpCtrl->getProjectMcps($pId);
         if (!empty($res['success'])) {
-            $this->respond(true, 'MCP listesi getirildi.', $res);
+            $this->respond(true, __('Mcp::list_retrieved'), $res);
         } else {
-            $this->respond(false, $res['error'] ?? 'Hata oluştu.');
+            $this->respond(false, $res['error'] ?? __('Mcp::error_occurred'));
         }
     }
 
@@ -44,9 +44,9 @@ class AjaxController extends BaseController
 
         $res = $this->mcpCtrl->saveProjectMcp($pId, $catalogId, $isEnabled, $envValues, $customArgs);
         if (!empty($res['success'])) {
-            $this->respond(true, $res['message'] ?? 'MCP kaydedildi.', $res);
+            $this->respond(true, $res['message'] ?? __('Mcp::settings_saved'), $res);
         } else {
-            $this->respond(false, $res['error'] ?? 'Kaydedilemedi.');
+            $this->respond(false, $res['error'] ?? __('Mcp::save_fail'));
         }
     }
 
@@ -58,9 +58,9 @@ class AjaxController extends BaseController
 
         $res = $this->mcpCtrl->toggleProjectMcp($pId, $catalogId, $isEnabled);
         if (!empty($res['success'])) {
-            $this->respond(true, 'MCP durumu güncellendi.', $res);
+            $this->respond(true, __('Mcp::status_updated'), $res);
         } else {
-            $this->respond(false, $res['error'] ?? 'Güncellenemedi.');
+            $this->respond(false, $res['error'] ?? __('Mcp::update_failed'));
         }
     }
 
@@ -69,9 +69,9 @@ class AjaxController extends BaseController
         $pId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
         $res = $this->mcpCtrl->syncFiles($pId);
         if (!empty($res['success'])) {
-            $this->respond(true, 'MCP dosyaları başarıyla senkronize edildi.', $res);
+            $this->respond(true, __('Mcp::sync_success'), $res);
         } else {
-            $this->respond(false, $res['result']['error'] ?? 'Senkronizasyon başarısız.');
+            $this->respond(false, $res['result']['error'] ?? __('Mcp::sync_failed'));
         }
     }
 }

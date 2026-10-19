@@ -40,4 +40,13 @@ return array (
   'mcp_not_found' => 'Aradığınız kriterlere uygun MCP aracı bulunamadı.',
   'mcp_not_found_hint' => 'Arama teriminizi veya kategori filtresini değiştirin.',
   'mcp_footer_info' => 'Aktif edilen araçlar Antigravity IDE açıldığında otomatik olarak projenizin <code>.agents/mcp_config.json</code> dosyasından okunur.',
+  'list_retrieved' => 'MCP listesi getirildi.',
+  'error_occurred' => 'Hata oluştu.',
+  'status_updated' => 'MCP durumu güncellendi.',
+  'update_failed' => 'Güncellenemedi.',
+  'sync_failed' => 'Senkronizasyon başarısız.',
+  'project_not_found' => 'Proje bulunamadı.',
+  'invalid_workspace_path' => 'Geçerli bir yerel proje klasörü (workspace_path) bulunamadı.',
+  'btn_cancel' => 'İptal',
+  'btn_save' => 'Kaydet',
 );

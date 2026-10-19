@@ -442,3 +442,62 @@ window.triggerMcpSync = async function() {
         if (btn) btn.disabled = false;
     }
 };
+
+// Event Listeners Initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Sync Button
+    const syncBtn = document.getElementById('btnSyncMcpFiles');
+    if (syncBtn) {
+        syncBtn.addEventListener('click', function() {
+            if (typeof window.triggerMcpSync === 'function') {
+                window.triggerMcpSync();
+            }
+        });
+    }
+
+    // Category Tabs Delegation
+    const catTabs = document.getElementById('mcpCategoryTabs');
+    if (catTabs) {
+        catTabs.addEventListener('click', function(e) {
+            const btn = e.target.closest('.mcp-cat-pill');
+            if (btn && btn.dataset.cat && typeof window.selectMcpCategory === 'function') {
+                window.selectMcpCategory(btn.dataset.cat);
+            }
+        });
+    }
+
+    // Search Input
+    const searchInput = document.getElementById('mcpSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            if (typeof window.filterMcpCards === 'function') {
+                window.filterMcpCards();
+            }
+        });
+    }
+
+    // Config Form Submit
+    const configForm = document.getElementById('formMcpConfig');
+    if (configForm) {
+        configForm.addEventListener('submit', function(e) {
+            if (typeof window.handleMcpConfigSubmit === 'function') {
+                window.handleMcpConfigSubmit(e);
+            }
+        });
+    }
+
+    // Modal Close Buttons (data-close-modal)
+    document.addEventListener('click', function(e) {
+        const closeBtn = e.target.closest('[data-close-modal]');
+        if (closeBtn) {
+            const modalId = closeBtn.getAttribute('data-close-modal');
+            if (modalId && typeof closeModal === 'function') {
+                closeModal(modalId);
+            }
+        } else if (e.target.classList.contains('cu-modal-overlay') && e.target.id) {
+            if (typeof closeModal === 'function') {
+                closeModal(e.target.id);
+            }
+        }
+    });
+});

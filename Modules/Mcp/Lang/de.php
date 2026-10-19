@@ -40,4 +40,13 @@ return array (
   'mcp_not_found' => 'Kein MCP-Tool gefunden, das Ihren Suchkriterien entspricht.',
   'mcp_not_found_hint' => 'Ändern Sie Ihren Suchbegriff oder den Kategoriefilter.',
   'mcp_footer_info' => 'Aktivierte Werkzeuge werden von der Antigravity IDE automatisch aus der Datei <code>.agents/mcp_config.json</code> Ihres Projekts gelesen.',
+  'list_retrieved' => 'MCP-Liste abgerufen.',
+  'error_occurred' => 'Ein Fehler ist aufgetreten.',
+  'status_updated' => 'MCP-Status aktualisiert.',
+  'update_failed' => 'Konnte nicht aktualisiert werden.',
+  'sync_failed' => 'Synchronisierung fehlgeschlagen.',
+  'project_not_found' => 'Projekt nicht gefunden.',
+  'invalid_workspace_path' => 'Ein gültiger lokaler Projektordner (workspace_path) wurde nicht gefunden.',
+  'btn_cancel' => 'Abbrechen',
+  'btn_save' => 'Speichern',
 );

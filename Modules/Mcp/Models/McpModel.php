@@ -94,7 +94,7 @@ class McpModel extends BaseModel
         $projectRows = $this->query("SELECT id, project_code, workspace_path FROM projects WHERE id = ? LIMIT 1", [$projectId]);
         $project = !empty($projectRows) ? (object)$projectRows[0] : null;
         if (!$project || empty($project->workspace_path) || !is_dir($project->workspace_path)) {
-            return ['synced' => false, 'error' => 'Geçerli bir yerel proje klasörü (workspace_path) bulunamadı.'];
+            return ['synced' => false, 'error' => __('Mcp::invalid_workspace_path')];
         }
 
         $workspacePath = rtrim(str_replace('\\', '/', $project->workspace_path), '/');

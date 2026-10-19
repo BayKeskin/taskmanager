@@ -26,7 +26,7 @@ class McpController extends BaseController
     {
         $project = $this->projectModel ? $this->projectModel->getProjectById($projectId) : null;
         if (!$project) {
-            return ['success' => false, 'error' => 'Proje bulunamadı.'];
+            return ['success' => false, 'error' => __('Mcp::project_not_found')];
         }
 
         $mcps = $this->mcpModel->getProjectMcps($projectId);
@@ -49,14 +49,14 @@ class McpController extends BaseController
     {
         $ok = $this->mcpModel->saveProjectMcp($projectId, $mcpCatalogId, $isEnabled, $envValues, $customArgs);
         if (!$ok) {
-            return ['success' => false, 'error' => __('Mcp::save_fail', 'MCP ayarları kaydedilemedi.')];
+            return ['success' => false, 'error' => __('Mcp::save_fail')];
         }
 
         $syncResult = $this->mcpModel->syncProjectMcpFiles($projectId);
 
         return [
             'success' => true,
-            'message' => __('Mcp::settings_saved', 'MCP ayarları başarıyla kaydedildi.'),
+            'message' => __('Mcp::settings_saved'),
             'sync' => $syncResult
         ];
     }
