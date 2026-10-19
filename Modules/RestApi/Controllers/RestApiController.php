@@ -158,6 +158,17 @@ class RestApiController extends BaseController
             ], __('RestApi::operation_successful'));
         }
 
+        // DISPATCHER STATUS ENDPOINT
+        if ($resource === 'dispatcher') {
+            $dispatcherService = new \Modules\Dispatcher\Services\DispatcherService();
+            $running = $dispatcherService->isRunning();
+            $this->apiResponse([
+                'status'  => 'success',
+                'running' => $running,
+                'message' => $running ? 'Dispatcher is active and running' : 'Dispatcher is currently stopped'
+            ], __('RestApi::operation_successful'));
+        }
+
         // VISUAL PIN FEEDBACK
         if ($resource === 'visual-feedback' && $method === 'POST') {
             $pinController = new \Modules\VisualPins\Controllers\PinController();
