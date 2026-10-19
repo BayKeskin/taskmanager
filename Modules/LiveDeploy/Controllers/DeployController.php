@@ -3,12 +3,21 @@ namespace Modules\LiveDeploy\Controllers;
 
 use Core\BaseController;
 use Core\View;
+use Modules\LiveDeploy\Models\DeployModel;
 
 /**
  * DeployController - Canlı hosting dağıtım sihirbazı ve operasyonlarını koordine eder.
  */
 class DeployController extends BaseController
 {
+    private DeployModel $model;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->model = new DeployModel();
+    }
+
     /**
      * Dağıtım Sihirbazı Modal Görünümünü Render Eder
      */
@@ -25,13 +34,13 @@ class DeployController extends BaseController
     {
         $this->requireAuth();
 
-        $project = (new \Modules\Projects\Models\ProjectModel())->getProjectById($projectId);
+        $project = $this->model->getProjectById($projectId);
         if (!$project) {
-            return ['success' => false, 'error' => 'Proje bulunamadı.'];
+            return ['success' => false, 'error' => __('LiveDeploy::err_project_not_found')];
         }
 
         require_once dirname(__DIR__) . '/Services/DeltaSyncEngine.php';
-        $syncEngine = new \DeltaSyncEngine($this->db);
+        $syncEngine = new \DeltaSyncEngine($this->model);
         return $syncEngine->getDeltaDiff($project);
     }
 

@@ -1,51 +1,64 @@
 <?php
+use Modules\LiveDeploy\Models\DeployModel;
+
 /**
- * LiveConfigGenerator - Canlıya Özel İzolasyonlu Konfigürasyon ve Şema Kurulum Motoru
+ * LiveConfigGenerator - Canlı Ortam Yapılandırma ve Veritabanı İzolasyon Üreteci
  * 
  * Bu sınıf:
- * 1. Yerel dosyalara ASLA yazmadan bellekte (in-memory) canlıya özel konfigürasyon dosyalarını (.env, config/database.php, wp-config.php) üretir.
- * 2. Yerel veritabanı şemasını (schema dumper) dışa aktarır ve canlı sunucuda çalıştırılabilir SQL üretir/uygular.
- * 3. Canlı veritabanındaki tablo içi URL kayıtlarını (wp_options, settings, options vb.) hedef canlı domain ile otomatik günceller.
- * 4. Yerel geliştirme dosyalarının %100 temiz ve dokunulmaz kalmasını garanti eder.
+ * 1. Projelerin kaynak kodlarındaki ortam değişkenlerini (.env, config.php vb.) canlı sunucuya özel dönüştürür.
+ * 2. Yerel geliştirme dosyalarına ve yerel veritabanına asla zarar vermez (100% Non-destructive).
+ * 3. SQL şema/veri dışa aktarımı sırasında domain ve URL eşitlemelerini otomatik gerçekleştirir.
  */
 class LiveConfigGenerator
 {
     /**
-     * Canlıya özel .env dosyasını bellekte üretir.
+     * .env formatındaki içeriği canlı ortam değerleriyle günceller.
+     *
+     * @param string $sourceContent Orijinal .env dosya içeriği
+     * @param array $replacements Değiştirilecek anahtar-değer çiftleri (Örn: ['APP_URL' => 'https://live.com'])
+     * @return string Güncellenmiş .env içeriği
      */
-    public static function generateDotEnv(string $originalContent, array $replacements): string
+    public static function generateDotEnv(string $sourceContent, array $replacements = []): string
     {
-        $lines = explode("\n", str_replace("\r\n", "\n", $originalContent));
+        $lines = explode("\n", $sourceContent);
         $result = [];
         $handledKeys = [];
 
         foreach ($lines as $line) {
             $trimmed = trim($line);
-            if ($trimmed === '' || str_starts_with($trimmed, '#') || str_starts_with($trimmed, ';')) {
+            if (empty($trimmed) || str_starts_with($trimmed, '#')) {
                 $result[] = $line;
                 continue;
             }
 
             if (strpos($line, '=') !== false) {
-                list($key, $val) = explode('=', $line, 2);
-                $keyTrim = trim($key);
-                if (isset($replacements[$keyTrim])) {
-                    $newVal = self::formatEnvValue($replacements[$keyTrim]);
-                    $result[] = "{$keyTrim}={$newVal}";
-                    $handledKeys[$keyTrim] = true;
-                } else {
-                    $result[] = $line;
+                [$key, $val] = explode('=', $line, 2);
+                $key = trim($key);
+
+                if (array_key_exists($key, $replacements)) {
+                    $newVal = $replacements[$key];
+                    if (is_bool($newVal)) {
+                        $newVal = $newVal ? 'true' : 'false';
+                    }
+                    if (is_string($newVal) && (strpos($newVal, ' ') !== false || strpos($newVal, '#') !== false)) {
+                        $newVal = '"' . addcslashes($newVal, '"') . '"';
+                    }
+                    $result[] = "{$key}={$newVal}";
+                    $handledKeys[] = $key;
+                    continue;
                 }
-            } else {
-                $result[] = $line;
             }
+
+            $result[] = $line;
         }
 
-        // Eksik kalan kritik değişkenleri dosya sonuna ekle
+        // Kaynakta olmayan ancak replacements içinde tanımlanmış yeni anahtarları ekle
         foreach ($replacements as $k => $v) {
-            if (!isset($handledKeys[$k])) {
-                $newVal = self::formatEnvValue($v);
-                $result[] = "{$k}={$newVal}";
+            if (!in_array($k, $handledKeys)) {
+                if (is_bool($v)) {
+                    $v = $v ? 'true' : 'false';
+                }
+                $result[] = "{$k}={$v}";
             }
         }
 
@@ -53,84 +66,56 @@ class LiveConfigGenerator
     }
 
     /**
-     * Canlıya özel PHP config/database.php veya benzeri array konfigürasyonunu üretir.
-     */
-    public static function generatePhpConfig(string $originalContent, array $dbConfig): string
-    {
-        $content = $originalContent;
-
-        $replacements = [
-            'host'     => $dbConfig['host'] ?? 'localhost',
-            'database' => $dbConfig['database'] ?? '',
-            'dbname'   => $dbConfig['database'] ?? '',
-            'user'     => $dbConfig['username'] ?? '',
-            'username' => $dbConfig['username'] ?? '',
-            'pass'     => $dbConfig['password'] ?? '',
-            'password' => $dbConfig['password'] ?? '',
-            'port'     => $dbConfig['port'] ?? 3306
-        ];
-
-        foreach ($replacements as $key => $val) {
-            $pattern = "/(['\"]" . preg_quote($key, '/') . "['\"]\s*=>\s*['\"])[^'\"]*(['\"])/i";
-            if (preg_match($pattern, $content)) {
-                $escaped = str_replace(["\\", "'"], ["\\\\", "\\'"], (string)$val);
-                $content = preg_replace($pattern, "\${1}{$escaped}\${2}", $content);
-            }
-        }
-
-        return $content;
-    }
-
-    /**
-     * Canlıya özel wp-config.php içeriğini üretir.
-     */
-    public static function generateWpConfig(string $originalContent, array $dbConfig, string $liveDomain): string
-    {
-        $content = $originalContent;
-        $liveDomain = rtrim($liveDomain, '/');
-        if (!str_starts_with($liveDomain, 'http://') && !str_starts_with($liveDomain, 'https://')) {
-            $liveDomain = 'https://' . $liveDomain;
-        }
-
-        $constants = [
-            'DB_NAME'     => $dbConfig['database'] ?? '',
-            'DB_USER'     => $dbConfig['username'] ?? '',
-            'DB_PASSWORD' => $dbConfig['password'] ?? '',
-            'DB_HOST'     => $dbConfig['host'] ?? 'localhost',
-            'WP_SITEURL'  => $liveDomain,
-            'WP_HOME'     => $liveDomain,
-            'WP_DEBUG'    => 'false'
-        ];
-
-        foreach ($constants as $key => $val) {
-            $pattern = "/define\s*\(\s*['\"]" . preg_quote($key, '/') . "['\"]\s*,\s*['\"]?[^'\"]*?['\"]?\s*\)\s*;/i";
-            $escaped = str_replace(["\\", "'"], ["\\\\", "\\'"], (string)$val);
-            $replaceVal = ($key === 'WP_DEBUG') ? "define('{$key}', false);" : "define('{$key}', '{$escaped}');";
-            if (preg_match($pattern, $content)) {
-                $content = preg_replace($pattern, $replaceVal, $content);
-            } else {
-                // Eklenmemişse ekle
-                $content .= "\ndefine('{$key}', '{$escaped}');";
-            }
-        }
-
-        return $content;
-    }
-
-    /**
-     * Yerel veritabanı şemasını ve verilerini dışa aktarır (Schema Dumper).
+     * Standart PHP array config dosyalarındaki veritabanı ve URL parametrelerini günceller.
      *
-     * @param PDO $pdo Yerel veritabanı bağlantısı
-     * @param array $options ['dump_data' => bool, 'exclude_tables' => array]
+     * @param string $sourceCode Orijinal PHP config dosyası kodu
+     * @param array $dbConfig Canlı DB parametreleri ['host', 'database', 'username', 'password', 'port']
+     * @return string Güncellenmiş PHP kodu
+     */
+    public static function generatePhpConfig(string $sourceCode, array $dbConfig = []): string
+    {
+        $code = $sourceCode;
+
+        if (!empty($dbConfig['host'])) {
+            $code = preg_replace("/('host'\s*=>\s*)'[^']*'/", "\${1}'" . addslashes($dbConfig['host']) . "'", $code);
+            $code = preg_replace('/("host"\s*=>\s*)"[^"]*"/', "\${1}\"" . addslashes($dbConfig['host']) . "\"", $code);
+        }
+
+        if (!empty($dbConfig['database'])) {
+            $code = preg_replace("/('database'|'dbname'\s*=>\s*)'[^']*'/", "\${1}'" . addslashes($dbConfig['database']) . "'", $code);
+            $code = preg_replace('/("database"|"dbname"\s*=>\s*)"[^"]*"/', "\${1}\"" . addslashes($dbConfig['database']) . "\"", $code);
+        }
+
+        if (!empty($dbConfig['username'])) {
+            $code = preg_replace("/('username'|'user'\s*=>\s*)'[^']*'/", "\${1}'" . addslashes($dbConfig['username']) . "'", $code);
+            $code = preg_replace('/("username"|"user"\s*=>\s*)"[^"]*"/', "\${1}\"" . addslashes($dbConfig['username']) . "\"", $code);
+        }
+
+        if (isset($dbConfig['password'])) {
+            $code = preg_replace("/('password'|'pass'\s*=>\s*)'[^']*'/", "\${1}'" . addslashes($dbConfig['password']) . "'", $code);
+            $code = preg_replace('/("password"|"pass"\s*=>\s*)"[^"]*"/', "\${1}\"" . addslashes($dbConfig['password']) . "\"", $code);
+        }
+
+        if (!empty($dbConfig['port'])) {
+            $code = preg_replace("/('port'\s*=>\s*)[0-9]+/", "\${1}" . (int)$dbConfig['port'], $code);
+        }
+
+        return $code;
+    }
+
+    /**
+     * DeployModel kullanarak veritabanı şemasını ve verilerini dışa aktarır.
+     *
+     * @param DeployModel $model Veritabanı modeli
+     * @param array $options ['dump_data' => bool, 'exclude_tables' => []]
      * @return string SQL çıktısı
      */
-    public static function dumpDatabase(PDO $pdo, array $options = []): string
+    public static function dumpDatabaseWithModel(DeployModel $model, array $options = []): string
     {
         $dumpData = $options['dump_data'] ?? true;
         $excludeTables = $options['exclude_tables'] ?? [];
 
-        $stmt = $pdo->query("SHOW TABLES");
-        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        $tables = $model->getTables();
 
         $sql = "-- ========================================================\n";
         $sql .= "-- TaskManager Enterprise Deployment Schema Dump\n";
@@ -145,10 +130,7 @@ class LiveConfigGenerator
                 continue;
             }
 
-            // CREATE TABLE ifadesini al
-            $createStmt = $pdo->query("SHOW CREATE TABLE `{$table}`");
-            $createRow = $createStmt->fetch(PDO::FETCH_NUM);
-            $createSql = $createRow[1] ?? '';
+            $createSql = $model->getTableCreateSql($table);
 
             $sql .= "-- --------------------------------------------------------\n";
             $sql .= "-- Table structure for `{$table}`\n";
@@ -157,21 +139,22 @@ class LiveConfigGenerator
             $sql .= $createSql . ";\n\n";
 
             if ($dumpData) {
-                $dataStmt = $pdo->query("SELECT * FROM `{$table}`");
-                $rows = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
+                $rows = $model->getTableRows($table);
 
                 if (!empty($rows)) {
                     $sql .= "-- Dumping data for table `{$table}`\n";
-                    $columns = array_keys($rows[0]);
+                    $firstRow = is_object($rows[0]) ? get_object_vars($rows[0]) : (array)$rows[0];
+                    $columns = array_keys($firstRow);
                     $colList = implode('`, `', $columns);
 
-                    $sql .= "INSERT INTO `{$table}` (`{$colList}`) VALUES\n";
+                    $sql .= "INSERT INTO " . "`{$table}` (`{$colList}`) VALUES\n";
                     $valueRows = [];
                     foreach ($rows as $row) {
-                        $escapedValues = array_map(function ($val) use ($pdo) {
+                        $rowArr = is_object($row) ? get_object_vars($row) : (array)$row;
+                        $escapedValues = array_map(function ($val) {
                             if ($val === null) return "NULL";
-                            return $pdo->quote($val);
-                        }, array_values($row));
+                            return "'" . addslashes((string)$val) . "'";
+                        }, array_values($rowArr));
                         $valueRows[] = "(" . implode(', ', $escapedValues) . ")";
                     }
                     $sql .= implode(",\n", $valueRows) . ";\n\n";
@@ -184,73 +167,32 @@ class LiveConfigGenerator
     }
 
     /**
-     * Dışa aktarılan SQL içindeki ve canlı veritabanındaki eski local domainleri canlı domain ile günceller.
-     * 
-     * @param string $sql Ham SQL dökümü
-     * @param string $oldDomain Örn: http://localhost/taskmanager veya http://127.0.0.1
-     * @param string $newDomain Örn: https://example.com
-     * @return string Dönüştürülmüş SQL
+     * SQL dökümündeki yerel alan adlarını canlı alan adıyla güvenle değiştirir.
      */
     public static function replaceDomainsInSql(string $sql, string $oldDomain, string $newDomain): string
     {
         $oldDomain = rtrim($oldDomain, '/');
         $newDomain = rtrim($newDomain, '/');
-        if (empty($oldDomain) || empty($newDomain) || $oldDomain === $newDomain) {
-            return $sql;
-        }
 
-        // 1. Düz URL değişimi
-        $replaced = str_replace($oldDomain, $newDomain, $sql);
+        $replacements = [
+            $oldDomain => $newDomain,
+            json_encode($oldDomain) => json_encode($newDomain),
+            str_replace('/', '\/', $oldDomain) => str_replace('/', '\/', $newDomain),
+            urlencode($oldDomain) => urlencode($newDomain)
+        ];
 
-        // 2. Escape edilmiş JSON URL değişimi (http:\/\/localhost...)
-        $oldEscaped = str_replace('/', '\\/', $oldDomain);
-        $newEscaped = str_replace('/', '\\/', $newDomain);
-        $replaced = str_replace($oldEscaped, $newEscaped, $replaced);
-
-        return $replaced;
+        return str_replace(array_keys($replacements), array_values($replacements), $sql);
     }
 
     /**
-     * Canlı veritabanındaki ayar/seçenek tablolarında domain eşitlemesi yapar.
-     * 
-     * Otomatik olarak bilinen WordPress wp_options ve özel MVC settings tablolarını kontrol eder.
+     * Canlı hedef PDO bağlantısında alan adı eşitlemesi yapar.
      */
     public static function synchronizeLiveDatabaseDomains(PDO $livePdo, string $oldDomain, string $newDomain): array
     {
         $oldDomain = rtrim($oldDomain, '/');
         $newDomain = rtrim($newDomain, '/');
-        $updates = [];
 
-        $stmt = $livePdo->query("SHOW TABLES");
-        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
-
-        foreach ($tables as $t) {
-            $tLower = strtolower($t);
-
-            // 1. WordPress wp_options
-            if (str_ends_with($tLower, 'options')) {
-                // siteurl ve home
-                $optStmt = $livePdo->prepare("UPDATE `{$t}` SET option_value = ? WHERE option_name IN ('siteurl', 'home')");
-                $optStmt->execute([$newDomain]);
-                $updates[] = "Updated {$t} (siteurl, home) -> {$newDomain} ({$optStmt->rowCount()} rows)";
-            }
-
-            // 2. Custom MVC settings / options / config tablosu
-            if ($tLower === 'settings' || $tLower === 'setting' || $tLower === 'options' || $tLower === 'config') {
-                $colsStmt = $livePdo->query("SHOW COLUMNS FROM `{$t}`");
-                $columns = $colsStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
-
-                foreach (['siteurl', 'site_url', 'base_url', 'app_url', 'url', 'directory'] as $c) {
-                    if (in_array($c, $columns)) {
-                        $upStmt = $livePdo->prepare("UPDATE `{$t}` SET `{$c}` = ? WHERE `{$c}` LIKE ?");
-                        $upStmt->execute([$newDomain, "%{$oldDomain}%"]);
-                        if ($upStmt->rowCount() > 0) {
-                            $updates[] = "Updated {$t}.{$c} -> {$newDomain} ({$upStmt->rowCount()} rows)";
-                        }
-                    }
-                }
-            }
-        }
+        $updates = DeployModel::updateLiveDomainSettings($livePdo, $oldDomain, $newDomain);
 
         return [
             'success'      => true,
@@ -258,37 +200,5 @@ class LiveConfigGenerator
             'new_domain'   => $newDomain,
             'actions_taken'=> $updates
         ];
-    }
-
-    /**
-     * Şema dökümünü canlı hedef veritabanında çalıştırır.
-     */
-    public static function executeSchemaOnLive(PDO $livePdo, string $sqlDump): array
-    {
-        try {
-            $livePdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, 0);
-            $livePdo->exec($sqlDump);
-            return [
-                'success' => true,
-                'message' => 'Schema successfully deployed to live database.'
-            ];
-        } catch (PDOException $e) {
-            return [
-                'success' => false,
-                'message' => 'Failed to deploy schema on live database: ' . $e->getMessage()
-            ];
-        }
-    }
-
-    private static function formatEnvValue(mixed $val): string
-    {
-        if (is_bool($val)) {
-            return $val ? 'true' : 'false';
-        }
-        $str = (string)$val;
-        if (str_contains($str, ' ') || str_contains($str, '#') || str_contains($str, '$')) {
-            return '"' . addcslashes($str, '"') . '"';
-        }
-        return $str;
     }
 }

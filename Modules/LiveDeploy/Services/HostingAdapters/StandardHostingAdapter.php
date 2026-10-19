@@ -59,8 +59,7 @@ class StandardHostingAdapter implements HostingAdapterInterface
 
             $tables = [];
             if (!empty($this->database)) {
-                $stmt = $pdo->query("SHOW TABLES");
-                $tables = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+                $tables = \Modules\LiveDeploy\Models\DeployModel::getLiveTables($pdo);
             }
 
             return [
@@ -152,8 +151,7 @@ class StandardHostingAdapter implements HostingAdapterInterface
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_TIMEOUT => $this->timeout
             ]);
-            $stmt = $pdo->query("SHOW DATABASES");
-            $dbs = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            $dbs = \Modules\LiveDeploy\Models\DeployModel::fetchLiveDatabases($pdo);
             return ['success' => true, 'databases' => $dbs];
         } catch (PDOException $e) {
             if (!empty($this->database)) {

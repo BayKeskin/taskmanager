@@ -6,7 +6,7 @@ let currentDeployStep = 1;
 
 window.openDeployWizard = function(projectId) {
     if (!projectId) {
-        showToast('Lütfen önce bir proje seçin.', 'error');
+        if (typeof showToast === 'function') showToast('Lütfen önce bir proje seçin.', 'error');
         return;
     }
 
@@ -15,7 +15,7 @@ window.openDeployWizard = function(projectId) {
 
     currentDeployStep = 1;
     showDeployStep(1);
-    openModal('modalDeployWizard');
+    if (typeof openModal === 'function') openModal('modalDeployWizard');
 
     fetch('/taskmanager/ajax?action=get_project&id=' + projectId)
         .then(r => r.json())
@@ -30,23 +30,33 @@ window.openDeployWizard = function(projectId) {
         .catch(err => console.error('Proje bilgileri alınamadı:', err));
 };
 
+window.closeDeployWizard = function() {
+    if (typeof closeModal === 'function') {
+        closeModal('modalDeployWizard');
+    }
+    const modalEl = document.getElementById('deployWizardModal');
+    if (modalEl) modalEl.classList.add('deploy-modal-hidden');
+};
+
 window.showDeployStep = function(step) {
     currentDeployStep = step;
     [1, 2, 3].forEach(s => {
         const content = document.getElementById('deployStepContent' + s);
         const tab = document.getElementById('deployStepTab' + s);
-        if (content) content.style.display = (s === step) ? 'block' : 'none';
+        if (content) {
+            if (s === step) {
+                content.classList.remove('deploy-modal-hidden');
+                content.style.display = 'block';
+            } else {
+                content.classList.add('deploy-modal-hidden');
+                content.style.display = 'none';
+            }
+        }
         if (tab) {
             if (s === step) {
-                tab.style.background = 'rgba(0,184,148,0.15)';
-                tab.style.borderColor = 'rgba(0,184,148,0.4)';
-                tab.style.color = '#00cec9';
-                tab.style.fontWeight = '700';
+                tab.classList.add('active');
             } else {
-                tab.style.background = 'rgba(255,255,255,0.03)';
-                tab.style.borderColor = 'var(--border-subtle)';
-                tab.style.color = 'var(--text-muted)';
-                tab.style.fontWeight = '600';
+                tab.classList.remove('active');
             }
         }
     });
@@ -55,9 +65,33 @@ window.showDeployStep = function(step) {
     const btnNext = document.getElementById('btnDeployNext');
     const btnAction = document.getElementById('btnDeployAction');
 
-    if (btnPrev) btnPrev.style.display = (step > 1) ? 'inline-block' : 'none';
-    if (btnNext) btnNext.style.display = (step < 3) ? 'inline-block' : 'none';
-    if (btnAction) btnAction.style.display = (step === 3) ? 'inline-block' : 'none';
+    if (btnPrev) {
+        if (step > 1) {
+            btnPrev.classList.remove('deploy-modal-hidden');
+            btnPrev.style.display = 'inline-block';
+        } else {
+            btnPrev.classList.add('deploy-modal-hidden');
+            btnPrev.style.display = 'none';
+        }
+    }
+    if (btnNext) {
+        if (step < 3) {
+            btnNext.classList.remove('deploy-modal-hidden');
+            btnNext.style.display = 'inline-block';
+        } else {
+            btnNext.classList.add('deploy-modal-hidden');
+            btnNext.style.display = 'none';
+        }
+    }
+    if (btnAction) {
+        if (step === 3) {
+            btnAction.classList.remove('deploy-modal-hidden');
+            btnAction.style.display = 'inline-block';
+        } else {
+            btnAction.classList.add('deploy-modal-hidden');
+            btnAction.style.display = 'none';
+        }
+    }
 };
 
 window.nextDeployStep = function() {
@@ -166,6 +200,7 @@ window.startLiveDeployment = function() {
     }
 
     if (logBox) {
+        logBox.classList.remove('deploy-modal-hidden');
         logBox.style.display = 'block';
         logBox.innerHTML = '<div>[1/4] Git diff ve dosya listesi hazırlanıyor...</div>';
     }
@@ -258,6 +293,7 @@ window.executeDeployRollback = function() {
     const pId = document.getElementById('deployWizardProjId')?.value;
     const logBox = document.getElementById('deployLiveLogBox');
     if (logBox) {
+        logBox.classList.remove('deploy-modal-hidden');
         logBox.style.display = 'block';
         logBox.innerHTML += '<div>[ROLLBACK] Geri alma süreci başlatıldı...</div>';
     }
@@ -272,14 +308,90 @@ window.executeDeployRollback = function() {
                 if (logBox) {
                     logBox.innerHTML += '<div style="color:#2ecc71;">[ROLLBACK TAMAMLANDI] ' + res.message + '</div>';
                 }
-                showToast('✅ Canlı başarıyla önceki sürüme döndürüldü.', 'success');
+                if (typeof showToast === 'function') showToast('✅ Canlı başarıyla önceki sürüme döndürüldü.', 'success');
                 triggerLiveHealthcheck(document.getElementById('deployLiveDomain')?.value);
             } else {
                 if (logBox) {
                     logBox.innerHTML += '<div style="color:#e74c3c;">[ROLLBACK HATA] ' + res.message + '</div>';
                 }
-                showToast('❌ ' + res.message, 'error');
+                if (typeof showToast === 'function') showToast('❌ ' + res.message, 'error');
             }
         })
-        .catch(err => showToast('Geri alma hatası: ' + err.message, 'error'));
+        .catch(err => {
+            if (typeof showToast === 'function') showToast('Geri alma hatası: ' + err.message, 'error');
+        });
 };
+
+document.addEventListener('DOMContentLoaded', function() {
+    const modalEl = document.getElementById('modalDeployWizard');
+    if (modalEl) {
+        modalEl.addEventListener('click', function(e) {
+            if (e.target === this && typeof closeModal === 'function') {
+                closeModal('modalDeployWizard');
+            }
+        });
+    }
+
+    const btnHeaderClose = document.getElementById('btnDeployWizardHeaderClose');
+    if (btnHeaderClose) {
+        btnHeaderClose.addEventListener('click', function() {
+            if (typeof closeModal === 'function') closeModal('modalDeployWizard');
+        });
+    }
+
+    const btnWizardClose = document.getElementById('btnDeployWizardClose');
+    if (btnWizardClose) {
+        btnWizardClose.addEventListener('click', function() {
+            window.closeDeployWizard();
+        });
+    }
+
+    const panelTypeSelect = document.getElementById('deployPanelType');
+    if (panelTypeSelect) {
+        panelTypeSelect.addEventListener('change', function() {
+            window.toggleDeployPanelFields();
+        });
+    }
+
+    const btnTestPanel = document.getElementById('btnTestDeployPanel');
+    if (btnTestPanel) {
+        btnTestPanel.addEventListener('click', function() {
+            window.testDeployPanelConnection();
+        });
+    }
+
+    const btnPrev = document.getElementById('btnDeployPrev');
+    if (btnPrev) {
+        btnPrev.addEventListener('click', function() {
+            window.prevDeployStep();
+        });
+    }
+
+    const btnNext = document.getElementById('btnDeployNext');
+    if (btnNext) {
+        btnNext.addEventListener('click', function() {
+            window.nextDeployStep();
+        });
+    }
+
+    const btnAction = document.getElementById('btnDeployAction');
+    if (btnAction) {
+        btnAction.addEventListener('click', function() {
+            window.startLiveDeployment();
+        });
+    }
+
+    const btnRollback = document.getElementById('btnExecuteDeployRollback');
+    if (btnRollback) {
+        btnRollback.addEventListener('click', function() {
+            window.executeDeployRollback();
+        });
+    }
+
+    const btnCancel = document.getElementById('btnDeployModalCancel');
+    if (btnCancel) {
+        btnCancel.addEventListener('click', function() {
+            if (typeof closeModal === 'function') closeModal('modalDeployWizard');
+        });
+    }
+});

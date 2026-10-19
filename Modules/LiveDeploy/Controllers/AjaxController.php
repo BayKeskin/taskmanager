@@ -6,9 +6,18 @@ use ProjectAnalyzer;
 use HostingManager;
 use LiveConfigGenerator;
 use DeltaSyncEngine;
+use Modules\LiveDeploy\Models\DeployModel;
 
 class AjaxController extends BaseController
 {
+    private DeployModel $model;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->model = new DeployModel();
+    }
+
     private function respond(bool $success, string $message = '', array $data = []): void
     {
         $payload = array_merge(['success' => $success, 'message' => $message], $data);
@@ -23,11 +32,11 @@ class AjaxController extends BaseController
         $projectId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
         $proj = null;
         if ($projectId > 0) {
-            $proj = $this->db->row_query("SELECT * FROM projects WHERE id = ?", [$projectId]);
+            $proj = $this->model->getProjectById($projectId);
         }
         $targetPath = trim($_POST['workspace_path'] ?? ($proj->workspace_path ?? ''));
         if (empty($targetPath)) {
-            $this->respond(false, 'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.');
+            $this->respond(false, __('LiveDeploy::err_workspace_not_found'));
         }
 
         $overrides = [
@@ -40,10 +49,10 @@ class AjaxController extends BaseController
 
         $analysis = ProjectAnalyzer::analyze($targetPath, array_filter($overrides));
         if (empty($analysis['success'])) {
-            $this->respond(false, $analysis['error'] ?? 'Proje analiz edilemedi.', $analysis);
+            $this->respond(false, $analysis['error'] ?? __('LiveDeploy::err_analysis_failed'), $analysis);
         }
 
-        $this->respond(true, 'Proje ortam değişkenleri ve canlı yapılandırma analizi tamamlandı.', ['analysis' => $analysis]);
+        $this->respond(true, __('LiveDeploy::msg_analysis_complete'), ['analysis' => $analysis]);
     }
 
     public function testHostingPanel(): void
@@ -52,9 +61,9 @@ class AjaxController extends BaseController
         $config = $_POST['config'] ?? $_POST;
         $res = HostingManager::testCredentials($panelType, $config);
         if (!empty($res['success'])) {
-            $this->respond(true, 'Barındırma paneli bağlantısı başarıyla doğrulandı.', ['result' => $res]);
+            $this->respond(true, __('LiveDeploy::hosting_test_success'), ['result' => $res]);
         } else {
-            $this->respond(false, 'Barındırma paneli bağlantısı başarısız.', ['result' => $res]);
+            $this->respond(false, __('LiveDeploy::err_panel_conn_failed'), ['result' => $res]);
         }
     }
 
@@ -67,14 +76,14 @@ class AjaxController extends BaseController
         $dbPass    = trim($_POST['db_pass'] ?? ($_POST['password'] ?? ''));
 
         if (empty($dbName)) {
-            $this->respond(false, 'Oluşturulacak veritabanı adı (db_name) zorunludur.');
+            $this->respond(false, __('LiveDeploy::err_db_name_required'));
         }
 
         $res = HostingManager::provision($panelType, $config, $dbName, $dbUser, $dbPass);
         if (!empty($res['success'])) {
-            $this->respond(true, 'Canlı veritabanı ve kullanıcısı başarıyla tahsis edildi.', ['result' => $res]);
+            $this->respond(true, __('LiveDeploy::msg_db_provisioned'), ['result' => $res]);
         } else {
-            $this->respond(false, 'Veritabanı tahsisi başarısız oldu.', ['result' => $res]);
+            $this->respond(false, __('LiveDeploy::err_db_provision_failed'), ['result' => $res]);
         }
     }
 
@@ -83,11 +92,11 @@ class AjaxController extends BaseController
         $projectId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
         $proj = null;
         if ($projectId > 0) {
-            $proj = $this->db->row_query("SELECT * FROM projects WHERE id = ?", [$projectId]);
+            $proj = $this->model->getProjectById($projectId);
         }
         $targetPath = $proj->workspace_path ?? '';
         if (empty($targetPath)) {
-            $this->respond(false, 'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.');
+            $this->respond(false, __('LiveDeploy::err_workspace_not_found'));
         }
 
         $liveDomain = trim($_POST['live_domain'] ?? 'https://example.com');
@@ -119,7 +128,7 @@ class AjaxController extends BaseController
             $generatedFiles['config/database.php'] = LiveConfigGenerator::generatePhpConfig(@file_get_contents("{$targetPath}/config/database.php") ?: '', $dbConfig);
         }
 
-        $this->respond(true, 'Canlıya özel izolasyonlu konfigürasyon dosyaları başarıyla üretildi.', [
+        $this->respond(true, __('LiveDeploy::deploy_config_generated'), [
             'generated_files' => $generatedFiles,
             'file_count'      => count($generatedFiles),
             'local_intact'    => true
@@ -131,12 +140,11 @@ class AjaxController extends BaseController
         $liveDomain = trim($_POST['live_domain'] ?? 'https://example.com');
         $dumpData = ($_POST['dump_data'] ?? true) == true;
 
-        $localPdo = $this->db->connect;
-        $sqlDump = LiveConfigGenerator::dumpDatabase($localPdo, ['dump_data' => $dumpData]);
+        $sqlDump = LiveConfigGenerator::dumpDatabaseWithModel($this->model, ['dump_data' => $dumpData]);
         $oldDomain = 'http://localhost/taskmanager';
         $transformedSql = LiveConfigGenerator::replaceDomainsInSql($sqlDump, $oldDomain, $liveDomain);
 
-        $this->respond(true, 'Yerel veritabanı şeması ve verileri canlı domain eşitlemesiyle başarıyla dışa aktarıldı.', [
+        $this->respond(true, __('LiveDeploy::deploy_schema_dumped'), [
             'sql_size'    => strlen($transformedSql),
             'sql_preview' => substr($transformedSql, 0, 1000) . '...',
             'sql'         => $transformedSql
@@ -148,11 +156,11 @@ class AjaxController extends BaseController
         $projectId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
         $proj = null;
         if ($projectId > 0) {
-            $proj = $this->db->row_query("SELECT * FROM projects WHERE id = ?", [$projectId]);
+            $proj = $this->model->getProjectById($projectId);
         }
         $targetPath = $proj->workspace_path ?? '';
         if (empty($targetPath)) {
-            $this->respond(false, 'Projenin yerel çalışma alanı (workspace_path) tanımlı değil.');
+            $this->respond(false, __('LiveDeploy::err_workspace_not_found'));
         }
 
         $lastDep = DeltaSyncEngine::getLastDeployment($projectId);
@@ -161,12 +169,12 @@ class AjaxController extends BaseController
 
         $diff = DeltaSyncEngine::calculateGitDiff($targetPath, $fromCommit, $toCommit);
         if (empty($diff['success'])) {
-            $this->respond(false, $diff['error'] ?? 'Git farkı hesaplanamadı.', $diff);
+            $this->respond(false, $diff['error'] ?? __('LiveDeploy::err_git_diff_failed'), $diff);
         }
 
         $pendingMigrations = DeltaSyncEngine::detectPendingMigrations($targetPath, $fromCommit, $toCommit);
 
-        $this->respond(true, 'Akıllı delta senkronizasyon dosya farkları ve şema göçleri başarıyla hesaplandı.', [
+        $this->respond(true, __('LiveDeploy::deploy_delta_diff_calculated'), [
             'diff'               => $diff,
             'pending_migrations' => $pendingMigrations,
             'migration_count'    => count($pendingMigrations)
@@ -178,10 +186,10 @@ class AjaxController extends BaseController
         $projectId = (int)($_POST['project_id'] ?? ($_GET['project_id'] ?? 0));
         $proj = null;
         if ($projectId > 0) {
-            $proj = $this->db->row_query("SELECT * FROM projects WHERE id = ?", [$projectId]);
+            $proj = $this->model->getProjectById($projectId);
         }
         if (!$proj) {
-            $this->respond(false, 'Proje bulunamadı.');
+            $this->respond(false, __('LiveDeploy::err_project_not_found'));
         }
 
         $depType    = trim($_POST['deployment_type'] ?? 'delta');
@@ -209,7 +217,7 @@ class AjaxController extends BaseController
             'deployed_by'     => $this->user->id ?? 1
         ]);
 
-        $this->respond(true, 'Proje dağıtımı ve delta senkronizasyon kaydı başarıyla tamamlandı.', [
+        $this->respond(true, __('LiveDeploy::deploy_deployment_recorded'), [
             'deployment_id' => $depId,
             'project_code'  => $proj->project_code,
             'type'          => $depType,
@@ -233,14 +241,14 @@ class AjaxController extends BaseController
         }
 
         if (empty($liveUrl)) {
-            $this->respond(false, 'Test edilecek canlı site URL adresi belirtilmedi.');
+            $this->respond(false, __('LiveDeploy::err_live_url_missing'));
         }
 
         $res = DeltaSyncEngine::performHealthcheck($liveUrl);
         if (!empty($res['success'])) {
-            $this->respond(true, 'Canlı site sağlık kontrolü başarıyla doğrulandı.', ['result' => $res]);
+            $this->respond(true, __('LiveDeploy::deploy_success'), ['result' => $res]);
         } else {
-            $this->respond(false, $res['message'] ?? 'Canlı site sağlık kontrolü başarısız.', ['result' => $res]);
+            $this->respond(false, $res['message'] ?? __('LiveDeploy::err_healthcheck_failed'), ['result' => $res]);
         }
     }
 
@@ -250,14 +258,14 @@ class AjaxController extends BaseController
         $deploymentId = !empty($_POST['deployment_id']) ? (int)$_POST['deployment_id'] : null;
 
         if ($projectId <= 0) {
-            $this->respond(false, 'Geçerli bir proje ID belirtilmelidir.');
+            $this->respond(false, __('LiveDeploy::err_invalid_project_id'));
         }
 
-        $res = DeltaSyncEngine::rollbackDeployment($projectId, $deploymentId, $this->db->connect);
+        $res = DeltaSyncEngine::rollbackDeployment($projectId, $deploymentId, null);
         if (!empty($res['success'])) {
-            $this->respond(true, 'Canlı dağıtım cerrahi olarak önceki stabil sürüme başarıyla geri alındı.', ['result' => $res]);
+            $this->respond(true, __('LiveDeploy::msg_rollback_success'), ['result' => $res]);
         } else {
-            $this->respond(false, $res['message'] ?? 'Geri alma işlemi başarısız oldu.', ['result' => $res]);
+            $this->respond(false, $res['message'] ?? __('LiveDeploy::err_rollback_failed'), ['result' => $res]);
         }
     }
 }
