@@ -27,9 +27,7 @@ $sampleTask = $sampleTask ?? 'TASK-1';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <link rel="stylesheet" href="/taskmanager/Modules/ApiTester/Assets/css/api_test.css">
+    <link rel="stylesheet" href="<?= baseUrl('/Modules/ApiTester/Assets/css/api_test.css') ?>">
 </head>
 <body>
 
@@ -67,19 +65,19 @@ $sampleTask = $sampleTask ?? 'TASK-1';
             </button>
 
             <!-- API Docs Link -->
-            <a href="/taskmanager/api-docs" class="btn-lab btn-lab-secondary" title="<?= htmlspecialchars(__('ApiTester::api_doc')) ?>">
+            <a href="<?= baseUrl('api-docs') ?>" class="btn-lab btn-lab-secondary" title="<?= htmlspecialchars(__('ApiTester::api_doc')) ?>">
                 <i class="fa-solid fa-book"></i>
                 <span>📖 <?= htmlspecialchars(__('ApiTester::api_doc')) ?></span>
             </a>
 
             <!-- AI Doc Link -->
-            <a href="/taskmanager/docs/4?project_id=1" class="btn-lab btn-lab-secondary" title="<?= htmlspecialchars(__('ApiTester::ai_guide')) ?>">
+            <a href="<?= baseUrl('docs?project_id=1') ?>" class="btn-lab btn-lab-secondary" title="<?= htmlspecialchars(__('ApiTester::ai_guide')) ?>">
                 <i class="fa-solid fa-robot"></i>
                 <span><?= htmlspecialchars(__('ApiTester::ai_guide')) ?></span>
             </a>
 
             <!-- Board Link -->
-            <a href="/taskmanager/board" class="btn-lab btn-lab-primary">
+            <a href="<?= baseUrl('board') ?>" class="btn-lab btn-lab-primary">
                 <i class="fa-solid fa-table-columns"></i>
                 <span><?= htmlspecialchars(__('ApiTester::kanban_board')) ?></span>
             </a>
@@ -204,7 +202,7 @@ $sampleTask = $sampleTask ?? 'TASK-1';
                                 <div class="api-lab-info-tip-label"><?= htmlspecialchars(__('ApiTester::doc_tip_label')) ?></div>
                                 <div id="infoDocTip" class="api-lab-info-tip-text"><?= htmlspecialchars(__('ApiTester::doc_tip_default')) ?></div>
                             </div>
-                            <a href="/taskmanager/api-docs" target="_blank" class="btn-lab btn-lab-secondary api-lab-info-doc-link">
+                            <a href="<?= baseUrl('api-docs') ?>" target="_blank" class="btn-lab btn-lab-secondary api-lab-info-doc-link">
                                 <span><?= htmlspecialchars(__('ApiTester::open_doc_new_tab')) ?></span>
                                 <i class="fa-solid fa-arrow-up-right-from-square api-lab-info-link-icon"></i>
                             </a>
@@ -306,6 +304,6 @@ $sampleTask = $sampleTask ?? 'TASK-1';
          data-active-token="<?= htmlspecialchars($userToken, ENT_QUOTES, 'UTF-8') ?>"
          data-sample-project="<?= htmlspecialchars($sampleProject, ENT_QUOTES, 'UTF-8') ?>"
          data-sample-task="<?= htmlspecialchars($sampleTask, ENT_QUOTES, 'UTF-8') ?>"></div>
-    <script src="/taskmanager/Modules/ApiTester/Assets/js/api_test.js"></script>
+    <script src="<?= baseUrl('/Modules/ApiTester/Assets/js/api_test.js') ?>"></script>
 </body>
 </html>

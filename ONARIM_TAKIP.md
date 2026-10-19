@@ -1,10 +1,10 @@
-# AiArchitect (AI Proje Mimarı) Modülü Onarım Takip Listesi (ONARIM_TAKIP.md)
+# ApiTester (REST API & Dokümantasyon Laboratuvarı) Modülü Onarım Takip Listesi (ONARIM_TAKIP.md)
 
-## Tespit Edilen Durum ve İnceleme Maddeleri
+## Tespit Edilen Durum ve İyileştirme Maddeleri
 
-- [x] 1. [Görsel/CSS] Üst Kanban barındaki `🪄 AI Proje Mimarı` butonunun (`#btnOpenAiArchitectModal`) yerleşimi, ikonu ve açılış animasyonu tam uyumlu.
-- [x] 2. [Görsel/CSS] `#modalAiArchitect` modalında Adım 1 Brif metin alanı (`#aiArchBriefInput`), sürükle-bırak döküman alanı (`#aiArchDropzone`) ve proje seçimi kutusu karanlık tema renk şemasına tam uyumlu.
-- [x] 3. [İşlev/JS] Brif girilip `btnRunAiDecompose` tıklandığında yükleme animasyonu ve Adım 2 (İnteraktif Görev Ağacı) geçişi sorunsuz çalışıyor.
-- [x] 4. [Görsel/CSS] Adım 2 Epik ve Alt Görev kartları, sürükleme tutamakları (`::`), durum rozetleri ve alt görev detay kutuları kusursuz render ediliyor.
-- [x] 5. [İşlev/JS] `btnAiArchToggleAllDetails` (tüm detayları aç/kapat), `btnAiArchAddNewEpic` (yeni modül ekle) ve `btnAiArchBackToStep1` (brife geri dön) aksiyon butonları hatasız çalışıyor.
-- [x] 6. [Görsel/CSS] Modal alt bilgi çubuğunda özet sayaç rozeti (`#aiArchSummaryBadge`) ve panoya aktarma onay butonu (`#btnApproveAiArch`) tam hizalı ve erişilebilir.
+- [x] 1. [Görsel/CSS] `/api-test` ekranında Swagger/Postman tarzı canlı test konsolu (istek metodu seçici, URL alanı, başlıklar sekmesi, JSON gövde editörü) koyu temada tam uyumlu.
+- [x] 2. [İşlev/JS] Sol kenar çubuğundaki uç nokta butonlarına tıklandığında URL, metot ve örnek gövde dinamik olarak doluyor ve "Gönder / Test Et" tıklandığında canlı API yanıtı gecikme/boyut metrikleriyle render ediliyor.
+- [x] 3. [İşlev/JS] "Çekirdek Sağlık Taraması" (Toplu Test Modalı) sistemi baştan sona tarayarak tüm rotaların durum kodlarını otomatik analiz ediyor.
+- [x] 4. [Görsel/CSS] `/api-docs` ekranı genel TaskManager düzenine kusursuz oturuyor, kod blokları ve rozetler okunaklı.
+- [x] 5. [Görsel/CSS] "Token Kopyala" butonu ve çoklu dil geçişleri (TR, EN, DE) anlık olarak çalışıyor.
+- [x] 6. [Taşınabilirlik/Portability] `/api-test` ve `/api-docs` içindeki tüm bağlantılar, stil dosyaları ve dinamik API adresleri `baseUrl()` / `siteUrl()` mimarisine geçirilerek farklı klasörlerde bağımsız çalışacak şekilde standardize edildi.

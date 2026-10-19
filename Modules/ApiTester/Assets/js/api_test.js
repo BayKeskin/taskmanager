@@ -5,7 +5,7 @@ const CFG = window.APITESTER_CONFIG || (_carrierEl ? {
     sampleProject: _carrierEl.dataset.sampleProject,
     sampleTask: _carrierEl.dataset.sampleTask
 } : {});
-const BASE_API_URL = CFG.baseUrl ? CFG.baseUrl + '/api' : '/taskmanager/api';
+const BASE_API_URL = CFG.baseUrl ? CFG.baseUrl + '/api' : ((typeof window.BASE_URL !== 'undefined') ? window.BASE_URL + '/api' : '/api');
 const ACTIVE_TOKEN = CFG.activeToken || '';
 const SAMPLE_PROJECT = CFG.sampleProject || '01';
 const SAMPLE_TASK = CFG.sampleTask || '01-01';

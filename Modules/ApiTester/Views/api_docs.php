@@ -33,15 +33,11 @@ $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dyn
             <a href="?lang=en" class="cu-btn-sm cu-docs-lang-btn <?= $loc === 'en' ? 'active' : '' ?>">EN</a>
             <a href="?lang=de" class="cu-btn-sm cu-docs-lang-btn <?= $loc === 'de' ? 'active' : '' ?>">DE</a>
         </div>
-        <a href="/taskmanager/api-test" class="cu-btn-sm cu-docs-btn-lab">
+        <a href="<?= baseUrl('api-test') ?>" class="cu-btn-sm cu-docs-btn-lab">
             <span>🧪</span>
             <span><?= htmlspecialchars(__('ApiTester::live_console_badge')) ?></span>
         </a>
-        <a href="/taskmanager/API_DOCUMENTATION.md" target="_blank" class="cu-btn-sm cu-docs-btn-markdown">
-            <span>📄</span>
-            <span><?= htmlspecialchars(__('ApiTester::btn_markdown')) ?></span>
-        </a>
-        <a href="/taskmanager/api/health" target="_blank" class="cu-btn-sm cu-docs-btn-health">
+        <a href="<?= baseUrl('api/health') ?>" target="_blank" class="cu-btn-sm cu-docs-btn-health">
             <span>🟢</span>
             <span><?= htmlspecialchars(__('ApiTester::btn_health')) ?></span>
         </a>
@@ -70,7 +66,7 @@ $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dyn
                     </button>
                 </div>
                 <div class="cu-docs-meta-row">
-                    <span>🌐 <b>Base URL:</b> <code class="cu-docs-meta-code">http://localhost/taskmanager/api/v1</code></span>
+                    <span>🌐 <b>Base URL:</b> <code class="cu-docs-meta-code"><?= htmlspecialchars(siteUrl('api/v1')) ?></code></span>
                     <span>🔑 <b>Header:</b> <code class="cu-docs-meta-code">Authorization: Bearer &lt;token&gt;</code> <?= htmlspecialchars(__('ApiTester::or_keyword')) ?> <code class="cu-docs-meta-code">X-API-Key</code></span>
                     <span>🌍 <b>Lang:</b> <code class="cu-docs-meta-code-accent">?lang=<?= htmlspecialchars($loc) ?></code></span>
                 </div>
@@ -91,7 +87,7 @@ $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dyn
                 </p>
             </div>
         </div>
-        <a href="/taskmanager/api-test" class="cu-btn-sm cu-docs-banner-link">
+        <a href="<?= baseUrl('api-test') ?>" class="cu-btn-sm cu-docs-banner-link">
             <span><?= htmlspecialchars(__('ApiTester::btn_start_console')) ?></span>
             <i class="fa-solid fa-arrow-right"></i>
         </a>
