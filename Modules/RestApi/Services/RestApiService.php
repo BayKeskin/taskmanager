@@ -1,11 +1,18 @@
 <?php
 namespace Modules\RestApi\Services;
 
-use Core\BaseModel;
+use Modules\RestApi\Models\RestApiModel;
 use System\Language;
 
-class RestApiService extends BaseModel
+class RestApiService
 {
+    protected ?RestApiModel $model = null;
+
+    public function __construct(?RestApiModel $model = null)
+    {
+        $this->model = $model ?? new RestApiModel();
+    }
+
     /**
      * API Token doğrulama (Bearer veya X-API-Key)
      */
@@ -25,16 +32,16 @@ class RestApiService extends BaseModel
             return null;
         }
 
-        $users = $this->query("SELECT id, name, email, role, api_token FROM users WHERE api_token = ? LIMIT 1", [$token]);
-        if (!empty($users)) {
-            return (object)$users[0];
+        $user = $this->model->getUserByToken($token);
+        if (!empty($user)) {
+            return (object)$user;
         }
 
         // Global admin fallback token kontrolü
         if ($token === 'tm_admin_talha_keskin_token_2026') {
-            $adminUser = $this->query("SELECT id, name, email, role, api_token FROM users WHERE role = 'admin' LIMIT 1");
+            $adminUser = $this->model->getAdminUser();
             if (!empty($adminUser)) {
-                return (object)$adminUser[0];
+                return (object)$adminUser;
             }
             return (object)[
                 'id'    => 1,
@@ -77,12 +84,8 @@ class RestApiService extends BaseModel
         $apiToken = '';
 
         try {
-            $db = $GLOBALS['db'] ?? null;
-            if (!$db || empty($db->connect)) {
-                $db = new \Core\DataLayer();
-            }
-
-            $sUrl = $db->single_query("SELECT siteurl FROM settings WHERE id = 1");
+            $model = new RestApiModel();
+            $sUrl = $model->getSiteUrlSetting();
             if (!empty($sUrl)) {
                 $baseUrl = rtrim(trim((string)$sUrl), '/');
             } elseif (!empty($_SERVER['HTTP_HOST'])) {
@@ -90,19 +93,14 @@ class RestApiService extends BaseModel
                 $baseUrl = $protocol . $_SERVER['HTTP_HOST'] . '/taskmanager';
             }
 
-            $adminUser = $db->row_query("
-                SELECT id, api_token 
-                FROM users 
-                WHERE role = 'admin' AND status = 'active' 
-                ORDER BY id ASC LIMIT 1
-            ");
+            $adminUser = $model->getFirstActiveAdmin();
 
             if ($adminUser) {
                 if (!empty($adminUser->api_token)) {
                     $apiToken = trim((string)$adminUser->api_token);
                 } else {
                     $apiToken = 'tm_live_' . bin2hex(random_bytes(16));
-                    $db->exec_query("UPDATE users SET api_token = ? WHERE id = ?", [$apiToken, $adminUser->id]);
+                    $model->updateUserApiToken((int)$adminUser->id, $apiToken);
                 }
             }
         } catch (\Throwable $e) {}

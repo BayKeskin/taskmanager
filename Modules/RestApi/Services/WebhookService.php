@@ -14,16 +14,8 @@ class WebhookService extends BaseModel
      */
     public static function triggerProjectWebhook(int $projectId, string $event, array $data = []): array
     {
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
-
-        $project = $db->row_query("
-            SELECT id, project_code, title, webhook_url, workspace_path, agent_rules, agent_conversation_id, webhook_secret 
-            FROM projects 
-            WHERE id = ?
-        ", [$projectId]);
+        $model = new \Modules\RestApi\Models\RestApiModel();
+        $project = $model->getProjectWebhookConfig($projectId);
 
         if (!$project) {
             return ['sent' => false, 'error' => 'Project not found'];
@@ -139,11 +131,8 @@ class WebhookService extends BaseModel
     public static function dispatchChatWebhooks(string $event, string $projectTitle, array $data = []): void
     {
         try {
-            $db = $GLOBALS['db'] ?? null;
-            if (!$db || empty($db->connect)) {
-                $db = new \Core\DataLayer();
-            }
-            $settings = $db->row_query("SELECT slack_webhook_url, discord_webhook_url FROM settings WHERE id = 1");
+            $model = new \Modules\RestApi\Models\RestApiModel();
+            $settings = $model->getChatWebhookSettings();
             if (!$settings) return;
 
             $taskTitle = $data['title'] ?? ($data['task_code'] ?? 'Task Operation');
