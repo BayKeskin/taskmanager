@@ -28,5 +28,14 @@ return [
     'some_failed'           => 'Bazı testler başarısız oldu.',
     'th_test'               => 'Test',
     'th_status'             => 'Durum',
-    'th_details'            => 'Detay'
+    'th_details'            => 'Detay',
+    'btn_run_smoketest'     => 'Sistem Sağlık Taraması (Smoke Test)',
+    'modal_title'           => 'Otonom Sistem Sağlık Taraması (Smoke Test)',
+    'running_tests'         => 'Sistem sağlığı ve modüller taranıyor...',
+    'cat_database'          => 'Veritabanı & Çekirdek Tablolar',
+    'cat_modules'           => 'Aktif HMVC Modülleri (24/24)',
+    'cat_languages'         => 'Çok Dilli Sözlükler (TR, EN, DE)',
+    'cat_api'               => 'REST API & Uç Noktalar',
+    'btn_close'             => 'Kapat'
 ];
+

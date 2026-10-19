@@ -539,8 +539,12 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                             <span class="cu-mod-badge-passive">
                                 <?= __('Settings::settings_modules_passive_badge') ?>: <?= $passiveCount ?>
                             </span>
+                            <button type="button" id="btnRunSmokeTestSettings" class="cu-btn-sm cu-btn-secondary cu-smoketest-trigger-btn">
+                                <span>🔍</span> <span><?= __('SmokeTest::btn_run_smoketest') ?></span>
+                            </button>
                         </div>
                     </div>
+
 
                     <!-- Modül Listesi Tablosu / Kartları -->
                     <div class="cu-modules-list">

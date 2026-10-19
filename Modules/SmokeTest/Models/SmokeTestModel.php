@@ -10,11 +10,12 @@ class SmokeTestModel extends BaseModel
      */
     public function logTestRun(string $suiteName, bool $isSuccess, string $summary): int
     {
-        $sql = "INSERT INTO task_activities (task_id, user_id, action_type, description, created_at) 
+        $sql = "INSERT INTO task_activities (task_id, user_id, action_type, comment, created_at) 
                 VALUES (0, 1, 'smoke_test', ?, NOW())";
         $status = $isSuccess ? 'PASS' : 'FAIL';
         $desc = "SmokeTest [{$suiteName}] -> {$status}: {$summary}";
-        return (int)$this->db->exec_query($sql, [$desc]);
+        return $this->execute($sql, [$desc]);
+
     }
 
     /**

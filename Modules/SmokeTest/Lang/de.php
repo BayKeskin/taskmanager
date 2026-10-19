@@ -28,5 +28,14 @@ return [
     'some_failed'           => 'Einige Diagnosetests sind fehlgeschlagen.',
     'th_test'               => 'Test',
     'th_status'             => 'Status',
-    'th_details'            => 'Details'
+    'th_details'            => 'Details',
+    'btn_run_smoketest'     => 'System-Gesundheitsscan (Smoke-Test)',
+    'modal_title'           => 'Autonomer System-Gesundheitsscan (Smoke-Test)',
+    'running_tests'         => 'Systemgesundheit und Module werden überprüft...',
+    'cat_database'          => 'Datenbank & Kerntabellen',
+    'cat_modules'           => 'Aktive HMVC-Module (24/24)',
+    'cat_languages'         => 'Mehrsprachige Wörterbücher (TR, EN, DE)',
+    'cat_api'               => 'REST API & Endpunkte',
+    'btn_close'             => 'Schließen'
 ];
+

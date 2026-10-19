@@ -28,5 +28,14 @@ return [
     'some_failed'           => 'Some diagnostic tests failed.',
     'th_test'               => 'Test',
     'th_status'             => 'Status',
-    'th_details'            => 'Details'
+    'th_details'            => 'Details',
+    'btn_run_smoketest'     => 'System Health Scan (Smoke Test)',
+    'modal_title'           => 'Autonomous System Health Scan (Smoke Test)',
+    'running_tests'         => 'Scanning system health and modules...',
+    'cat_database'          => 'Database & Core Tables',
+    'cat_modules'           => 'Active HMVC Modules (24/24)',
+    'cat_languages'         => 'Multi-Language Dictionaries (TR, EN, DE)',
+    'cat_api'               => 'REST API & Endpoints',
+    'btn_close'             => 'Close'
 ];
+

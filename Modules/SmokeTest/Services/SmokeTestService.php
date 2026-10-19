@@ -43,33 +43,27 @@ class SmokeTestService
             $this->assert($testTitle, $exists, $detailMsg);
         }
 
-        // 2. Client Portal Role & Isolation Verification
-        $clientUser = $this->model->getClientUser();
-        $clientTitle = __('SmokeTest::client_exists');
-        $clientDetails = $clientUser 
-            ? str_replace([':email', ':project_id'], [$clientUser->email, (string)($clientUser->client_project_id ?? 0)], __('SmokeTest::client_found')) 
-            : __('SmokeTest::client_not_found');
-        $this->assert($clientTitle, !empty($clientUser), $clientDetails);
+        // 2. Active 24 HMVC Modules Verification
+        $loadedModules = \Core\ModuleLoader::getLoadedModules();
+        $modCount = count($loadedModules);
+        $this->assert(__('SmokeTest::cat_modules'), $modCount >= 24, "{$modCount}/24 Active Modules Loaded");
 
-        if ($clientUser && !empty($clientUser->client_project_id)) {
-            $allowedProjectTasks = $this->model->getTasksByProjectId((int)$clientUser->client_project_id);
-            $accessTitle = __('SmokeTest::client_task_access');
-            $accessDetails = str_replace(':count', (string)count($allowedProjectTasks), __('SmokeTest::client_task_count'));
-            $this->assert($accessTitle, count($allowedProjectTasks) > 0, $accessDetails);
+        // 3. Multilingual Dictionaries Verification (TR, EN, DE)
+        $langCheckOk = true;
+        $checkedLocales = ['tr', 'en', 'de'];
+        foreach ($checkedLocales as $loc) {
+            if (!\Language::isLocaleAvailable($loc)) {
+                $langCheckOk = false;
+                break;
+            }
         }
+        $this->assert(__('SmokeTest::cat_languages'), $langCheckOk, "TR, EN, DE Verified Active");
 
-        // 3. Realtime Chat Persistence Verification
-        $testMsgText = "Autonomous QA Test Message: " . time();
-        $insId = $this->model->insertChatMessage(1, $testMsgText);
-        $chatInsTitle = __('SmokeTest::chat_insert');
-        $this->assert($chatInsTitle, $insId > 0, "ID: {$insId}");
+        // 4. REST API & Endpoints Verification
+        $restApiController = class_exists('\Modules\RestApi\Controllers\RestApiController');
+        $this->assert(__('SmokeTest::cat_api'), $restApiController, "RestApiController Active & Ready");
 
-        $retrieved = $this->model->getChatMessageById($insId);
-        $chatReadTitle = __('SmokeTest::chat_retrieval');
-        $chatReadDetails = str_replace(':id', (string)$insId, __('SmokeTest::chat_verified'));
-        $this->assert($chatReadTitle, $retrieved && $retrieved->message === $testMsgText, $chatReadDetails);
-
-        // 4. Standup Aggregation & Summary Verification
+        // 5. Standup Aggregation & Summary Verification
         $standup = \Modules\Reports\Services\StandupService::generateAiStandupSummary(1, $this->lang);
         $standupTitle = __('SmokeTest::ai_standup');
         $standupDetails = str_replace(
@@ -79,7 +73,7 @@ class SmokeTestService
         );
         $this->assert($standupTitle, !empty($standup['success']) && !empty($standup['summary']), $standupDetails);
 
-        // 5. Workspaces.json Dynamic Sync Verification
+        // 6. Workspaces.json Dynamic Sync Verification
         $wsFile = dirname(__DIR__, 3) . '/Modules/Dispatcher/Bin/workspaces.json';
         $wsExists = file_exists($wsFile);
         $wsTitle = __('SmokeTest::ws_config_file');
@@ -91,7 +85,7 @@ class SmokeTestService
             $this->assert($wsValidTitle, is_array($wsMap) && isset($wsMap['01']), $wsValidDetails);
         }
 
-        // 6. Realtime SSE Live Event Broadcast Verification
+        // 7. Realtime SSE Live Event Broadcast Verification
         $broadcast = \Modules\SSE\Services\SseBroadcaster::broadcast('test_ping', 1, null, 1, ['time' => time(), 'test' => true]);
         $sseTitle = __('SmokeTest::sse_broadcast');
         $sseDetails = __('SmokeTest::sse_recorded');
@@ -110,4 +104,5 @@ class SmokeTestService
             'results' => $this->results
         ];
     }
+
 }

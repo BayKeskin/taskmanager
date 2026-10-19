@@ -117,9 +117,18 @@ foreach ($allTasks as $t) {
                             <span class="cu-tool-text-bold"><?= __('Board::mcp_btn_open') ?></span>
                         </button>
                     <?php endif; ?>
+
+                    <div class="cu-dropdown-divider"></div>
+
+                    <!-- Smoke Test (Sistem Sağlık Taraması) -->
+                    <button type="button" id="btnOpenSmokeTestModal" class="cu-tools-item cu-tools-item-smoketest">
+                        <span class="cu-tool-icon">🔍</span>
+                        <span class="cu-tool-text-bold"><?= __('SmokeTest::btn_run_smoketest') ?></span>
+                    </button>
                 <?php endif; ?>
             </div>
         </div>
+
 
         <?php if ($canCreateTask): ?>
             <button type="button" class="cu-btn-quick-task cu-btn-add-task-header" id="btnOpenNewTaskModal">
