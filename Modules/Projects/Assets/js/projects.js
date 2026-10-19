@@ -246,3 +246,65 @@ async function deleteProjectPermanently(projectId) {
         console.error(e);
     }
 }
+
+// Event Listeners Initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submits
+    const formNew = document.getElementById('formNewProject');
+    if (formNew) {
+        formNew.addEventListener('submit', handleCreateProject);
+    }
+    const formEdit = document.getElementById('formEditProject');
+    if (formEdit) {
+        formEdit.addEventListener('submit', handleUpdateProject);
+    }
+
+    // Modal Edit buttons
+    const btnTestWebhook = document.getElementById('btnTestWebhookEdit');
+    if (btnTestWebhook) {
+        btnTestWebhook.addEventListener('click', testCurrentProjectWebhook);
+    }
+    const btnRefineEdit = document.getElementById('btnRefineRulesEdit');
+    if (btnRefineEdit) {
+        btnRefineEdit.addEventListener('click', () => refineProjectRules(true));
+    }
+    const btnSyncEdit = document.getElementById('btnSyncRulesEdit');
+    if (btnSyncEdit) {
+        btnSyncEdit.addEventListener('click', syncCurrentProjectRules);
+    }
+    const btnDeployEdit = document.getElementById('btnOpenDeployWizardEdit');
+    if (btnDeployEdit) {
+        btnDeployEdit.addEventListener('click', () => {
+            const pId = document.getElementById('editProjId')?.value;
+            if (pId && typeof openDeployWizard === 'function') openDeployWizard(pId);
+        });
+    }
+    const btnMcpEdit = document.getElementById('btnOpenMcpModalEdit');
+    if (btnMcpEdit) {
+        btnMcpEdit.addEventListener('click', () => {
+            const pId = document.getElementById('editProjId')?.value;
+            if (pId && typeof openProjectMcpModal === 'function') openProjectMcpModal(pId);
+        });
+    }
+
+    // Modal New buttons
+    const btnRefineNew = document.getElementById('btnRefineRulesNew');
+    if (btnRefineNew) {
+        btnRefineNew.addEventListener('click', () => refineProjectRules(false));
+    }
+
+    // Modal close & overlay click delegation
+    document.addEventListener('click', function(e) {
+        const closeBtn = e.target.closest('[data-close-modal]');
+        if (closeBtn) {
+            const modalId = closeBtn.getAttribute('data-close-modal');
+            if (modalId && typeof closeModal === 'function') {
+                closeModal(modalId);
+            }
+        } else if (e.target.classList.contains('cu-modal-overlay') && e.target.id) {
+            if (typeof closeModal === 'function') {
+                closeModal(e.target.id);
+            }
+        }
+    });
+});

@@ -13,22 +13,19 @@ class ProjectService extends BaseModel
      */
     public static function syncProjectRulesToWorkspace(object|int $project): array
     {
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
+        $projectModel = new \Modules\Projects\Models\ProjectModel();
 
         if (is_numeric($project)) {
-            $project = $db->row_query("SELECT * FROM projects WHERE id = ?", [(int)$project]);
+            $project = $projectModel->getProjectById((int)$project);
         }
 
         if (!$project || empty($project->workspace_path)) {
-            return ['success' => false, 'error' => 'Geçerli bir çalışma alanı yolu (workspace_path) tanımlı değil.'];
+            return ['success' => false, 'error' => __('Projects::invalid_workspace_path')];
         }
 
         $wsPath = rtrim(str_replace('\\', '/', $project->workspace_path), '/');
         if (!is_dir($wsPath)) {
-            return ['success' => false, 'error' => "Çalışma alanı klasörü diskte bulunamadı: {$wsPath}"];
+            return ['success' => false, 'error' => __('Projects::workspace_not_found')];
         }
 
         $rules = trim($project->agent_rules ?? '');
@@ -164,42 +161,8 @@ MARKDOWN;
      */
     public static function purgeProject(int $projectId): bool
     {
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-
-        }
-
-        $proj = $db->row_query("SELECT id, project_code FROM projects WHERE id = ?", [$projectId]);
-        if (!$proj) return false;
-
-        $taskRows = $db->multi_record_query("SELECT id FROM tasks WHERE project_id = ?", [$projectId]) ?: [];
-        $taskIds = array_map(fn($t) => (int)$t->id, $taskRows);
-
-        if (!empty($taskIds)) {
-            $inClause = implode(',', $taskIds);
-            $db->exec_query("DELETE FROM task_checklists WHERE task_id IN ({$inClause})");
-            $db->exec_query("DELETE FROM task_comments WHERE task_id IN ({$inClause})");
-            $db->exec_query("DELETE FROM task_activities WHERE task_id IN ({$inClause})");
-            $db->exec_query("DELETE FROM task_attachments WHERE task_id IN ({$inClause})");
-            $db->exec_query("DELETE FROM task_submissions WHERE task_id IN ({$inClause})");
-            $db->exec_query("DELETE FROM task_modifications WHERE task_id IN ({$inClause})");
-            $db->exec_query("DELETE FROM task_dependencies WHERE task_id IN ({$inClause}) OR depends_on_task_id IN ({$inClause})");
-            $db->exec_query("DELETE FROM task_assignees WHERE task_id IN ({$inClause})");
-        }
-
-        $db->exec_query("DELETE FROM tasks WHERE project_id = ?", [$projectId]);
-        $db->exec_query("DELETE FROM docs WHERE project_id = ?", [$projectId]);
-        $db->exec_query("DELETE FROM live_events WHERE project_id = ?", [$projectId]);
-        $db->exec_query("UPDATE users SET client_project_id = NULL WHERE client_project_id = ?", [$projectId]);
-        $deleted = $db->exec_query("DELETE FROM projects WHERE id = ?", [$projectId]);
-
-        if (!empty($proj->project_code)) {
-            $disp = new \Modules\Dispatcher\Services\DispatcherService();
-            $disp->removeProjectWorkspace($proj->project_code);
-        }
-
-        return (bool)$deleted;
+        $projectModel = new \Modules\Projects\Models\ProjectModel();
+        return $projectModel->purgeProject($projectId);
     }
 }
 

@@ -26,7 +26,7 @@ class AjaxController extends BaseController
     public function createProject(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim: Sadece yöneticiler proje oluşturabilir.');
+            $this->respond(false, __('Projects::unauthorized_admin_only'));
         }
 
         $title = trim($_POST['title'] ?? '');
@@ -40,7 +40,7 @@ class AjaxController extends BaseController
         $conversationId = trim($_POST['agent_conversation_id'] ?? '') ?: null;
 
         if (empty($title) || empty($projectCode)) {
-            $this->respond(false, 'Proje adı ve proje kodu zorunludur.');
+            $this->respond(false, __('Projects::title_code_required'));
         }
 
         $newId = $this->projectModel->createProject([
@@ -63,9 +63,9 @@ class AjaxController extends BaseController
             if ($workspacePath && $agentRules) {
                 \Modules\Projects\Services\ProjectService::syncProjectRulesToWorkspace($newId);
             }
-            $this->respond(true, 'Proje başarıyla oluşturuldu!', ['project_id' => $newId]);
+            $this->respond(true, __('Projects::project_created_success'), ['project_id' => $newId]);
         } else {
-            $this->respond(false, 'Proje eklenirken hata oluştu.');
+            $this->respond(false, __('Projects::project_create_failed'));
         }
     }
 
@@ -73,12 +73,12 @@ class AjaxController extends BaseController
     {
         $projectId = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
         if ($projectId <= 0) {
-            $this->respond(false, 'Geçersiz proje ID.');
+            $this->respond(false, __('Projects::invalid_project_id'));
         }
 
         $proj = $this->projectModel->getProjectById($projectId);
         if (!$proj) {
-            $this->respond(false, 'Proje bulunamadı.');
+            $this->respond(false, __('Projects::project_not_found'));
         }
 
         if (empty($proj->agent_rules) && !empty($proj->workspace_path)) {
@@ -96,13 +96,13 @@ class AjaxController extends BaseController
             }
         }
 
-        $this->respond(true, 'Proje bilgisi alındı', (array)$proj);
+        $this->respond(true, __('Projects::project_info_retrieved'), (array)$proj);
     }
 
     public function updateProject(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim: Sadece yöneticiler proje güncelleyebilir.');
+            $this->respond(false, __('Projects::unauthorized_edit'));
         }
 
         $projectId = (int)($_POST['project_id'] ?? 0);
@@ -116,7 +116,7 @@ class AjaxController extends BaseController
         $conversationId = trim($_POST['agent_conversation_id'] ?? '') ?: null;
 
         if ($projectId <= 0 || empty($title)) {
-            $this->respond(false, 'Geçersiz proje bilgisi.');
+            $this->respond(false, __('Projects::invalid_project_info'));
         }
 
         $updated = $this->projectModel->updateProject($projectId, [
@@ -137,21 +137,21 @@ class AjaxController extends BaseController
             if ($workspacePath && $agentRules) {
                 \Modules\Projects\Services\ProjectService::syncProjectRulesToWorkspace($projectId);
             }
-            $this->respond(true, 'Proje ayarları ve AI webhook bilgisi güncellendi!');
+            $this->respond(true, __('Projects::project_update_success'));
         } else {
-            $this->respond(false, 'Güncelleme sırasında hata oluştu.');
+            $this->respond(false, __('Projects::project_update_failed'));
         }
     }
 
     public function syncProjectRules(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim: Sadece yöneticiler kural senkronizasyonu yapabilir.');
+            $this->respond(false, __('Projects::unauthorized_sync'));
         }
 
         $projectId = (int)($_POST['project_id'] ?? 0);
         if ($projectId <= 0) {
-            $this->respond(false, 'Geçersiz proje ID.');
+            $this->respond(false, __('Projects::invalid_project_id'));
         }
 
         if (isset($_POST['agent_rules'])) {
@@ -161,16 +161,16 @@ class AjaxController extends BaseController
 
         $syncRes = \Modules\Projects\Services\ProjectService::syncProjectRulesToWorkspace($projectId);
         if (!empty($syncRes['success'])) {
-            $this->respond(true, 'Proje kural dosyaları (AGENTS.md) başarıyla güncellendi!', $syncRes);
+            $this->respond(true, __('Projects::rules_synced_success'), $syncRes);
         } else {
-            $this->respond(false, $syncRes['error'] ?? 'Kural dosyaları güncellenirken hata oluştu.');
+            $this->respond(false, $syncRes['error'] ?? __('Projects::rules_sync_failed'));
         }
     }
 
     public function refineProjectRules(): void
     {
         if ($this->user->role !== 'admin' && $this->user->role !== 'employee') {
-            $this->respond(false, 'Yetkisiz erişim.');
+            $this->respond(false, __('Projects::unauthorized_access'));
         }
 
         $rawRules = trim($_POST['raw_rules'] ?? '');
@@ -188,9 +188,9 @@ class AjaxController extends BaseController
 
         $res = (new \Modules\AiArchitect\Services\GeminiClient())->refineRulesWithAi($rawRules, $projectCode, $projectTitle);
         if (!empty($res['success'])) {
-            $this->respond(true, 'Kurallar yapay zeka ile başarıyla derlendi ve yapılandırıldı!', $res);
+            $this->respond(true, __('Projects::rules_refined_success'), $res);
         } else {
-            $this->respond(false, $res['error'] ?? 'Kurallar derlenirken bir hata oluştu.');
+            $this->respond(false, $res['error'] ?? __('Projects::rules_refine_error'));
         }
     }
 
@@ -198,58 +198,58 @@ class AjaxController extends BaseController
     {
         $projectId = (int)($_POST['project_id'] ?? 0);
         if ($projectId <= 0) {
-            $this->respond(false, 'Geçersiz proje ID.');
+            $this->respond(false, __('Projects::invalid_project_id'));
         }
 
         $res = \Modules\RestApi\Services\WebhookService::triggerProjectWebhook($projectId, 'project.webhook_test', [
-            'message'    => 'Yapay Zeka (AI Agent) test pini başarıyla gönderildi.',
+            'message'    => __('Projects::webhook_test_pin_msg'),
             'test_time'  => date('Y-m-d H:i:s'),
             'user'       => $this->user->name
         ]);
 
         if ($res['sent']) {
-            $this->respond(true, '✅ Webhook başarıyla iletildi (HTTP ' . $res['http_code'] . ')', $res);
+            $this->respond(true, __('Projects::webhook_sent_success'), $res);
         } else {
-            $this->respond(false, '❌ Webhook ulaşılamadı: ' . ($res['error'] ?? $res['reason'] ?? 'Bilinmeyen hata (HTTP ' . $res['http_code'] . ')'), $res);
+            $this->respond(false, __('Projects::webhook_delivery_failed'), $res);
         }
     }
 
     public function toggleProjectStatus(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim.');
+            $this->respond(false, __('Projects::unauthorized_access'));
         }
 
         $projectId = (int)($_POST['project_id'] ?? 0);
         $newStatus = $_POST['status'] ?? 'completed';
 
         if ($projectId <= 0) {
-            $this->respond(false, 'Geçersiz proje ID.');
+            $this->respond(false, __('Projects::invalid_project_id'));
         }
 
-        $this->db->exec_query("UPDATE projects SET status = ? WHERE id = ?", [$newStatus, $projectId]);
+        $this->projectModel->updateProjectStatus($projectId, $newStatus);
         
         $msg = ($newStatus === 'completed' || $newStatus === 'archived') 
-            ? 'Proje geçmiş projelere taşındı.' 
-            : 'Proje aktif projelere geri yüklendi.';
+            ? __('Projects::project_moved_archive')
+            : __('Projects::project_restored_active');
         $this->respond(true, $msg);
     }
 
     public function deleteProject(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim.');
+            $this->respond(false, __('Projects::unauthorized_access'));
         }
 
         $projectId = (int)($_POST['project_id'] ?? 0);
         if ($projectId <= 0) {
-            $this->respond(false, 'Geçersiz proje ID.');
+            $this->respond(false, __('Projects::invalid_project_id'));
         }
 
         $success = \Modules\Projects\Services\ProjectService::purgeProject($projectId);
         if ($success) {
-            $this->respond(true, 'Proje, ilişkili tüm görevler, dökümanlar ve workspaces yapılandırması kalıcı olarak silindi.');
+            $this->respond(true, __('Projects::project_purged_success'));
         }
-        $this->respond(false, 'Proje bulunamadı veya silinemedi.');
+        $this->respond(false, __('Projects::project_purge_failed'));
     }
 }

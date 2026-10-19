@@ -115,4 +115,62 @@ class ProjectModel extends BaseModel
     {
         return \Modules\Projects\Services\ProjectService::syncProjectRulesToWorkspace($id);
     }
+
+    /**
+     * Proje durumunu günceller
+     */
+    public function updateProjectStatus(int $projectId, string $newStatus): bool
+    {
+        $stmt = $this->getPdo()->prepare("UPDATE projects SET status = ?, updated_at = NOW() WHERE id = ?");
+        return $stmt->execute([$newStatus, $projectId]);
+    }
+
+    /**
+     * Projeyi ve ilişkili kayıtlarını veritabanından temizler
+     */
+    public function purgeProject(int $projectId): bool
+    {
+        $proj = $this->getProjectById($projectId);
+        if (!$proj) {
+            return false;
+        }
+
+        $taskRows = $this->query("SELECT id FROM tasks WHERE project_id = ?", [$projectId]) ?: [];
+        $taskIds = array_map(fn($t) => (int)$t['id'], $taskRows);
+
+        if (!empty($taskIds)) {
+            $inClause = implode(',', $taskIds);
+            $this->getPdo()->exec("DELETE FROM task_checklists WHERE task_id IN ({$inClause})");
+            $this->getPdo()->exec("DELETE FROM task_comments WHERE task_id IN ({$inClause})");
+            $this->getPdo()->exec("DELETE FROM task_activities WHERE task_id IN ({$inClause})");
+            $this->getPdo()->exec("DELETE FROM task_attachments WHERE task_id IN ({$inClause})");
+            $this->getPdo()->exec("DELETE FROM task_submissions WHERE task_id IN ({$inClause})");
+            $this->getPdo()->exec("DELETE FROM task_modifications WHERE task_id IN ({$inClause})");
+            $this->getPdo()->exec("DELETE FROM task_dependencies WHERE task_id IN ({$inClause}) OR depends_on_task_id IN ({$inClause})");
+            $this->getPdo()->exec("DELETE FROM task_assignees WHERE task_id IN ({$inClause})");
+        }
+
+        $stmtTasks = $this->getPdo()->prepare("DELETE FROM tasks WHERE project_id = ?");
+        $stmtTasks->execute([$projectId]);
+
+        $stmtDocs = $this->getPdo()->prepare("DELETE FROM docs WHERE project_id = ?");
+        $stmtDocs->execute([$projectId]);
+
+        $stmtEvents = $this->getPdo()->prepare("DELETE FROM live_events WHERE project_id = ?");
+        $stmtEvents->execute([$projectId]);
+
+        $stmtUsers = $this->getPdo()->prepare("UPDATE users SET client_project_id = NULL WHERE client_project_id = ?");
+        $stmtUsers->execute([$projectId]);
+
+        $stmtProj = $this->getPdo()->prepare("DELETE FROM projects WHERE id = ?");
+        $deleted = $stmtProj->execute([$projectId]);
+
+        if (!empty($proj->project_code)) {
+            $disp = new \Modules\Dispatcher\Services\DispatcherService();
+            $disp->removeProjectWorkspace($proj->project_code);
+        }
+
+        return (bool)$deleted;
+    }
 }
+
