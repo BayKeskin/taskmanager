@@ -157,3 +157,96 @@
 .dot-red { background: #ef4444; }
 .dot-blue { background: #3b82f6; }
 .dot-pink { background: #ec4899; }
+
+/* Team View Table & Layout Classes */
+.cu-team-view-title-wrap { display: flex; align-items: center; gap: 8px; }
+.cu-team-view-icon { font-size: 16px; }
+.cu-team-view-title { font-weight: 700; font-size: 14px; color: var(--text-white); }
+.cu-team-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 20px; }
+.cu-team-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.cu-team-heading { font-size: 16px; font-weight: 700; color: var(--text-white); }
+.cu-team-desc { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+.cu-team-btn-new-member { height: 38px; padding: 0 18px; font-size: 13px; }
+.cu-team-table-responsive { overflow-x: auto; }
+.cu-team-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cu-team-th-row { border-bottom: 1px solid var(--border-subtle); text-align: left; color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
+.cu-team-th { padding: 10px 14px; }
+.cu-team-th-center { padding: 10px 14px; text-align: center; }
+.cu-team-th-right { padding: 10px 14px; text-align: right; }
+.cu-team-tr { border-bottom: 1px solid var(--border-subtle); }
+.cu-team-td-user { padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.cu-team-user-avatar { width: 32px; height: 32px; font-size: 12px; font-weight: 700; }
+.cu-team-user-name { font-weight: 600; color: var(--text-primary); display: block; }
+.cu-team-user-id { font-size: 11px; color: var(--text-muted); }
+.cu-team-td-email { padding: 12px 14px; color: var(--text-secondary); }
+.cu-team-td-title { padding: 12px 14px; color: var(--text-primary); font-weight: 500; }
+.cu-team-td-center { padding: 12px 14px; text-align: center; }
+.cu-team-td-tasks { padding: 12px 14px; text-align: center; font-weight: 600; color: var(--brand-primary); }
+.cu-team-td-action { padding: 12px 14px; text-align: right; }
+.cu-team-badge-role-admin { display: inline-block; padding: 3px 9px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 700; text-transform: uppercase; background: rgba(123,104,238,0.2); color: #7B68EE; border: 1px solid rgba(123,104,238,0.3); }
+.cu-team-badge-role-client { display: inline-block; padding: 3px 9px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 700; text-transform: uppercase; background: rgba(0,184,148,0.18); color: #00b894; border: 1px solid rgba(0,184,148,0.3); }
+.cu-team-badge-role-member { display: inline-block; padding: 3px 9px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 700; text-transform: uppercase; background: var(--border-subtle); color: var(--text-secondary); }
+.cu-team-badge-lang { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+.cu-team-no-project { color: #e67e22; font-size: 11px; }
+.cu-team-all-projects { color: var(--text-muted); font-size: 11px; }
+.cu-team-status-indicator { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+.cu-team-status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.cu-team-status-active { color: #00b894; }
+.cu-team-status-passive { color: #ff7675; }
+.cu-team-action-group { display: inline-flex; align-items: center; gap: 6px; }
+.cu-team-btn-invite { padding: 4px 8px; font-size: 11.5px; color: #00b894; border-color: rgba(0,184,148,0.3); }
+.cu-team-btn-delete { padding: 4px 10px; font-size: 11.5px; color: #ff7675; border-color: rgba(255,118,117,0.3); }
+.cu-team-current-badge { font-size: 11px; color: var(--text-muted); font-style: italic; }
+
+/* Profile Settings Modal Classes */
+.cu-profile-modal-box { max-width: 540px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+.cu-profile-modal-header { flex-shrink: 0; }
+.cu-profile-modal-title { font-size: 15px; font-weight: 700; color: var(--text-white); display: flex; align-items: center; gap: 8px; margin: 0; }
+.cu-profile-modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; }
+.cu-profile-form { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; margin: 0; }
+.cu-profile-modal-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
+.cu-profile-preview-card { display: flex; align-items: center; gap: 14px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: 16px; }
+.cu-profile-avatar-preview { width: 50px; height: 50px; font-size: 20px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.3); flex-shrink: 0; }
+.cu-profile-preview-info { flex: 1; min-width: 0; }
+.cu-profile-preview-name { font-size: 14px; font-weight: 700; color: var(--text-white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cu-profile-preview-email { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cu-profile-preview-badges { margin-top: 5px; display: flex; gap: 6px; align-items: center; }
+.cu-profile-badge-role { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; }
+.cu-profile-badge-admin { background: rgba(123,104,238,0.2); color: #7B68EE; }
+.cu-profile-badge-user { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+.cu-profile-preview-title { font-size: 11px; color: var(--text-secondary); }
+.cu-profile-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.cu-profile-field-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.cu-profile-field-input { width: 100%; height: 38px; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0 12px; color: var(--text-primary); font-size: 13px; box-sizing: border-box; }
+.cu-profile-field-group { margin-bottom: 14px; }
+.cu-profile-colors-group { margin-bottom: 16px; }
+.cu-profile-colors-wrap { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cu-profile-color-label { cursor: pointer; margin: 0; }
+.cu-profile-color-dot { display: inline-block; width: 28px; height: 28px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: var(--transition); vertical-align: middle; border: 2px solid transparent; }
+.cu-profile-color-active { border-color: #fff !important; }
+.cu-profile-api-box { background: rgba(123,104,238,0.06); border: 1px solid rgba(123,104,238,0.25); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px; }
+.cu-profile-api-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.cu-profile-api-title { font-size: 12px; font-weight: 700; color: #7B68EE; display: flex; align-items: center; gap: 6px; }
+.cu-profile-api-link { font-size: 11px; color: var(--brand-primary); text-decoration: none; font-weight: 600; }
+.cu-profile-api-row { display: flex; gap: 8px; align-items: center; }
+.cu-profile-api-input { flex: 1; height: 34px; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0 10px; color: var(--text-white); font-family: monospace; font-size: 11.5px; outline: none; }
+.cu-profile-api-btn-copy { background: rgba(255,255,255,0.08); border-color: var(--border-subtle); color: var(--text-white); padding: 6px 12px; cursor: pointer; }
+.cu-profile-pwd-box { background: rgba(0,0,0,0.22); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; margin-bottom: 6px; }
+.cu-profile-pwd-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.cu-profile-pwd-title { font-size: 12.5px; font-weight: 700; color: var(--text-white); display: flex; align-items: center; gap: 6px; }
+.cu-profile-pwd-optional { font-size: 11px; color: var(--text-muted); }
+.cu-profile-pwd-desc { font-size: 11.5px; color: var(--text-muted); margin: 0 0 12px 0; }
+.cu-profile-pwd-field { margin-bottom: 10px; }
+.cu-profile-pwd-relative { position: relative; }
+.cu-profile-pwd-input { width: 100%; height: 36px; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0 36px 0 12px; color: var(--text-primary); font-size: 13px; box-sizing: border-box; }
+.cu-profile-pwd-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 4px; }
+.cu-profile-pwd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cu-profile-modal-footer { padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-subtle); background: rgba(0,0,0,0.15); flex-shrink: 0; }
+.cu-profile-btn-cancel { padding: 8px 16px; font-size: 13px; }
+.cu-profile-btn-save { padding: 8px 20px; font-size: 13px; font-weight: 600; }
+.cu-unauthorized-message { padding: 40px; text-align: center; color: var(--text-muted); }
+.cu-member-card-avatar { width: 40px; height: 40px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.cu-member-card-name { margin: 0; font-size: 14px; }
+.cu-member-card-title { margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted); }
+
+

@@ -3,51 +3,51 @@
 $teamController = new \Modules\Team\Controllers\TeamController();
 $teamData = $teamController->index();
 if (!$teamData['isAuthorized']) {
-    $system->title = __('Team::team_title', 'Ekip Yönetimi - TaskManager');
+    $system->title = __('Team::team_title');
     include dirname(__DIR__, 3) . '/Core/Views/header.php';
-    echo '<div style="padding:40px; text-align:center; color:var(--text-muted);">' . __('Team::team_unauthorized', 'Bu sayfaya erişim yetkiniz bulunmamaktadır.') . '</div>';
+    echo '<div class="cu-unauthorized-message">' . __('Team::team_unauthorized') . '</div>';
     include dirname(__DIR__, 3) . '/Core/Views/footer.php';
     exit;
 }
 extract($teamData);
 
-$system->title = __('Team::team_title', 'Ekip Yönetimi - TaskManager');
+$system->title = __('Team::team_title');
 include dirname(__DIR__, 3) . '/Core/Views/header.php';
 ?>
 
 <div class="cu-view-header">
-    <div class="cu-view-title-wrap" style="display:flex; align-items:center; gap:8px;">
-        <span style="font-size:16px;">👥</span>
-        <span style="font-weight:700; font-size:14px; color:var(--text-white);"><?= __('Team::team_tab_team', 'Ekip Yönetimi & Müşteriler') ?></span>
+    <div class="cu-view-title-wrap cu-team-view-title-wrap">
+        <span class="cu-team-view-icon">👥</span>
+        <span class="cu-team-view-title"><?= __('Team::team_tab_team') ?></span>
     </div>
 </div>
 
 <div class="cu-content-scroll">
-    <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+    <div class="cu-team-card">
+        <div class="cu-team-card-header">
             <div>
-                <h2 style="font-size:16px; font-weight:700; color:var(--text-white);"><?= __('Team::team_heading', 'Çalışanlar ve Müşteri Portalı Kullanıcıları') ?></h2>
-                <p style="font-size:12.5px; color:var(--text-secondary); margin-top:2px;"><?= __('Team::team_desc', 'Görev ataması yapılabilecek ekip üyeleri ve yalnızca kendi projesine erişebilen danışan/müşteriler.') ?></p>
+                <h2 class="cu-team-heading"><?= __('Team::team_heading') ?></h2>
+                <p class="cu-team-desc"><?= __('Team::team_desc') ?></p>
             </div>
-            <button id="btnOpenNewMember" type="button" class="cu-btn-quick-task" onclick="openNewMemberModal()" style="height:38px; padding:0 18px; font-size:13px;">
+            <button id="btnOpenNewMember" type="button" class="cu-btn-quick-task cu-team-btn-new-member">
                 <span>➕</span>
-                <span><?= __('Team::team_btn_new_member', 'Yeni Üye / Müşteri Ekle') ?></span>
+                <span><?= __('Team::team_btn_new_member') ?></span>
             </button>
         </div>
 
-        <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <div class="cu-team-table-responsive">
+            <table class="cu-team-table">
                 <thead>
-                    <tr style="border-bottom:1px solid var(--border-subtle); text-align:left; color:var(--text-muted); font-size:11px; text-transform:uppercase;">
-                        <th style="padding:10px 14px;"><?= __('Team::team_th_user', 'Kullanıcı') ?></th>
-                        <th style="padding:10px 14px;"><?= __('Team::team_th_email', 'E-Posta') ?></th>
-                        <th style="padding:10px 14px;"><?= __('Team::team_th_title', 'Unvan / Pozisyon') ?></th>
-                        <th style="padding:10px 14px; text-align:center;"><?= __('Team::team_th_role', 'Sistem Rolü') ?></th>
-                        <th style="padding:10px 14px; text-align:center;"><?= __('Team::team_th_lang', 'Dil') ?></th>
-                        <th style="padding:10px 14px; text-align:center;"><?= __('Team::team_th_project', 'Eriştiği Proje') ?></th>
-                        <th style="padding:10px 14px; text-align:center;"><?= __('Team::team_th_status', 'Durum') ?></th>
-                        <th style="padding:10px 14px; text-align:center;"><?= __('Team::team_th_tasks', 'Atanan Görevler') ?></th>
-                        <th style="padding:10px 14px; text-align:right;"><?= __('Team::team_th_action', 'İşlem') ?></th>
+                    <tr class="cu-team-th-row">
+                        <th class="cu-team-th"><?= __('Team::team_th_user') ?></th>
+                        <th class="cu-team-th"><?= __('Team::team_th_email') ?></th>
+                        <th class="cu-team-th"><?= __('Team::team_th_title') ?></th>
+                        <th class="cu-team-th-center"><?= __('Team::team_th_role') ?></th>
+                        <th class="cu-team-th-center"><?= __('Team::team_th_lang') ?></th>
+                        <th class="cu-team-th-center"><?= __('Team::team_th_project') ?></th>
+                        <th class="cu-team-th-center"><?= __('Team::team_th_status') ?></th>
+                        <th class="cu-team-th-center"><?= __('Team::team_th_tasks') ?></th>
+                        <th class="cu-team-th-right"><?= __('Team::team_th_action') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -55,75 +55,75 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
                         $taskCount = $userTaskCounts[$u->id] ?? 0;
                         $assignedProj = ($u->role === 'client' && !empty($u->client_project_id)) ? ($projectsMap[$u->client_project_id] ?? null) : null;
                     ?>
-                        <tr style="border-bottom:1px solid var(--border-subtle);">
-                            <td style="padding:12px 14px; display:flex; align-items:center; gap:10px;">
-                                <div class="cu-avatar" style="width:32px; height:32px; font-size:12px; font-weight:700; background:<?= htmlspecialchars($u->avatar_color ?: '#7B68EE') ?>;">
+                        <tr class="cu-team-tr">
+                            <td class="cu-team-td-user">
+                                <div class="cu-avatar cu-team-user-avatar cu-avatar-<?= $u->id ?>">
                                     <?= mb_substr($u->name, 0, 1) ?>
                                 </div>
                                 <div>
-                                    <span style="font-weight:600; color:var(--text-primary); display:block;"><?= htmlspecialchars($u->name) ?></span>
-                                    <span style="font-size:11px; color:var(--text-muted);">ID: #<?= $u->id ?></span>
+                                    <span class="cu-team-user-name"><?= htmlspecialchars($u->name) ?></span>
+                                    <span class="cu-team-user-id">ID: #<?= $u->id ?></span>
                                 </div>
                             </td>
-                            <td style="padding:12px 14px; color:var(--text-secondary);"><?= htmlspecialchars($u->email) ?></td>
-                            <td style="padding:12px 14px; color:var(--text-primary); font-weight:500;"><?= htmlspecialchars($u->title) ?></td>
-                            <td style="padding:12px 14px; text-align:center;">
+                            <td class="cu-team-td-email"><?= htmlspecialchars($u->email) ?></td>
+                            <td class="cu-team-td-title"><?= htmlspecialchars($u->title) ?></td>
+                            <td class="cu-team-td-center">
                                 <?php if ($u->role === 'admin'): ?>
-                                    <span style="display:inline-block; padding:3px 9px; border-radius:var(--radius-sm); font-size:11px; font-weight:700; text-transform:uppercase; background:rgba(123,104,238,0.2); color:#7B68EE; border:1px solid rgba(123,104,238,0.3);">
-                                        <?= __('Team::team_role_admin', 'Yönetici') ?>
+                                    <span class="cu-team-badge-role-admin">
+                                        <?= __('Team::team_role_admin') ?>
                                     </span>
                                 <?php elseif ($u->role === 'client'): ?>
-                                    <span style="display:inline-block; padding:3px 9px; border-radius:var(--radius-sm); font-size:11px; font-weight:700; text-transform:uppercase; background:rgba(0,184,148,0.18); color:#00b894; border:1px solid rgba(0,184,148,0.3);">
-                                        <?= __('Team::team_role_client', '👤 Müşteri') ?>
+                                    <span class="cu-team-badge-role-client">
+                                        <?= __('Team::team_role_client') ?>
                                     </span>
                                 <?php else: ?>
-                                    <span style="display:inline-block; padding:3px 9px; border-radius:var(--radius-sm); font-size:11px; font-weight:700; text-transform:uppercase; background:var(--border-subtle); color:var(--text-secondary);">
-                                        <?= __('Team::team_role_member', 'Ekip Üyesi') ?>
+                                    <span class="cu-team-badge-role-member">
+                                        <?= __('Team::team_role_member') ?>
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            <td style="padding:12px 14px; text-align:center;">
+                            <td class="cu-team-td-center">
                                 <?php
                                 $langCode = $u->language ?? 'tr';
                                 $flags = ['tr' => '🇹🇷 TR', 'de' => '🇩🇪 DE', 'en' => '🇬🇧 EN'];
                                 ?>
-                                <span style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; background:rgba(255,255,255,0.06); color:var(--text-secondary); border:1px solid var(--border-subtle);">
+                                <span class="cu-team-badge-lang">
                                     <?= $flags[$langCode] ?? strtoupper($langCode) ?>
                                 </span>
                             </td>
-                            <td style="padding:12px 14px; text-align:center;">
+                            <td class="cu-team-td-center">
                                 <?php if ($u->role === 'client' && $assignedProj): ?>
-                                    <span class="cu-badge-project" style="color:<?= htmlspecialchars($assignedProj->color ?: '#00b894') ?>;">
+                                    <span class="cu-badge-project cu-project-color-<?= $assignedProj->id ?>">
                                         📁 <?= htmlspecialchars($assignedProj->title) ?>
                                     </span>
                                 <?php elseif ($u->role === 'client'): ?>
-                                    <span style="color:#e67e22; font-size:11px;"><?= __('Team::team_no_project', '⚠️ Proje atanmamış') ?></span>
+                                    <span class="cu-team-no-project"><?= __('Team::team_no_project') ?></span>
                                 <?php else: ?>
-                                    <span style="color:var(--text-muted); font-size:11px;"><?= __('Team::team_all_projects', 'Tüm Projeler') ?></span>
+                                    <span class="cu-team-all-projects"><?= __('Team::team_all_projects') ?></span>
                                 <?php endif; ?>
                             </td>
-                            <td style="padding:12px 14px; text-align:center;">
-                                <span style="display:inline-flex; align-items:center; gap:5px; font-size:12px; color:<?= $u->status === 'active' ? '#00b894' : '#ff7675' ?>;">
-                                    <span style="width:7px; height:7px; border-radius:50%; background:currentColor;"></span>
-                                    <?= $u->status === 'active' ? __('Team::team_status_active', 'Aktif') : __('Team::team_status_passive', 'Pasif') ?>
+                            <td class="cu-team-td-center">
+                                <span class="cu-team-status-indicator <?= $u->status === 'active' ? 'cu-team-status-active' : 'cu-team-status-passive' ?>">
+                                    <span class="cu-team-status-dot"></span>
+                                    <?= $u->status === 'active' ? __('Team::team_status_active') : __('Team::team_status_passive') ?>
                                 </span>
                             </td>
-                            <td style="padding:12px 14px; text-align:center; font-weight:600; color:var(--brand-primary);">
-                                <?= __('Team::team_tasks_count', ['count' => $taskCount], $taskCount . ' Görev') ?>
+                            <td class="cu-team-td-tasks">
+                                <?= $taskCount ?> <?= __('Team::team_tasks_label') ?>
                             </td>
-                            <td style="padding:12px 14px; text-align:right;">
-                                <div style="display:inline-flex; align-items:center; gap:6px;">
+                            <td class="cu-team-td-action">
+                                <div class="cu-team-action-group">
                                     <?php if ($u->role === 'client'): ?>
-                                        <button type="button" class="cu-btn cu-btn-secondary" onclick="copyClientInvite('<?= htmlspecialchars(addslashes($u->name)) ?>', '<?= htmlspecialchars(addslashes($u->email)) ?>', '<?= htmlspecialchars(addslashes($assignedProj->title ?? 'Belirlenen Proje')) ?>')" style="padding:4px 8px; font-size:11.5px; color:#00b894; border-color:rgba(0,184,148,0.3);" title="<?= htmlspecialchars(__('Team::team_btn_invite_title', 'Müşteri Giriş Davet Metnini Kopyala'), ENT_QUOTES, 'UTF-8') ?>">
-                                            <?= __('Team::team_btn_invite', '✉️ Davet') ?>
+                                        <button type="button" class="cu-btn cu-btn-secondary cu-team-btn-invite btn-invite-client" data-name="<?= htmlspecialchars($u->name, ENT_QUOTES, 'UTF-8') ?>" data-email="<?= htmlspecialchars($u->email, ENT_QUOTES, 'UTF-8') ?>" data-project="<?= htmlspecialchars($assignedProj->title ?? __('Team::team_default_project'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(__('Team::team_btn_invite_title'), ENT_QUOTES, 'UTF-8') ?>">
+                                            <?= __('Team::team_btn_invite') ?>
                                         </button>
                                     <?php endif; ?>
                                     <?php if ($u->id != $currentUser->id): ?>
-                                        <button type="button" class="cu-btn cu-btn-secondary" onclick="deleteUser(<?= $u->id ?>, '<?= htmlspecialchars(addslashes($u->name)) ?>')" style="padding:4px 10px; font-size:11.5px; color:#ff7675; border-color:rgba(255,118,117,0.3);">
-                                            <?= __('Team::team_btn_delete', '🗑️ Sil') ?>
+                                        <button type="button" class="cu-btn cu-btn-secondary cu-team-btn-delete btn-delete-team-user" data-id="<?= $u->id ?>" data-name="<?= htmlspecialchars($u->name, ENT_QUOTES, 'UTF-8') ?>">
+                                            <?= __('Team::team_btn_delete') ?>
                                         </button>
                                     <?php else: ?>
-                                        <span style="font-size:11px; color:var(--text-muted); font-style:italic;"><?= __('Team::team_current_account', '(Mevcut Hesap)') ?></span>
+                                        <span class="cu-team-current-badge"><?= __('Team::team_current_account') ?></span>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -131,13 +131,8 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
                     <?php endforeach; ?>
                 </tbody>
             </table>
-
         </div>
     </div>
 </div>
-
-<!-- YENİ EKİP ÜYESİ MODALI -->
-<!-- 👤 YENİ EKİP ÜYESİ EKLEME MODALI -->
-<?php include __DIR__ . '/modals/new_member.php'; ?>
 
 <?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>

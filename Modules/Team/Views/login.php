@@ -4,7 +4,7 @@ $error = '';
 $success = '';
 
 if (isset($_GET['logout'])) {
-    $success = __('Team::auth_logout_success', 'Oturumunuz başarıyla kapatıldı.');
+    $success = __('Team::auth_logout_success');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= __('Team::auth_login_title', 'Giriş Yap') ?> - TaskManager</title>
+    <title><?= __('Team::auth_login_title') ?> - TaskManager</title>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <div class="cu-login-title">
-        <h1><?= __('Team::auth_login_title', 'Giriş Yap') ?></h1>
-        <p><?= __('Team::auth_login_sub', 'Çalışma alanınıza erişmek için bilgilerinizi girin') ?></p>
+        <h1><?= __('Team::auth_login_title') ?></h1>
+        <p><?= __('Team::auth_login_sub') ?></p>
     </div>
 
     <?php if ($error): ?>
@@ -64,15 +64,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="POST" action="/taskmanager/login" autocomplete="on">
         <div class="cu-input-group">
-            <label for="inputEmail"><?= __('Team::auth_email', 'E-Posta Adresi') ?></label>
+            <label for="inputEmail"><?= __('Team::auth_email') ?></label>
             <div class="cu-input-wrapper">
                 <span class="icon">✉️</span>
-                <input type="email" id="inputEmail" name="email" placeholder="<?= htmlspecialchars(__('Team::auth_email_ph', 'ornek@taskmanager.com'), ENT_QUOTES, 'UTF-8') ?>" value="" required autofocus>
+                <input type="email" id="inputEmail" name="email" placeholder="<?= htmlspecialchars(__('Team::auth_email_ph'), ENT_QUOTES, 'UTF-8') ?>" value="" required autofocus>
             </div>
         </div>
 
         <div class="cu-input-group">
-            <label for="inputPassword"><?= __('Team::auth_password', 'Şifre') ?></label>
+            <label for="inputPassword"><?= __('Team::auth_password') ?></label>
             <div class="cu-input-wrapper">
                 <span class="icon">🔒</span>
                 <input type="password" id="inputPassword" name="password" placeholder="••••••••" value="" required>
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <button type="submit" class="cu-btn-submit">
-            <?= __('Team::auth_btn_login', 'Giriş Yap') ?> ➔
+            <?= __('Team::auth_btn_login') ?> ➔
         </button>
     </form>
 </div>

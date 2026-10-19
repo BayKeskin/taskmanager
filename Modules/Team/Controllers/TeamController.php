@@ -49,9 +49,9 @@ class TeamController extends BaseController
 
         // Client-side i18n via AssetManager (No inline script in view)
         \Core\AssetManager::localizeScript('team-js', 'TEAM_I18N', [
-            'confirm_delete' => __('Team::team_confirm_delete', ['name' => '{name}'], ':name isimli ekip üyesini silmek istediğinize emin misiniz?'),
-            'invite_copied'  => __('Team::team_invite_copied', '📋 Müşteri davet metni panoya kopyalandı:'),
-            'invite_prompt'  => __('Team::team_invite_prompt', 'Müşteri davet metni (Kopyalamak için Ctrl+C):')
+            'confirm_delete' => __('Team::team_confirm_delete'),
+            'invite_copied'  => __('Team::team_invite_copied'),
+            'invite_prompt'  => __('Team::team_invite_prompt')
         ]);
 
         return [

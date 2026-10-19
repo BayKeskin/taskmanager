@@ -267,3 +267,107 @@ function copyClientInvite(name, email, projectTitle) {
         prompt(promptMsg, inviteText);
     }
 }
+
+// Global Event Listeners for Team View
+document.addEventListener('DOMContentLoaded', function() {
+    const btnOpenNew = document.getElementById('btnOpenNewMember');
+    if (btnOpenNew) {
+        btnOpenNew.addEventListener('click', function() {
+            if (typeof openModal === 'function') openModal('modalNewMember');
+        });
+    }
+
+    document.querySelectorAll('.btn-invite-client').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const name = this.getAttribute('data-name');
+            const email = this.getAttribute('data-email');
+            const proj = this.getAttribute('data-project');
+            copyClientInvite(name, email, proj);
+        });
+    });
+
+    document.querySelectorAll('.btn-delete-team-user').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const uid = this.getAttribute('data-id');
+            const uname = this.getAttribute('data-name');
+            deleteUser(uid, uname);
+        });
+    });
+
+    // Close buttons for new member modal
+    document.querySelectorAll('.btn-close-new-member').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (typeof closeModal === 'function') closeModal('modalNewMember');
+        });
+    });
+
+    // Random password button
+    const btnGenPass = document.getElementById('btnGenRandomPass');
+    if (btnGenPass) {
+        btnGenPass.addEventListener('click', generateRandomPass);
+    }
+
+    // Role select change
+    const memberRoleSelect = document.getElementById('memberRoleSelect');
+    if (memberRoleSelect) {
+        memberRoleSelect.addEventListener('change', function() {
+            handleMemberRoleChange(this.value);
+        });
+    }
+
+    // New member form submit
+    const formNewMember = document.getElementById('formNewMember');
+    if (formNewMember) {
+        formNewMember.addEventListener('submit', submitNewMember);
+    }
+
+    // Profile modal handlers
+    document.querySelectorAll('.btn-close-profile-modal').forEach(function(btn) {
+        btn.addEventListener('click', closeProfileModal);
+    });
+
+    const formProfileSettings = document.getElementById('formProfileSettings');
+    if (formProfileSettings) {
+        formProfileSettings.addEventListener('submit', handleUpdateProfile);
+    }
+
+    const profileInputName = document.getElementById('profileInputName');
+    if (profileInputName) {
+        profileInputName.addEventListener('input', updateProfileAvatarPreview);
+    }
+
+    const profileInputTitle = document.getElementById('profileInputTitle');
+    if (profileInputTitle) {
+        profileInputTitle.addEventListener('input', function() {
+            const prev = document.getElementById('profileTitlePreview');
+            if (prev) prev.innerText = this.value || 'Kullanıcı';
+        });
+    }
+
+    const btnCopyApiToken = document.getElementById('btnCopyApiToken');
+    if (btnCopyApiToken) {
+        btnCopyApiToken.addEventListener('click', function() {
+            const tokenInput = document.getElementById('profileApiTokenInput');
+            if (tokenInput && tokenInput.value) {
+                navigator.clipboard.writeText(tokenInput.value);
+                if (typeof showToast === 'function') showToast('API Token kopyalandı!', 'success');
+                else alert('Token kopyalandı!');
+            }
+        });
+    }
+
+    document.querySelectorAll('.profile-avatar-radio').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            selectProfileColor(this.value);
+        });
+    });
+
+    document.querySelectorAll('.btn-toggle-pass').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            togglePassVisibility(targetId, this);
+        });
+    });
+});
+
+

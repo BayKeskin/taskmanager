@@ -26,31 +26,31 @@ class AjaxController extends BaseController
     public function createUser(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim: Sadece yöneticiler ekip üyesi ekleyebilir.');
+            $this->respond(false, __('Team::ajax_unauthorized_add'));
         }
 
         $name = trim($_POST['name'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $password = trim($_POST['password'] ?? '');
-        $title = trim($_POST['title'] ?? 'Ekip Üyesi');
+        $title = trim($_POST['title'] ?? __('Team::team_role_member'));
         $role = in_array($_POST['role'] ?? '', ['admin', 'user', 'client']) ? $_POST['role'] : 'user';
         $clientProjectId = ($role === 'client') ? (!empty($_POST['client_project_id']) ? (int)$_POST['client_project_id'] : null) : null;
         $avatarColor = $_POST['avatar_color'] ?? '#7B68EE';
 
         if ($role === 'client' && empty($clientProjectId)) {
-            $this->respond(false, 'Müşteri / Danışan rolü için erişebileceği proje seçilmelidir.');
+            $this->respond(false, __('Team::ajax_client_project_required'));
         }
 
         if (empty($name) || empty($email) || empty($password)) {
-            $this->respond(false, 'Ad Soyad, E-Posta ve Şifre alanları zorunludur.');
+            $this->respond(false, __('Team::ajax_required_fields'));
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->respond(false, 'Geçerli bir e-posta adresi giriniz.');
+            $this->respond(false, __('Team::ajax_invalid_email'));
         }
 
         if ($this->userModel->isEmailTaken($email)) {
-            $this->respond(false, 'Bu e-posta adresiyle kayıtlı bir kullanıcı zaten mevcut.');
+            $this->respond(false, __('Team::ajax_email_exists'));
         }
 
         $language = trim($_POST['language'] ?? 'tr');
@@ -73,42 +73,42 @@ class AjaxController extends BaseController
         ]);
 
         if ($newUserId) {
-            $this->respond(true, 'Ekip üyesi başarıyla eklendi!', [
+            $this->respond(true, __('Team::ajax_user_added'), [
                 'user_id' => $newUserId,
                 'name'    => $name,
                 'email'   => $email,
                 'role'    => $role
             ]);
         } else {
-            $this->respond(false, 'Kullanıcı eklenirken bir hata oluştu.');
+            $this->respond(false, __('Team::ajax_user_add_error'));
         }
     }
 
     public function deleteUser(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim: Sadece yöneticiler kullanıcı silebilir.');
+            $this->respond(false, __('Team::ajax_unauthorized_delete'));
         }
 
         $userId = (int)($_POST['user_id'] ?? 0);
         if ($userId <= 0) {
-            $this->respond(false, 'Geçersiz kullanıcı ID.');
+            $this->respond(false, __('Team::ajax_invalid_user_id'));
         }
 
         if ($userId === (int)$this->user->id) {
-            $this->respond(false, 'Kendinizi silemezsiniz.');
+            $this->respond(false, __('Team::ajax_cannot_delete_self'));
         }
 
         $assignedTasks = $this->userModel->getAssignedTaskCount($userId);
         if ($assignedTasks > 0) {
             $this->userModel->updateStatus($userId, 'inactive');
-            $this->respond(true, 'Kullanıcıya atanmış görevler bulunduğu için durumu "Pasif" olarak güncellendi.');
+            $this->respond(true, __('Team::ajax_user_inactivated'));
         } else {
             $deleted = $this->userModel->deleteUser($userId);
             if ($deleted) {
-                $this->respond(true, 'Ekip üyesi başarıyla silindi.');
+                $this->respond(true, __('Team::ajax_user_deleted'));
             } else {
-                $this->respond(false, 'Kullanıcı silinirken hata oluştu.');
+                $this->respond(false, __('Team::ajax_user_delete_error'));
             }
         }
     }
@@ -116,7 +116,7 @@ class AjaxController extends BaseController
     public function updateProfile(): void
     {
         if (empty($this->user) || empty($this->user->id)) {
-            $this->respond(false, 'Oturum süreniz dolmuş, lütfen yeniden giriş yapın.');
+            $this->respond(false, __('Team::ajax_session_expired'));
         }
 
         $userId = (int)$this->user->id;
@@ -130,20 +130,20 @@ class AjaxController extends BaseController
         $newPasswordConfirm = $_POST['new_password_confirm'] ?? '';
 
         if (empty($name)) {
-            $this->respond(false, 'Ad Soyad alanı boş bırakılamaz.');
+            $this->respond(false, __('Team::ajax_name_required'));
         }
 
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->respond(false, 'Lütfen geçerli bir e-posta adresi girin.');
+            $this->respond(false, __('Team::ajax_valid_email_required'));
         }
 
         $dbUser = $this->userModel->getUserById($userId);
         if (!$dbUser) {
-            $this->respond(false, 'Kullanıcı bulunamadı.');
+            $this->respond(false, __('Team::ajax_user_not_found'));
         }
 
         if ($this->userModel->isEmailTaken($email, $userId)) {
-            $this->respond(false, 'Bu e-posta adresi başka bir kullanıcı tarafından kullanılmaktadır.');
+            $this->respond(false, __('Team::ajax_email_in_use'));
         }
 
         if (!preg_match('/^#[a-f0-9]{6}$/i', $avatarColor)) {
@@ -159,20 +159,20 @@ class AjaxController extends BaseController
 
         if (!empty($newPassword)) {
             if (empty($currentPassword)) {
-                $this->respond(false, 'Şifrenizi değiştirmek için mevcut şifrenizi girmelisiniz.');
+                $this->respond(false, __('Team::ajax_current_pwd_required'));
             }
 
             $passValid = password_verify($currentPassword, $dbUser->password) || ($currentPassword === $dbUser->password) || ($currentPassword === '123456');
             if (!$passValid) {
-                $this->respond(false, 'Mevcut şifrenizi hatalı girdiniz.');
+                $this->respond(false, __('Team::ajax_current_pwd_wrong'));
             }
 
             if (strlen($newPassword) < 6) {
-                $this->respond(false, 'Yeni şifreniz en az 6 karakter uzunluğunda olmalıdır.');
+                $this->respond(false, __('Team::ajax_new_pwd_min'));
             }
 
             if (!empty($newPasswordConfirm) && $newPassword !== $newPasswordConfirm) {
-                $this->respond(false, 'Yeni şifreler birbiriyle uyuşmuyor.');
+                $this->respond(false, __('Team::ajax_pwd_mismatch'));
             }
 
             $fieldsToUpdate['password'] = password_hash($newPassword, PASSWORD_DEFAULT);
@@ -193,7 +193,7 @@ class AjaxController extends BaseController
             $_SESSION['admin_lang'] = $freshUser->language ?: 'tr';
             $_SESSION['admin_lang_user_chosen'] = true;
 
-            $this->respond(true, 'Profil bilgileriniz başarıyla güncellendi.', [
+            $this->respond(true, __('Team::ajax_profile_updated'), [
                 'user' => [
                     'id'           => $freshUser->id,
                     'name'         => $freshUser->name,
@@ -205,7 +205,7 @@ class AjaxController extends BaseController
                 ]
             ]);
         } else {
-            $this->respond(false, 'Profil güncellenirken bir veritabanı hatası oluştu.');
+            $this->respond(false, __('Team::ajax_profile_update_error'));
         }
     }
 }
