@@ -99,10 +99,11 @@ class RestApiController extends BaseController
         }
         $segments = $path !== '' ? explode('/', $path) : [];
 
-        $publicRoutes = ['', 'health', 'status', 'auth/login', 'webhooks/listener', 'visual-feedback', 'dispatcher', 'dispatcher/status'];
+        $publicRoutes = ['', 'health', 'status', 'auth/login', 'webhooks/listener', 'visual-feedback', 'dispatcher', 'dispatcher/status', 'watchdog', 'watchdog/health'];
         $isPublic = in_array($path, $publicRoutes) 
             || (count($segments) >= 2 && $segments[0] === 'auth' && $segments[1] === 'login') 
-            || (count($segments) >= 2 && $segments[0] === 'webhooks' && $segments[1] === 'listener');
+            || (count($segments) >= 2 && $segments[0] === 'webhooks' && $segments[1] === 'listener')
+            || (count($segments) >= 1 && $segments[0] === 'watchdog');
 
         // 5. Token Extraction
         $token = null;
@@ -174,6 +175,12 @@ class RestApiController extends BaseController
                 'queued_tasks'     => $queuedAiTasks,
                 'message'          => $running ? 'Dispatcher is active and running' : 'Dispatcher is currently stopped'
             ], __('RestApi::operation_successful'));
+        }
+
+        // WATCHDOG HEALTH & RECOVERY ENDPOINT
+        if ($resource === 'watchdog') {
+            $watchdogCtrl = new \Modules\Watchdog\Controllers\WatchdogController();
+            $watchdogCtrl->health();
         }
 
         // VISUAL PIN FEEDBACK

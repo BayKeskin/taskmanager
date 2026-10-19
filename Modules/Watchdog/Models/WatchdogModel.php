@@ -49,9 +49,41 @@ class WatchdogModel extends BaseModel
      */
     public function logRecovery(string $serviceName, string $status, string $details): int
     {
-        $sql = "INSERT INTO task_activities (task_id, user_id, action_type, description, created_at) 
+        $sql = "INSERT INTO task_activities (task_id, user_id, action_type, comment, created_at) 
                 VALUES (0, 1, 'watchdog_recovery', ?, NOW())";
         $desc = "Watchdog [{$serviceName}] -> {$status}: {$details}";
         return $this->execute($sql, [$desc]);
     }
+
+
+    /**
+     * Belirli dakikadan uzun süredir güncellenmeyen 'in_progress' durumundaki görevleri bulur
+     */
+    public function getStaleInProgressTasks(int $minutesThreshold = 25): array
+    {
+        $sql = "
+            SELECT t.*, p.project_code, p.title as project_title 
+            FROM tasks t
+            LEFT JOIN projects p ON p.id = t.project_id
+            WHERE t.status = 'in_progress' 
+              AND (t.updated_at IS NULL OR t.updated_at < DATE_SUB(NOW(), INTERVAL ? MINUTE))
+            ORDER BY t.updated_at ASC
+        ";
+        return $this->query($sql, [$minutesThreshold]) ?: [];
+    }
+
+    /**
+     * Tıkanmış görevi 'assigned' durumuna çeker ve not ekler
+     */
+    public function resetStaleTaskToAssigned(int $taskId, string $reason = 'Watchdog Stale Task Recovery'): bool
+    {
+        $sql = "UPDATE tasks SET status = 'assigned', updated_at = NOW() WHERE id = ?";
+        $res = $this->execute($sql, [$taskId]);
+        if ($res > 0) {
+            $this->logRecovery('StaleRecovery', 'recovered', "Task ID {$taskId} recovered: {$reason}");
+            return true;
+        }
+        return false;
+    }
 }
+

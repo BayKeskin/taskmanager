@@ -84,4 +84,67 @@ class WatchdogService
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
+
+    /**
+     * Sistem sağlık durumunu denetler ve tıkanmış (stale) görevleri kurtarır
+     */
+    public static function getHealthReport(int $minutesThreshold = 25): array
+    {
+        $watchdogModel = self::getModel();
+        $staleTasks = $watchdogModel->getStaleInProgressTasks($minutesThreshold);
+        $recoveredCount = 0;
+        $recoveredTasks = [];
+
+        foreach ($staleTasks as $stale) {
+            $s = (object)$stale;
+            $taskId = (int)$s->id;
+            $taskCode = $s->task_code ?? "#{$taskId}";
+            $projectId = (int)$s->project_id;
+
+            if ($watchdogModel->resetStaleTaskToAssigned($taskId, "Stale in_progress for > {$minutesThreshold}m")) {
+                $recoveredCount++;
+                $recoveredTasks[] = [
+                    'task_id'   => $taskId,
+                    'task_code' => $taskCode,
+                    'project'   => $s->project_code ?? ''
+                ];
+
+                // Canlı UI güncellemesi için SSE yayınla
+                if (class_exists('\Modules\SSE\Services\SseBroadcaster')) {
+                    \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', $projectId, $taskId, 1, [
+                        'task_id'    => $taskId,
+                        'task_code'  => $taskCode,
+                        'old_status' => 'in_progress',
+                        'new_status' => 'assigned',
+                        'note'       => 'Watchdog stale task recovery'
+                    ]);
+                }
+            }
+        }
+
+        // Genel kuyruk ve sistem denetimi
+        $dispatcherRunning = false;
+        if (class_exists('\Modules\Dispatcher\Services\DispatcherService')) {
+            $dispatcherService = new \Modules\Dispatcher\Services\DispatcherService();
+            $dispatcherRunning = $dispatcherService->isRunning();
+        }
+
+        $memoryUsage = round(memory_get_usage(true) / 1024 / 1024, 2) . ' MB';
+        $memoryPeak  = round(memory_get_peak_usage(true) / 1024 / 1024, 2) . ' MB';
+
+        return [
+            'status'                 => 'healthy',
+            'watchdog_active'        => true,
+            'dispatcher_running'     => $dispatcherRunning,
+            'stale_tasks_recovered'  => $recoveredCount,
+            'recovered_details'      => $recoveredTasks,
+            'threshold_minutes'      => $minutesThreshold,
+            'system_memory'          => [
+                'usage' => $memoryUsage,
+                'peak'  => $memoryPeak
+            ],
+            'timestamp'              => date('c')
+        ];
+    }
 }
+
