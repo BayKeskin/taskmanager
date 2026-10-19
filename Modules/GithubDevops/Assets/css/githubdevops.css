@@ -9,3 +9,85 @@
     background: rgba(30, 41, 59, 0.8);
     color: #94a3b8;
 }
+
+.gh-modal-dialog {
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.gh-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gh-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gh-header-icon {
+    font-size: 20px;
+}
+
+.gh-modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 0;
+}
+
+.gh-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.gh-modal-body {
+    padding: 20px;
+}
+
+.gh-desc-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.gh-form-group {
+    margin-bottom: 14px;
+}
+
+.gh-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.gh-input-field {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    color: var(--text-white);
+}
+
+.gh-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.gh-save-btn {
+    background: #2ea043;
+    color: #fff;
+}

@@ -2,9 +2,19 @@
 namespace Modules\GithubDevops\Controllers;
 
 use Core\BaseController;
+use Modules\GithubDevops\Models\GitDevopsModel;
+use Modules\GithubDevops\Services\GitService;
 
 class AjaxController extends BaseController
 {
+    private GitDevopsModel $model;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->model = new GitDevopsModel();
+    }
+
     private function respond(bool $success, string $message = '', array $data = []): void
     {
         $payload = array_merge(['success' => $success, 'message' => $message], $data);
@@ -16,30 +26,30 @@ class AjaxController extends BaseController
 
     public function saveSettings(): void
     {
-        \Modules\GithubDevops\Services\GitService::ensureGithubAndRollbackSchema();
+        $this->model->ensureGithubAndRollbackSchema();
         $ghUser  = trim($_POST['github_username'] ?? '');
         $ghToken = trim($_POST['github_token'] ?? '');
 
         if (empty($ghUser) || empty($ghToken)) {
-            $this->respond(false, 'GitHub Kullanıcı Adı ve Personal Access Token (PAT) zorunludur.');
+            $this->respond(false, __('GithubDevops::err_username_token_required'));
         }
 
-        $this->db->exec_query("UPDATE settings SET github_username = ?, github_token = ? WHERE id = 1", [$ghUser, $ghToken]);
-        $this->respond(true, 'GitHub hesabınız başarıyla bağlandı! Artık projeleriniz güvenle GitHub ile senkronize edilecek.');
+        $this->model->updateGithubSettings($ghUser, $ghToken);
+        $this->respond(true, __('GithubDevops::msg_github_connected'));
     }
 
     public function syncProject(): void
     {
         $projectId = (int)($_POST['project_id'] ?? 0);
         if ($projectId <= 0) {
-            $this->respond(false, 'Geçersiz proje ID.');
+            $this->respond(false, __('GithubDevops::err_invalid_project_id'));
         }
 
-        $res = \Modules\GithubDevops\Services\GitService::initAndSyncProjectGithubRepo($projectId);
+        $res = GitService::initAndSyncProjectGithubRepo($projectId);
         if (!empty($res['success'])) {
-            $this->respond(true, $res['message'], $res);
+            $this->respond(true, $res['message'] ?? '', $res);
         } else {
-            $this->respond(false, $res['error'] ?? 'GitHub senkronizasyonu başarısız oldu.', $res);
+            $this->respond(false, $res['error'] ?? __('GithubDevops::err_github_sync_failed'), $res);
         }
     }
 
@@ -48,14 +58,14 @@ class AjaxController extends BaseController
         $taskId = (int)($_POST['task_id'] ?? 0);
         $mode   = trim($_POST['mode'] ?? 'safe');
         if ($taskId <= 0) {
-            $this->respond(false, 'Geçersiz görev ID.');
+            $this->respond(false, __('GithubDevops::err_invalid_task_id'));
         }
 
-        $res = \Modules\GithubDevops\Services\GitService::rollbackTaskChanges($taskId, $mode);
+        $res = GitService::rollbackTaskChanges($taskId, $mode);
         if (!empty($res['success'])) {
-            $this->respond(true, $res['message'], $res);
+            $this->respond(true, $res['message'] ?? '', $res);
         } else {
-            $this->respond(false, $res['error'] ?? 'Geri alma işlemi yapılamadı.', $res);
+            $this->respond(false, $res['error'] ?? __('GithubDevops::err_rollback_failed'), $res);
         }
     }
 }

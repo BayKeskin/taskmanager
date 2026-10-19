@@ -7,7 +7,8 @@ use Core\EventManager;
 use Core\AssetManager;
 use Modules\GithubDevops\Services\GitService;
 
-// 1. Statik JS Varlıklarını Kuyruğa Al
+// 1. Statik CSS ve JS Varlıklarını Kuyruğa Al
+AssetManager::enqueueCss('github-devops', '/taskmanager/Modules/GithubDevops/Assets/css/githubdevops.css');
 AssetManager::enqueueJs('github-devops', '/taskmanager/Modules/GithubDevops/Assets/js/github-devops.js');
 
 // 2. Görev teslim edildiğinde otomatik Git Commit & Push kancası

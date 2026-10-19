@@ -1,67 +1,29 @@
 <?php
 namespace Modules\GithubDevops\Services;
 
-use Core\BaseModel;
+use Modules\GithubDevops\Models\GitDevopsModel;
 
 /**
  * GitService - Projelerin yerel ve uzak Git/GitHub operasyonlarını yönetir.
  * Atomic commit, origin push, diff analizi, schema snapshot ve cerrahi rollback işlemlerini yürütür.
  */
-class GitService extends BaseModel
+class GitService
 {
+    private static function getModel(): GitDevopsModel
+    {
+        static $model = null;
+        if ($model === null) {
+            $model = new GitDevopsModel();
+        }
+        return $model;
+    }
+
     /**
      * Gerekli veritabanı sütunlarını (settings, projects, task_submissions) otomatik kontrol eder.
      */
     public static function ensureGithubAndRollbackSchema(): void
     {
-        static $checked = false;
-        if ($checked) return;
-        $checked = true;
-
-        try {
-            $db = $GLOBALS['db'] ?? null;
-            if (!$db || empty($db->connect)) {
-                $db = new \Core\DataLayer();
-            }
-
-            // 1. settings tablosuna github_username ve github_token ekle
-            $colsSettings = $db->multi_record_query("SHOW COLUMNS FROM settings") ?: [];
-            $sNames = array_map(fn($c) => $c->Field, $colsSettings);
-            if (!in_array('github_username', $sNames)) {
-                $db->exec_query("ALTER TABLE settings ADD COLUMN github_username VARCHAR(120) NULL DEFAULT NULL");
-            }
-            if (!in_array('github_token', $sNames)) {
-                $db->exec_query("ALTER TABLE settings ADD COLUMN github_token VARCHAR(255) NULL DEFAULT NULL");
-            }
-
-            // 2. projects tablosuna github_repo ve db_name ekle
-            $colsProjects = $db->multi_record_query("SHOW COLUMNS FROM projects") ?: [];
-            $pNames = array_map(fn($c) => $c->Field, $colsProjects);
-            if (!in_array('github_repo', $pNames)) {
-                $db->exec_query("ALTER TABLE projects ADD COLUMN github_repo VARCHAR(180) NULL DEFAULT NULL");
-            }
-            if (!in_array('db_name', $pNames)) {
-                $db->exec_query("ALTER TABLE projects ADD COLUMN db_name VARCHAR(120) NULL DEFAULT NULL");
-            }
-
-            // 3. task_submissions tablosuna commit_hash, rollback_sql, schema_diff_summary, is_reverted ekle
-            $colsSub = $db->multi_record_query("SHOW COLUMNS FROM task_submissions") ?: [];
-            $subNames = array_map(fn($c) => $c->Field, $colsSub);
-            if (!in_array('commit_hash', $subNames)) {
-                $db->exec_query("ALTER TABLE task_submissions ADD COLUMN commit_hash VARCHAR(64) NULL DEFAULT NULL");
-            }
-            if (!in_array('rollback_sql', $subNames)) {
-                $db->exec_query("ALTER TABLE task_submissions ADD COLUMN rollback_sql LONGTEXT NULL DEFAULT NULL");
-            }
-            if (!in_array('schema_diff_summary', $subNames)) {
-                $db->exec_query("ALTER TABLE task_submissions ADD COLUMN schema_diff_summary TEXT NULL DEFAULT NULL");
-            }
-            if (!in_array('is_reverted', $subNames)) {
-                $db->exec_query("ALTER TABLE task_submissions ADD COLUMN is_reverted TINYINT(1) NOT NULL DEFAULT 0");
-            }
-        } catch (\Throwable $e) {
-            error_log("ensureGithubAndRollbackSchema error: " . $e->getMessage());
-        }
+        self::getModel()->ensureGithubAndRollbackSchema();
     }
 
     /**
@@ -69,16 +31,7 @@ class GitService extends BaseModel
      */
     public static function getGithubCredentials(): array
     {
-        self::ensureGithubAndRollbackSchema();
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
-        $row = $db->row_query("SELECT github_username, github_token FROM settings WHERE id = 1 LIMIT 1");
-        return [
-            'username' => trim((string)($row->github_username ?? '')),
-            'token'    => trim((string)($row->github_token ?? ''))
-        ];
+        return self::getModel()->getGithubCredentials();
     }
 
     /**
@@ -103,17 +56,15 @@ class GitService extends BaseModel
      */
     public static function discoverAndSyncExistingProjectRemotes(): array
     {
-        self::ensureGithubAndRollbackSchema();
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
+        $model = self::getModel();
+        $model->ensureGithubAndRollbackSchema();
 
-        $projects = $db->multi_record_query("SELECT id, project_code, title, workspace_path, github_repo FROM projects") ?: [];
+        $projects = $model->getAllProjects();
         $results = [];
 
         foreach ($projects as $p) {
-            $ws = rtrim(str_replace('\\', '/', trim((string)($p->workspace_path ?? ''))), '/');
+            $pObj = (object)$p;
+            $ws = rtrim(str_replace('\\', '/', trim((string)($pObj->workspace_path ?? ''))), '/');
             if (empty($ws) || !is_dir($ws) || !is_dir($ws . '/.git')) {
                 continue;
             }
@@ -125,16 +76,16 @@ class GitService extends BaseModel
                 if (preg_match('#github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$#i', $remoteUrl, $m)) {
                     $repoSlug = trim($m[1]) . '/' . trim($m[2]);
 
-                    if (empty($p->github_repo) || $p->github_repo !== $repoSlug) {
-                        $db->exec_query("UPDATE projects SET github_repo = ?, updated_at = NOW() WHERE id = ?", [$repoSlug, $p->id]);
-                        $results[$p->project_code] = [
-                            'title'  => $p->title,
+                    if (empty($pObj->github_repo) || $pObj->github_repo !== $repoSlug) {
+                        $model->updateProjectGithubRepo((int)$pObj->id, $repoSlug);
+                        $results[$pObj->project_code] = [
+                            'title'  => $pObj->title,
                             'repo'   => $repoSlug,
                             'status' => 'updated'
                         ];
                     } else {
-                        $results[$p->project_code] = [
-                            'title'  => $p->title,
+                        $results[$pObj->project_code] = [
+                            'title'  => $pObj->title,
                             'repo'   => $repoSlug,
                             'status' => 'already_synced'
                         ];
@@ -151,18 +102,17 @@ class GitService extends BaseModel
      */
     public static function initAndSyncProjectGithubRepo(int $projectId): array
     {
-        self::ensureGithubAndRollbackSchema();
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
+        $model = self::getModel();
+        $model->ensureGithubAndRollbackSchema();
 
-        $project = $db->row_query("SELECT * FROM projects WHERE id = ? LIMIT 1", [$projectId]);
-        if (!$project) return ['success' => false, 'error' => 'Proje bulunamadı.'];
+        $project = $model->getProjectById($projectId);
+        if (!$project) {
+            return ['success' => false, 'error' => __('GithubDevops::err_project_not_found')];
+        }
 
         $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
         if (empty($ws) || !is_dir($ws)) {
-            return ['success' => false, 'error' => 'Projenin yerel çalışma dizini (workspace_path) tanımlı değil veya klasör bulunamadı.'];
+            return ['success' => false, 'error' => __('GithubDevops::err_workspace_not_found')];
         }
 
         $escapedWs = escapeshellarg($ws);
@@ -172,25 +122,29 @@ class GitService extends BaseModel
             if (!empty($existingRemote)) {
                 if (preg_match('#github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$#i', $existingRemote, $m)) {
                     $repoSlug = trim($m[1]) . '/' . trim($m[2]);
-                    $db->exec_query("UPDATE projects SET github_repo = ?, updated_at = NOW() WHERE id = ?", [$repoSlug, $project->id]);
+                    $model->updateProjectGithubRepo((int)$project->id, $repoSlug);
                     return [
                         'success'     => true,
                         'github_repo' => $repoSlug,
                         'repo_url'    => "https://github.com/{$repoSlug}",
-                        'message'     => "Mevcut GitHub deposu korundu ve projeye bağlandı ({$repoSlug})!"
+                        'message'     => str_replace('{repo}', $repoSlug, __('GithubDevops::msg_existing_repo_kept'))
                     ];
                 }
             }
         }
 
-        $creds = self::getGithubCredentials();
+        $creds = $model->getGithubCredentials();
         if (empty($creds['username']) || empty($creds['token'])) {
-            return ['success' => false, 'error' => 'Lütfen önce Sistem Ayarları ekranından GitHub Kullanıcı Adı ve Personal Access Token (PAT) bilgilerinizi kaydedin.'];
+            return ['success' => false, 'error' => __('GithubDevops::err_save_github_creds_first')];
         }
 
         $repoSlug = trim((string)($project->github_repo ?? ''));
         if (empty($repoSlug)) {
-            $slug = strtolower(preg_replace('/[^a-zA-Z0-9\-]/', '-', str_replace(['ı','ğ','ü','ş','ö','ç','İ','Ğ','Ü','Ş','Ö','Ç'], ['i','g','u','s','o','c','i','g','u','s','o','c'], $project->title)));
+            $slug = strtolower(preg_replace('/[^a-zA-Z0-9\-]/', '-', str_replace(
+                ['\u{0131}','\u{011f}','\u{00fc}','\u{015f}','\u{00f6}','\u{00e7}','\u{0130}','\u{011e}','\u{00dc}','\u{015e}','\u{00d6}','\u{00c7}'],
+                ['i','g','u','s','o','c','i','g','u','s','o','c'],
+                $project->title
+            )));
             $slug = trim(preg_replace('/-+/', '-', $slug), '-');
             if (empty($slug)) $slug = strtolower($project->project_code);
             $repoSlug = $creds['username'] . '/' . $slug;
@@ -226,7 +180,7 @@ class GitService extends BaseModel
         if ($httpCode !== 201 && $httpCode !== 422 && $httpCode !== 200) {
             $errJson = json_decode((string)$resp, true);
             $errMsg  = $errJson['message'] ?? 'HTTP ' . $httpCode;
-            return ['success' => false, 'error' => "GitHub API Hatası: {$errMsg}"];
+            return ['success' => false, 'error' => str_replace('{error}', $errMsg, __('GithubDevops::err_github_api'))];
         }
 
         $gitignorePath = $ws . '/.gitignore';
@@ -275,13 +229,13 @@ class GitService extends BaseModel
             curl_close($chBranch);
         }
 
-        $db->exec_query("UPDATE projects SET github_repo = ?, updated_at = NOW() WHERE id = ?", ["{$owner}/{$repoName}", $project->id]);
+        $model->updateProjectGithubRepo((int)$project->id, "{$owner}/{$repoName}");
 
         return [
             'success'     => true,
             'github_repo' => "{$owner}/{$repoName}",
             'repo_url'    => "https://github.com/{$owner}/{$repoName}",
-            'message'     => "Proje başarıyla GitHub'a ({$owner}/{$repoName}) bağlandı ve senkronize edildi!",
+            'message'     => str_replace('{repo}', "{$owner}/{$repoName}", __('GithubDevops::msg_project_synced')),
             'git_output'  => $output
         ];
     }
@@ -293,13 +247,13 @@ class GitService extends BaseModel
     {
         $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
         if (empty($ws) || !is_dir($ws)) {
-            return ['success' => false, 'error' => 'Workspace dizini yok.'];
+            return ['success' => false, 'error' => __('GithubDevops::err_workspace_dir_missing')];
         }
 
         $escapedWs = escapeshellarg($ws);
 
         if (!is_dir($ws . '/.git')) {
-            return ['success' => false, 'error' => 'Git deposu (.git) bulunamadı.'];
+            return ['success' => false, 'error' => __('GithubDevops::err_git_not_found')];
         }
 
         $commitMsg = "feat({$task->task_code}): " . str_replace(['"', '`', '$'], '', $task->title);
@@ -309,7 +263,7 @@ class GitService extends BaseModel
 
         $hash = trim((string)@shell_exec("cd /d {$escapedWs} && git rev-parse HEAD 2>nul"));
         if (empty($hash) || strlen($hash) < 7) {
-            return ['success' => false, 'error' => 'Commit oluşturulamadı veya dosya değişikliği yok.'];
+            return ['success' => false, 'error' => __('GithubDevops::err_commit_failed')];
         }
 
         $branch = self::detectActiveBranch($ws);
@@ -402,22 +356,12 @@ class GitService extends BaseModel
         if (empty($dbName)) return $map;
 
         try {
-            $db = $GLOBALS['db'] ?? null;
-            if (!$db || empty($db->connect)) {
-                $db = new \Core\DataLayer();
-            }
-
-            $rows = $db->multi_record_query("
-                SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE 
-                FROM information_schema.COLUMNS 
-                WHERE TABLE_SCHEMA = ? 
-                ORDER BY TABLE_NAME, ORDINAL_POSITION
-            ", [$dbName]) ?: [];
-
+            $rows = self::getModel()->getSchemaColumns($dbName);
             foreach ($rows as $r) {
-                $t = $r->TABLE_NAME;
+                $rObj = (object)$r;
+                $t = $rObj->TABLE_NAME;
                 if (!isset($map[$t])) $map[$t] = [];
-                $map[$t][$r->COLUMN_NAME] = $r->COLUMN_TYPE;
+                $map[$t][$rObj->COLUMN_NAME] = $rObj->COLUMN_TYPE;
             }
         } catch (\Throwable $e) {
             error_log("getProjectSchemaMap error: " . $e->getMessage());
@@ -432,14 +376,10 @@ class GitService extends BaseModel
     public static function capturePreTaskSnapshot(int $taskId): void
     {
         try {
-            $db = $GLOBALS['db'] ?? null;
-            if (!$db || empty($db->connect)) {
-                $db = new \Core\DataLayer();
-            }
-
-            $task = $db->row_query("SELECT id, task_code, project_id FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
+            $model = self::getModel();
+            $task = $model->getTaskById($taskId);
             if (!$task) return;
-            $project = $db->row_query("SELECT * FROM projects WHERE id = ? LIMIT 1", [$task->project_id]);
+            $project = $model->getProjectById((int)$task->project_id);
             if (!$project) return;
 
             $dbName = self::resolveProjectDatabaseName($project);
@@ -477,7 +417,7 @@ class GitService extends BaseModel
                 $customSql = trim((string)@file_get_contents($agentDownFile));
                 if ($customSql !== '') {
                     $sqlStatements[] = "-- Agent Custom Rollback SQL:\n" . $customSql;
-                    $summaryParts[]  = "Ajan özel geri alma SQL'i (.migrations/{$taskCode}_down.sql)";
+                    $summaryParts[]  = str_replace('{task_code}', $taskCode, __('GithubDevops::summary_agent_down_sql'));
                 }
             }
         }
@@ -493,12 +433,12 @@ class GitService extends BaseModel
                 foreach ($newMap as $tableName => $cols) {
                     if (!isset($oldMap[$tableName])) {
                         $sqlStatements[] = "DROP TABLE IF EXISTS `{$dbName}`.`{$tableName}`;";
-                        $summaryParts[]  = "`{$tableName}` tablosu oluşturuldu";
+                        $summaryParts[]  = str_replace('{table}', $tableName, __('GithubDevops::summary_table_created'));
                     } else {
                         foreach ($cols as $colName => $colType) {
                             if (!isset($oldMap[$tableName][$colName])) {
                                 $sqlStatements[] = "ALTER TABLE `{$dbName}`.`{$tableName}` DROP COLUMN `{$colName}`;";
-                                $summaryParts[]  = "`{$tableName}.{$colName}` sütunu eklendi";
+                                $summaryParts[]  = str_replace(['{table}', '{column}'], [$tableName, $colName], __('GithubDevops::summary_column_added'));
                             }
                         }
                     }
@@ -509,7 +449,7 @@ class GitService extends BaseModel
 
         return [
             'rollback_sql' => implode("\n", $sqlStatements),
-            'summary'      => !empty($summaryParts) ? implode(', ', $summaryParts) : 'Veritabanı şema değişikliği yok (Sadece Kod)'
+            'summary'      => !empty($summaryParts) ? implode(', ', $summaryParts) : __('GithubDevops::summary_no_schema_diff')
         ];
     }
 
@@ -519,47 +459,47 @@ class GitService extends BaseModel
      */
     public static function rollbackTaskChanges(int $taskId, string $mode = 'safe'): array
     {
-        self::ensureGithubAndRollbackSchema();
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
+        $model = self::getModel();
+        $model->ensureGithubAndRollbackSchema();
+
+        $task = $model->getTaskById($taskId);
+        if (!$task) {
+            return ['success' => false, 'error' => __('GithubDevops::err_task_not_found')];
         }
 
-        $task = $db->row_query("SELECT * FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
-        if (!$task) return ['success' => false, 'error' => 'Görev bulunamadı.'];
+        $project = $model->getProjectById((int)$task->project_id);
+        if (!$project) {
+            return ['success' => false, 'error' => __('GithubDevops::err_project_not_found')];
+        }
 
-        $project = $db->row_query("SELECT * FROM projects WHERE id = ? LIMIT 1", [$task->project_id]);
-        if (!$project) return ['success' => false, 'error' => 'Proje bulunamadı.'];
-
-        $sub = $db->row_query("SELECT * FROM task_submissions WHERE task_id = ? ORDER BY id DESC LIMIT 1", [$taskId]);
+        $sub = $model->getLatestSubmission($taskId);
         if (!$sub || empty($sub->commit_hash)) {
-            return ['success' => false, 'error' => 'Bu göreve ait kayıtlı bir Git Commit Hash bulunamadı.'];
+            return ['success' => false, 'error' => __('GithubDevops::err_no_commit_hash')];
         }
         if ((int)($sub->is_reverted ?? 0) === 1) {
-            return ['success' => false, 'error' => 'Bu görevin değişiklikleri zaten daha önce geri alınmış.'];
+            return ['success' => false, 'error' => __('GithubDevops::err_already_reverted')];
         }
 
         $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
         if (empty($ws) || !is_dir($ws . '/.git')) {
-            return ['success' => false, 'error' => 'Proje dizininde Git deposu (.git) bulunamadı.'];
+            return ['success' => false, 'error' => __('GithubDevops::err_git_not_found')];
         }
 
         $hash      = trim($sub->commit_hash);
         $escapedWs = escapeshellarg($ws);
 
         if ($mode === 'ai_surgeon') {
-            $reason = "⚠️ CERRAHİ GERİ ALMA (ROLLBACK) TALEBİ:\n"
-                . "`{$task->task_code}` ({$task->title}) görevinde yapılan değişiklikler geri alınmak isteniyor ancak bu commit (`{$hash}`) sonrasında başka bağımlı görevler tamamlandığı için doğrudan `git revert` çakışma (conflict) üretiyor.\n\n"
-                . "GÖREVİN:\n"
-                . "1. `git show {$hash}` komutuyla bu görevde hangi dosya ve satırların değiştiğini dikkatle incele.\n"
-                . "2. Bu görevden SONRA yapılan diğer görevlerin kodlarına ve özelliklerine KESİNLİKLE ZARAR VERMEDEN, sadece `{$task->task_code}` görevinde eklenen/değiştirilen kodları ve veritabanı yapılarını (" . ($sub->schema_diff_summary ?: 'varsa tabloları') . ") cımbızla sistemden temizle.\n"
-                . "3. Sistemi canlı ortamda test et, çalıştığını kanıtla ve tekrar teslim et!";
+            $reasonTemplate = __('GithubDevops::rollback_reason_title');
+            $schemaPart = $sub->schema_diff_summary ?: __('GithubDevops::default_schema_tables');
+            $reason = str_replace(
+                ['{task_code}', '{title}', '{hash}', '{schema}'],
+                [$task->task_code, $task->title, $hash, $schemaPart],
+                $reasonTemplate
+            );
 
-            $db->exec_query("UPDATE tasks SET status = 'modification_requested', updated_at = NOW() WHERE id = ?", [$task->id]);
-            $db->exec_query("INSERT INTO task_modifications (task_id, requested_by, reason, status, created_at) VALUES (?, ?, ?, 'pending', NOW())", [
-                $task->id, $_SESSION['user']->id ?? 1, $reason
-            ]);
-            
+            $userId = $_SESSION['user']->id ?? 1;
+            $model->requestModification((int)$task->id, (int)$userId, $reason);
+
             if (class_exists('Modules\\Board\\Services\\TaskLifecycleService')) {
                 \Modules\Board\Services\TaskLifecycleService::triggerTaskRevisionWebhook((int)$task->id, $reason);
             }
@@ -567,7 +507,7 @@ class GitService extends BaseModel
             return [
                 'success' => true,
                 'mode'    => 'ai_surgeon',
-                'message' => "🤖 AI Cerrah görevlendirildi! Sonraki görevlere dokunmadan sadece {$task->task_code} görevinin kodlarını ve DB değişikliklerini ayıklayacak."
+                'message' => str_replace('{task_code}', $task->task_code, __('GithubDevops::msg_ai_surgeon_assigned'))
             ];
         }
 
@@ -581,7 +521,7 @@ class GitService extends BaseModel
                 'success'      => false,
                 'has_conflict' => true,
                 'commit_hash'  => substr($hash, 0, 7),
-                'error'        => "Bağımlılık / Çakışma Tespit Edildi! {$task->task_code} görevinden sonra yapılan bazı görevler bu görevin yazdığı kodların üstüne inşa edilmiş.",
+                'error'        => str_replace('{task_code}', $task->task_code, __('GithubDevops::err_conflict_detected')),
                 'details'      => $testRevert
             ];
         }
@@ -590,7 +530,7 @@ class GitService extends BaseModel
         @shell_exec("cd /d {$escapedWs} && git commit -m " . escapeshellarg($revertMsg) . " 2>&1");
 
         $branch = self::detectActiveBranch($ws);
-        $creds = self::getGithubCredentials();
+        $creds = $model->getGithubCredentials();
         if (!empty($creds['username']) && !empty($creds['token'])) {
             $authHeader = base64_encode("{$creds['username']}:{$creds['token']}");
             @shell_exec("cd /d {$escapedWs} && git -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1");
@@ -605,7 +545,7 @@ class GitService extends BaseModel
                 $cleanSql = trim(preg_replace('/^--.*$/m', '', $sqlStmt));
                 if ($cleanSql !== '') {
                     try {
-                        $db->exec_query($cleanSql);
+                        $model->executeRaw($cleanSql);
                         $dbRolledBack = true;
                     } catch (\Throwable $e) {
                         error_log("Rollback SQL error: " . $e->getMessage());
@@ -614,19 +554,20 @@ class GitService extends BaseModel
             }
         }
 
-        $db->exec_query("UPDATE task_submissions SET is_reverted = 1 WHERE id = ?", [$sub->id]);
-        $db->exec_query("
-            INSERT INTO task_activities (task_id, user_id, action_type, comment, created_at)
-            VALUES (?, ?, 'task_reverted', ?, NOW())
-        ", [
-            $task->id, $_SESSION['user']->id ?? 1,
-            "⏪ Görev değişiklikleri GitHub'dan" . ($dbRolledBack ? " ve Veritabanından ({$sub->schema_diff_summary})" : "") . " cerrahi olarak geri alındı (Commit: " . substr($hash, 0, 7) . ")."
-        ]);
+        $model->markSubmissionReverted((int)$sub->id);
+
+        $dbSummary = $dbRolledBack ? str_replace('{summary}', (string)$sub->schema_diff_summary, __('GithubDevops::part_and_db')) : '';
+        $comment = str_replace(['{db_part}', '{hash}'], [$dbSummary, substr($hash, 0, 7)], __('GithubDevops::activity_task_reverted'));
+        $userId = $_SESSION['user']->id ?? 1;
+        $model->logTaskActivity((int)$task->id, (int)$userId, 'task_reverted', $comment);
+
+        $dbMysql = $dbRolledBack ? __('GithubDevops::part_and_db_mysql') : '';
+        $message = str_replace(['{task_code}', '{db_part}'], [$task->task_code, $dbMysql], __('GithubDevops::msg_task_reverted_success'));
 
         return [
             'success'        => true,
             'db_rolled_back' => $dbRolledBack,
-            'message'        => "✅ {$task->task_code} görevinin kodları GitHub'dan" . ($dbRolledBack ? " ve açtığı veritabanı yapıları MySQL'den" : "") . " diğer görevlere dokunulmadan cerrahi olarak geri alındı!"
+            'message'        => $message
         ];
     }
 
