@@ -42,7 +42,7 @@
 
             screenshotLibPromise = new Promise((resolve) => {
                 const scriptLocal = document.createElement('script');
-                scriptLocal.src = baseOrigin + '/Public/js/html2canvas.min.js';
+                scriptLocal.src = baseOrigin + '/Modules/VisualPins/Assets/js/html2canvas.min.js';
                 scriptLocal.async = true;
                 scriptLocal.onload = () => {
                     if (window.html2canvas) {
