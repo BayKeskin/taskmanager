@@ -13,7 +13,7 @@ require __DIR__ . '/../Modules/ApiTester/Views/api_docs.php';
 $html = ob_get_clean();
 
 echo "Render Length: " . strlen($html) . " bytes\n";
-echo "Has Header: " . (strpos($html, 'cu-view-header') !== false ? 'YES' : 'NO') . "\n";
+echo "Has Header: " . (strpos($html, 'cu-docs-header-bar') !== false ? 'YES' : 'NO') . "\n";
 echo "Has Token Card: " . (strpos($html, 'cu-docs-token-card') !== false ? 'YES' : 'NO') . "\n";
 echo "Has Endpoint Cards: " . (strpos($html, 'cu-endpoint-card') !== false ? 'YES' : 'NO') . "\n";
 echo "Has apitester.css enqueued: " . (strpos($html, 'apitester.css') !== false ? 'YES' : 'NO') . "\n";

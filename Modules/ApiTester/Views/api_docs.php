@@ -15,8 +15,8 @@ $dynCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
 $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dynCfg['api_token'] ?: 'tm_live_demo_token');
 ?>
 
-<div class="cu-view-header cu-docs-header-bar">
-    <div>
+<div class="cu-docs-header-bar">
+    <div class="cu-docs-header-left">
         <div class="cu-docs-title-wrapper">
             <span class="cu-docs-title-icon">⚡</span>
             <h1 class="cu-docs-title-heading"><?= htmlspecialchars(__('ApiTester::api_version')) ?></h1>
