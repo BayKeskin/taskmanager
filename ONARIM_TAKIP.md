@@ -1,8 +1,8 @@
-# Reports Modülü Onarım ve Fark Takip Listesi (`Modules/Reports`)
+# ONARIM VE İNCELEME TAKİP LİSTESİ: Team Modülü
 
-Bu dosya, Reports modülündeki görsel/CSS, mimari ve işlevsel eksiklikleri adım adım çözmek ve takip etmek için oluşturulmuştur.
-
-- [x] 1. [İşlev/CSS] `reports.php` içindeki proje ilerleme çubukları (`.cu-rep-proj-bar`) ve proje renk noktaları (`.cu-rep-proj-dot`) veritabanındaki dinamik proje rengi ve tamamlama oranını yansıtması sağlandı; `data-rate`, `data-color` öznitelikleri ve `reports.js` dinamik DOM senkronizasyonu ile canlandırıldı.
-- [x] 2. [İşlev/CSS] Ekip üyesi performans tablosundaki avatarlar (`.cu-rep-avatar`) veritabanındaki kullanıcı renklerini (`data-avatar-color`) alacak şekilde yapılandırıldı; `reports.js` ile dinamik arka plan rengi ve harf kontrastı uygulandı.
-- [x] 3. [Görsel/CSS] KPI metrik kartları (`.cu-rep-kpi-card`), Hakediş Özeti kutusu (`.cu-rep-billing-box`) ve analitik bölümleri için modern kart gölgeleri, hover derinlik efektleri (`translateY(-2px)`) ve duyarlı (responsive) ızgara kuralları eklendi.
-- [x] 4. [Denetim & Doğrulama] `php tests/audit_module.php Reports` denetimi çalıştırılarak sıfır ihlal (`[PASS]`) doğrulandı ve canlı sistemde `http://localhost/taskmanager/reports` sayfası test edildi.
+## Tespit Edilen Durumlar ve Yapılan İşlemler
+- [x] 1. [Mimari/Yol] `Modules/Team/init.php` içinde sabit `/taskmanager/` script/stil yolu yerine dinamik bağıl yol `/Modules/Team/Assets/` tanımlandı.
+- [x] 2. [Görsel/CSS] Ekip tablosu satırları, rol rozetleri (Admin, Client, Member), dil bayrakları ve aktif/pasif durum göstergeleri karanlık temayla tam uyumlu hale getirildi.
+- [x] 3. [Görsel/CSS] Yeni Ekip Üyesi Modalı (`modalNewMember`) ve Kullanıcı Profil Ayarları Modalı (`modalProfileSettings`) form düzenleri, avatar renk seçicileri, şifre göster/gizle butonları kontrol edildi; taşma ve scroll sorunları giderildi.
+- [x] 4. [İşlev/JS] `team.js` içindeki `BASE_URL` entegrasyonu, AJAX kullanıcı silme (`delete_user`) ve davet kopyalama (`copyClientInvite`) fonksiyonları doğrulandı.
+- [x] 5. [Denetim/Audit] `taskmanager-audit/audit.php Team` ve `tests/audit_module.php Team` testleri çalıştırıldı; 0 ihlal ile `[PASS]` alındı.
