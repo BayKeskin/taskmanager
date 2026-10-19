@@ -22,12 +22,12 @@ if (!isset($billing) || !is_array($billing)) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Billing Report Scoped CSS -->
-    <link rel="stylesheet" href="/taskmanager/Modules/Billing/Assets/css/billing-report.css">
+    <link rel="stylesheet" href="<?= baseUrl('/Modules/Billing/Assets/css/billing-report.css') ?>">
 </head>
 <body class="billing-report-page">
 
     <div class="action-bar">
-        <a href="/taskmanager/reports" class="btn-back">⬅ <?= htmlspecialchars(__('Billing::btn_back_reports')) ?></a>
+        <a href="<?= baseUrl('reports') ?>" class="btn-back">⬅ <?= htmlspecialchars(__('Billing::btn_back_reports')) ?></a>
         <button type="button" class="btn-print" id="btnBillingPrint">
             <span>🖨️</span> <span><?= htmlspecialchars(__('Billing::btn_print_pdf')) ?></span>
         </button>

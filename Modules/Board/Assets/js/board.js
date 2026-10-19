@@ -3155,7 +3155,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function downloadDeliveryReportPdf(projectId) {
-    const url = '/taskmanager/billing-report' + (projectId ? '?project_id=' + projectId : '');
+    const base = (typeof window.BASE_URL !== 'undefined') ? window.BASE_URL : '';
+    const url = base + '/billing-report' + (projectId ? '?project_id=' + projectId : '');
     window.open(url, '_blank');
 }
 
