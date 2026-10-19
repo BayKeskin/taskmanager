@@ -18,7 +18,7 @@ class AjaxController extends BaseController
     {
         $pId = isset($_GET['project_id']) && is_numeric($_GET['project_id']) ? (int)$_GET['project_id'] : null;
         $res = \Modules\Reports\Services\StandupService::generateAiStandupSummary($pId);
-        $this->respond(true, 'Günlük AI standup özeti hazırlandı.', array_merge($res, ['data' => $res]));
+        $this->respond(true, __('Reports::standup_prepared'), array_merge($res, ['data' => $res]));
     }
 
     public function sendStandupEmail(): void
@@ -26,10 +26,10 @@ class AjaxController extends BaseController
         $email = trim($_POST['email'] ?? $this->user->email ?? '');
         $pId = isset($_POST['project_id']) && is_numeric($_POST['project_id']) ? (int)$_POST['project_id'] : null;
         if (empty($email)) {
-            $this->respond(false, 'E-posta adresi belirtilmedi.');
+            $this->respond(false, __('Reports::email_required'));
         }
         $summary = \Modules\Reports\Services\StandupService::generateAiStandupSummary($pId);
         $sent = \Modules\Reports\Services\StandupService::sendDailyStandupEmail($email, $summary);
-        $this->respond((bool)$sent, $sent ? 'Günlük standup e-postası başarıyla iletildi.' : 'E-posta sunucusu yanıt vermedi.');
+        $this->respond((bool)$sent, $sent ? __('Reports::standup_email_sent') : __('Reports::email_failed'));
     }
 }

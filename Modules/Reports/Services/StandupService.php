@@ -88,96 +88,57 @@ class StandupService extends BaseModel
     public static function generateAiStandupSummary(?int $projectId = null, ?string $lang = null): array
     {
         $data = self::getDailyStandupData($projectId);
-        $isTr = ($lang === 'tr') || (!$lang && class_exists('Core\\Language') && Language::current() === 'tr');
+        $dateStr = date('d.m.Y');
 
-        $md = $isTr 
-            ? "# 📋 Günlük AI Standup & Görev Özeti (" . date('d.m.Y') . ")\n\n"
-            : "# 📋 Daily AI Standup & Task Summary (" . date('d.m.Y') . ")\n\n";
+        $md = str_replace(':date', $dateStr, __('Reports::standup_header')) . "\n\n";
 
-        $md .= $isTr 
-            ? "### 🎯 1. Son 24 Saatte Tamamlanan & Teslim Edilenler ({$data['completed_count']})\n"
-            : "### 🎯 1. Completed & Submitted in the Last 24 Hours ({$data['completed_count']})\n";
+        $md .= str_replace(':count', (string)$data['completed_count'], __('Reports::standup_completed_sec')) . "\n";
 
         if (empty($data['completed'])) {
-            $md .= $isTr 
-                ? "_Son 24 saatte tamamlanan veya teslim edilen görev kaydedilmedi._\n\n"
-                : "_No tasks were completed or submitted in the last 24 hours._\n\n";
+            $md .= __('Reports::standup_no_completed') . "\n\n";
         } else {
             foreach ($data['completed'] as $c) {
-                if ($isTr) {
-                    $statusBadge = ($c->status === 'submitted') ? '[TESLİM EDİLDİ]' : '[TAMAMLANDI]';
-                    $assignee = $c->assignee_name ?: 'Atanmamış';
-                    $md .= "- **{$c->task_code}**: {$c->title} — {$statusBadge} _(Sorumlu: {$assignee})_\n";
-                } else {
-                    $statusBadge = ($c->status === 'submitted') ? '[SUBMITTED]' : '[COMPLETED]';
-                    $assignee = $c->assignee_name ?: 'Unassigned';
-                    $md .= "- **{$c->task_code}**: {$c->title} — {$statusBadge} _(Assignee: {$assignee})_\n";
-                }
+                $statusBadge = ($c->status === 'submitted') ? __('Reports::status_submitted') : __('Reports::status_completed');
+                $assignee = $c->assignee_name ?: __('Reports::unassigned');
+                $md .= "- **{$c->task_code}**: {$c->title} — {$statusBadge} _(" . __('Reports::assignee_label') . " {$assignee})_\n";
             }
             $md .= "\n";
         }
 
-        $md .= $isTr 
-            ? "### ⚡ 2. Aktif Çalışılan Görevler ({$data['in_progress_count']})\n"
-            : "### ⚡ 2. Active Tasks in Progress ({$data['in_progress_count']})\n";
+        $md .= str_replace(':count', (string)$data['in_progress_count'], __('Reports::standup_active_sec')) . "\n";
 
         if (empty($data['in_progress'])) {
-            $md .= $isTr 
-                ? "_Şu anda 'Çalışılıyor' durumunda bekleyen aktif görev yok._\n\n"
-                : "_There are currently no active tasks in progress._\n\n";
+            $md .= __('Reports::standup_no_active') . "\n\n";
         } else {
             foreach ($data['in_progress'] as $ip) {
-                if ($isTr) {
-                    $assignee = $ip->assignee_name ?: 'Atanmamış';
-                    $md .= "- **{$ip->task_code}**: {$ip->title} _(Öncelik: {$ip->priority}, Sorumlu: {$assignee})_\n";
-                } else {
-                    $assignee = $ip->assignee_name ?: 'Unassigned';
-                    $md .= "- **{$ip->task_code}**: {$ip->title} _(Priority: {$ip->priority}, Assignee: {$assignee})_\n";
-                }
+                $assignee = $ip->assignee_name ?: __('Reports::unassigned');
+                $md .= "- **{$ip->task_code}**: {$ip->title} _(" . __('Reports::priority_label') . " {$ip->priority}, " . __('Reports::assignee_label') . " {$assignee})_\n";
             }
             $md .= "\n";
         }
 
-        $md .= $isTr 
-            ? "### ⚠️ 3. Dikkat Gerektiren Riskli / Geciken Görevler ({$data['delayed_count']})\n"
-            : "### ⚠️ 3. Risky / Overdue Tasks Requiring Attention ({$data['delayed_count']})\n";
+        $md .= str_replace(':count', (string)$data['delayed_count'], __('Reports::standup_delayed_sec')) . "\n";
 
         if (empty($data['delayed'])) {
-            $md .= $isTr 
-                ? "✅ _Tebrikler! Takvimde gecikmeye düşen veya kritik riskli görev bulunmuyor._\n\n"
-                : "✅ _Great! No overdue or critically risky tasks on the schedule._\n\n";
+            $md .= __('Reports::standup_no_delayed') . "\n\n";
         } else {
             foreach ($data['delayed'] as $d) {
-                if ($isTr) {
-                    $deadlineTxt = !empty($d->deadline) ? $d->deadline : 'Tarihsiz Acil';
-                    $assignee = $d->assignee_name ?: 'Atanmamış';
-                    $md .= "- 🔴 **{$d->task_code}**: {$d->title} (Bitiş: {$deadlineTxt}, Sorumlu: {$assignee})\n";
-                } else {
-                    $deadlineTxt = !empty($d->deadline) ? $d->deadline : 'Urgent / No Due Date';
-                    $assignee = $d->assignee_name ?: 'Unassigned';
-                    $md .= "- 🔴 **{$d->task_code}**: {$d->title} (Due: {$deadlineTxt}, Assignee: {$assignee})\n";
-                }
+                $deadlineTxt = !empty($d->deadline) ? $d->deadline : __('Reports::deadline_urgent');
+                $assignee = $d->assignee_name ?: __('Reports::unassigned');
+                $md .= "- 🔴 **{$d->task_code}**: {$d->title} (" . __('Reports::deadline_label') . " {$deadlineTxt}, " . __('Reports::assignee_label') . " {$assignee})\n";
             }
             $md .= "\n";
         }
 
-        $md .= $isTr 
-            ? "### 💡 4. Scrum Master & AI Tavsiyeleri\n"
-            : "### 💡 4. Scrum Master & AI Recommendations\n";
+        $md .= __('Reports::standup_advice_sec') . "\n";
 
         if ($data['delayed_count'] > 0) {
-            $md .= $isTr 
-                ? "- ⚠️ Geciken görevler için takım içi kaynak transferi önerilir.\n"
-                : "- ⚠️ Internal team resource reallocation is recommended for delayed tasks.\n";
+            $md .= __('Reports::standup_advice_delay') . "\n";
         }
         if ($data['in_progress_count'] > 5) {
-            $md .= $isTr 
-                ? "- 📌 WIP (Work in Progress) limiti yüksek görünüyor; tamamlamaya odaklanılması önerilir.\n"
-                : "- 📌 WIP (Work in Progress) limit appears high; focus on task completion is recommended.\n";
+            $md .= __('Reports::standup_advice_wip') . "\n";
         } else {
-            $md .= $isTr 
-                ? "- 🚀 Ekip akışı sağlıklı, sprint hedeflerine uyum yüksek seyrediyor.\n"
-                : "- 🚀 Team workflow is healthy and sprint target alignment is strong.\n";
+            $md .= __('Reports::standup_advice_smooth') . "\n";
         }
 
         return [
@@ -193,19 +154,13 @@ class StandupService extends BaseModel
      */
     public static function sendDailyStandupEmail(string $recipientEmail, array $standupData): bool
     {
-        $isTr = (class_exists('Core\\Language') && Language::current() === 'tr');
-        $subject = $isTr 
-            ? ("📋 TaskManager Günlük AI Standup Bülteni - " . date('d.m.Y'))
-            : ("📋 TaskManager Daily AI Standup Digest - " . date('d.m.Y'));
-
-        $footerText = $isTr 
-            ? "Bu bülten TaskManager Otonom AI Asistanı tarafından otomatik oluşturulmuştur."
-            : "This digest was automatically generated by TaskManager Autonomous AI Assistant.";
+        $subject = str_replace(':date', date('d.m.Y'), __('Reports::standup_email_subject'));
+        $footerText = __('Reports::standup_email_footer');
 
         $htmlBody = "<h2>" . htmlspecialchars($subject) . "</h2>";
-        $htmlBody .= "<div style='font-family:sans-serif; line-height:1.6; color:#333; background:#f9f9f9; padding:20px; border-radius:8px;'>";
+        $htmlBody .= "<div class=\"standup-email-content\">";
         $htmlBody .= nl2br(htmlspecialchars($standupData['summary'] ?? ''));
-        $htmlBody .= "</div><p style='font-size:12px; color:#888;'>" . htmlspecialchars($footerText) . "</p>";
+        $htmlBody .= "</div><p class=\"standup-email-footer\">" . htmlspecialchars($footerText) . "</p>";
 
         if (class_exists('Modules\\Mailer\\Services\\MailerService')) {
             return \Modules\Mailer\Services\MailerService::sendHtmlMail($recipientEmail, $subject, $htmlBody);

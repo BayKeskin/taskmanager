@@ -135,7 +135,7 @@ class ReportModel extends BaseModel
         $totalHoursEstimated = round($totalMinutesEstimated / 60, 2);
         $totalCost = round(array_sum(array_column($detailedTasks, 'task_cost')), 2);
 
-        $projectTitle = 'Tüm Projeler';
+        $projectTitle = __('Reports::all_projects');
         $projectCode = 'ALL';
         $hourlyRate = 500.0;
 

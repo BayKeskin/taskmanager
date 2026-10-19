@@ -11,3 +11,330 @@
     border-radius: 8px;
     padding: 16px;
 }
+.cu-metric-val {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 8px 0;
+}
+.cu-metric-completed {
+    color: #00b894;
+}
+.cu-metric-rate {
+    color: #7B68EE;
+}
+
+/* Standup Email */
+.standup-email-content {
+    font-family: sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+}
+.standup-email-footer {
+    font-size: 12px;
+    color: #888;
+}
+
+/* Reports Header */
+.cu-rep-header-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-rep-header-icon {
+    font-size: 16px;
+}
+.cu-rep-header-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-white);
+}
+.cu-rep-btn-delivery-pdf {
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(0,184,148,0.2), rgba(9,132,227,0.25));
+    border: 1px solid rgba(0,184,148,0.5);
+    color: #00cec9;
+    font-weight: 700;
+    padding: 0 14px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,184,148,0.2);
+}
+
+/* Billing Summary Card */
+.cu-rep-billing-box {
+    background: linear-gradient(135deg, rgba(123,104,238,0.12), rgba(0,184,148,0.12));
+    border: 1px solid rgba(0,184,148,0.3);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 24px;
+}
+.cu-rep-billing-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.cu-rep-billing-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.cu-rep-billing-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(0,184,148,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+.cu-rep-billing-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 0;
+}
+.cu-rep-billing-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 2px 0 0 0;
+}
+.cu-rep-billing-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.cu-rep-btn-print {
+    background: #00b894;
+    color: #fff;
+    font-weight: 700;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.cu-rep-billing-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+.cu-rep-billing-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 14px;
+}
+.cu-rep-billing-kpi-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+.cu-rep-billing-kpi-val {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 4px 0;
+}
+.cu-rep-billing-kpi-sub {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+}
+
+/* KPI Grid */
+.cu-rep-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.cu-rep-kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 18px;
+}
+.cu-rep-kpi-card-danger {
+    border-color: rgba(255, 71, 87, 0.3);
+}
+.cu-rep-kpi-label {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+.cu-rep-kpi-val {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 6px 0;
+}
+.cu-rep-kpi-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.cu-rep-progress-track {
+    width: 100%;
+    height: 6px;
+    background: var(--border-subtle);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.cu-rep-progress-fill {
+    height: 100%;
+    background: #00b894;
+}
+
+/* Colors */
+.cu-rep-color-cyan { color: #00cec9; }
+.cu-rep-color-purple { color: #a29bfe; }
+.cu-rep-color-green { color: #00b894; }
+.cu-rep-color-lilac { color: #9b5de5; }
+.cu-rep-color-danger { color: var(--priority-urgent); }
+.cu-rep-color-white { color: var(--text-white); }
+.cu-rep-color-muted { color: var(--text-muted); }
+
+/* Section Box */
+.cu-rep-section-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 24px;
+}
+.cu-rep-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-rep-proj-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.cu-rep-proj-item {
+    background: var(--bg-app);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+}
+.cu-rep-proj-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.cu-rep-proj-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-rep-proj-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+}
+.cu-rep-proj-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+.cu-rep-proj-code {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.cu-rep-proj-rate-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brand-primary);
+}
+.cu-rep-proj-track {
+    width: 100%;
+    height: 8px;
+    background: var(--border-subtle);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.cu-rep-proj-bar {
+    height: 100%;
+    transition: width 0.5s ease;
+}
+
+/* Table */
+.cu-rep-table-wrap {
+    overflow-x: auto;
+}
+.cu-rep-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.cu-rep-thead-row {
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: left;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+}
+.cu-rep-th {
+    padding: 10px 14px;
+}
+.cu-rep-th-center {
+    text-align: center;
+}
+.cu-rep-tbody-row {
+    border-bottom: 1px solid var(--border-subtle);
+}
+.cu-rep-td {
+    padding: 12px 14px;
+}
+.cu-rep-td-member {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.cu-rep-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+}
+.cu-rep-member-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.cu-rep-td-role {
+    color: var(--text-secondary);
+}
+.cu-rep-td-center {
+    text-align: center;
+}
+.cu-rep-font-bold {
+    font-weight: 600;
+}
+.cu-rep-rate-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(0,184,148,0.15);
+    color: #00b894;
+}
+
