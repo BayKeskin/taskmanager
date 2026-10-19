@@ -158,4 +158,80 @@ class ReportModel extends BaseModel
             'tasks'                 => $detailedTasks
         ];
     }
+
+    /**
+     * Standup için son 24 saatte tamamlanan / teslim edilen görevleri döner
+     */
+    public function getStandupCompletedTasks(?int $projectId = null): array
+    {
+        $projFilterAct = $projectId ? " AND t.project_id = " . (int)$projectId : "";
+        $sql = "
+            SELECT t.id, t.task_code, t.title, t.priority, t.status, u.name as assignee_name, a.created_at as activity_time
+            FROM task_activities a
+            JOIN tasks t ON a.task_id = t.id
+            LEFT JOIN users u ON t.assigned_to = u.id
+            WHERE a.new_value IN ('completed', 'submitted')
+              AND a.created_at >= NOW() - INTERVAL 24 HOUR
+              {$projFilterAct}
+            GROUP BY t.id
+            ORDER BY a.id DESC
+        ";
+        return $this->query($sql) ?: [];
+    }
+
+    /**
+     * Standup için aktif çalışılan görevleri döner
+     */
+    public function getStandupInProgressTasks(?int $projectId = null): array
+    {
+        $projFilterTask = $projectId ? " AND project_id = " . (int)$projectId : "";
+        $sql = "
+            SELECT t.id, t.task_code, t.title, t.priority, t.deadline, u.name as assignee_name
+            FROM tasks t
+            LEFT JOIN users u ON t.assigned_to = u.id
+            WHERE t.status = 'in_progress'
+              {$projFilterTask}
+            ORDER BY t.priority = 'urgent' DESC, t.updated_at DESC
+        ";
+        return $this->query($sql) ?: [];
+    }
+
+    /**
+     * Standup için geciken ve SLA riski olan görevleri döner
+     */
+    public function getStandupDelayedTasks(?int $projectId = null): array
+    {
+        $projFilterTask = $projectId ? " AND project_id = " . (int)$projectId : "";
+        $sql = "
+            SELECT t.id, t.task_code, t.title, t.priority, t.deadline, t.status, u.name as assignee_name
+            FROM tasks t
+            LEFT JOIN users u ON t.assigned_to = u.id
+            WHERE t.status NOT IN ('completed', 'cancelled')
+              AND (
+                  (t.deadline IS NOT NULL AND t.deadline < CURDATE())
+                  OR t.priority = 'urgent'
+              )
+              {$projFilterTask}
+            ORDER BY t.deadline ASC LIMIT 15
+        ";
+        return $this->query($sql) ?: [];
+    }
+
+    /**
+     * Standup için son 24 saatte yeni açılan görevleri döner
+     */
+    public function getStandupNewTasks(?int $projectId = null): array
+    {
+        $projFilterTask = $projectId ? " AND project_id = " . (int)$projectId : "";
+        $sql = "
+            SELECT t.id, t.task_code, t.title, t.priority, u.name as assignee_name
+            FROM tasks t
+            LEFT JOIN users u ON t.assigned_to = u.id
+            WHERE t.created_at >= NOW() - INTERVAL 24 HOUR
+              {$projFilterTask}
+            ORDER BY t.id DESC LIMIT 15
+        ";
+        return $this->query($sql) ?: [];
+    }
 }
+

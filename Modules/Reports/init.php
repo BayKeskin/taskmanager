@@ -5,7 +5,7 @@ namespace Modules\Reports;
 use Core\EventManager;
 use Core\AssetManager;
 
-EventManager::listen('reports.rendered', function() {
-    AssetManager::enqueueCss('/Modules/Reports/Assets/css/reports.css');
-    AssetManager::enqueueJs('/Modules/Reports/Assets/js/reports.js');
-});
+// 1. Modül JS ve CSS Varlıklarını Kuyruğa Al
+AssetManager::enqueueCss('reports-styles', '/Modules/Reports/Assets/css/reports.css');
+AssetManager::enqueueJs('reports-js', '/Modules/Reports/Assets/js/reports.js');
+

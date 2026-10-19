@@ -1,8 +1,7 @@
-# ONARIM VE İNCELEME TAKİP LİSTESİ: Settings Modülü
+# ONARIM VE İNCELEME TAKİP LİSTESİ: Reports Modülü
 
 ## Tespit Edilen Durumlar ve Yapılan İşlemler
-- [x] 1. [Mimari/Yol] `Modules/Settings/init.php` içinde sabit `/taskmanager/` script ve CSS yolları yerine dinamik bağıl yollar (`/Modules/Settings/Assets/...`) tanımlandı.
-- [x] 2. [Görsel/Navigasyon] `Modules/Settings/Views/settings.php` içindeki panoya dönüş bağlantısı (`<a href="/taskmanager/board">`) dinamik `<?= baseUrl('board') ?>` fonksiyonu ile değiştirildi.
-- [x] 3. [İşlev/JS] `Modules/Settings/Assets/js/settings.js` dosyasında `settingsBaseUrl` eklenerek `save_system_settings`, `test_telegram_connection`, `test_smtp_connection`, `test_webhook` ve `toggle_module_status` fetch istekleri dinamik hale getirildi.
-- [x] 4. [Canlı Tarayıcı Testi] `http://localhost/taskmanager/settings` tarayıcıda açılarak sekmeler (Genel, Yapay Zeka, Bildirim, E-Posta, Entegrasyonlar, Güvenlik, Modüller), form alanları ve butonlar denetlendi; konsolda 0 JS hatası ve 0 404 tespit edildi.
-- [x] 5. [Denetim/Audit] `php taskmanager-audit/audit.php Settings` ve `php tests/audit_module.php Settings` çalıştırılarak 0 ihlal ile `[PASS]` alındı.
+- [x] 1. [Görsel/Varlık Yükleme Hatası]: `Modules/Reports/init.php` içinde CSS ve JS varlıklarının tetiklenmeyen `reports.rendered` EventManager event dinleyicisi içerisine hapsedilmesi nedeniyle `reports.css` ve `reports.js` sayfaya yüklenmiyordu; bu durum ekranın tamamen ham, biçimsiz ve stil dosyasız (unstyle plain text) görünmesine sebep oluyordu. Event sarmalayıcısı kaldırılarak doğrudan `AssetManager::enqueueCss` ve `enqueueJs` ile kuyruğa eklendi.
+- [x] 2. [Mimari / Kural 2 İhlali]: `Modules/Reports/Services/StandupService.php` içerisindeki 4 adet SQL sorgusu (`$db->multi_record_query`), HMVC Kural 2 (Servis/Controller SQL Yasağı) gereğince `Modules/Reports/Models/ReportModel.php` içine taşındı (`getStandupCompletedTasks`, `getStandupInProgressTasks`, `getStandupDelayedTasks`, `getStandupNewTasks`).
+- [x] 3. [Canlı Tarayıcı Doğrulaması]: `http://localhost/taskmanager/reports` ekranı canlı tarayıcıda açılarak test edildi. Efor & Hakediş kartları, KPI paneli (Tamamlanan, Efor, Bedel, Oran, SLA), Proje İlerleme çubukları ve Ekip Performans tablosu modern kart yapıları, degradeler ve renklerle eksiksiz render edildi; konsolda 0 JS hatası ve 0 404 varlık hatası doğrulandı.
+- [x] 4. [Denetim/Audit]: `php taskmanager-audit/audit.php Reports` ve `php tests/audit_module.php Reports` çalıştırıldı, 0 ihlal ile `[PASS]` alındı.

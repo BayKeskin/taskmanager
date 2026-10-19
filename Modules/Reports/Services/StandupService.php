@@ -7,67 +7,26 @@ use Core\Language;
 /**
  * StandupService - Günlük standup verilerini toplar, analiz eder ve AI özet bülteni üretir.
  */
-class StandupService extends BaseModel
+class StandupService
 {
     /**
      * Son 24 saatteki görev hareketlerini toplayan Standup Aggregation motoru
      */
     public static function getDailyStandupData(?int $projectId = null): array
     {
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
-
-        $projFilterAct = $projectId ? " AND t.project_id = " . (int)$projectId : "";
-        $projFilterTask = $projectId ? " AND project_id = " . (int)$projectId : "";
+        $reportModel = new \Modules\Reports\Models\ReportModel();
 
         // 1. Dün / Son 24 Saatte Tamamlanan veya Teslim Edilen Görevler
-        $completedTasks = $db->multi_record_query("
-            SELECT t.id, t.task_code, t.title, t.priority, t.status, u.name as assignee_name, a.created_at as activity_time
-            FROM task_activities a
-            JOIN tasks t ON a.task_id = t.id
-            LEFT JOIN users u ON t.assigned_to = u.id
-            WHERE a.new_value IN ('completed', 'submitted')
-              AND a.created_at >= NOW() - INTERVAL 24 HOUR
-              {$projFilterAct}
-            GROUP BY t.id
-            ORDER BY a.id DESC
-        ") ?: [];
+        $completedTasks = $reportModel->getStandupCompletedTasks($projectId);
 
         // 2. Bugün Devam Eden / Çalışılan Görevler
-        $inProgressTasks = $db->multi_record_query("
-            SELECT t.id, t.task_code, t.title, t.priority, t.deadline, u.name as assignee_name
-            FROM tasks t
-            LEFT JOIN users u ON t.assigned_to = u.id
-            WHERE t.status = 'in_progress'
-              {$projFilterTask}
-            ORDER BY t.priority = 'urgent' DESC, t.updated_at DESC
-        ") ?: [];
+        $inProgressTasks = $reportModel->getStandupInProgressTasks($projectId);
 
         // 3. Geciken / Riskli Görevler
-        $delayedTasks = $db->multi_record_query("
-            SELECT t.id, t.task_code, t.title, t.priority, t.deadline, t.status, u.name as assignee_name
-            FROM tasks t
-            LEFT JOIN users u ON t.assigned_to = u.id
-            WHERE t.status NOT IN ('completed', 'cancelled')
-              AND (
-                  (t.deadline IS NOT NULL AND t.deadline < CURDATE())
-                  OR t.priority = 'urgent'
-              )
-              {$projFilterTask}
-            ORDER BY t.deadline ASC LIMIT 15
-        ") ?: [];
+        $delayedTasks = $reportModel->getStandupDelayedTasks($projectId);
 
         // 4. Son 24 Saatte Yeni Eklenen Görevler
-        $newTasks = $db->multi_record_query("
-            SELECT t.id, t.task_code, t.title, t.priority, u.name as assignee_name
-            FROM tasks t
-            LEFT JOIN users u ON t.assigned_to = u.id
-            WHERE t.created_at >= NOW() - INTERVAL 24 HOUR
-              {$projFilterTask}
-            ORDER BY t.id DESC LIMIT 15
-        ") ?: [];
+        $newTasks = $reportModel->getStandupNewTasks($projectId);
 
         return [
             'period'           => date('d.m.Y H:i', strtotime('-24 hours')) . ' - ' . date('d.m.Y H:i'),
