@@ -6,7 +6,7 @@ return [
     'disks' => [
         'local' => [
             'driver' => 'local',
-            'root'   => dirname(__DIR__, 2) . '/Public/uploads',
+            'root'   => dirname(__DIR__, 3) . '/Public/uploads',
             'url'    => '/taskmanager/Public/uploads',
         ],
 

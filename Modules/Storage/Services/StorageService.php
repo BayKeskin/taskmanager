@@ -23,7 +23,7 @@ class StorageService
                     'disks' => [
                         'local' => [
                             'driver' => 'local',
-                            'root'   => dirname(__DIR__, 2) . '/Public/uploads',
+                            'root'   => dirname(__DIR__, 3) . '/Public/uploads',
                             'url'    => '/taskmanager/Public/uploads',
                         ]
                     ],
@@ -142,7 +142,7 @@ class StorageService
         $safeName = $subfolder . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $diskExt;
 
         // Yerel (Local) Depolama
-        $localRoot = rtrim($config['disks']['local']['root'] ?? (dirname(__DIR__, 2) . '/Public/uploads'), '/\\');
+        $localRoot = rtrim($config['disks']['local']['root'] ?? (dirname(__DIR__, 3) . '/Public/uploads'), '/\\');
         $targetDir = $localRoot . DIRECTORY_SEPARATOR . $subfolder;
         if (!is_dir($targetDir)) {
             @mkdir($targetDir, 0777, true);
