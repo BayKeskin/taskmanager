@@ -111,11 +111,22 @@
     display: flex;
     flex-direction: column;
     background: var(--bg-card);
-    border: 1px solid rgba(123, 104, 238, 0.4);
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(123, 104, 238, 0.45);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 30px rgba(123, 104, 238, 0.15);
     padding: 0;
     border-radius: 12px;
     overflow: hidden;
+    animation: mcpModalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes mcpModalPopIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 .mcp-modal-header {
     padding: 16px 22px;
@@ -299,10 +310,11 @@
     max-width: 540px;
     width: 92vw;
     background: var(--bg-card);
-    border: 1px solid rgba(123, 104, 238, 0.5);
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(123, 104, 238, 0.55);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 25px rgba(123, 104, 238, 0.2);
     border-radius: 12px;
     overflow: hidden;
+    animation: mcpModalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .mcp-config-header {
     padding: 16px 20px;
@@ -378,4 +390,234 @@
     font-weight: 600;
     font-size: 12.5px;
     cursor: pointer;
+}
+
+/* Dynamic Component Classes for Clean HMVC Architecture */
+.mcp-loading-container {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--text-muted);
+}
+.mcp-loading-spinner {
+    font-size: 28px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-bottom: 8px;
+}
+.mcp-loading-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-white);
+}
+.mcp-error-container {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #ff7675;
+    padding: 30px;
+}
+.mcp-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.mcp-card-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.mcp-card-icon {
+    font-size: 24px;
+    line-height: 1;
+}
+.mcp-card-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 0;
+    line-height: 1.2;
+}
+.mcp-card-cat-badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.mcp-card-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0 0 10px 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.mcp-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.mcp-tag-package {
+    font-size: 10.5px;
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.mcp-tag-status {
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+.mcp-tag-status.configured {
+    background: rgba(46, 160, 67, 0.15);
+    color: #3fb950;
+    border: 1px solid rgba(46, 160, 67, 0.4);
+}
+.mcp-tag-status.warning {
+    background: rgba(230, 126, 34, 0.15);
+    color: #f39c12;
+    border: 1px solid rgba(230, 126, 34, 0.4);
+}
+.mcp-tag-status.ready {
+    background: rgba(123, 104, 238, 0.12);
+    color: #c4b5fd;
+    border: 1px solid rgba(123, 104, 238, 0.3);
+}
+.mcp-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 10px;
+    margin-top: 4px;
+}
+.mcp-card-status-indicator {
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+}
+.mcp-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+.mcp-status-dot.active {
+    background: #3fb950;
+    box-shadow: 0 0 6px rgba(63, 185, 80, 0.6);
+}
+.mcp-status-dot.inactive {
+    background: var(--text-muted);
+}
+.mcp-card-btn-config {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-white);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.mcp-card-btn-config:hover {
+    background: rgba(123, 104, 238, 0.2);
+    border-color: rgba(123, 104, 238, 0.4);
+    color: #fff;
+}
+.mcp-config-info-box {
+    background: rgba(46, 160, 67, 0.1);
+    border: 1px solid rgba(46, 160, 67, 0.3);
+    border-radius: 8px;
+    padding: 14px 16px;
+    color: #3fb950;
+    font-size: 12.5px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+.mcp-config-info-box-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+.mcp-config-info-box-title {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #3fb950;
+}
+.mcp-config-info-box-desc {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+}
+.mcp-form-label-row {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-white);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.mcp-key-tag {
+    font-size: 10px;
+    color: #c4b5fd;
+    background: rgba(123, 104, 238, 0.15);
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 6px;
+    font-family: monospace;
+}
+.mcp-req-indicator {
+    font-size: 10.5px;
+    font-weight: 500;
+}
+.mcp-req-indicator.required {
+    color: #ff7675;
+}
+.mcp-req-indicator.optional {
+    color: var(--text-muted);
+}
+.mcp-input-wrap {
+    position: relative;
+    margin-top: 5px;
+}
+.mcp-input-control {
+    width: 100%;
+    height: 36px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    color: var(--text-white);
+    font-size: 12.5px;
+    font-family: monospace;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+.mcp-input-control:focus {
+    border-color: #7B68EE;
+    outline: none;
+}
+.mcp-toggle-pass-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px;
 }

@@ -27,9 +27,9 @@ window.openProjectMcpModal = async function(projectId) {
     if (emptyState) emptyState.style.display = 'none';
     if (grid) {
         grid.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align:center; padding:50px 20px; color:var(--text-muted);">
-                <div style="font-size:28px; animation:spin 1s linear infinite; display:inline-block; margin-bottom:8px;">🔄</div>
-                <div style="font-size:13px; font-weight:600; color:var(--text-white);">...</div>
+            <div class="mcp-loading-container">
+                <div class="mcp-loading-spinner">🔄</div>
+                <div class="mcp-loading-text">...</div>
             </div>
         `;
     }
@@ -49,7 +49,7 @@ window.openProjectMcpModal = async function(projectId) {
             renderMcpGrid();
         } else {
             showToast(data.message || i18n.catalog_load_fail || 'Failed', 'error');
-            if (grid) grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#ff7675; padding:30px;">${data.message || 'Error'}</div>`;
+            if (grid) grid.innerHTML = `<div class="mcp-error-container">${data.message || 'Error'}</div>`;
         }
     } catch (e) {
         console.error('openProjectMcpModal error:', e);
@@ -190,14 +190,14 @@ window.renderMcpGrid = function() {
             <div class="mcp-card ${isEnabled ? 'enabled' : ''}" id="mcpCard_${item.id}">
                 <div>
                     <!-- Kart Üst Başlık & Toggle -->
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <span style="font-size:24px; line-height:1;">${displayIcon}</span>
+                    <div class="mcp-card-header">
+                        <div class="mcp-card-title-group">
+                            <span class="mcp-card-icon">${displayIcon}</span>
                             <div>
-                                <h4 style="font-size:14px; font-weight:700; color:var(--text-white); margin:0; line-height:1.2;">
+                                <h4 class="mcp-card-name">
                                     ${item.display_name || item.name}
                                 </h4>
-                                <span style="font-size:10px; color:${catColor}; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">
+                                <span class="mcp-card-cat-badge" style="color:${catColor};">
                                     ${item.category}
                                 </span>
                             </div>
@@ -209,21 +209,21 @@ window.renderMcpGrid = function() {
                     </div>
 
                     <!-- Açıklama -->
-                    <p style="font-size:12px; color:var(--text-secondary); margin:0 0 10px 0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
+                    <p class="mcp-card-desc">
                         ${item.description || ''}
                     </p>
 
                     <!-- Rozetler -->
-                    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
-                        <span style="font-size:10.5px; font-family:monospace; background:rgba(255,255,255,0.06); padding:2px 7px; border-radius:4px; color:var(--text-muted); border:1px solid rgba(255,255,255,0.1);">
+                    <div class="mcp-card-tags">
+                        <span class="mcp-tag-package">
                             ${item.package_type || 'npx'}
                         </span>
                         ${hasEnvReq ? `
-                            <span style="font-size:10.5px; background:${envFilled ? 'rgba(46,160,67,0.15)' : 'rgba(230,126,34,0.15)'}; color:${envFilled ? '#3fb950' : '#f39c12'}; border:1px solid ${envFilled ? 'rgba(46,160,67,0.4)' : 'rgba(230,126,34,0.4)'}; padding:2px 7px; border-radius:4px; font-weight:500;">
+                            <span class="mcp-tag-status ${envFilled ? 'configured' : 'warning'}">
                                 ${envFilled ? (i18n.badge_key_configured || 'Key Configured') : (i18n.badge_required_env || 'Key Required')}
                             </span>
                         ` : `
-                            <span style="font-size:10.5px; background:rgba(123,104,238,0.12); color:#c4b5fd; border:1px solid rgba(123,104,238,0.3); padding:2px 7px; border-radius:4px; font-weight:500;">
+                            <span class="mcp-tag-status ready">
                                 ${i18n.badge_ready || 'Ready'}
                             </span>
                         `}
@@ -231,12 +231,12 @@ window.renderMcpGrid = function() {
                 </div>
 
                 <!-- Kart Alt Eylemler -->
-                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.06); padding-top:10px; margin-top:4px;">
-                    <span style="font-size:11px; display:inline-flex; align-items:center; gap:5px; color:${isEnabled ? '#3fb950' : 'var(--text-muted)'}; font-weight:600;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:${isEnabled ? '#3fb950' : 'var(--text-muted)'};"></span>
+                <div class="mcp-card-footer">
+                    <span class="mcp-card-status-indicator" style="color:${isEnabled ? '#3fb950' : 'var(--text-muted)'};">
+                        <span class="mcp-status-dot ${isEnabled ? 'active' : 'inactive'}"></span>
                         ${isEnabled ? (i18n.status_enabled || 'Active') : (i18n.status_disabled || 'Inactive')}
                     </span>
-                    <button type="button" onclick="openMcpConfig(${item.id})" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:var(--text-white); font-size:11px; padding:4px 10px; border-radius:5px; cursor:pointer;" title="Config">
+                    <button type="button" onclick="openMcpConfig(${item.id})" class="cu-btn-sm mcp-card-btn-config" title="Config">
                         <span>⚙️</span>
                         <span>${hasEnvReq ? (i18n.btn_config || 'Config') : (i18n.btn_details || 'Details')}</span>
                     </button>
@@ -315,11 +315,11 @@ window.openMcpConfig = function(catalogId) {
 
     if (fields.length === 0) {
         container.innerHTML = `
-            <div style="background:rgba(46,160,67,0.1); border:1px solid rgba(46,160,67,0.3); border-radius:8px; padding:14px 16px; color:#3fb950; font-size:12.5px; display:flex; align-items:flex-start; gap:12px;">
-                <span style="font-size:22px; line-height:1;">⚡</span>
+            <div class="mcp-config-info-box">
+                <span class="mcp-config-info-box-icon">⚡</span>
                 <div>
-                    <strong style="display:block; margin-bottom:4px; font-size:13px; color:#3fb950;">${i18n.badge_ready || 'Ready'}</strong>
-                    <div style="color:var(--text-secondary); font-size:12px; line-height:1.4;">${i18n.no_external_needed_info || 'Ready'}</div>
+                    <strong class="mcp-config-info-box-title">${i18n.badge_ready || 'Ready'}</strong>
+                    <div class="mcp-config-info-box-desc">${i18n.no_external_needed_info || 'Ready'}</div>
                 </div>
             </div>
         `;
@@ -331,25 +331,26 @@ window.openMcpConfig = function(catalogId) {
             const isRequired = field.required !== false;
             const isSecret = field.type === 'password' || (!field.type && (envKey.includes('TOKEN') || envKey.includes('KEY') || envKey.includes('SECRET') || envKey.includes('PASSWORD')));
             const placeholder = field.placeholder || `${envKey} ${i18n.enter_value || '...'}`;
+            const padStyle = isSecret ? 'padding: 0 36px 0 12px;' : 'padding: 0 12px;';
 
             return `
-                <div class="cu-form-group" style="margin-bottom:0;">
-                    <label style="font-size:11.5px; font-weight:600; color:var(--text-white); display:flex; justify-content:space-between; align-items:center;">
-                        <span>${label} <code style="font-size:10px; color:#c4b5fd; background:rgba(123,104,238,0.15); padding:1px 5px; border-radius:3px; margin-left:6px; font-family:monospace;">${envKey}</code></span>
-                        <span style="color:${isRequired ? '#ff7675' : 'var(--text-muted)'}; font-size:10.5px; font-weight:500;">
+                <div class="cu-form-group">
+                    <label class="mcp-form-label-row">
+                        <span>${label} <code class="mcp-key-tag">${envKey}</code></span>
+                        <span class="mcp-req-indicator ${isRequired ? 'required' : 'optional'}">
                             ${isRequired ? (i18n.field_required || 'Required') : (i18n.field_optional || 'Optional')}
                         </span>
                     </label>
-                    <div style="position:relative; margin-top:5px;">
+                    <div class="mcp-input-wrap">
                         <input type="${isSecret ? 'password' : 'text'}" 
                                 id="env_input_${envKey}" 
                                 data-env-key="${envKey}"
                                 value="${val}" 
                                 placeholder="${placeholder}" 
-                                class="cu-form-control" 
-                                style="width:100%; height:36px; background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:6px; padding:0 ${isSecret ? '36px' : '12px'} 0 12px; color:var(--text-white); font-size:12.5px; font-family:monospace; box-sizing:border-box;">
+                                class="cu-form-control mcp-input-control" 
+                                style="${padStyle}">
                         ${isSecret ? `
-                            <button type="button" onclick="togglePassVisibility('env_input_${envKey}', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:13px; padding:4px;">👁️</button>
+                            <button type="button" onclick="mcpTogglePassVisibility('env_input_${envKey}', this)" class="mcp-toggle-pass-btn">👁️</button>
                         ` : ''}
                     </div>
                 </div>
@@ -358,6 +359,18 @@ window.openMcpConfig = function(catalogId) {
     }
 
     openModal('modalMcpConfig');
+};
+
+window.mcpTogglePassVisibility = function(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerText = '🙈';
+    } else {
+        input.type = 'password';
+        btn.innerText = '👁️';
+    }
 };
 
 window.handleMcpConfigSubmit = async function(e) {

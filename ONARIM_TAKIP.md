@@ -1,8 +1,8 @@
-# LiveDeploy (Canlı Dağıtım & Hosting Sihirbazı) Onarım Takip Listesi (ONARIM_TAKIP.md)
+# MCP Modülü Onarım ve Fark Takip Listesi (`Modules/Mcp`)
 
-## Tespit Edilen Görsel ve İşlevsel Durum Maddeleri
+Bu dosya, MCP modülündeki görsel/CSS, mimari ve işlevsel eksiklikleri adım adım çözmek ve takip etmek için oluşturulmuştur.
 
-- [x] 1. [Görsel/CSS] Dağıtım Sihirbazı Modalı (`#modalDeployWizard`) ClickUp koyu teması ile tam uyumlu modern gölgelendirme (`box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 24px rgba(0, 206, 201, 0.15)`), mikro-açılış animasyonu ve stepper geçiş efektleri ile güçlendirilmeli.
-- [x] 2. [Görsel/CSS] Form girdi kutuları (`.deploy-select-main`, `.cu-form-control`), odaklanma çerçeveleri (`:focus`) ve butonlar (`#btnDeployNext`, `#btnDeployAction`, `#btnTestDeployPanel`) net kontrast ve pürüzsüz geçişlere kavuşturulmalı.
-- [x] 3. [İşlev/JS] 3 Aşamalı Sihirbaz akışı (Adım 1: Barındırma & FTP ➔ Adım 2: Canlı Domain & DB & Git Diff ➔ Adım 3: Dağıtım, Sağlık Kontrolü & Cerrahi Rollback) adımları arasındaki geçişler ve modal açma/kapama fonksiyonları doğrulanmalı.
-- [x] 4. [HMVC & Denetim Kilidi] Yapılan tüm görsel ve işlevsel iyileştirmelerin ardından `php tests/audit_module.php LiveDeploy` çalıştırılarak 0 kural ihlali (`[PASS]`) doğrulanmalı ve canlı tarayıcıda kanıt sunulmalı.
+- [x] 1. [Görsel/CSS & Temiz Mimari] JS içindeki dinamik HTML çıktılarında bulunan satır içi `style="..."` öznitelikleri (`mcp.js` render döngüsü, loading göstergesi ve config form elemanları) kaldırılıp `Modules/Mcp/Assets/css/mcp.css` içindeki temiz CSS sınıflarına dönüştürüldü.
+- [x] 2. [Görsel/CSS] MCP Ana Pazarı (`#modalProjectMcp`) ve Yapılandırma Modalı (`#modalMcpConfig`) için ClickUp koyu teması ile tam uyumlu modern gölgelendirme (`box-shadow`), kart hover geçişleri ve mikro açılış animasyonları (`mcpModalPopIn`) eklendi.
+- [x] 3. [İşlev/JS] `mcp.js` içinde şifre göster/gizle butonu için `mcpTogglePassVisibility` bağımsız fonksiyonu entegre edildi ve UI kontrolleri pekiştirildi.
+- [x] 4. [Denetim & Doğrulama] `php tests/audit_module.php Mcp` denetimi çalıştırılarak sıfır ihlal (`[PASS]`) doğrulandı ve canlı tarayıcıda tüm işlevler test edildi.
