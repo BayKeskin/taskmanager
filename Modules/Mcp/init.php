@@ -26,6 +26,11 @@ AssetManager::localizeScript('mcp-catalog', 'MCP_I18N', [
     'not_found'               => \__('Mcp::mcp_not_found'),
     'not_found_hint'          => \__('Mcp::mcp_not_found_hint'),
     'sync_success'            => \__('Mcp::mcp_sync_success'),
-    'save_success'            => \__('Mcp::mcp_save_success')
+    'save_success'            => \__('Mcp::mcp_save_success'),
+    'select_valid_project'    => \__('Mcp::js_select_valid_project'),
+    'catalog_load_fail'       => \__('Mcp::js_catalog_load_fail'),
+    'server_error'            => \__('Mcp::js_server_error'),
+    'config_title_suffix'     => \__('Mcp::js_config_title_suffix'),
+    'sync_notice'             => \__('Mcp::js_sync_notice'),
 ]);
 

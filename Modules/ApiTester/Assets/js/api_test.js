@@ -10,230 +10,22 @@ const ACTIVE_TOKEN = CFG.activeToken || '';
 const SAMPLE_PROJECT = CFG.sampleProject || '01';
 const SAMPLE_TASK = CFG.sampleTask || '01-01';
 
-// Endpoint Kataloğu
-        const ENDPOINTS = [
-            // Kategori 1: Sistem & Sağlık
-            {
-                category: '⚡ Sistem & Sağlık',
-                id: 'health',
-                method: 'GET',
-                name: 'API Sağlık & Durum',
-                path: 'health',
-                desc: 'API servisinin ayakta olup olmadığını ve güncel sürüm durumunu döner.',
-                body: null,
-                tip: 'Halka açık (public) bir uç noktadır; token gerektirmez.'
-            },
-            {
-                category: '⚡ Sistem & Sağlık',
-                id: 'auth_me',
-                method: 'GET',
-                name: 'Aktif Oturum Bilgisi (/auth/me)',
-                path: 'auth/me',
-                desc: 'Bearer token sahibinin kullanıcı bilgilerini, rolünü ve aktif görev sayısını döner.',
-                body: null,
-                tip: 'Token doğruluğunu kontrol etmek için ilk başvurulan uç noktadır.'
-            },
-            {
-                category: '⚡ Sistem & Sağlık',
-                id: 'auth_regen',
-                method: 'POST',
-                name: 'Token Yenile (/auth/regenerate-token)',
-                path: 'auth/regenerate-token',
-                desc: 'Mevcut kullanıcının API anahtarını güvenli bir şekilde sıfırlayıp yeni bir tm_live_... token üretir.',
-                body: {},
-                tip: 'Üretilen yeni token veritabanına otomatik işlenir.'
-            },
+const _liveData = window.APITESTER_LIVE_DATA || {};
+const _i18n = _liveData.i18n || {};
+const ENDPOINTS = _liveData.catalog && _liveData.catalog.length > 0 ? _liveData.catalog : [
+    {
+        category: '⚡ System',
+        id: 'health',
+        method: 'GET',
+        name: 'API Health',
+        path: 'health',
+        desc: 'API Health Status',
+        body: null,
+        tip: 'Public endpoint'
+    }
+];
 
-            // Kategori 2: Projeler (Spaces)
-            {
-                category: '🏛️ Projeler (Spaces)',
-                id: 'get_projects',
-                method: 'GET',
-                name: 'Tüm Projeleri Listele',
-                path: 'projects',
-                desc: 'Sistemdeki tüm aktif projeleri görev istatistikleriyle birlikte listeler.',
-                body: null,
-                tip: '?status=active veya ?status=all parametreleri eklenebilir.'
-            },
-            {
-                category: '🏛️ Projeler (Spaces)',
-                id: 'get_project_detail',
-                method: 'GET',
-                name: 'Tekil Proje Detayı',
-                path: 'projects/' + SAMPLE_PROJECT,
-                desc: 'Belirli bir projenin tam detaylarını, durum dağılımını ve metriklerini getirir.',
-                body: null,
-                tip: 'Proje ID (örn: 1) veya Proje Kodu (örn: 01, TKMDEV-01) kullanılabilir.'
-            },
-            {
-                category: '🏛️ Projeler (Spaces)',
-                id: 'get_project_tasks',
-                method: 'GET',
-                name: 'Projenin Görevlerini Çek',
-                path: 'projects/' + SAMPLE_PROJECT + '/tasks',
-                desc: 'Belirli bir projeye ait görevleri listeler. Durum ve öncelik filtreleri desteklenir.',
-                body: null,
-                tip: 'Ajanlar için filtre örneği: ?status=assigned&priority=urgent'
-            },
-            {
-                category: '🏛️ Projeler (Spaces)',
-                id: 'get_project_docs',
-                method: 'GET',
-                name: 'Proje Dökümanları (Docs)',
-                path: 'projects/' + SAMPLE_PROJECT + '/docs',
-                desc: 'Projeye ait FTP, mimari ve kılavuz dökümanlarının listesini ve tam içeriklerini döner.',
-                body: null,
-                tip: 'Yapay zeka ajanları projenin FTP veya veritabanı şifrelerini buradan okur.'
-            },
-            {
-                category: '🏛️ Projeler (Spaces)',
-                id: 'post_project_docs',
-                method: 'POST',
-                name: 'Projeye Döküman Ekle',
-                path: 'projects/' + SAMPLE_PROJECT + '/docs',
-                desc: 'Projeye doğrudan teknik bir doküman veya kılavuz kaydeder.',
-                body: {
-                    title: "Test Dokümanı",
-                    icon: "📄",
-                    content: "### Doküman Başlığı\nBu doküman API Test Konsolu üzerinden oluşturulmuştur."
-                },
-                tip: 'Ajanlar geliştirdikleri modüllerin mimari notlarını bu uçla ekleyebilir.'
-            },
-            {
-                category: '🏛️ Projeler (Spaces)',
-                id: 'test_project_webhook',
-                method: 'POST',
-                name: 'Webhook Test Pingi Gönder',
-                path: 'projects/' + SAMPLE_PROJECT + '/webhook/test',
-                desc: 'Projede tanımlı olan yerel veya canlı webhook adresine anında test pingi gönderir.',
-                body: {},
-                tip: 'Port 4000 (Dispatcher) veya Cloudflare tünelinin canlılığını test eder.'
-            },
-
-            // Kategori 3: Görevler (Tasks & Kanban)
-            {
-                category: '📋 Görevler (Tasks)',
-                id: 'get_task_detail',
-                method: 'GET',
-                name: 'Tekil Görev Detayı',
-                path: 'tasks/' + SAMPLE_TASK,
-                desc: 'Görevin tam detaylarını, kontrol listesini, aktivitelerini ve atanan kişileri döner.',
-                body: null,
-                tip: 'Görev ID veya Görev Kodu (örn: TSK-101) ile sorgulanabilir.'
-            },
-            {
-                category: '📋 Görevler (Tasks)',
-                id: 'create_task',
-                method: 'POST',
-                name: 'Yeni Görev Oluştur',
-                path: 'projects/' + SAMPLE_PROJECT + '/tasks',
-                desc: 'Projede yeni bir görev kartı oluşturur.',
-                body: {
-                    title: "API Test Konsolundan Yeni Görev",
-                    description: "Bu görev test amacıyla REST API üzerinden oluşturuldu.",
-                    priority: "normal",
-                    tags: "test,api",
-                    time_estimate: "2h"
-                },
-                tip: 'priority: low | normal | high | urgent değerlerini alabilir.'
-            },
-            {
-                category: '📋 Görevler (Tasks)',
-                id: 'update_task',
-                method: 'PUT',
-                name: 'Görev Bilgilerini Güncelle',
-                path: 'tasks/' + SAMPLE_TASK,
-                desc: 'Görevin başlık, açıklama veya önceliğini günceller.',
-                body: {
-                    title: "Güncellenmiş Görev Başlığı",
-                    priority: "high"
-                },
-                tip: 'Sadece gönderilen alanlar güncellenir.'
-            },
-            {
-                category: '📋 Görevler (Tasks)',
-                id: 'get_task_checklists',
-                method: 'GET',
-                name: 'Görev Kontrol Listesi',
-                path: 'tasks/' + SAMPLE_TASK + '/checklists',
-                desc: 'Görevin kontrol maddelerini listeler.',
-                body: null,
-                tip: 'Kontrol listesi durumunu görmek için kullanılır.'
-            },
-            {
-                category: '📋 Görevler (Tasks)',
-                id: 'post_task_comment',
-                method: 'POST',
-                name: 'Göreve Yorum / Rapor Ekle',
-                path: 'tasks/' + SAMPLE_TASK + '/comments',
-                desc: 'Görevin altına ilerleme raporu veya geliştirici yorumu ekler.',
-                body: {
-                    comment: "API Test Konsolu: Geliştirme adımları ve testler tamamlandı."
-                },
-                tip: 'Ajanlar tamamladıkları her aşamayı buradan yorum olarak kaydeder.'
-            },
-
-            // Kategori 4: Otonom İş Akışı (AI Agent Lifecycle)
-            {
-                category: '🤖 Otonom İş Akışı (AI Agent)',
-                id: 'wf_accept',
-                method: 'POST',
-                name: 'Görevi Kabul Et (in_progress)',
-                path: 'tasks/' + SAMPLE_TASK + '/workflow/accept',
-                desc: 'Görevi "Çalışılıyor (in_progress)" durumuna geçirir ve zaman sayacını başlatır.',
-                body: {},
-                tip: 'Kanban panosunda kart anında Çalışılıyor sütununa kayar.'
-            },
-            {
-                category: '🤖 Otonom İş Akışı (AI Agent)',
-                id: 'wf_submit',
-                method: 'POST',
-                name: 'Görevi Teslim Et (submitted - DoD)',
-                path: 'tasks/' + SAMPLE_TASK + '/workflow/submit',
-                desc: 'Görevi Definition of Done (DoD) raporuyla birlikte İncelemede sütununa taşır. Alt görev rollup ve 4sn kuyruk motorunu tetikler.',
-                body: {
-                    notes: "1. What Was Done: API testleri yapıldı.\n2. Where to Test: /board\n3. How to Test: Kart kontrol edildi.\n4. Test Evidence: HTTP 200 OK alındı.",
-                    attachment_url: "https://github.com/BayKeskin/taskmanager"
-                },
-                tip: 'Ajanların resmi teslimat uç noktasıdır. notes parametresi zorunludur.'
-            },
-            {
-                category: '🤖 Otonom İş Akışı (AI Agent)',
-                id: 'wf_approve',
-                method: 'POST',
-                name: 'Yönetici Onayı (completed)',
-                path: 'tasks/' + SAMPLE_TASK + '/workflow/approve',
-                desc: 'Teslim edilen görevi onaylar ve "Tamamlandı (completed)" durumuna taşır.',
-                body: {},
-                tip: 'Yalnızca yönetici veya müşteri onayı ile çalışır.'
-            },
-            {
-                category: '🤖 Otonom İş Akışı (AI Agent)',
-                id: 'wf_reject',
-                method: 'POST',
-                name: 'Revizyon / Düzeltme İste',
-                path: 'tasks/' + SAMPLE_TASK + '/workflow/reject',
-                desc: 'Görevi revizyon açıklamasıyla "Revizyon İstendi (modification_requested)" sütununa gönderir.',
-                body: {
-                    reason: "Mobil görünümde buton hizalaması düzeltilmeli."
-                },
-                tip: 'Ajan için yeni bir revizyon turu başlatır.'
-            },
-
-            // Kategori 5: Kullanıcılar
-            {
-                category: '👥 Kullanıcılar (Users)',
-                id: 'get_users',
-                method: 'GET',
-                name: 'Tüm Kullanıcıları Listele',
-                path: 'users',
-                desc: 'Sistemdeki aktif kullanıcıları ve rollerini döner.',
-                body: null,
-                tip: 'Yeni görev atamalarında kullanıcı ID seçmek için kullanılır.'
-            }
-        ];
-
-        let currentActiveEndpoint = ENDPOINTS[0];
+let currentActiveEndpoint = ENDPOINTS[0];
 
         // Sayfa Yüklendiğinde Başlat
         document.addEventListener('DOMContentLoaded', () => {
@@ -458,7 +250,8 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
                         JSON.parse(rawJson); // Test parse
                         body = rawJson;
                     } catch (e) {
-                        alert('JSON İstek Gövdesinde sözdizimi hatası var:\n' + e.message);
+                        const errPrefix = _i18n.json_syntax_error || '';
+                        alert(errPrefix + (errPrefix ? ':\n' : '') + e.message);
                         switchRequestTab('body');
                         return;
                     }
@@ -466,7 +259,7 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
             }
 
             const sendBtn = document.getElementById('btnSendRequest');
-            sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>İstek Atılıyor...</span>';
+            sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>' + (_i18n.sending_request || '') + '</span>';
             sendBtn.disabled = true;
 
             const statusBadge = document.getElementById('responseStatusBadge');
@@ -514,13 +307,13 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
                 document.getElementById('responseSize').innerText = '0 KB';
 
                 statusBadge.className = 'status-badge status-5xx';
-                statusBadge.innerText = 'BAĞLANTI HATASI (Network Error)';
+                statusBadge.innerText = _i18n.network_error || 'Network Error';
                 viewer.innerHTML = '<div style="color:#ef4444; padding:20px;">' +
-                    '<strong>Hata:</strong> ' + escapeHtml(err.message) +
-                    '<br><br><small style="color:var(--text-muted);">Sunucuya erişilemiyor veya CORS/Network engeline takıldı.</small>' +
+                    '<strong>Error:</strong> ' + escapeHtml(err.message) +
+                    '<br><br><small style="color:var(--text-muted);">' + escapeHtml(_i18n.network_error_desc || '') + '</small>' +
                     '</div>';
             } finally {
-                sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i><span>Gönder</span>';
+                sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i><span>' + (_i18n.btn_send || '') + '</span>';
                 sendBtn.disabled = false;
             }
         }
@@ -562,14 +355,7 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
             const listContainer = document.getElementById('batchItemsList');
             listContainer.innerHTML = '';
 
-            const coreTests = [
-                { name: 'Sistem Sağlık Ucu', method: 'GET', path: 'health' },
-                { name: 'Oturum Bilgisi (/auth/me)', method: 'GET', path: 'auth/me' },
-                { name: 'Tüm Projeler Listesi', method: 'GET', path: 'projects' },
-                { name: 'Örnek Proje Detayı', method: 'GET', path: 'projects/' + SAMPLE_PROJECT },
-                { name: 'Örnek Görev Detayı', method: 'GET', path: 'tasks/' + SAMPLE_TASK },
-                { name: 'Kullanıcı Listesi', method: 'GET', path: 'users' }
-            ];
+            const coreTests = ENDPOINTS.slice(0, 6).map(e => ({ name: e.name, method: e.method, path: e.path }));
 
             coreTests.forEach((t, idx) => {
                 const row = document.createElement('div');
@@ -581,11 +367,11 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
                         <span style="font-weight:600;">${escapeHtml(t.name)}</span>
                         <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);">/api/${t.path}</span>
                     </div>
-                    <div id="batchStatus_${idx}" style="font-family:var(--font-mono); font-size:12px; color:var(--text-muted);">Bekliyor</div>
+                    <div id="batchStatus_${idx}" style="font-family:var(--font-mono); font-size:12px; color:var(--text-muted);">...</div>
                 `;
                 listContainer.appendChild(row);
             });
-            document.getElementById('batchSummaryStats').innerText = `${coreTests.length} uç nokta teste hazır.`;
+            document.getElementById('batchSummaryStats').innerText = `${coreTests.length} ` + (_i18n.batch_ready_count || '');
         }
 
         function closeBatchModal() {
@@ -595,16 +381,9 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
         async function runBatchTests() {
             const btn = document.getElementById('btnStartBatch');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Taranıyor...</span>';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>' + (_i18n.batch_scanning || '') + '</span>';
 
-            const coreTests = [
-                { name: 'Sistem Sağlık Ucu', method: 'GET', path: 'health' },
-                { name: 'Oturum Bilgisi (/auth/me)', method: 'GET', path: 'auth/me' },
-                { name: 'Tüm Projeler Listesi', method: 'GET', path: 'projects' },
-                { name: 'Örnek Proje Detayı', method: 'GET', path: 'projects/' + SAMPLE_PROJECT },
-                { name: 'Örnek Görev Detayı', method: 'GET', path: 'tasks/' + SAMPLE_TASK },
-                { name: 'Kullanıcı Listesi', method: 'GET', path: 'users' }
-            ];
+            const coreTests = ENDPOINTS.slice(0, 6).map(e => ({ name: e.name, method: e.method, path: e.path }));
 
             let passed = 0;
             let failed = 0;
@@ -612,7 +391,7 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
             for (let i = 0; i < coreTests.length; i++) {
                 const t = coreTests[i];
                 const statusEl = document.getElementById('batchStatus_' + i);
-                statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color:var(--brand-primary);"></i> Test ediliyor...';
+                statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color:var(--brand-primary);"></i> ' + (_i18n.batch_testing || '');
 
                 const url = BASE_API_URL + '/' + t.path;
                 const startTime = performance.now();
@@ -629,20 +408,20 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
 
                     if (resp.ok) {
                         passed++;
-                        statusEl.innerHTML = `<span style="color:#10b981; font-weight:700;">✅ ${resp.status} OK</span> <small style="color:var(--text-muted); font-size:11px;">(${ms}ms)</small>`;
+                        statusEl.innerHTML = `<span style="color:#10b981; font-weight:700;">OK ${resp.status}</span> <small style="color:var(--text-muted); font-size:11px;">(${ms}ms)</small>`;
                     } else {
                         failed++;
-                        statusEl.innerHTML = `<span style="color:#f59e0b; font-weight:700;">⚠️ ${resp.status}</span> <small style="color:var(--text-muted); font-size:11px;">(${ms}ms)</small>`;
+                        statusEl.innerHTML = `<span style="color:#f59e0b; font-weight:700;">${resp.status}</span> <small style="color:var(--text-muted); font-size:11px;">(${ms}ms)</small>`;
                     }
                 } catch (e) {
                     failed++;
-                    statusEl.innerHTML = `<span style="color:#ef4444; font-weight:700;">❌ Hata</span>`;
+                    statusEl.innerHTML = `<span style="color:#ef4444; font-weight:700;">FAIL</span>`;
                 }
             }
 
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-rotate"></i><span>Tekrar Test Et</span>';
-            document.getElementById('batchSummaryStats').innerHTML = `<strong style="color:#10b981;">${passed} Başarılı</strong>, <strong style="color:${failed ? '#ef4444' : 'var(--text-muted)'};">${failed} Başarısız</strong>.`;
+            btn.innerHTML = '<i class="fa-solid fa-rotate"></i><span>' + (_i18n.batch_retest || '') + '</span>';
+            document.getElementById('batchSummaryStats').innerHTML = `<strong style="color:#10b981;">${passed} OK</strong>, <strong style="color:${failed ? '#ef4444' : 'var(--text-muted)'};">${failed} FAIL</strong>.`;
         }
 
         // Yardımcı Araçlar
@@ -652,7 +431,8 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
                 const parsed = JSON.parse(area.value);
                 area.value = JSON.stringify(parsed, null, 2);
             } catch (e) {
-                alert('Geçersiz JSON formatı: ' + e.message);
+                const errPrefix = _i18n.invalid_json || '';
+                alert(errPrefix + (errPrefix ? ': ' : '') + e.message);
             }
         }
 
@@ -663,19 +443,19 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
 
         function copyActiveToken() {
             navigator.clipboard.writeText(ACTIVE_TOKEN);
-            alert('Aktif Bearer Token panoya kopyalandı:\n' + ACTIVE_TOKEN);
+            alert((_i18n.token_copied_alert || '') + ':\n' + ACTIVE_TOKEN);
         }
 
         function copyResponseBody() {
             const viewer = document.getElementById('responseViewer');
             navigator.clipboard.writeText(viewer.innerText);
-            alert('Yanıt çıktısı panoya kopyalandı.');
+            alert(_i18n.response_copied || '');
         }
 
         function copySnippetText(id) {
             const txt = document.getElementById(id).innerText;
             navigator.clipboard.writeText(txt);
-            alert('Komut panoya kopyalandı!');
+            alert(_i18n.command_copied || '');
         }
 
         function capitalize(s) {

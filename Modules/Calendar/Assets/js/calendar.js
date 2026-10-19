@@ -79,10 +79,10 @@ function updateTaskDeadlineAjax(taskId, newDate) {
     .then(res => {
         const successMsg = (window.CALENDAR_DATA && window.CALENDAR_DATA.lang && window.CALENDAR_DATA.lang.drag_success) 
             ? window.CALENDAR_DATA.lang.drag_success 
-            : '✅ Teslim tarihi güncellendi: ';
+            : '';
         const failMsg = (window.CALENDAR_DATA && window.CALENDAR_DATA.lang && window.CALENDAR_DATA.lang.update_failed) 
             ? window.CALENDAR_DATA.lang.update_failed 
-            : 'Tarih güncellenemedi.';
+            : '';
 
         if (res.success) {
             if (typeof showToast === 'function') {
@@ -92,13 +92,18 @@ function updateTaskDeadlineAjax(taskId, newDate) {
             }
             setTimeout(() => location.reload(), 400);
         } else {
-            alert('❌ ' + (res.message || failMsg));
+            const errText = res.message || failMsg;
+            if (typeof showToast === 'function') {
+                showToast(errText, 'error');
+            } else {
+                alert(errText);
+            }
         }
     })
     .catch(err => {
         const serverErr = (window.CALENDAR_DATA && window.CALENDAR_DATA.lang && window.CALENDAR_DATA.lang.server_error) 
             ? window.CALENDAR_DATA.lang.server_error 
-            : 'Sunucu hatası: ';
+            : '';
         alert(serverErr + err.message);
     });
 }

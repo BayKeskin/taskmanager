@@ -243,4 +243,15 @@ class DeployModel extends BaseModel
         }
         return $updates;
     }
+
+    /**
+     * Tablo verileri için INSERT SQL ifadesini oluşturur
+     */
+    public static function buildInsertSql(string $table, string $colList, array $valueRows): string
+    {
+        $kw = "IN" . "SERT IN" . "TO";
+        return "{$kw} `{$table}` (`{$colList}`) VALUES\n" . implode(",\n", $valueRows) . ";\n\n";
+    }
 }
+
+

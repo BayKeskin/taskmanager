@@ -1,15 +1,7 @@
 window.CURRENT_USER_ID = (window.CHAT_APP_DATA && window.CHAT_APP_DATA.currentUser) ? window.CHAT_APP_DATA.currentUser.id : 1;
 window.IS_CLIENT_ROLE = (window.CHAT_APP_DATA && window.CHAT_APP_DATA.currentUser) ? window.CHAT_APP_DATA.currentUser.isClient : false;
-window.I18N_CHAT = (window.CHAT_APP_DATA && window.CHAT_APP_DATA.i18n) ? window.CHAT_APP_DATA.i18n : {
-    channel_general: 'Genel Sohbet',
-    all_team: 'Tüm Ekip',
-    general_desc: 'Genel sohbet kanalı',
-    input_placeholder: 'Bir mesaj yazın...',
-    loading: 'Yükleniyor...',
-    loading_history: 'Geçmiş yükleniyor...',
-    no_other_members: 'Ekipte başka üye bulunamadı.',
-    default_role: 'Üye'
-};
+window.I18N_CHAT = (window.CHAT_APP_DATA && window.CHAT_APP_DATA.i18n) ? window.CHAT_APP_DATA.i18n : {};
+
 const currentUserId = window.CURRENT_USER_ID;
 
 let activeDirectUserId = (typeof window.INITIAL_TARGET_USER_ID !== 'undefined' && window.INITIAL_TARGET_USER_ID > 0) ? window.INITIAL_TARGET_USER_ID : null;
@@ -68,14 +60,15 @@ function renderConversationsList(conversations) {
 
         const initial = (c.name || 'U').substring(0, 1).toUpperCase();
         const unreadHtml = c.unread_count > 0 ? `<span class="cu-unread-badge">${c.unread_count}</span>` : '';
-        const snippet = c.last_message ? `<div style="font-size:10px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px;">${c.last_message_by_me ? 'Sen: ' : ''}${escapeHtml(c.last_message)}</div>` : '';
+        const youPrefix = (window.I18N_CHAT?.you_label || '(You)') + ': ';
+        const snippet = c.last_message ? `<div style="font-size:10px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px;">${c.last_message_by_me ? youPrefix : ''}${escapeHtml(c.last_message)}</div>` : '';
 
         btn.innerHTML = `
             <div style="position:relative; flex-shrink:0;">
                 <div class="cu-avatar" style="width:30px; height:30px; font-size:11px; font-weight:700; background:${c.avatar_color || '#7B68EE'};">
                     ${initial}
                 </div>
-                <span style="position:absolute; bottom:-1px; right:-1px; width:8px; height:8px; border-radius:50%; background:#00b894; border:2px solid var(--bg-card);" title="Çevrimiçi"></span>
+                <span style="position:absolute; bottom:-1px; right:-1px; width:8px; height:8px; border-radius:50%; background:#00b894; border:2px solid var(--bg-card);" title="${escapeHtml(window.I18N_CHAT?.online || 'Online')}"></span>
             </div>
             <div style="overflow:hidden; flex:1; min-width:0;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -85,7 +78,7 @@ function renderConversationsList(conversations) {
                     ${unreadHtml}
                 </div>
                 <div style="font-size:10.5px; color:var(--text-muted); white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">
-                    ${escapeHtml(c.title || c.role || window.I18N_CHAT.default_role)}
+                    ${escapeHtml(c.title || c.role || window.I18N_CHAT.default_role || '')}
                 </div>
                 ${snippet}
             </div>
@@ -148,15 +141,24 @@ function selectDirectChat(targetId, targetName, avatarColor, title) {
     avatarEl.style.background = avatarColor || '#7B68EE';
     avatarEl.style.color = '#fff';
 
-    document.getElementById('chatHeaderTitle').innerHTML = `🔒 ${escapeHtml(targetName)} ile Özel Sohbet`;
-    document.getElementById('chatHeaderBadge').innerText = 'Gizli & Birebir DM';
+    const chatTitle = (window.I18N_CHAT?.private_chat_with || '🔒 Private Chat with {name}').replace('{name}', escapeHtml(targetName));
+    document.getElementById('chatHeaderTitle').innerHTML = chatTitle;
+    document.getElementById('chatHeaderBadge').innerText = window.I18N_CHAT?.dm_badge || 'Private DM';
     document.getElementById('chatHeaderBadge').style.background = 'rgba(0,184,148,0.15)';
     document.getElementById('chatHeaderBadge').style.color = '#00b894';
-    document.getElementById('chatHeaderDesc').innerText = `${title || 'Ekip Üyesi'} • Bu yazışmaları yalnızca siz ve ${targetName} görebilirsiniz.`;
+
+    const roleOrTitle = title || window.I18N_CHAT?.default_role || 'Member';
+    const chatDesc = (window.I18N_CHAT?.private_chat_desc || '{title} • Only you and {name} can view this.')
+        .replace('{title}', roleOrTitle)
+        .replace('{name}', targetName);
+    document.getElementById('chatHeaderDesc').innerText = chatDesc;
     const isClientRole = window.IS_CLIENT_ROLE || false;
     document.getElementById('directPrivacyNotice').style.display = 'flex';
     document.getElementById('btnBackToGeneral').style.display = isClientRole ? 'none' : 'inline-flex';
-    document.getElementById('chatInput').placeholder = `${targetName} kişisine özel mesaj yazın... (Enter gönderir)`;
+
+    const inputPlaceholder = (window.I18N_CHAT?.private_input_placeholder || 'Write a message to {name}...')
+        .replace('{name}', targetName);
+    document.getElementById('chatInput').placeholder = inputPlaceholder;
 
     // Unread sayacını temizle
     const unreadEl = document.querySelector(`#dm-btn-${targetId} .cu-unread-badge`);
@@ -168,7 +170,7 @@ function selectDirectChat(targetId, targetName, avatarColor, title) {
 
 // 4. Sohbet Geçmişini Çek (Genel veya DM)
 function loadChatHistory() {
-    chatStatusText.innerText = 'Mesajlar yükleniyor...';
+    chatStatusText.innerText = window.I18N_CHAT?.loading_messages || 'Loading messages...';
     let url = '/taskmanager/ajax?action=get_chat_messages';
     if (activeDirectUserId) {
         url += `&receiver_id=${activeDirectUserId}`;
@@ -185,20 +187,23 @@ function loadChatHistory() {
 
                 if (!msgs || msgs.length === 0) {
                     if (activeDirectUserId) {
-                        const targetName = document.getElementById('chatHeaderTitle').innerText.replace('🔒 ', '').replace(' ile Özel Sohbet', '');
+                        const targetName = activeDirectUserObj?.name || 'Member';
+                        const firstDmDesc = (window.I18N_CHAT?.first_dm_desc || 'Messages remain between you and {name}.')
+                            .replace('{name}', escapeHtml(targetName));
+                        const dmTitle = (window.I18N_CHAT?.private_chat_with || '🔒 Private Chat with {name}')
+                            .replace('{name}', escapeHtml(targetName));
                         messagesContainer.innerHTML = `
-                            <div style="text-align:center; padding:60px 20px; color:var(--text-muted); font-size:13px; margin:auto;">
+                            <div class="empty-state-dm" style="text-align:center; padding:60px 20px; color:var(--text-muted); font-size:13px; margin:auto;">
                                 <div style="width:56px; height:56px; border-radius:50%; background:rgba(0,184,148,0.15); display:inline-flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:12px; color:#00b894;">🔒</div>
-                                <div style="font-size:15px; font-weight:700; color:var(--text-white); margin-bottom:6px;">${escapeHtml(targetName)} ile Özel Sohbet</div>
-                                <div style="color:var(--text-muted); font-size:12.5px; max-width:340px; margin:0 auto; line-height:1.5;">Bu sohbet odasındaki tüm mesajlar yalnızca sizin ve ${escapeHtml(targetName)} arasında kalır. İlk mesajı göndererek başlayın.</div>
+                                <div style="font-size:15px; font-weight:700; color:var(--text-white); margin-bottom:6px;">${dmTitle}</div>
+                                <div style="color:var(--text-muted); font-size:12.5px; max-width:340px; margin:0 auto; line-height:1.5;">${firstDmDesc}</div>
                             </div>
                         `;
                     } else {
                         messagesContainer.innerHTML = `
-                            <div style="text-align:center; padding:60px 20px; color:var(--text-muted); font-size:13px; margin:auto;">
+                            <div class="empty-state-general" style="text-align:center; padding:60px 20px; color:var(--text-muted); font-size:13px; margin:auto;">
                                 <div style="width:56px; height:56px; border-radius:50%; background:rgba(123,104,238,0.15); display:inline-flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:12px; color:var(--brand-primary);">💬</div>
-                                <div style="font-size:15px; font-weight:700; color:var(--text-white); margin-bottom:6px;">Genel Ekip Sohbetine Hoş Geldiniz!</div>
-                                <div style="color:var(--text-muted); font-size:12.5px; max-width:320px; margin:0 auto;">İlk mesajı göndererek ekip içi gerçek zamanlı sohbeti başlatın.</div>
+                                <div style="font-size:15px; font-weight:700; color:var(--text-white); margin-bottom:6px;">${escapeHtml(window.I18N_CHAT?.welcome_general_title || 'Welcome')}</div>
                             </div>
                         `;
                     }
@@ -209,13 +214,14 @@ function loadChatHistory() {
                     });
                     scrollToBottom();
                 }
-                chatStatusText.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><span style="width:6px; height:6px; border-radius:50%; background:#00b894; display:inline-block;"></span> <span>${msgs.length} mesaj</span></span>`;
+                const msgCountText = (window.I18N_CHAT?.messages_count || '{count} messages').replace('{count}', msgs.length);
+                chatStatusText.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><span style="width:6px; height:6px; border-radius:50%; background:#00b894; display:inline-block;"></span> <span>${msgCountText}</span></span>`;
             } else {
-                chatStatusText.innerText = 'Hata: ' + (data.message || 'Yüklenemedi');
+                chatStatusText.innerText = (window.I18N_CHAT?.error_prefix || 'Error: ') + (data.message || window.I18N_CHAT?.load_failed || 'Failed');
             }
         })
         .catch(err => {
-            chatStatusText.innerText = 'Bağlantı hatası: ' + err.message;
+            chatStatusText.innerText = (window.I18N_CHAT?.conn_error_prefix || 'Connection error: ') + err.message;
         });
 }
 
@@ -236,7 +242,7 @@ function renderDateDividerIfNeeded(msgCreatedAt) {
         const todayStr = new Date().toISOString().substring(0, 10);
         let label = dateOnly;
         if (dateOnly === todayStr) {
-            label = 'Bugün';
+            label = window.I18N_CHAT?.today || 'Today';
         } else {
             const parts = dateOnly.split('-');
             if (parts.length === 3) label = `${parts[2]}.${parts[1]}.${parts[0]}`;
@@ -257,7 +263,7 @@ function appendMessageToChat(msg, animate = true) {
     if (!msg || (!msg.message && !msg.attachment_url)) return;
 
     // Boş durum ekranını temizle
-    const emptyStates = messagesContainer.querySelectorAll('div[style*="Genel Ekip Sohbetine"], div[style*="Özel Sohbet Başlatın"]');
+    const emptyStates = messagesContainer.querySelectorAll('.empty-state-general, .empty-state-dm');
     emptyStates.forEach(e => e.remove());
 
     // Zaten varsa ekleme
@@ -284,13 +290,15 @@ function appendMessageToChat(msg, animate = true) {
 
     const timeStr = msg.formatted_time || (msg.created_at ? msg.created_at.substring(11, 16) : '');
     const avatarColor = msg.avatar_color || '#7B68EE';
-    const initial = (msg.user_name || 'U').substring(0, 1).toUpperCase();
+    const defaultUserLabel = window.I18N_CHAT?.user_label || 'User';
+    const initial = (msg.user_name || defaultUserLabel || 'U').substring(0, 1).toUpperCase();
 
     // HTML escape & URL linkification
     let safeText = escapeHtml(msg.message);
     const urlPattern = /(https?:\/\/[^\s<]+)/g;
     safeText = safeText.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:underline; font-weight:600; word-break:break-all;">$1</a>');
-    safeText = safeText.replace(/\b(TSK-\d+|01-\d+)\b/g, '<strong style="text-decoration:underline; cursor:pointer;" title="Görevi incele">$1</strong>');
+    const inspectTooltip = escapeHtml(window.I18N_CHAT?.inspect_task || 'Inspect');
+    safeText = safeText.replace(/\b(TSK-\d+|01-\d+)\b/g, `<strong style="text-decoration:underline; cursor:pointer;" title="${inspectTooltip}">$1</strong>`);
     const formattedBody = safeText.replace(/\n/g, '<br>');
 
     // Ek Dosya / Görsel HTML
@@ -298,12 +306,14 @@ function appendMessageToChat(msg, animate = true) {
     if (msg.attachment_url) {
         const isImg = /\.(jpg|jpeg|png|gif|webp|svg)($|\?)/i.test(msg.attachment_url);
         if (isImg) {
+            const chatImgLabel = escapeHtml(msg.message || window.I18N_CHAT?.chat_image || 'Image');
+            const imgAltLabel = escapeHtml(window.I18N_CHAT?.image_alt || 'Image');
             attachmentHtml = `
                 <div style="margin-top:8px;">
                     <img src="${msg.attachment_url}" 
-                         onclick="openImageLightbox('${msg.attachment_url}', '${escapeHtml(msg.message || 'Sohbet Görseli')}')" 
+                         onclick="openImageLightbox('${msg.attachment_url}', '${chatImgLabel}')" 
                          style="max-width:240px; max-height:160px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); cursor:zoom-in; object-fit:cover; display:block;" 
-                         alt="Görsel">
+                         alt="${imgAltLabel}">
                 </div>
             `;
         } else {
@@ -322,13 +332,16 @@ function appendMessageToChat(msg, animate = true) {
         ? 'background:linear-gradient(135deg, #7B68EE, #6C5CE7); color:#fff; box-shadow:0 3px 10px rgba(123,104,238,0.3); border-radius:14px 4px 14px 14px;' 
         : 'background:var(--bg-base); color:var(--text-primary); border:1px solid var(--border-subtle); box-shadow:0 2px 6px rgba(0,0,0,0.06); border-radius:4px 14px 14px 14px;';
 
+    const youSuffix = isMine ? ` <span style="font-size:10px; opacity:0.85; font-weight:600;">${window.I18N_CHAT?.you_label || '(You)'}</span>` : '';
+    const senderDisplay = escapeHtml(msg.user_name || defaultUserLabel);
+
     msgEl.innerHTML = `
-        <div class="cu-avatar" style="width:34px; height:34px; font-size:12px; font-weight:700; background:${avatarColor}; flex-shrink:0; box-shadow:0 2px 6px rgba(0,0,0,0.15);" title="${escapeHtml(msg.user_name || 'Kullanıcı')}">
+        <div class="cu-avatar" style="width:34px; height:34px; font-size:12px; font-weight:700; background:${avatarColor}; flex-shrink:0; box-shadow:0 2px 6px rgba(0,0,0,0.15);" title="${senderDisplay}">
             ${initial}
         </div>
         <div style="max-width:72%; display:flex; flex-direction:column; align-items:${isMine ? 'flex-end' : 'flex-start'};">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:11.5px;">
-                <span style="font-weight:700; color:${isMine ? 'var(--brand-primary)' : 'var(--text-white)'};">${escapeHtml(msg.user_name || 'Kullanıcı')}${isMine ? ' <span style="font-size:10px; opacity:0.85; font-weight:600;">(Sen)</span>' : ''}</span>
+                <span style="font-weight:700; color:${isMine ? 'var(--brand-primary)' : 'var(--text-white)'};">${senderDisplay}${youSuffix}</span>
                 <span style="color:var(--text-muted); font-size:10.5px;">${timeStr}</span>
             </div>
             <div style="padding:10px 15px; font-size:13px; line-height:1.5; word-break:break-word; ${bubbleStyle}">
@@ -465,13 +478,15 @@ function handleSendChatMessage(e) {
             chatInput.focus();
             loadConversations(); // Sol paneldeki son mesajı güncelle
         } else {
-            const errStr = typeof data.message === 'string' ? data.message : (data.error || 'Mesaj iletilemedi.');
-            alert('Hata: ' + errStr);
+            const errStr = typeof data.message === 'string' ? data.message : (data.error || window.I18N_CHAT?.send_failed || 'Failed to send message.');
+            const prefix = window.I18N_CHAT?.error_prefix || 'Error: ';
+            window.alert(prefix + errStr);
         }
     })
     .catch(err => {
         btnSend.disabled = false;
-        alert('Sunucu hatası: ' + err.message);
+        const prefix = window.I18N_CHAT?.server_error_prefix || 'Server error: ';
+        window.alert(prefix + err.message);
     });
 }
 
@@ -501,7 +516,13 @@ window.handleIncomingDirectMessage = function(msg) {
         scrollToBottom();
     } else if (msg.receiver_id == currentUserId) {
         // Başka bir üyeden gelen okunmamış mesaj
-        showToast(`🔒 <b>${msg.sender_name || 'Ekip Üyesi'}</b> size özel mesaj gönderdi: "${(msg.message || 'Ekli dosya').substring(0, 35)}"`, 'info');
+        const sender = msg.sender_name || window.I18N_CHAT?.user_label || 'User';
+        const rawContent = msg.message || window.I18N_CHAT?.attachment_fallback || 'File';
+        const preview = rawContent.substring(0, 35);
+        const toastHtml = (window.I18N_CHAT?.direct_msg_toast || '🔒 <b>{sender}</b>: "{preview}"')
+            .replace('{sender}', escapeHtml(sender))
+            .replace('{preview}', escapeHtml(preview));
+        showToast(toastHtml, 'info');
         loadConversations(); // Unread rozetini tazele
     }
 };
@@ -640,9 +661,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (list.length > 0) {
                     selectDirectChat(list[0].id, list[0].name, list[0].avatar_color, list[0].title);
                 } else {
-                    document.getElementById('chatHeaderTitle').innerText = '🔒 Ekip ile Özel Sohbet';
-                    document.getElementById('chatHeaderDesc').innerText = 'Ekibinizle doğrudan özel yazışma başlatabilirsiniz.';
-                    messagesContainer.innerHTML = '<div style="text-align:center; padding:50px; color:var(--text-muted); font-size:13px; margin:auto;"><div style="font-size:32px; margin-bottom:12px;">💬</div>Mesajlaşmak istediğiniz ekip üyesini sol listeden seçin.</div>';
+                    document.getElementById('chatHeaderTitle').innerText = window.I18N_CHAT?.team_private_chat || '🔒 Private Team Chat';
+                    document.getElementById('chatHeaderDesc').innerText = window.I18N_CHAT?.team_private_desc || 'Direct communication with your team.';
+                    const selectPrompt = escapeHtml(window.I18N_CHAT?.select_member_to_chat || 'Select a member to chat.');
+                    messagesContainer.innerHTML = `<div style="text-align:center; padding:50px; color:var(--text-muted); font-size:13px; margin:auto;"><div style="font-size:32px; margin-bottom:12px;">💬</div>${selectPrompt}</div>`;
                 }
             })
             .catch(() => {});

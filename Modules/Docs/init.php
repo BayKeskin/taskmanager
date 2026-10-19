@@ -41,4 +41,6 @@ AssetManager::localizeScript('docs-js', 'DOCS_I18N', [
     'docs_toast_paste_success'=> __('Docs::docs_toast_paste_success'),
     'docs_attachments_empty'  => __('Docs::docs_attachments_empty'),
     'docs_attachment_download'=> __('Docs::docs_attachment_download'),
+    'docs_btn_delete'         => __('Docs::docs_btn_delete'),
 ]);
+

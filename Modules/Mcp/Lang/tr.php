@@ -49,4 +49,9 @@ return array (
   'invalid_workspace_path' => 'Geçerli bir yerel proje klasörü (workspace_path) bulunamadı.',
   'btn_cancel' => 'İptal',
   'btn_save' => 'Kaydet',
+  'js_select_valid_project' => 'Lütfen geçerli bir proje seçiniz.',
+  'js_catalog_load_fail' => 'MCP kataloğu yüklenemedi.',
+  'js_server_error' => 'Sunucu bağlantı hatası oluştu',
+  'js_config_title_suffix' => 'Yapılandırması',
+  'js_sync_notice' => 'MCP yapılandırmaları senkronize edildi!'
 );

@@ -6,18 +6,24 @@ window.ApiTester = {
         const el = document.querySelector(selector);
         if (el) {
             navigator.clipboard.writeText(el.innerText);
-            alert('cURL command copied to clipboard!');
+            const msg = window.APITESTER_DOCS_I18N?.curl_copied || '';
+            if (msg) {
+                if (typeof showToast === 'function') showToast(msg, 'success');
+                else alert(msg);
+            }
         }
     },
     copyToken() {
         const textEl = document.getElementById('tokenText');
         const text = textEl ? textEl.innerText : '';
-        const msg = (window.APITESTER_DOCS_I18N && window.APITESTER_DOCS_I18N.token_copied) ? window.APITESTER_DOCS_I18N.token_copied : 'API Token panoya kopyalandı!';
+        const msg = window.APITESTER_DOCS_I18N?.token_copied || '';
         navigator.clipboard.writeText(text).then(() => {
-            if (typeof showToast === 'function') {
-                showToast(msg, 'success');
-            } else {
-                alert(msg);
+            if (msg) {
+                if (typeof showToast === 'function') {
+                    showToast(msg, 'success');
+                } else {
+                    alert(msg);
+                }
             }
         });
     }

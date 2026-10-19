@@ -35,13 +35,30 @@ return array (
   'err_task_not_found' => 'Task not found.',
   'err_no_commit_hash' => 'No Git Commit Hash recorded for this task.',
   'err_already_reverted' => 'This task changes have already been rolled back before.',
-  'rollback_reason_title' => "⚠️ SURGICAL ROLLBACK REQUEST:\nChanges in task `{task_code}` ({title}) are requested to be rolled back, but subsequent tasks depend on it causing conflicts in git revert.\n\nYOUR TASK:\n1. Inspect changes using `git show {hash}`.\n2. Safely isolate and clean up changes made in `{task_code}` and database changes ({schema}) without breaking later tasks.\n3. Test in live environment and resubmit!",
+  'rollback_reason_title' => '⚠️ SURGICAL ROLLBACK REQUEST:
+Changes in task `{task_code}` ({title}) are requested to be rolled back, but subsequent tasks depend on it causing conflicts in git revert.
+
+YOUR TASK:
+1. Inspect changes using `git show {hash}`.
+2. Safely isolate and clean up changes made in `{task_code}` and database changes ({schema}) without breaking later tasks.
+3. Test in live environment and resubmit!',
   'msg_ai_surgeon_assigned' => '🤖 AI Surgeon assigned! Will surgically isolate and clean up code and DB changes of task {task_code}.',
   'err_conflict_detected' => 'Conflict / Dependency Detected! Subsequent tasks were built on top of code written in {task_code}.',
   'activity_task_reverted' => '⏪ Task changes rolled back surgically from GitHub{db_part} (Commit: {hash}).',
   'msg_task_reverted_success' => '✅ Code of task {task_code} has been surgically rolled back from GitHub{db_part} without affecting subsequent tasks!',
   'part_and_db' => ' and Database ({summary})',
   'part_and_db_mysql' => ' and its created tables from MySQL',
-  'default_schema_tables' => 'tables if any',
   'err_workspace_dir_missing' => 'Workspace directory not found.',
+  'err_input_required' => 'Please enter GitHub username and PAT token.',
+  'err_general' => 'An error occurred.',
+  'err_server' => 'Server error occurred.',
+  'sync_confirm' => 'Do you want to check/create and sync this project repository with GitHub?',
+  'syncing' => 'Syncing with GitHub...',
+  'sync_failed' => 'Sync failed.',
+  'rollback_confirm' => 'Are you sure you want to revert Git commit changes and database effects for this task?',
+  'ai_surgeon_running' => '🤖 AI Surgeon is analyzing and cleaning conflicts...',
+  'rollback_running' => '⏪ Rollback operation in progress...',
+  'rollback_success' => 'Rollback completed successfully.',
+  'rollback_failed' => 'Rollback failed.',
+  'default_schema_tables' => 'Default schema tables',
 );

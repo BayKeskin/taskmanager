@@ -2,6 +2,7 @@
 
 // 3. GÖREV DETAY ÇEKMECESİ (SLIDE-OVER TASK DRAWER)
 // ==========================================================================
+const _bI18n = window.BOARD_I18N || {};
 function closeTaskDrawer() {
     const drawer = document.getElementById('cuTaskDrawer');
     const overlay = document.getElementById('cuDrawerOverlay');
@@ -21,21 +22,21 @@ async function openTaskDrawer(taskId) {
 
     // Drawer Yükleniyor durumu
     const i18n = window.TASK_I18N || {};
-    document.getElementById('drawerTaskTitle').innerText = i18n.loading || 'Yükleniyor...';
-    document.getElementById('drawerDescription').innerText = i18n.loading || 'Görev detayları getiriliyor...';
-    document.getElementById('drawerBtnGroup').innerHTML = `<span style="font-size:12px; color:var(--text-muted);">${i18n.loading || 'Yükleniyor...'}</span>`;
+    document.getElementById('drawerTaskTitle').innerText = _bI18n.loading || 'Loading...';
+    document.getElementById('drawerDescription').innerText = _bI18n.loading_details || 'Loading details...';
+    document.getElementById('drawerBtnGroup').innerHTML = `<span style="font-size:12px; color:var(--text-muted);">${_bI18n.loading || 'Loading...'}</span>`;
     document.getElementById('drawerTimeline').innerHTML = '';
     document.getElementById('drawerNotesBox').style.display = 'none';
     const devopsBox = document.getElementById('drawerDevopsContainer');
     if (devopsBox) devopsBox.innerHTML = '';
-    document.getElementById('drawerCommentsList').innerHTML = `<span style="font-size:12px; color:var(--text-muted);">${i18n.comments_loading || 'Yorumlar yükleniyor...'}</span>`;
+    document.getElementById('drawerCommentsList').innerHTML = `<span style="font-size:12px; color:var(--text-muted);">${_bI18n.comments_loading || 'Loading comments...'}</span>`;
 
     try {
         const response = await fetch(`/taskmanager/ajax?action=get_task_detail&id=${taskId}`);
         const data = await response.json();
 
         if (!data.success) {
-            showToast(data.message || 'Görev detayları alınamadı', 'error');
+            showToast(data.message || _bI18n.err_task_details || 'Failed to load task', 'error');
             closeTaskDrawer();
             return;
         }
@@ -50,7 +51,7 @@ async function openTaskDrawer(taskId) {
         // Meta Alanları & Üst Görev (Parent Task) Geri Dönüş Linki
         const codeEl = document.getElementById('drawerTaskCode');
         if (task.parent_task) {
-            codeEl.innerHTML = `<span onclick="openTaskDrawer(${task.parent_task.id})" style="cursor:pointer; color:var(--text-muted); text-decoration:underline; margin-right:6px;" title="Ana Göreve Dön: ${escapeHtml(task.parent_task.title)}">⬆️ ${escapeHtml(task.parent_task.task_code)} /</span> ${escapeHtml(task.task_code)}`;
+            codeEl.innerHTML = `<span onclick="openTaskDrawer(${task.parent_task.id})" style="cursor:pointer; color:var(--text-muted); text-decoration:underline; margin-right:6px;" title="${_bI18n.back_to_parent || 'Back'}: ${escapeHtml(task.parent_task.title)}">⬆️ ${escapeHtml(task.parent_task.task_code)} /</span> ${escapeHtml(task.task_code)}`;
         } else {
             codeEl.innerText = task.task_code;
         }
@@ -59,18 +60,18 @@ async function openTaskDrawer(taskId) {
         document.getElementById('drawerTaskTitle').innerText = task.title;
         const descEl = document.getElementById('drawerDescription');
         if (descEl) {
-            descEl.innerHTML = window.cleanMojibake(task.description) || `<p style="color:var(--text-muted); font-style:italic;">${i18n.desc_empty_hint || 'Görev açıklaması ve talimatları yazmak için buraya tıklayın...'}</p>`;
+            descEl.innerHTML = window.cleanMojibake(task.description) || `<p style="color:var(--text-muted); font-style:italic;">${_bI18n.desc_empty_hint || 'Click to edit description...'}</p>`;
         }
         const descStatus = document.getElementById('drawerDescSaveStatus');
-        if (descStatus) descStatus.innerText = i18n.click_to_edit || 'Düzenlemek için tıklayın';
+        if (descStatus) descStatus.innerText = _bI18n.click_to_edit || 'Click to edit';
         const descBtn = document.getElementById('btnSaveDrawerDesc');
         if (descBtn) descBtn.style.display = 'none';
 
         drawerAllTeamUsers = data.allUsers || (window.ALL_TEAM_USERS || []);
         renderDrawerAssignees(data.assignees || []);
         const drawerAssigneeLegacy = document.getElementById('drawerAssignee');
-        if (drawerAssigneeLegacy) drawerAssigneeLegacy.innerText = task.assignee_name || (i18n.unassigned || 'Atanmamış');
-        document.getElementById('drawerDeadline').innerText = task.deadline || (i18n.not_specified || 'Belirtilmemiş');
+        if (drawerAssigneeLegacy) drawerAssigneeLegacy.innerText = task.assignee_name || (_bI18n.unassigned || 'Unassigned');
+        document.getElementById('drawerDeadline').innerText = task.deadline || (_bI18n.not_specified || 'Not specified');
 
         // Zaman Takibi
         document.getElementById('drawerTimeEstimate').innerText = task.time_estimate || '4h';
@@ -110,11 +111,11 @@ async function openTaskDrawer(taskId) {
         // Durum Rozeti
         const statusMap = {
             'assigned': { text: i18n.status?.assigned || 'ATANDI', color: '#4f8ff7' },
-            'accepted': { text: i18n.status?.accepted || 'KABUL EDİLDİ', color: '#00b4d8' },
-            'modification_requested': { text: i18n.status?.modification_requested || 'REVİZYON İSTENDİ', color: '#e67e22' },
-            'in_progress': { text: i18n.status?.in_progress || 'ÇALIŞILIYOR', color: '#9b5de5' },
-            'submitted': { text: i18n.status?.submitted || 'TESLİM EDİLDİ', color: '#e056fd' },
-            'under_review': { text: i18n.status?.under_review || 'İNCELENİYOR', color: '#f1c40f' },
+            'accepted': { text: _bI18n.status_accepted || 'ACCEPTED', color: '#00b4d8' },
+            'modification_requested': { text: _bI18n.status_modification_requested || 'MODIFICATION REQUESTED', color: '#e67e22' },
+            'in_progress': { text: _bI18n.status_in_progress || 'IN PROGRESS', color: '#9b5de5' },
+            'submitted': { text: _bI18n.status_submitted || 'SUBMITTED', color: '#e056fd' },
+            'under_review': { text: _bI18n.status_under_review || 'UNDER REVIEW', color: '#f1c40f' },
             'completed': { text: i18n.status?.completed || 'TAMAMLANDI', color: '#00b894' }
         };
         const st = statusMap[task.status] || { text: task.status, color: '#6e7681' };
@@ -125,9 +126,9 @@ async function openTaskDrawer(taskId) {
         // Öncelik Rozeti
         const prMap = {
             'urgent': i18n.priority?.urgent || '🔴 Acil',
-            'high': i18n.priority?.high || '🟡 Yüksek',
+            'high': _bI18n.priority_high || 'HIGH',
             'normal': i18n.priority?.normal || '🔵 Normal',
-            'low': i18n.priority?.low || '⚪ Düşük'
+            'low': _bI18n.priority_low || 'LOW'
         };
         document.getElementById('drawerPriorityBadge').innerHTML = `
             <span class="cu-priority-badge cu-priority-${task.priority}">${prMap[task.priority] || task.priority}</span>
@@ -137,19 +138,19 @@ async function openTaskDrawer(taskId) {
         const notesBox = document.getElementById('drawerNotesBox');
         if (task.status === 'modification_requested' && modification) {
             notesBox.style.display = 'block';
-            document.getElementById('drawerNotesTitle').innerText = i18n.notes_revision_title || 'Çalışanın Revizyon / Açıklama Gerekçesi:';
+            document.getElementById('drawerNotesTitle').innerText = _bI18n.notes_revision_title || 'Revision Reason:';
             document.getElementById('drawerNotesTitle').style.color = '#e67e22';
             document.getElementById('drawerNotesContent').innerText = window.cleanMojibake(modification.reason);
             document.getElementById('drawerAttachmentLink').innerHTML = '';
         } else if ((task.status === 'submitted' || task.status === 'completed') && submission) {
             notesBox.style.display = 'block';
-            document.getElementById('drawerNotesTitle').innerText = i18n.notes_submission_title || 'Çalışanın Teslim Notu:';
+            document.getElementById('drawerNotesTitle').innerText = _bI18n.notes_submission_title || 'Submission Note:';
             document.getElementById('drawerNotesTitle').style.color = '#9b5de5';
             document.getElementById('drawerNotesContent').innerText = window.cleanMojibake(submission.notes);
             if (submission.attachment_url) {
                 document.getElementById('drawerAttachmentLink').innerHTML = `
                     <a href="${submission.attachment_url}" target="_blank" style="color:var(--brand-primary); font-size:12px; text-decoration:underline;">
-                        ${i18n.link_open_submission || '🔗 Teslimat / Çalışma Bağlantısını Aç'}
+                        ${_bI18n.link_open_submission || 'Open Submission Link'}
                     </a>
                 `;
             } else {
@@ -165,7 +166,7 @@ async function openTaskDrawer(taskId) {
                 const repoUrl = submission.attachment_url || '';
                 const isReverted = parseInt(submission.is_reverted || 0) === 1;
                 const dI18n = i18n.devops || {};
-                const schemaDiff = submission.schema_diff_summary || (dI18n.no_db_changes || 'Veritabanı şema değişikliği yok (Sadece Kod)');
+                const schemaDiff = submission.schema_diff_summary || (dI18n.no_db_changes || _bI18n.no_db_changes || 'No DB Schema Changes');
 
                 devopsBox.innerHTML = `
                     <div style="background:var(--bg-main); border:1px solid var(--border-subtle); border-radius:6px; padding:12px; margin-top:10px;">
@@ -176,24 +177,24 @@ async function openTaskDrawer(taskId) {
                                 ${shortCommit ? `<span style="font-size:11px; background:rgba(123,104,238,0.2); color:#a29bfe; padding:2px 6px; border-radius:4px; font-family:monospace;">#${shortCommit}</span>` : ''}
                             </div>
                             ${isReverted ? 
-                                `<span style="font-size:11px; color:#ff7675; background:rgba(255,118,117,0.15); padding:2px 8px; border-radius:4px; font-weight:600;">${escapeHtml(dI18n.reverted || '⏪ Geri Alındı (Reverted)')}</span>` : 
+                                `<span style="font-size:11px; color:#ff7675; background:rgba(255,118,117,0.15); padding:2px 8px; border-radius:4px; font-weight:600;">${escapeHtml(dI18n.reverted || _bI18n.reverted || 'Reverted')}</span>` : 
                                 `<span style="font-size:11px; color:#55efc4; background:rgba(85,239,196,0.15); padding:2px 8px; border-radius:4px; font-weight:600;">${escapeHtml(dI18n.synced || '🚀 Senkronize')}</span>`
                             }
                         </div>
                         
                         <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px; line-height:1.4;">
-                            <div style="margin-bottom:4px;"><strong>${escapeHtml(dI18n.db_impact || '🗄️ Veritabanı Etkisi:')}</strong> ${escapeHtml(schemaDiff)}</div>
+                            <div style="margin-bottom:4px;"><strong>${escapeHtml(dI18n.db_impact || _bI18n.db_impact || 'Database Impact:')}</strong> ${escapeHtml(schemaDiff)}</div>
                         </div>
 
                         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                             ${repoUrl ? `
                                 <a href="${repoUrl}" target="_blank" class="cu-btn-sm" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:var(--text-white); font-size:11px; text-decoration:none; padding:4px 8px; border-radius:4px;">
-                                    <span>🔗</span> ${escapeHtml(dI18n.view_diff || "GitHub'da İncele (Diff)")}
+                                    <span>🔗</span> ${escapeHtml(dI18n.view_diff || _bI18n.view_diff || 'View Diff')}
                                 </a>
                             ` : ''}
                             ${!isReverted && submission.commit_hash ? `
-                                <button type="button" class="cu-btn-sm" onclick="rollbackTask(${task.id}, 'safe')" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,71,87,0.15); border:1px solid rgba(255,71,87,0.4); color:#ff4757; font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer;" title="${escapeHtml(dI18n.btn_rollback || 'Değişiklikleri Geri Al (Rollback)')}">
-                                    <span>⏪</span> ${escapeHtml(dI18n.btn_rollback || 'Değişiklikleri Geri Al (Rollback)')}
+                                <button type="button" class="cu-btn-sm" onclick="rollbackTask(${task.id}, 'safe')" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,71,87,0.15); border:1px solid rgba(255,71,87,0.4); color:#ff4757; font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer;" title="${escapeHtml(dI18n.btn_rollback || _bI18n.btn_rollback || 'Rollback Changes')}">
+                                    <span>⏪</span> ${escapeHtml(dI18n.btn_rollback || _bI18n.btn_rollback || 'Rollback Changes')}
                                 </button>
                             ` : ''}
                         </div>
@@ -216,8 +217,8 @@ async function openTaskDrawer(taskId) {
         if (isAssignee && task.status === 'assigned') {
             hasActions = true;
             btnGroup.innerHTML += `
-                <button class="cu-btn-accept" onclick="executeWorkflowAction(${task.id}, 'accept')">${i18n.btn_accept_task || '⚡ Görevi Kabul Et'}</button>
-                <button class="cu-btn-modify" onclick="triggerRequestModModal(${task.id})">${i18n.btn_request_mod || '📝 Revizyon / Açıklama İste'}</button>
+                <button class="cu-btn-accept" onclick="executeWorkflowAction(${task.id}, 'accept')">${_bI18n.btn_accept_task || 'Accept Task'}</button>
+                <button class="cu-btn-modify" onclick="triggerRequestModModal(${task.id})">${_bI18n.btn_request_mod || 'Request Revision'}</button>
             `;
         }
 
@@ -225,7 +226,7 @@ async function openTaskDrawer(taskId) {
         if (isAssignee && (task.status === 'accepted' || task.status === 'in_progress')) {
             hasActions = true;
             btnGroup.innerHTML += `
-                <button class="cu-btn-submit" onclick="triggerSubmitTaskModal(${task.id})">${i18n.btn_submit_task || '🚀 Görevi Teslim Et (Tamamlandı)'}</button>
+                <button class="cu-btn-submit" onclick="triggerSubmitTaskModal(${task.id})">${_bI18n.btn_submit_task || 'Submit Task'}</button>
             `;
         }
 
@@ -233,8 +234,8 @@ async function openTaskDrawer(taskId) {
         if (isAdmin && (task.status === 'submitted' || task.status === 'under_review')) {
             hasActions = true;
             btnGroup.innerHTML += `
-                <button class="cu-btn-approve" onclick="executeWorkflowAction(${task.id}, 'approve')">${i18n.btn_approve_task || '✅ Teslimatı Onayla & Tamamla'}</button>
-                <button class="cu-btn-modify" onclick="executeWorkflowAction(${task.id}, 'request_changes')">${i18n.btn_request_changes || '↩️ Düzeltme / Revize İste'}</button>
+                <button class="cu-btn-approve" onclick="executeWorkflowAction(${task.id}, 'approve')">${_bI18n.btn_approve_task || 'Approve Task'}</button>
+                <button class="cu-btn-modify" onclick="executeWorkflowAction(${task.id}, 'request_changes')">${_bI18n.btn_request_changes || 'Request Changes'}</button>
             `;
         }
 
@@ -263,7 +264,7 @@ async function openTaskDrawer(taskId) {
         renderDrawerTimeline(activities);
 
     } catch (err) {
-        showToast('Bağlantı hatası oluştu', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
         console.error(err);
     }
 }
@@ -356,7 +357,7 @@ async function handleAddComment(e) {
         const result = await res.json();
 
         if (result.success) {
-            showToast('Yorumunuz başarıyla iletildi!', 'success');
+            showToast(_bI18n.comment_sent || 'Comment sent', 'success');
             input.value = '';
             clearCommentFile();
             // Çekmecedeki yorumları ve ekleri anında canlı tazele (ekranı veya çekmeceyi sıfırlamadan)
@@ -365,7 +366,7 @@ async function handleAddComment(e) {
             showToast(result.message || 'Yorum kaydedilemedi', 'error');
         }
     } catch (err) {
-        showToast('Sunucu bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -450,13 +451,13 @@ async function handleDrop(e, targetStatus) {
         const result = await res.json();
 
         if (result.success) {
-            showToast(`Görev '${targetStatus.toUpperCase()}' sütununa taşındı!`, 'success');
+            showToast((_bI18n.task_moved || 'Task moved') + ': ' + targetStatus.toUpperCase(), 'success');
         } else {
-            showToast(result.message || 'Durum güncellenemedi', 'error');
+            showToast(result.message || (_bI18n.err_status_update || 'Update failed'), 'error');
             setTimeout(() => window.location.reload(), 1000);
         }
     } catch (err) {
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
         setTimeout(() => window.location.reload(), 1000);
     }
 }
@@ -488,13 +489,13 @@ async function executeWorkflowAction(taskId, action, extraData = {}) {
         const result = await res.json();
 
         if (result.success) {
-            showToast(result.message || 'İşlem başarıyla gerçekleştirildi', 'success');
+            showToast(result.message || (_bI18n.action_success || 'Success'), 'success');
             setTimeout(() => window.location.reload(), 700);
         } else {
-            showToast(result.message || 'İşlem başarısız', 'error');
+            showToast(result.message || (_bI18n.action_failed || 'Failed'), 'error');
         }
     } catch (e) {
-        showToast('İstek gönderilirken hata oluştu', 'error');
+        showToast(_bI18n.err_request || 'Request failed', 'error');
     }
 }
 
@@ -571,7 +572,7 @@ function renderAiArchitectFiles() {
         delBtn.type = 'button';
         delBtn.innerHTML = '✕';
         delBtn.style.cssText = 'background:none; border:none; color:#ff4757; cursor:pointer; font-size:11px; font-weight:700; padding:0 2px;';
-        delBtn.title = 'Kaldır';
+        delBtn.title = _bI18n.remove || 'Remove';
         delBtn.onclick = (e) => {
             e.stopPropagation();
             removeAiArchitectFile(idx);
@@ -617,7 +618,7 @@ async function runAiArchitect() {
     const instEl = document.getElementById('aiArchitectInstruction');
     const instruction = instEl ? instEl.value.trim() : '';
     if (!instruction) {
-        showToast('Lütfen ne yaptırmak istediğinize dair kısa bir not yazın.', 'warning');
+        showToast(_bI18n.ai_prompt_required || 'Please enter instruction', 'warning');
         if (instEl) instEl.focus();
         return;
     }
@@ -627,7 +628,7 @@ async function runAiArchitect() {
 
     const btn = document.getElementById('btnRunAiArchitect');
     const btnText = document.getElementById('btnRunAiArchitectText');
-    const origText = btnText ? btnText.innerText : 'Şartname Üret';
+    const origText = btnText ? btnText.innerText : (_bI18n.ai_btn_generate || 'Generate Spec');
 
     if (btn) btn.disabled = true;
     if (btnText) btnText.innerText = 'Mimar analiz ediyor...';
@@ -680,12 +681,12 @@ async function runAiArchitect() {
                 }
             }
 
-            showToast('✨ Teknik mimari şartname başarıyla üretildi!', 'success');
+            showToast(_bI18n.ai_spec_success || 'Specification generated', 'success');
         } else {
-            showToast(d.message || 'Şartname üretilemedi.', 'error');
+            showToast(d.message || (_bI18n.ai_spec_failed || 'Failed to generate spec'), 'error');
         }
     } catch(err) {
-        showToast('Bağlantı hatası oluştu.', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     } finally {
         if (btn) btn.disabled = false;
         if (btnText) btnText.innerText = origText;
@@ -739,7 +740,7 @@ function renderModalNewTaskFiles() {
         delBtn.type = 'button';
         delBtn.innerHTML = '✕';
         delBtn.style.cssText = 'background:none; border:none; color:#ff4757; cursor:pointer; font-size:11px; font-weight:700; padding:0 2px;';
-        delBtn.title = 'Kaldır';
+        delBtn.title = _bI18n.remove || 'Remove';
         delBtn.onclick = (e) => {
             e.stopPropagation();
             removeModalNewTaskFile(idx);
@@ -810,16 +811,16 @@ async function handleCreateTask(e) {
         });
         const result = await res.json();
         if (result.success) {
-            showToast('Görev başarıyla oluşturuldu!', 'success');
+            showToast(_bI18n.task_created || 'Task created', 'success');
             modalNewTaskFiles = [];
             renderModalNewTaskFiles();
             closeModal('modalNewTask');
             setTimeout(() => window.location.reload(), 700);
         } else {
-            showToast(result.message || 'Görev oluşturulamadı', 'error');
+            showToast(result.message || (_bI18n.err_task_create || 'Failed to create task'), 'error');
         }
     } catch (err) {
-        showToast('Sunucu hatası', 'error');
+        showToast(_bI18n.server_error || 'Server error', 'error');
     }
 }
 
@@ -1019,7 +1020,7 @@ function renderDrawerChecklists(checklists) {
     progressBar.style.width = `${pct}%`;
 
     if (total === 0) {
-        container.innerHTML = '<span style="font-size:12px; color:var(--text-muted); font-style:italic;">Henüz kontrol maddesi eklenmemiş.</span>';
+        container.innerHTML = '<span style="font-size:12px; color:var(--text-muted); font-style:italic;">' + (_bI18n.no_checklists || 'No checklist items.') + '</span>';
         return;
     }
 
@@ -1058,9 +1059,9 @@ async function toggleChecklistItem(itemId, isChecked) {
             method: 'POST',
             body: formData
         });
-        showToast(isChecked ? 'Madde tamamlandı!' : 'Madde geri alındı', 'info');
+        showToast(isChecked ? (_bI18n.item_completed || 'Item completed') : (_bI18n.item_reverted || 'Item reverted'), 'info');
     } catch (err) {
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -1084,14 +1085,14 @@ async function handleAddChecklistItem(e) {
         const result = await res.json();
         if (result.success) {
             input.value = '';
-            showToast('Kontrol maddesi eklendi!', 'success');
+            showToast(_bI18n.checklist_added || 'Checklist item added', 'success');
             // Çekmeceyi tazele
             openTaskDrawer(currentDrawerTaskId);
         } else {
             showToast(result.message || 'Eklenemedi', 'error');
         }
     } catch (err) {
-        showToast('Sunucu hatası', 'error');
+        showToast(_bI18n.server_error || 'Server error', 'error');
     }
 }
 
@@ -1115,7 +1116,7 @@ async function handleInlineTitleSave(el) {
         });
         const result = await res.json();
         if (result.success) {
-            showToast('Görev başlığı güncellendi!', 'success');
+            showToast(_bI18n.title_updated || 'Task title updated', 'success');
             // Sayfadaki liste satırını veya kartı anında canlı güncelle
             const card = document.querySelector(`.cu-board-card[data-task-id="${currentDrawerTaskId}"] .cu-board-card-title`);
             if (card) card.innerText = newTitle;
@@ -1145,7 +1146,7 @@ function renderDrawerSubtasks(subtasks) {
     container.innerHTML = '';
 
     if (subtasks.length === 0) {
-        container.innerHTML = '<span style="font-size:12px; color:var(--text-muted); font-style:italic;">Henüz alt görev oluşturulmamış.</span>';
+        container.innerHTML = '<span style="font-size:12px; color:var(--text-muted); font-style:italic;">' + (_bI18n.no_subtasks || 'No subtasks.') + '</span>';
         return;
     }
 
@@ -1168,7 +1169,7 @@ function renderDrawerSubtasks(subtasks) {
 
         item.innerHTML = `
             <div style="display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" ${isDone ? 'checked' : ''} onclick="event.stopPropagation(); toggleSubtaskDone(${s.id}, this.checked)" style="cursor:pointer; accent-color:var(--brand-primary); width:14px; height:14px;" title="Tamamlandı olarak işaretle">
+                <input type="checkbox" ${isDone ? 'checked' : ''} onclick="event.stopPropagation(); toggleSubtaskDone(${s.id}, this.checked)" style="cursor:pointer; accent-color:var(--brand-primary); width:14px; height:14px;" title="${_bI18n.mark_done || 'Mark as done'}">
                 <span style="font-weight:700; color:var(--brand-primary); font-size:11px;">${s.task_code}</span>
                 <span style="color:var(--text-primary); font-weight:500; ${isDone ? 'text-decoration:line-through; opacity:0.6;' : ''}">${escapeHtml(s.title)}</span>
             </div>
@@ -1177,7 +1178,7 @@ function renderDrawerSubtasks(subtasks) {
                 <div class="cu-avatar" style="width:20px; height:20px; font-size:9px; background:${s.assignee_color || '#7B68EE'};">
                     ${(s.assignee_name || 'U').charAt(0)}
                 </div>
-                <button type="button" onclick="event.stopPropagation(); deleteSubtask(${s.id})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:2px 4px;" title="Alt Görevi Sil">
+                <button type="button" onclick="event.stopPropagation(); deleteSubtask(${s.id})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:2px 4px;" title="${_bI18n.delete_subtask || 'Delete subtask'}">
                     ✕
                 </button>
             </div>
@@ -1222,14 +1223,14 @@ async function handleAddSubtask(e) {
         const result = await res.json();
         if (result.success) {
             input.value = '';
-            showToast('Alt görev başarıyla oluşturuldu!', 'success');
+            showToast(_bI18n.subtask_created || 'Subtask created', 'success');
             // Çekmeceyi tazele
             openTaskDrawer(currentDrawerTaskId);
         } else {
-            showToast(result.message || 'Alt görev oluşturulamadı', 'error');
+            showToast(result.message || (_bI18n.err_subtask_create || 'Failed to create subtask'), 'error');
         }
     } catch (err) {
-        showToast('Sunucu hatası', 'error');
+        showToast(_bI18n.server_error || 'Server error', 'error');
     }
 }
 
@@ -1370,7 +1371,7 @@ function resetTimerState() {
     const text = document.getElementById('btnTimerText');
     if (btn) btn.style.background = 'var(--brand-primary)';
     if (icon) icon.innerText = '▶';
-    if (text) text.innerText = 'Sayacı Başlat';
+    if (text) text.innerText = _bI18n.btn_start_timer || 'Start Timer';
 }
 
 function updateTimerDisplay() {
@@ -1394,13 +1395,13 @@ async function toggleTaskTimer() {
         isTimerRunning = true;
         if (btn) btn.style.background = '#e74c3c';
         if (icon) icon.innerText = '⏹';
-        if (text) text.innerText = 'Sayacı Durdur & Kaydet';
+        if (text) text.innerText = _bI18n.btn_stop_timer || 'Stop Timer';
         
         taskTimerInterval = setInterval(() => {
             taskTimerSeconds++;
             updateTimerDisplay();
         }, 1000);
-        showToast('Zaman sayacı başlatıldı.', 'info');
+        showToast(_bI18n.timer_started || 'Timer started', 'info');
     } else {
         // Durdur ve Kaydet
         clearInterval(taskTimerInterval);
@@ -1434,11 +1435,11 @@ async function logTrackedTime(taskId, minutes) {
             const el = document.getElementById('drawerTimeSpent');
             if (el && data.new_time_spent) el.innerText = data.new_time_spent;
         } else {
-            showToast(data.message || 'Süre kaydedilemedi', 'error');
+            showToast(data.message || (_bI18n.err_save_time || 'Failed to save time'), 'error');
         }
     } catch (err) {
         console.error(err);
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -1455,7 +1456,7 @@ function renderDrawerDependencies(dependencies, availableTasks) {
     list.innerHTML = '';
 
     if (dependencies.length === 0) {
-        list.innerHTML = '<div style="font-size:12px; color:var(--text-muted); padding:4px 0;">Henüz bağımlılık ilişkisi tanımlanmamış.</div>';
+        list.innerHTML = '<div style="font-size:12px; color:var(--text-muted); padding:4px 0;">' + (_bI18n.no_dependencies || 'No dependencies.') + '</div>';
     } else {
         dependencies.forEach(d => {
             const isWaiting = (d.dep_type === 'waiting_on');
@@ -1469,7 +1470,7 @@ function renderDrawerDependencies(dependencies, availableTasks) {
                     <strong style="color:var(--text-white);">${d.dep_code}</strong>
                     <span style="color:var(--text-secondary); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.dep_title}</span>
                 </div>
-                <button type="button" onclick="handleRemoveDependency(${d.dep_id})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:2px 6px;" title="Kaldır">
+                <button type="button" onclick="handleRemoveDependency(${d.dep_id})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:2px 6px;" title="${_bI18n.remove || 'Remove'}">
                     ✕
                 </button>
             `;
@@ -1479,7 +1480,7 @@ function renderDrawerDependencies(dependencies, availableTasks) {
 
     // Seçim kutusunu doldur
     if (selectTask && availableTasks) {
-        selectTask.innerHTML = '<option value="">Görev seçin...</option>';
+        selectTask.innerHTML = '<option value="">' + (_bI18n.select_task || 'Select task...') + '</option>';
         availableTasks.forEach(t => {
             const opt = document.createElement('option');
             opt.value = t.id;
@@ -1499,7 +1500,7 @@ async function handleAddDependency(e) {
     const depType = selectType ? selectType.value : 'waiting_on';
 
     if (!dependsOnId) {
-        showToast('Lütfen bağlanacak görevi seçin', 'error');
+        showToast(_bI18n.select_task_error || 'Please select task', 'error');
         return;
     }
 
@@ -1518,11 +1519,11 @@ async function handleAddDependency(e) {
             showToast(data.message, 'success');
             openTaskDrawer(currentDrawerTaskId); // Yeniden yükle
         } else {
-            showToast(data.message || 'Hata oluştu', 'error');
+            showToast(data.message || (_bI18n.error_prefix || 'Error'), 'error');
         }
     } catch (err) {
         console.error(err);
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -1538,10 +1539,10 @@ async function handleRemoveDependency(depId) {
         });
         const data = await res.json();
         if (data.success) {
-            showToast('Bağımlılık kaldırıldı', 'success');
+            showToast(_bI18n.dependency_removed || 'Dependency removed', 'success');
             openTaskDrawer(currentDrawerTaskId);
         } else {
-            showToast(data.message || 'Hata oluştu', 'error');
+            showToast(data.message || (_bI18n.error_prefix || 'Error'), 'error');
         }
     } catch (err) {
         console.error(err);
@@ -1699,7 +1700,7 @@ function resetFilters(myUserId) {
     if (document.getElementById('cuSortBy')) document.getElementById('cuSortBy').value = 'default';
     if (myTasksFilterActive) toggleMyTasksFilter(myUserId);
     applyFilters(myUserId);
-    showToast('Filtreler sıfırlandı.', 'info');
+    showToast(_bI18n.filters_reset || 'Filters reset', 'info');
 }
 
 const resetListFilters = resetFilters;
@@ -1748,7 +1749,7 @@ async function handleQuickAddSubtask(parentTaskId) {
     if (!input) return;
     const title = input.value.trim();
     if (!title) {
-        showToast('Lütfen alt görev başlığı girin', 'error');
+        showToast(_bI18n.subtask_title_required || 'Subtask title required', 'error');
         return;
     }
 
@@ -1798,11 +1799,11 @@ async function handleQuickAddSubtask(parentTaskId) {
                 rowsContainer.appendChild(row);
             }
         } else {
-            showToast(data.message || 'Alt görev oluşturulamadı', 'error');
+            showToast(data.message || (_bI18n.err_subtask_create || 'Failed to create subtask'), 'error');
         }
     } catch (e) {
         console.error(e);
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -1825,7 +1826,7 @@ function handleDescFocus() {
         descEl.style.borderColor = 'var(--brand-primary)';
         descEl.style.background = 'rgba(0,0,0,0.35)';
         // Eğer placeholder varsa temizle
-        if (descEl.innerHTML.includes('Görev açıklaması ve talimatları')) {
+        if (descEl.querySelector('p[style*="font-style:italic"]') || descEl.innerHTML.includes(_bI18n.desc_empty_hint || 'desc_empty_hint')) {
             descEl.innerHTML = '';
         }
     }
@@ -1844,7 +1845,7 @@ function handleDescInput() {
     const status = document.getElementById('drawerDescSaveStatus');
     if (btn) btn.style.display = 'inline-flex';
     if (status) {
-        status.innerText = '● Kaydedilmemiş değişiklikler';
+        status.innerText = _bI18n.unsaved_changes || 'Unsaved changes';
         status.style.color = '#f39c12';
     }
 }
@@ -1875,18 +1876,18 @@ async function saveTaskDescription() {
         });
         const data = await res.json();
         if (data.success) {
-            showToast('Görev açıklaması güncellendi!', 'success');
+            showToast(_bI18n.desc_updated || 'Description updated', 'success');
             if (btn) btn.style.display = 'none';
             if (status) {
                 status.innerText = '✓ Kaydedildi';
                 status.style.color = '#00b894';
             }
         } else {
-            showToast(data.message || 'Açıklama kaydedilemedi', 'error');
+            showToast(data.message || (_bI18n.err_desc_save || 'Failed to save description'), 'error');
         }
     } catch (e) {
         console.error(e);
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -1897,7 +1898,7 @@ async function saveTaskDescription() {
 // 1. Görevi Çekmeceden Sil
 async function deleteCurrentTask() {
     if (!currentDrawerTaskId) return;
-    if (!confirm('Bu görevi ve bağlı tüm alt öğelerini silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
+    if (!confirm(_bI18n.confirm_delete_task_all || 'Delete task and all subtasks?')) return;
 
     await executeDeleteTask(currentDrawerTaskId);
     closeTaskDrawer();
@@ -1906,7 +1907,7 @@ async function deleteCurrentTask() {
 // 2. Görevi Liste Görünümünden Sil
 async function deleteTaskFromList(taskId) {
     if (!taskId) return;
-    if (!confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
+    if (!confirm(_bI18n.confirm_delete_task || 'Delete this task?')) return;
 
     await executeDeleteTask(taskId);
 }
@@ -1929,18 +1930,18 @@ async function executeDeleteTask(taskId) {
             const boardCard = document.querySelector(`.cu-board-card[data-task-id="${taskId}"]`);
             if (boardCard) boardCard.remove();
         } else {
-            showToast(data.message || 'Görev silinemedi', 'error');
+            showToast(data.message || (_bI18n.err_task_delete || 'Failed to delete task'), 'error');
         }
     } catch (e) {
         console.error(e);
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
 // 3. Alt Görevi Sil
 async function deleteSubtask(subtaskId) {
     if (!subtaskId) return;
-    if (!confirm('Bu alt görevi silmek istediğinize emin misiniz?')) return;
+    if (!confirm(_bI18n.confirm_delete_subtask || 'Delete subtask?')) return;
 
     const formData = new FormData();
     formData.append('task_id', subtaskId);
@@ -1952,7 +1953,7 @@ async function deleteSubtask(subtaskId) {
         });
         const data = await res.json();
         if (data.success) {
-            showToast('Alt görev silindi', 'success');
+            showToast(_bI18n.subtask_deleted || 'Subtask deleted', 'success');
             if (currentDrawerTaskId) openTaskDrawer(currentDrawerTaskId);
             else window.location.reload();
         } else {
@@ -1976,7 +1977,7 @@ async function handleDeleteChecklistItem(itemId) {
         });
         const data = await res.json();
         if (data.success) {
-            showToast('Madde silindi', 'success');
+            showToast(_bI18n.item_deleted || 'Item deleted', 'success');
             currentChecklistData = currentChecklistData.filter(c => c.id != itemId);
             renderDrawerChecklists(currentChecklistData);
         } else {
@@ -2017,7 +2018,7 @@ function renderModalAssignees() {
     hiddenContainer.innerHTML = '';
 
     if (modalSelectedAssignees.length === 0) {
-        container.innerHTML = '<span style="font-size:12px; color:var(--text-muted); font-style:italic;">Henüz çalışan seçilmedi. Aşağıdan @ yazarak ekleyin.</span>';
+        container.innerHTML = '<span style="font-size:12px; color:var(--text-muted); font-style:italic;">' + (_bI18n.no_assignee_selected || 'No assignees selected.') + '</span>';
         return;
     }
 
@@ -2029,7 +2030,7 @@ function renderModalAssignees() {
                 ${(u.name || 'U').charAt(0)}
             </div>
             <span>${u.name}</span>
-            <button type="button" onclick="removeModalAssignee(${u.id})" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:0 2px; margin-left:2px; display:flex; align-items:center;" title="Kaldır" onmouseover="this.style.color='#ff4757'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
+            <button type="button" onclick="removeModalAssignee(${u.id})" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:0 2px; margin-left:2px; display:flex; align-items:center;" title="${_bI18n.remove || 'Remove'}" onmouseover="this.style.color='#ff4757'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
         `;
         container.appendChild(chip);
 
@@ -2058,7 +2059,7 @@ function handleModalAssigneeSearch(query) {
     });
 
     if (filtered.length === 0) {
-        dropdown.innerHTML = '<div style="padding:10px 12px; font-size:12px; color:var(--text-muted);">Eşleşen veya eklenebilecek çalışan kalmadı.</div>';
+        dropdown.innerHTML = '<div style="padding:10px 12px; font-size:12px; color:var(--text-muted);">' + (_bI18n.no_more_assignees || 'No more assignees.') + '</div>';
         dropdown.style.display = 'block';
         return;
     }
@@ -2106,7 +2107,7 @@ function renderDrawerAssignees(assignees) {
 
     container.innerHTML = '';
     if (drawerCurrentAssignees.length === 0) {
-        container.innerHTML = '<span style="font-size:12px; color:var(--text-muted); font-style:italic;">Bu göreve atanmış çalışan yok.</span>';
+        container.innerHTML = '<span style="font-size:12px; color:var(--text-muted); font-style:italic;">' + (_bI18n.no_task_assignees || 'No assignees for task.') + '</span>';
         return;
     }
 
@@ -2118,7 +2119,7 @@ function renderDrawerAssignees(assignees) {
                 ${(u.name || 'U').charAt(0)}
             </div>
             <span>${u.name}</span>
-            <button type="button" onclick="removeAssigneeFromDrawerTask(${u.id})" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:0 2px; margin-left:2px; display:flex; align-items:center;" title="Görevden Çıkar" onmouseover="this.style.color='#ff4757'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
+            <button type="button" onclick="removeAssigneeFromDrawerTask(${u.id})" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:0 2px; margin-left:2px; display:flex; align-items:center;" title="${_bI18n.remove_assignee || 'Remove'}" onmouseover="this.style.color='#ff4757'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
         `;
         container.appendChild(chip);
     });
@@ -2149,7 +2150,7 @@ function handleDrawerAssigneeSearch(query) {
     });
 
     if (filtered.length === 0) {
-        dropdown.innerHTML = '<div style="padding:10px 12px; font-size:12px; color:var(--text-muted);">Eklenebilecek çalışan kalmadı veya bulunamadı.</div>';
+        dropdown.innerHTML = '<div style="padding:10px 12px; font-size:12px; color:var(--text-muted);">' + (_bI18n.no_more_assignees || 'No more assignees.') + '</div>';
         dropdown.style.display = 'block';
         return;
     }
@@ -2197,11 +2198,11 @@ async function addAssigneeToDrawerTask(userId) {
 
             updateTaskCardAssigneesDOM(currentDrawerTaskId, drawerCurrentAssignees);
         } else {
-            showToast(data.message || 'Çalışan atanamadı', 'error');
+            showToast(data.message || (_bI18n.err_assign || 'Failed to assign'), 'error');
         }
     } catch (e) {
         console.error(e);
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -2224,11 +2225,11 @@ async function removeAssigneeFromDrawerTask(userId) {
             renderDrawerAssignees(drawerCurrentAssignees);
             updateTaskCardAssigneesDOM(currentDrawerTaskId, drawerCurrentAssignees);
         } else {
-            showToast(data.message || 'Çıkarılamadı', 'error');
+            showToast(data.message || (_bI18n.err_unassign || 'Failed to remove'), 'error');
         }
     } catch (e) {
         console.error(e);
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -2328,9 +2329,9 @@ function renderDrawerTags(task) {
         ? 'padding:4px 10px; font-size:11px; font-weight:700; border-radius:6px; background:linear-gradient(135deg, #7B68EE, #e056fd); border:1px solid #e056fd; color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 0 10px rgba(123, 104, 238, 0.4); transition:all 0.2s ease;'
         : 'padding:4px 10px; font-size:11px; font-weight:700; border-radius:6px; background:rgba(155, 93, 229, 0.12); border:1px solid rgba(155, 93, 229, 0.35); color:#c4b5fd; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s ease;';
     aiBtn.innerHTML = isAi 
-        ? '<span>🤖</span><span>AI Otonom Aktif</span><span style="background:rgba(0,0,0,0.3); border-radius:50%; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; margin-left:3px;" title="AI Etiketini Kaldır">✕</span>' 
+        ? '<span>🤖</span><span>' + (_bI18n.ai_autonomous_active || 'AI Active') + '</span><span style="background:rgba(0,0,0,0.3); border-radius:50%; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; margin-left:3px;" title="' + (_bI18n.remove_ai_tag || 'Remove') + '">✕</span>' 
         : '<span>🤖</span><span>+ AI Otonom Yap</span>';
-    aiBtn.title = isAi ? 'Yapay zeka otonom etiketini kaldırmak için tıkla' : 'Yapay zekanın otomatik üstlenmesi için tıkla';
+    aiBtn.title = isAi ? (_bI18n.ai_title_remove || 'Click to remove AI') : (_bI18n.ai_title_enable || 'Click to enable AI');
     aiBtn.onclick = () => toggleDrawerAiTag(task);
     tagsContainer.appendChild(aiBtn);
 
@@ -2343,7 +2344,7 @@ function renderDrawerTags(task) {
             ? 'font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; background:rgba(155, 93, 229, 0.2); color:#e0b0ff; border:1px solid rgba(155, 93, 229, 0.5); display:inline-flex; align-items:center; gap:6px;'
             : 'font-size:11px; font-weight:600; padding:3px 8px; border-radius:6px; background:var(--bg-card-hover, rgba(255,255,255,0.08)); color:var(--text-primary); border:1px solid var(--border-subtle); display:inline-flex; align-items:center; gap:6px;';
         
-        chip.innerHTML = `<span>#${escapeHtml(t)}</span><button type="button" class="btn-remove-tag" style="background:none; border:none; color:var(--text-muted); font-size:11px; font-weight:800; cursor:pointer; padding:0 3px; border-radius:3px; display:inline-flex; align-items:center; justify-content:center; line-height:1; transition:all 0.15s ease;" title="'#${escapeHtml(t)}' etiketini kaldır">✕</button>`;
+        chip.innerHTML = `<span>#${escapeHtml(t)}</span><button type="button" class="btn-remove-tag" style="background:none; border:none; color:var(--text-muted); font-size:11px; font-weight:800; cursor:pointer; padding:0 3px; border-radius:3px; display:inline-flex; align-items:center; justify-content:center; line-height:1; transition:all 0.15s ease;" title="${_bI18n.remove_tag || 'Remove tag'}: #${escapeHtml(t)}">✕</button>`;
         
         const removeBtn = chip.querySelector('.btn-remove-tag');
         removeBtn.onmouseenter = () => { removeBtn.style.color = '#ff4d4d'; removeBtn.style.background = 'rgba(255, 77, 77, 0.15)'; };
@@ -2418,15 +2419,15 @@ async function updateTaskTagsOnServer(taskId, newTagsStr) {
         });
         const d = await res.json();
         if (d.success) {
-            showToast('Etiketler güncellendi!', 'success');
+            showToast(_bI18n.tags_updated || 'Tags updated', 'success');
             syncBoardCardTags(taskId, newTagsStr);
             return true;
         } else {
-            showToast(d.message || 'Güncellenemedi', 'error');
+            showToast(d.message || (_bI18n.action_failed || 'Failed'), 'error');
             return false;
         }
     } catch(e) {
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
         return false;
     }
 }
@@ -2450,7 +2451,7 @@ function syncBoardCardTags(taskId, newTagsStr) {
             aiBadge = document.createElement('span');
             aiBadge.className = 'cu-ai-tag-badge';
             aiBadge.style.cssText = 'font-size:10px; padding:1px 6px; border-radius:4px; background:rgba(155, 93, 229, 0.2); border:1px solid rgba(155, 93, 229, 0.45); color:#d8b4fe; font-weight:700; display:inline-flex; align-items:center; gap:3px;';
-            aiBadge.title = '🤖 Otonom Kuyruk: Sırası gelince yapay zeka otomatik başlar';
+            aiBadge.title = _bI18n.ai_queue_hint || 'Autonomous Queue: AI will process automatically';
             aiBadge.innerHTML = '<span>🤖</span><span>AI Otonom</span>';
             priorityRow.appendChild(aiBadge);
         }
@@ -2527,7 +2528,7 @@ function updateThemeUI(theme) {
     }
     const topbarBtn = document.getElementById('cuThemeToggleBtn');
     if (topbarBtn) {
-        topbarBtn.setAttribute('title', isLight ? 'Koyu Moda Geç' : 'Açık Moda Geç');
+        topbarBtn.setAttribute('title', isLight ? (_bI18n.switch_dark || 'Dark Mode') : (_bI18n.switch_light || 'Light Mode'));
     }
 
     // Profil açılır menüsü içindeki buton
@@ -2535,9 +2536,9 @@ function updateThemeUI(theme) {
     const ddText = document.getElementById('userDropdownThemeText');
     const ddBadge = document.getElementById('userDropdownThemeBadge');
     if (ddIcon) ddIcon.textContent = isLight ? '🌙' : '☀️';
-    if (ddText) ddText.textContent = isLight ? 'Koyu Moda Geç' : 'Açık Moda Geç';
+    if (ddText) ddText.textContent = isLight ? (_bI18n.switch_dark || 'Dark Mode') : (_bI18n.switch_light || 'Light Mode');
     if (ddBadge) {
-        ddBadge.textContent = isLight ? 'Açık' : 'Koyu';
+        ddBadge.textContent = isLight ? (_bI18n.theme_light || 'Light') : (_bI18n.theme_dark || 'Dark');
         ddBadge.style.background = isLight ? 'rgba(0, 184, 148, 0.15)' : 'rgba(123, 104, 238, 0.15)';
         ddBadge.style.color = isLight ? '#00b894' : '#7B68EE';
     }
@@ -2554,7 +2555,7 @@ function toggleTheme() {
     const newTheme = (currentTheme === 'light') ? 'dark' : 'light';
     applyTheme(newTheme);
     if (typeof showToast === 'function') {
-        showToast(newTheme === 'light' ? '☀️ Açık mod aktif edildi' : '🌙 Koyu mod aktif edildi', 'info');
+        showToast(newTheme === 'light' ? (_bI18n.theme_light_active || 'Light mode active') : (_bI18n.theme_dark_active || 'Dark mode active'), 'info');
     }
 }
 
@@ -2622,7 +2623,7 @@ function renderDrawerAttachments(attachments) {
                     <div style="font-size: 11px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${att.file_name}</div>
                     <div style="font-size: 9.5px; color: var(--text-muted);">${sizeKb}</div>
                 </div>
-                <button type="button" onclick="deleteTaskAttachment(${att.id})" style="background: none; border: none; color: #ff4757; font-size: 12px; cursor: pointer; padding: 2px 4px; border-radius: 3px;" title="Dosyayı Sil" onmouseover="this.style.background='rgba(255,71,87,0.15)'" onmouseout="this.style.background='none'">
+                <button type="button" onclick="deleteTaskAttachment(${att.id})" style="background: none; border: none; color: #ff4757; font-size: 12px; cursor: pointer; padding: 2px 4px; border-radius: 3px;" title="${_bI18n.delete_file || 'Delete file'}" onmouseover="this.style.background='rgba(255,71,87,0.15)'" onmouseout="this.style.background='none'">
                     🗑️
                 </button>
             </div>
@@ -2634,7 +2635,7 @@ function renderDrawerAttachments(attachments) {
 
 async function uploadAttachmentFile(file) {
     if (!currentDrawerTaskId) {
-        showToast('Önce bir görev seçmelisiniz', 'error');
+        showToast(_bI18n.select_task_first || 'Select task first', 'error');
         return;
     }
 
@@ -2642,7 +2643,7 @@ async function uploadAttachmentFile(file) {
     formData.append('task_id', currentDrawerTaskId);
     formData.append('attachment', file);
 
-    showToast('Dosya yükleniyor...', 'info');
+    showToast(_bI18n.file_uploading || 'Uploading file...', 'info');
 
     try {
         const res = await fetch('/taskmanager/ajax?action=upload_task_attachment', {
@@ -2652,15 +2653,15 @@ async function uploadAttachmentFile(file) {
         const d = await res.json();
         const attData = d.data || d.attachment || (d.id ? d : null);
         if (d.success && attData) {
-            showToast('✅ Dosya yüklendi!', 'success');
+            showToast(_bI18n.file_uploaded || 'File uploaded', 'success');
             currentTaskAttachments = currentTaskAttachments.filter(a => a.id != attData.id);
             currentTaskAttachments.unshift(attData);
             renderDrawerAttachments(currentTaskAttachments);
         } else {
-            showToast(d.message || 'Yükleme başarısız', 'error');
+            showToast(d.message || (_bI18n.err_upload || 'Upload failed'), 'error');
         }
     } catch(e) {
-        showToast('Dosya yüklenirken bağlantı hatası oluştu', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -2673,7 +2674,7 @@ async function handleDrawerFileUpload(input) {
 }
 
 async function deleteTaskAttachment(attId) {
-    if (!confirm('Bu görseli/dosyayı silmek istediğinizden emin misiniz?')) return;
+    if (!confirm(_bI18n.confirm_delete_attachment || 'Delete this attachment?')) return;
 
     const formData = new FormData();
     formData.append('attachment_id', attId);
@@ -2685,14 +2686,14 @@ async function deleteTaskAttachment(attId) {
         });
         const d = await res.json();
         if (d.success) {
-            showToast('Dosya silindi!', 'success');
+            showToast(_bI18n.file_deleted || 'File deleted', 'success');
             currentTaskAttachments = currentTaskAttachments.filter(a => a.id != attId);
             renderDrawerAttachments(currentTaskAttachments);
         } else {
             showToast(d.message || 'Silinemedi', 'error');
         }
     } catch(e) {
-        showToast('Bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -2797,10 +2798,10 @@ window.addEventListener('paste', async (e) => {
         const isAiPanelOpen = aiBody && aiBody.style.display !== 'none' && aiBody.style.display !== '';
         if (isAiPanelOpen) {
             handleAiArchitectFiles([safeFile]);
-            showToast('📋 Ekran görüntüsü AI Görev Mimarina eklendi!', 'info');
+            showToast(_bI18n.screenshot_added_ai || 'Screenshot added to AI', 'info');
         } else {
             handleModalNewTaskFiles([safeFile]);
-            showToast('📋 Ekran görüntüsü yeni göreve eklendi!', 'info');
+            showToast(_bI18n.screenshot_added_task || 'Screenshot added to task', 'info');
         }
         return;
     }
@@ -2811,7 +2812,7 @@ window.addEventListener('paste', async (e) => {
         const ext = imageBlob.type.split('/')[1] || 'png';
         const safeFile = new File([imageBlob], `teslimat_${Date.now()}.${ext}`, { type: imageBlob.type });
         setSubmitTaskFile(safeFile);
-        showToast('📋 Ekran görüntüsü teslimat formuna eklendi!', 'info');
+        showToast(_bI18n.screenshot_added_sub || 'Screenshot added to submission', 'info');
         return;
     }
 
@@ -2821,7 +2822,7 @@ window.addEventListener('paste', async (e) => {
         const ext = imageBlob.type.split('/')[1] || 'png';
         const safeFile = new File([imageBlob], `yorum_${Date.now()}.${ext}`, { type: imageBlob.type });
         setCommentFile(safeFile);
-        showToast('📋 Ekran görüntüsü yoruma eklendi!', 'info');
+        showToast(_bI18n.screenshot_added_comment || 'Screenshot added to comment', 'info');
         return;
     }
 
@@ -2831,7 +2832,7 @@ window.addEventListener('paste', async (e) => {
         const ext = imageBlob.type.split('/')[1] || 'png';
         const safeFile = new File([imageBlob], `ek_${Date.now()}.${ext}`, { type: imageBlob.type });
         await uploadAttachmentFile(safeFile);
-        showToast('📋 Ekran görüntüsü panodan göreve yüklendi!', 'success');
+        showToast(_bI18n.screenshot_uploaded || 'Screenshot uploaded', 'success');
     }
 });
 
@@ -2847,13 +2848,13 @@ function renderDrawerComments(comments) {
     commentsList.innerHTML = '';
 
     if (!comments || comments.length === 0) {
-        commentsList.innerHTML = '<span style="font-size:12px; color:var(--text-muted); font-style:italic;">Henüz yorum veya soru yok. İlk mesajı siz yazın!</span>';
+        commentsList.innerHTML = '<span style="font-size:12px; color:var(--text-muted); font-style:italic;">' + (_bI18n.no_comments_yet || 'No comments yet. Write the first one!') + '</span>';
     } else {
         comments.forEach(c => {
             const item = document.createElement('div');
             item.className = 'cu-comment-item';
             const internalBadge = c.is_internal == 1 
-                ? '<span style="font-size:10px; background:rgba(230,126,34,0.18); color:#e67e22; padding:1px 5px; border-radius:3px; font-weight:700;">🔒 Ekip İçi</span>' 
+                ? '<span style="font-size:10px; background:rgba(230,126,34,0.18); color:#e67e22; padding:1px 5px; border-radius:3px; font-weight:700;">🔒 ' + (_bI18n.internal_team || 'Internal') + '</span>' 
                 : '';
             
             let attachmentHtml = '';
@@ -2867,7 +2868,7 @@ function renderDrawerComments(comments) {
                                  style="max-width:200px; max-height:140px; border-radius:6px; border:1px solid var(--border-subtle); cursor:pointer; object-fit:cover; display:block; transition:transform 0.15s ease;" 
                                  onmouseover="this.style.transform='scale(1.02)'" 
                                  onmouseout="this.style.transform='scale(1)'" 
-                                 title="Büyütmek için tıklayın">
+                                 title="${_bI18n.click_to_zoom || 'Click to zoom'}">
                         </div>
                     `;
                 } else {
@@ -2884,11 +2885,11 @@ function renderDrawerComments(comments) {
 
             const canEdit = (typeof window.CURRENT_USER_ID !== 'undefined' && (c.user_id == window.CURRENT_USER_ID || window.CURRENT_USER_ROLE === 'admin'));
             const editBtnHtml = canEdit 
-                ? `<button type="button" onclick="startEditComment(${c.id})" class="cu-comment-edit-btn" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:11px; padding:2px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px; transition:all 0.15s;" onmouseover="this.style.color='var(--brand-primary)'; this.style.background='rgba(123,104,238,0.1)';" onmouseout="this.style.color='var(--text-muted)'; this.style.background='none';" title="Yorumu Düzenle"><span>✏️</span> Düzenle</button>` 
+                ? `<button type="button" onclick="startEditComment(${c.id})" class="cu-comment-edit-btn" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:11px; padding:2px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px; transition:all 0.15s;" onmouseover="this.style.color='var(--brand-primary)'; this.style.background='rgba(123,104,238,0.1)';" onmouseout="this.style.color='var(--text-muted)'; this.style.background='none';" title="${_bI18n.edit_comment || 'Edit comment'}"><span>✏️</span> ${_bI18n.btn_edit || 'Edit'}</button>` 
                 : '';
             const editedBadge = (c.is_edited == 1 || (c.updated_at && c.updated_at !== '0000-00-00 00:00:00')) 
-                ? `<span id="commentEditedBadge_${c.id}" style="font-size:10px; color:var(--text-muted); font-style:italic;">(düzenlendi)</span>` 
-                : `<span id="commentEditedBadge_${c.id}" style="display:none; font-size:10px; color:var(--text-muted); font-style:italic;">(düzenlendi)</span>`;
+                ? `<span id="commentEditedBadge_${c.id}" style="font-size:10px; color:var(--text-muted); font-style:italic;">(${_bI18n.edited || 'edited'})</span>` 
+                : `<span id="commentEditedBadge_${c.id}" style="display:none; font-size:10px; color:var(--text-muted); font-style:italic;">(${_bI18n.edited || 'edited'})</span>`;
 
             item.innerHTML = `
                 <div class="cu-avatar" style="width:28px; height:28px; font-size:11px; background:${c.avatar_color || '#7B68EE'}; flex-shrink:0;">
@@ -2898,7 +2899,7 @@ function renderDrawerComments(comments) {
                     <div class="cu-comment-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-weight:600; font-size:12px; color:var(--text-white);">${escapeHtml(c.user_name || '')}</span>
-                            <span style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">${escapeHtml(c.user_title || c.user_role || 'Üye')}</span>
+                            <span style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">${escapeHtml(c.user_title || c.user_role || (_bI18n.member || 'Member'))}</span>
                             ${internalBadge}
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
@@ -2951,7 +2952,7 @@ async function saveEditComment(commentId) {
     if (!editText) return;
     const newText = editText.value.trim();
     if (!newText) {
-        showToast('Yorum boş olamaz!', 'warning');
+        showToast(_bI18n.err_comment_empty || 'Comment cannot be empty', 'warning');
         return;
     }
 
@@ -2966,7 +2967,7 @@ async function saveEditComment(commentId) {
         });
         const data = await res.json();
         if (data.success) {
-            showToast('Yorum başarıyla güncellendi!', 'success');
+            showToast(_bI18n.comment_updated || 'Comment updated', 'success');
             const textEl = document.getElementById(`commentText_${commentId}`);
             if (textEl) {
                 textEl.innerText = newText;
@@ -2981,10 +2982,10 @@ async function saveEditComment(commentId) {
                 editedBadge.style.display = 'inline';
             }
         } else {
-            showToast(data.message || 'Yorum güncellenemedi', 'error');
+            showToast(data.message || (_bI18n.err_comment_update || 'Failed to update comment'), 'error');
         }
     } catch (err) {
-        showToast('Sunucu bağlantı hatası', 'error');
+        showToast(_bI18n.err_conn || 'Connection error', 'error');
     }
 }
 
@@ -2997,13 +2998,13 @@ function renderDrawerTimeline(activities) {
     if (!timeline) return;
     timeline.innerHTML = '';
     if (!activities || activities.length === 0) {
-        timeline.innerHTML = '<span style="font-size:12px; color:var(--text-muted);">Henüz aktivite kaydı yok.</span>';
+        timeline.innerHTML = '<span style="font-size:12px; color:var(--text-muted);">' + (_bI18n.no_activity_records || 'No activity records yet.') + '</span>';
     } else {
         activities.forEach(act => {
             const item = document.createElement('div');
             item.className = 'cu-timeline-item';
             item.innerHTML = `
-                <div style="font-weight:600; color:var(--text-primary);">${act.user_name || 'Kullanıcı'}</div>
+                <div style="font-weight:600; color:var(--text-primary);">${act.user_name || (_bI18n.user || 'User')}</div>
                 <div style="color:var(--text-secondary); margin-top:2px;">${act.comment || act.action_type}</div>
                 <div class="cu-timeline-time">${act.created_at}</div>
             `;
@@ -3191,18 +3192,18 @@ function clientApproveTask(taskId) {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                alert(i18n.approve_success || 'Teslimat onaylandı');
+                alert(_bI18n.approve_success || 'Approved');
                 location.reload();
             } else {
                 alert((i18n.error_prefix || 'Hata: ') + res.message);
             }
         })
-        .catch(err => alert((i18n.server_error || 'Sunucu hatası: ') + err.message));
+        .catch(err => alert((_bI18n.server_error || 'Server error: ') + err.message));
 }
 
 function clientRequestChanges(taskId) {
     const i18n = window.BOARD_I18N || {};
-    const reason = prompt(i18n.request_prompt || 'Düzeltme notunu girin:');
+    const reason = prompt(_bI18n.request_prompt || 'Enter revision reason:');
     if (!reason || !reason.trim()) return;
     const fd = new FormData();
     fd.append('action', 'task_workflow');
@@ -3213,13 +3214,13 @@ function clientRequestChanges(taskId) {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                alert(i18n.request_success || 'Düzeltme talebiniz iletildi');
+                alert(_bI18n.request_success || 'Revision requested');
                 location.reload();
             } else {
                 alert((i18n.error_prefix || 'Hata: ') + res.message);
             }
         })
-        .catch(err => alert((i18n.server_error || 'Sunucu hatası: ') + err.message));
+        .catch(err => alert((_bI18n.server_error || 'Server error: ') + err.message));
 }
 
 // AI Standup
@@ -3258,7 +3259,7 @@ function openAiStandupModal() {
 
                 content.innerHTML = `
                     <div style="background:rgba(123,104,238,0.08); border:1px solid rgba(123,104,238,0.25); border-radius:8px; padding:16px; margin-bottom:18px;">
-                        <div style="font-size:11px; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">${i18n.period || 'Dönem Aralığı'}</div>
+                        <div style="font-size:11px; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">${_bI18n.period || 'Period'}</div>
                         <div style="font-size:13px; color:var(--text-white); font-weight:600;">📅 ${period}</div>
                         <div style="display:flex; gap:12px; margin-top:12px; flex-wrap:wrap;">
                             <div style="background:rgba(0,184,148,0.15); border:1px solid rgba(0,184,148,0.3); border-radius:6px; padding:6px 12px; font-size:12px; color:#00b894; font-weight:700;">${compLabel}</div>
@@ -3275,7 +3276,7 @@ function openAiStandupModal() {
             }
         })
         .catch(err => {
-            content.innerHTML = '<div style="padding:30px; text-align:center; color:#e74c3c;">' + (i18n.err_conn || 'Bağlantı hatası: ') + err.message + '</div>';
+            content.innerHTML = '<div style="padding:30px; text-align:center; color:#e74c3c;">' + (_bI18n.err_conn || 'Connection error: ') + err.message + '</div>';
         });
 }
 
@@ -3296,12 +3297,12 @@ function sendStandupEmail() {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                alert((i18n.email_success || 'Gönderildi: ') + email);
+                alert((_bI18n.email_success || 'Sent: ') + email);
             } else {
                 alert((i18n.error_prefix || 'Hata: ') + res.message);
             }
         })
-        .catch(err => alert((i18n.server_error || 'Sunucu hatası: ') + err.message));
+        .catch(err => alert((_bI18n.server_error || 'Server error: ') + err.message));
 }
 
 // ==========================================================================

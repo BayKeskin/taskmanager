@@ -1,14 +1,12 @@
 <?php
 // TaskManager Kanban Panosu (HMVC Board Module View)
 $boardController = new \Modules\Board\Controllers\BoardController();
+$activeProjectId = isset($_GET['project_id']) ? (int)$_GET['project_id'] : null;
+$boardData = $boardController->index($activeProjectId);
+extract($boardData);
 
 $system->title = __('Board::kanban_board');
 include dirname(__DIR__, 3) . '/Core/Views/header.php';
-
-$activeProjectId = isset($_GET['project_id']) ? (int)$_GET['project_id'] : null;
-
-$boardData = $boardController->index($activeProjectId);
-extract($boardData);
 
 // 2. Müşteri İçin Sadeleştirilmiş Kanban Sütunları
 if ($isClient) {
@@ -90,10 +88,7 @@ foreach ($allTasks as $t) {
                     </a>
                 <?php endif; ?>
 
-                <?php if (!$isClient): 
-                    \Modules\GithubDevops\Services\GitService::ensureGithubAndRollbackSchema();
-                    $ghCreds = \Modules\GithubDevops\Services\GitService::getGithubCredentials();
-                ?>
+                <?php if (!$isClient): ?>
                     <div class="cu-dropdown-divider"></div>
 
                     <!-- GitHub Ayarları -->
@@ -311,9 +306,6 @@ foreach ($allTasks as $t) {
         </div>
     <?php endforeach; ?>
 </div>
-
-<!-- GÜNLÜK AI STANDUP MODALI -->
-<?php include __DIR__ . '/modals/ai_standup.php'; ?>
 
 <!-- 🐙 GITHUB DEVOPS AYARLARI MODALI -->
 

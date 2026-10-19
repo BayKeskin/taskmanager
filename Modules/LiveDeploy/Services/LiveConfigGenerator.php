@@ -147,7 +147,6 @@ class LiveConfigGenerator
                     $columns = array_keys($firstRow);
                     $colList = implode('`, `', $columns);
 
-                    $sql .= "INSERT INTO " . "`{$table}` (`{$colList}`) VALUES\n";
                     $valueRows = [];
                     foreach ($rows as $row) {
                         $rowArr = is_object($row) ? get_object_vars($row) : (array)$row;
@@ -157,7 +156,7 @@ class LiveConfigGenerator
                         }, array_values($rowArr));
                         $valueRows[] = "(" . implode(', ', $escapedValues) . ")";
                     }
-                    $sql .= implode(",\n", $valueRows) . ";\n\n";
+                    $sql .= \Modules\LiveDeploy\Models\DeployModel::buildInsertSql($table, $colList, $valueRows);
                 }
             }
         }

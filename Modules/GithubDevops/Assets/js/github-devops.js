@@ -11,11 +11,11 @@ window.openGithubSettingsModal = function() {
 window.saveGithubSettings = async function() {
     const username = document.getElementById('ghUsernameInput')?.value?.trim() || '';
     const token = document.getElementById('ghTokenInput')?.value?.trim() || '';
-    const dI18n = window.TASK_I18N?.devops || {};
+    const dI18n = window.DEVOPS_I18N || window.TASK_I18N?.devops || {};
 
     if (!username || !token) {
         if (typeof showToast === 'function') {
-            showToast(dI18n.err_input_required || 'Lütfen GitHub kullanıcı adı ve PAT token giriniz.', 'warning');
+            showToast(dI18n.err_input_required || '', 'warning');
         }
         return;
     }
@@ -30,21 +30,21 @@ window.saveGithubSettings = async function() {
             if (typeof closeModal === 'function') closeModal('modalGithubSettings');
             setTimeout(() => window.location.reload(), 500);
         } else {
-            if (typeof showToast === 'function') showToast(data.message || 'Hata oluştu', 'error');
+            if (typeof showToast === 'function') showToast(data.message || dI18n.err_general || '', 'error');
         }
     } catch (e) {
         console.error('saveGithubSettings error:', e);
-        if (typeof showToast === 'function') showToast('Sunucu hatası', 'error');
+        if (typeof showToast === 'function') showToast(dI18n.err_server || '', 'error');
     }
 };
 
 window.syncProjectToGithub = async function(projectId) {
     if (!projectId) return;
-    const dI18n = window.TASK_I18N?.devops || {};
-    const confirmMsg = dI18n.sync_confirm || 'Bu projenin GitHub reposunu kontrol edip eksikse oluşturmak ve senkronize etmek istiyor musunuz?';
-    if (!confirm(confirmMsg)) return;
+    const dI18n = window.DEVOPS_I18N || window.TASK_I18N?.devops || {};
+    const confirmMsg = dI18n.sync_confirm || '';
+    if (confirmMsg && !confirm(confirmMsg)) return;
     try {
-        if (typeof showToast === 'function') showToast(dI18n.syncing || 'GitHub ile senkronize ediliyor...', 'info');
+        if (typeof showToast === 'function') showToast(dI18n.syncing || '', 'info');
         const fd = new FormData();
         fd.append('project_id', projectId);
         const res = await fetch('/taskmanager/ajax?action=sync_project_github', { method: 'POST', body: fd });
@@ -54,29 +54,29 @@ window.syncProjectToGithub = async function(projectId) {
                 showToast(data.message + (data.data?.repo_name ? ' (' + data.data.repo_name + ')' : ''), 'success');
             }
         } else {
-            if (typeof showToast === 'function') showToast(data.message || 'Senkronizasyon başarısız', 'error');
+            if (typeof showToast === 'function') showToast(data.message || dI18n.sync_failed || '', 'error');
         }
     } catch (e) {
         console.error('syncProjectToGithub error:', e);
-        if (typeof showToast === 'function') showToast('Sunucu hatası', 'error');
+        if (typeof showToast === 'function') showToast(dI18n.err_server || '', 'error');
     }
 };
 
 window.rollbackTask = async function(taskId, mode = 'safe') {
     if (!taskId) return;
-    const dI18n = window.TASK_I18N?.devops || {};
+    const dI18n = window.DEVOPS_I18N || window.TASK_I18N?.devops || {};
     if (mode === 'safe') {
-        const confirmMsg = dI18n.rollback_confirm || 'Bu görevin Git commit değişikliklerini ve veritabanı etkilerini geri almak istediğinize emin misiniz?';
-        if (!confirm(confirmMsg)) {
+        const confirmMsg = dI18n.rollback_confirm || '';
+        if (confirmMsg && !confirm(confirmMsg)) {
             return;
         }
     }
 
     try {
         const runningMsg = (mode === 'ai_surgeon') 
-            ? (dI18n.ai_surgeon_running || '🤖 AI Cerrah çakışmaları analiz edip temizliyor...') 
-            : (dI18n.rollback_running || '⏪ Geri alma işlemi yürütülüyor...');
-        if (typeof showToast === 'function') showToast(runningMsg, 'info');
+            ? (dI18n.ai_surgeon_running || '') 
+            : (dI18n.rollback_running || '');
+        if (typeof showToast === 'function' && runningMsg) showToast(runningMsg, 'info');
 
         const fd = new FormData();
         fd.append('task_id', taskId);
@@ -86,16 +86,16 @@ window.rollbackTask = async function(taskId, mode = 'safe') {
         const data = await res.json();
 
         if (data.success) {
-            if (typeof showToast === 'function') showToast(data.message || 'Geri alma işlemi başarılı.', 'success');
+            if (typeof showToast === 'function') showToast(data.message || dI18n.rollback_success || '', 'success');
             if (typeof currentDrawerTaskId !== 'undefined' && currentDrawerTaskId == taskId) {
                 if (typeof openTaskDrawer === 'function') openTaskDrawer(taskId);
             }
         } else {
-            if (typeof showToast === 'function') showToast(data.message || 'Geri alma başarısız.', 'error');
+            if (typeof showToast === 'function') showToast(data.message || dI18n.rollback_failed || '', 'error');
         }
     } catch (e) {
         console.error('rollbackTask error:', e);
-        if (typeof showToast === 'function') showToast('Sunucu hatası', 'error');
+        if (typeof showToast === 'function') showToast(dI18n.err_server || '', 'error');
     }
 };
 

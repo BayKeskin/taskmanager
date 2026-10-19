@@ -7,8 +7,9 @@ let sseReconnectTimer = null;
 let sseRetryCount = 0;
 
 function initRealtimeSync() {
+    const sI18n = window.SSE_I18N || {};
     if (!window.EventSource) {
-        console.warn('Tarayıcınız Server-Sent Events (SSE) desteklemiyor.');
+        console.warn(sI18n.unsupported_browser || 'Server-Sent Events unsupported.');
         const badge = document.getElementById('cuRealtimeStatus');
         if (badge) badge.style.display = 'none';
         return;
@@ -78,7 +79,9 @@ function initRealtimeSync() {
                     appendMessageToChat(data, true);
                     if (typeof scrollToBottom === 'function') scrollToBottom();
                 } else {
-                    showToast(`💬 <b>${data.user_name || 'Ekip Üyesi'}</b>: ${data.message}`, 'info');
+                    const fallbackUser = sI18n.team_member || 'Team Member';
+                    const toastMsg = `💬 <b>${data.user_name || fallbackUser}</b>: ${data.message}`;
+                    showToast(toastMsg, 'info');
                 }
             } catch (err) {
                 console.error('SSE new_chat_message parse error:', err);
@@ -92,7 +95,12 @@ function initRealtimeSync() {
                 if (typeof window.handleIncomingDirectMessage === 'function') {
                     window.handleIncomingDirectMessage(data);
                 } else if (typeof window.CURRENT_USER_ID !== 'undefined' && data.receiver_id == window.CURRENT_USER_ID) {
-                    showToast(`🔒 <b>${data.user_name || 'Bir Üye'}</b> size özel mesaj gönderdi: "${(data.message || 'Ekli dosya').substring(0, 35)}" <a href="/taskmanager/chat?user_id=${data.user_id}" style="color:#fff; text-decoration:underline; margin-left:6px;">Sohbete Git</a>`, 'info');
+                    const sender = data.user_name || (sI18n.a_member || 'User');
+                    const msgSnippet = (data.message || (sI18n.attached_file || '')).substring(0, 35);
+                    const sentMsg = sI18n.sent_private_message || '';
+                    const chatLinkText = sI18n.go_to_chat || '';
+                    const toastText = `🔒 <b>${sender}</b> ${sentMsg}: "${msgSnippet}" <a href="/taskmanager/chat?user_id=${data.user_id}" style="color:#fff; text-decoration:underline; margin-left:6px;">${chatLinkText}</a>`;
+                    showToast(toastText, 'info');
                 }
             } catch (err) {
                 console.error('SSE new_direct_message parse error:', err);
@@ -117,7 +125,9 @@ function initRealtimeSync() {
                     currentTaskAttachments = currentTaskAttachments.filter(a => a.id != data.attachment.id);
                     currentTaskAttachments.unshift(data.attachment);
                     renderDrawerAttachments(currentTaskAttachments);
-                    showToast(`📎 Göreve yeni dosya eklendi: "${data.attachment.file_name}"`, 'info');
+                    const attMsg = sI18n.new_attachment_added || '';
+                    const toastText = `📎 ${attMsg}: "${data.attachment.file_name}"`;
+                    showToast(toastText, 'info');
                 }
             } catch (err) {
                 console.error('SSE task_attachment_added parse error:', err);
@@ -173,20 +183,21 @@ function initRealtimeSync() {
         };
 
     } catch (err) {
-        console.error('SSE bağlantı hatası:', err);
+        console.error('SSE connection error:', err);
         updateRealtimeBadge(false);
     }
 }
 
 function updateRealtimeBadge(isConnected) {
+    const sI18n = window.SSE_I18N || {};
     const badge = document.getElementById('cuRealtimeStatus');
     const text = document.getElementById('cuRealtimeText');
     if (!badge) return;
 
-    const titleActive = badge.dataset.titleActive || 'Canlı Pano ve Bildirim Senkronizasyonu Aktif';
-    const titleReconnecting = badge.dataset.titleReconnecting || 'Bağlantı kesildi, yeniden bağlanılıyor...';
-    const textLive = badge.dataset.textLive || 'Canlı';
-    const textConnecting = badge.dataset.textConnecting || 'Bağlanıyor';
+    const titleActive = badge.dataset.titleActive || (sI18n.status_active || 'Live Sync Active');
+    const titleReconnecting = badge.dataset.titleReconnecting || (sI18n.status_reconnecting || 'Reconnecting...');
+    const textLive = badge.dataset.textLive || (sI18n.text_live || 'Live');
+    const textConnecting = badge.dataset.textConnecting || (sI18n.text_connecting || 'Connecting');
 
     if (isConnected) {
         badge.classList.remove('disconnected');
@@ -201,6 +212,7 @@ function updateRealtimeBadge(isConnected) {
 
 // Canlı Görev Durumu Değişimi İşleyicisi
 function handleLiveTaskStatusChanged(data) {
+    const sI18n = window.SSE_I18N || {};
     const { task_id, task_code, title, old_status, new_status, user_name } = data;
 
     // A) Kanban Panosunda Kartı Taşı
@@ -237,14 +249,22 @@ function handleLiveTaskStatusChanged(data) {
     }
 
     // D) Canlı Bildirim Toast Göster
-    showToast(`⚡ <b>${task_code || 'Görev'}</b>: Durum <b>${(new_status || '').toUpperCase()}</b> yapıldı. (${user_name || 'Ekip'})`, 'info');
+    const taskLabel = task_code || (sI18n.task || 'Task');
+    const teamLabel = user_name || (sI18n.team || 'Team');
+    const statusMsg = `⚡ <b>${taskLabel}</b>: ${(new_status || '').toUpperCase()} (${teamLabel})`;
+    showToast(statusMsg, 'info');
 }
 
 // Canlı Görev Teslimatı
 function handleLiveTaskSubmitted(data) {
+    const sI18n = window.SSE_I18N || {};
     const { task_id, task_code, title, user_name, notes } = data;
     handleLiveTaskStatusChanged({ ...data, new_status: 'submitted' });
-    showToast(`🚀 <b>${task_code || 'Görev'}</b> teslim edildi! Not: "${(notes || '').substring(0, 40)}"`, 'success');
+    const taskLabel = task_code || (sI18n.task || 'Task');
+    const submitMsg = sI18n.task_submitted_msg || '';
+    const noteSnippet = (notes || '').substring(0, 40);
+    const submittedToast = `🚀 <b>${taskLabel}</b> ${submitMsg} "${noteSnippet}"`;
+    showToast(submittedToast, 'success');
 }
 
 // Canlı Görev Silinmesi (Tüm açık ekranlardan anında kaldır)
@@ -284,15 +304,19 @@ function handleLiveTaskDeleted(data) {
         if (typeof closeTaskModal === 'function') closeTaskModal();
     }
 
-    showToast(`🗑️ <b>${data.task_code || 'Görev'}</b> panodan silindi.`, 'warning');
+    const sI18n = window.SSE_I18N || {};
+    const delMsg = `🗑️ <b>${data.task_code || (sI18n.task || 'Task')}</b> ${sI18n.task_deleted_msg || ''}`;
+    showToast(delMsg, 'warning');
 }
 
 // ==========================================================================
 
 // Canlı Yeni Görev (Kanban & Liste Panolarına Anlık Kart Ekleme)
 function handleLiveTaskCreated(data) {
+    const sI18n = window.SSE_I18N || {};
     const { task_id, task_code, title, user_name } = data;
-    showToast(`➕ <b>${task_code || 'Yeni Görev'}</b> eklendi: "${(title || '').substring(0, 35)}" (${user_name || 'Admin'})`, 'info');
+    const createdMsg = `➕ <b>${task_code || (sI18n.new_task || 'Task')}</b> ${sI18n.task_created_msg || ''}: "${(title || '').substring(0, 35)}" (${user_name || 'Admin'})`;
+    showToast(createdMsg, 'info');
 
     if (!task_id) return;
     if (document.querySelector(`.cu-board-card[data-task-id="${task_id}"]`)) return;
@@ -331,8 +355,10 @@ function handleLiveTaskCreated(data) {
 
 // Canlı Yeni Yorum (Drawer Açık İse Yorumları Anında Yenile)
 function handleLiveNewComment(data) {
+    const sI18n = window.SSE_I18N || {};
     const { task_id, task_code, author, comment } = data;
-    showToast(`💬 <b>${author}</b> (${task_code || 'Görev'}): "${(comment || '').substring(0, 45)}"`, 'info');
+    const commentMsg = `💬 <b>${author}</b> (${task_code || (sI18n.task || 'Task')}): "${(comment || '').substring(0, 45)}"`;
+    showToast(commentMsg, 'info');
 
     // Panodaki kartı da görsel olarak dalgalanma efektiyle vurgula
     const boardCard = document.querySelector(`.cu-board-card[data-task-id="${task_id}"]`);
@@ -360,11 +386,12 @@ function handleLiveNewComment(data) {
 
 // Liste Görünümü Grup Sayaçlarını Güncelle
 function updateListGroupCounts() {
+    const sI18n = window.SSE_I18N || {};
     document.querySelectorAll('.cu-group').forEach(group => {
         const countSpan = group.querySelector('.cu-group-count');
         const rows = group.querySelectorAll('.cu-task-container');
         if (countSpan) {
-            countSpan.innerText = `${rows.length} görev`;
+            countSpan.innerText = `${rows.length} ${sI18n.tasks_suffix || 'tasks'}`;
         }
     });
 }

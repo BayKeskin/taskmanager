@@ -49,4 +49,9 @@ return array (
   'invalid_workspace_path' => 'A valid local project folder (workspace_path) was not found.',
   'btn_cancel' => 'Cancel',
   'btn_save' => 'Save',
+  'js_select_valid_project' => 'Please select a valid project.',
+  'js_catalog_load_fail' => 'Could not load MCP catalog.',
+  'js_server_error' => 'Server connection error occurred',
+  'js_config_title_suffix' => 'Configuration',
+  'js_sync_notice' => 'MCP configurations synchronized!'
 );

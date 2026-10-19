@@ -79,7 +79,33 @@ return array (
   'image_fallback' => 'Bild',
   'bulk_create_error' => 'Beim Massenerstellen ist ein Fehler aufgetreten: :error',
   'bulk_create_success' => '✅ :epics Hauptmodule und :subtasks detaillierte Unteraufgaben erfolgreich hinzugefügt!',
-  'empty_rules_error' => 'Bitte geben Sie die Regeln oder Einschränkungen an, die Sie kompilieren möchten.',
   'empty_brief_error' => 'Bitte geben Sie das Projektbriefing an oder laden Sie ein Word- (.docx) / PDF-Dokument hoch.',
-  'default_doc_name' => 'Projektspezifikation'
+  'default_doc_name' => 'Projektspezifikation',
+  'ready_for_analysis' => 'Bereit zur Analyse',
+  'analyzing_btn' => '⏳ Dokument & Aufgaben werden analysiert...',
+  'server_http_error' => 'Serverfehler (HTTP :status)',
+  'invalid_json_error' => 'Serverantwort konnte nicht gelesen werden (Ungültiges JSON-Format).',
+  'default_module_title' => 'Modul',
+  'default_subtask_desc' => '🛠️ WIE ZU ERLEDIGEN:
+1. Relevante Entwicklung abschließen und in Live-Umgebung testen.',
+  'decompose_done_toast' => '✨ Aufgabenbaum, Umsetzungsschritte und Bilder sind bereit!',
+  'decompose_failed_toast' => 'Zerlegung fehlgeschlagen',
+  'conn_error_toast' => 'Server-Verbindungsfehler',
+  'default_admin_name' => 'Administrator',
+  'subtask_moved_toast' => 'Teilaufgabe in neues Modul verschoben!',
+  'drag_handle_title' => 'Ziehen und in einem anderen Modul ablegen',
+  'toggle_how_to_title' => 'Umsetzungsanleitung ein-/ausblenden',
+  'img_note_badge' => ' • 🖼️ <b>:count Dokumentbilder</b> werden angehängt',
+  'tree_summary_badge' => '📊 Gesamt <b>:epics Hauptmodule</b>, <b>:subtasks detaillierte Unteraufgaben</b> (<b>:ai davon 🤖 KI-autonom</b>):imgNote',
+  'new_epic_default_title' => 'Neues Modul / Hauptaufgabe',
+  'new_epic_default_desc' => 'Architektonische Entwicklungen im Rahmen dieses Moduls.',
+  'new_subtask_default_title' => 'Neue Teilaufgabe',
+  'new_subtask_default_desc' => '🛠️ WIE ZU ERLEDIGEN (Umsetzungsschritte):
+1. Erforderliche Infrastruktur programmieren.
+
+✅ ABNAHMEKRITERIEN:
+- Muss in Live-Umgebung getestet werden.',
+  'no_module_to_save' => 'Keine Module zum Speichern gefunden.',
+  'processing_btn' => '⏳ Wird in Projekt verarbeitet...',
+  'empty_rules_error' => 'Regeln dürfen nicht leer sein.',
 );

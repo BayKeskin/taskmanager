@@ -79,7 +79,33 @@ return array (
   'image_fallback' => 'Image',
   'bulk_create_error' => 'An error occurred during bulk creation: :error',
   'bulk_create_success' => '✅ :epics Parent Modules and :subtasks Detailed Subtasks successfully added to project!',
-  'empty_rules_error' => 'Please provide the rules or constraints you want to compile.',
   'empty_brief_error' => 'Please provide the project brief or upload a Word (.docx) / PDF document to decompose.',
-  'default_doc_name' => 'Project Specification'
+  'default_doc_name' => 'Project Specification',
+  'ready_for_analysis' => 'Ready for analysis',
+  'analyzing_btn' => '⏳ Analyzing Document & Tasks...',
+  'server_http_error' => 'Server error (HTTP :status)',
+  'invalid_json_error' => 'Failed to parse server response (Invalid JSON format).',
+  'default_module_title' => 'Module',
+  'default_subtask_desc' => '🛠️ HOW TO DO:
+1. Implement the feature and test in live environment.',
+  'decompose_done_toast' => '✨ Task tree, execution steps, and images are ready!',
+  'decompose_failed_toast' => 'Decomposition failed',
+  'conn_error_toast' => 'Server connection error',
+  'default_admin_name' => 'Admin',
+  'subtask_moved_toast' => 'Subtask moved to another module!',
+  'drag_handle_title' => 'Drag and drop to another module',
+  'toggle_how_to_title' => 'Toggle How-to Instructions',
+  'img_note_badge' => ' • 🖼️ <b>:count Document Images</b> will be attached',
+  'tree_summary_badge' => '📊 Total <b>:epics Main Modules</b>, <b>:subtasks Detailed Subtasks</b> (<b>:ai of them 🤖 AI Autonomous</b>):imgNote',
+  'new_epic_default_title' => 'New Module / Epic',
+  'new_epic_default_desc' => 'Architectural developments under this module.',
+  'new_subtask_default_title' => 'New subtask',
+  'new_subtask_default_desc' => '🛠️ HOW TO DO (Execution Steps):
+1. Code the required infrastructure.
+
+✅ ACCEPTANCE CRITERIA:
+- Must be verified in live environment.',
+  'no_module_to_save' => 'No modules found to save.',
+  'processing_btn' => '⏳ Processing to Project...',
+  'empty_rules_error' => 'Rules cannot be empty.',
 );

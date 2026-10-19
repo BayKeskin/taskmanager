@@ -114,7 +114,8 @@ function setAiArchFile(file) {
     if (prompt) prompt.style.display = 'none';
     if (sel) sel.style.display = 'flex';
     if (name) name.innerText = file.name;
-    if (size) size.innerText = Math.round(file.size / 1024) + ' KB • Analize hazır';
+    const readyTxt = window.AI_ARCHITECT_I18N?.ready_for_analysis || 'Ready';
+    if (size) size.innerText = Math.round(file.size / 1024) + ' KB • ' + readyTxt;
 }
 
 function clearAiArchFile(e) {
@@ -146,7 +147,7 @@ async function runAiBriefDecomposition() {
     const fileToUpload = selectedAiArchFile || (fileInput && fileInput.files && fileInput.files[0]) || null;
 
     if (!brief && !fileToUpload) {
-        showToast('Lütfen önce proje brifini yazın veya bir Word (.docx) / döküman dosyası yükleyin.', 'error');
+        showToast(window.AI_ARCHITECT_I18N?.empty_brief_error || 'Please provide brief or document.', 'error');
         return;
     }
 
@@ -154,7 +155,7 @@ async function runAiBriefDecomposition() {
     const origText = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '⏳ Döküman & Görev Adımları Analiz Ediliyor...';
+        btn.innerHTML = window.AI_ARCHITECT_I18N?.analyzing_btn || 'Analyzing...';
     }
 
     try {
@@ -170,7 +171,8 @@ async function runAiBriefDecomposition() {
         if (!res.ok) {
             const errTxt = await res.text().catch(() => '');
             console.error('Server error HTTP ' + res.status + ':', errTxt);
-            showToast('Sunucu hatası (HTTP ' + res.status + ')', 'error');
+            const httpErr = (window.AI_ARCHITECT_I18N?.server_http_error || 'Server error (:status)').replace(':status', res.status);
+            showToast(httpErr, 'error');
             return;
         }
 
@@ -179,7 +181,7 @@ async function runAiBriefDecomposition() {
             data = await res.json();
         } catch (jsonErr) {
             console.error('Failed to parse server response as JSON:', jsonErr);
-            showToast('Sunucu yanıtı okunamadı (Geçersiz JSON formatı).', 'error');
+            showToast(window.AI_ARCHITECT_I18N?.invalid_json_error || 'Invalid server response.', 'error');
             return;
         }
 
@@ -188,13 +190,13 @@ async function runAiBriefDecomposition() {
             aiArchOriginalDoc = data.original_doc || null;
 
             aiArchTreeData = data.epics.map(ep => ({
-                title: ep.title || 'Modül',
+                title: ep.title || window.AI_ARCHITECT_I18N?.default_module_title || 'Module',
                 description: ep.description || '',
                 priority: ep.priority || 'high',
                 execution_mode: ep.execution_mode === 'gated' ? 'gated' : 'auto',
                 subtasks: (ep.subtasks || []).map(st => ({
                     title: st.title || '',
-                    description: st.description || '🛠️ NASIL YAPILACAK:\n1. İlgili geliştirmeyi tamamla ve canlı ortamda test et.',
+                    description: st.description || window.AI_ARCHITECT_I18N?.default_subtask_desc || '',
                     category: st.category || 'coding',
                     priority: st.priority || 'normal',
                     time_estimate: st.time_estimate || '2h',
@@ -228,13 +230,13 @@ async function runAiBriefDecomposition() {
             if (btnApprove) btnApprove.style.display = 'inline-block';
 
             renderAiArchitectTree();
-            showToast('✨ Görev ağacı, uygulama adımları ve döküman görselleri hazır!', 'success');
+            showToast(window.AI_ARCHITECT_I18N?.decompose_done_toast || 'Tasks ready!', 'success');
         } else {
-            showToast(data.message || 'Ayrıştırma başarısız oldu', 'error');
+            showToast(data.message || window.AI_ARCHITECT_I18N?.decompose_failed_toast || 'Failed', 'error');
         }
     } catch (e) {
         console.error('runAiBriefDecomposition error:', e);
-        showToast(e.message || 'Sunucu bağlantı hatası', 'error');
+        showToast(e.message || window.AI_ARCHITECT_I18N?.conn_error_toast || 'Connection error', 'error');
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -248,7 +250,8 @@ function renderAiArchitectTree() {
     if (!container) return;
     container.innerHTML = '';
 
-    const teamUsers = window.ALL_TEAM_USERS || [{ id: 1, name: 'Yönetici' }];
+    const adminName = window.AI_ARCHITECT_I18N?.default_admin_name || 'Admin';
+    const teamUsers = window.ALL_TEAM_USERS || [{ id: 1, name: adminName }];
     let totalSubs = 0;
     let totalAiSubs = 0;
 
@@ -276,7 +279,7 @@ function renderAiArchitectTree() {
                 aiArchTreeData[eIdx].subtasks.push(movedItem);
                 draggedSubtaskRef = null;
                 renderAiArchitectTree();
-                showToast('Alt görev yeni modüle taşındı!', 'info');
+                showToast(window.AI_ARCHITECT_I18N?.subtask_moved_toast || 'Subtask moved!', 'info');
             }
         };
 
@@ -292,6 +295,11 @@ function renderAiArchitectTree() {
             ).join('');
 
             const showDesc = sub.show_desc !== false;
+            const dragTitle = escapeAiHtml(window.AI_ARCHITECT_I18N?.drag_handle_title || 'Drag and drop');
+            const subTitlePh = escapeAiHtml(window.AI_ARCHITECT_I18N?.ai_arch_subtask_title_ph || 'Subtask title...');
+            const toggleTitle = escapeAiHtml(window.AI_ARCHITECT_I18N?.toggle_how_to_title || 'Toggle');
+            const deleteSubTitle = escapeAiHtml(window.AI_ARCHITECT_I18N?.ai_arch_remove_subtask || 'Delete');
+            const descPh = escapeAiHtml(window.AI_ARCHITECT_I18N?.ai_arch_subtask_details_ph || 'Details...');
 
             subtasksHtml += `
                 <div class="cu-ai-arch-subtask-card ${sub.is_ai ? 'is-ai-active' : ''}">
@@ -299,36 +307,39 @@ function renderAiArchitectTree() {
                          class="cu-ai-arch-subtask-row"
                          ondragstart="draggedSubtaskRef = { epicIdx: ${eIdx}, subIdx: ${sIdx} }; this.style.opacity='0.4';"
                          ondragend="this.style.opacity='1'; draggedSubtaskRef = null;">
-                        <span style="color:var(--text-muted); font-size:15px; user-select:none;" title="Sürükle ve başka modüle bırak">⠿</span>
-                        <input type="text" value="${escapeAiHtml(sub.title)}" oninput="aiArchTreeData[${eIdx}].subtasks[${sIdx}].title = this.value" placeholder="Alt görev başlığı..." style="background:transparent; border:none; color:var(--text-white); font-size:13px; font-weight:700; outline:none; width:100%;">
+                        <span style="color:var(--text-muted); font-size:15px; user-select:none;" title="${dragTitle}">⠿</span>
+                        <input type="text" value="${escapeAiHtml(sub.title)}" oninput="aiArchTreeData[${eIdx}].subtasks[${sIdx}].title = this.value" placeholder="${subTitlePh}" style="background:transparent; border:none; color:var(--text-white); font-size:13px; font-weight:700; outline:none; width:100%;">
                         <select onchange="aiArchTreeData[${eIdx}].subtasks[${sIdx}].category = this.value" style="background:var(--bg-card); border:1px solid var(--border-subtle); color:var(--text-secondary); font-size:11px; padding:4px 6px; border-radius:4px;">
-                            <option value="coding" ${sub.category === 'coding' ? 'selected' : ''}>💻 Yazılım</option>
-                            <option value="design" ${sub.category === 'design' ? 'selected' : ''}>🎨 Tasarım</option>
+                            <option value="coding" ${sub.category === 'coding' ? 'selected' : ''}>💻 Coding</option>
+                            <option value="design" ${sub.category === 'design' ? 'selected' : ''}>🎨 Design</option>
                             <option value="seo" ${sub.category === 'seo' ? 'selected' : ''}>🔍 SEO</option>
-                            <option value="marketing" ${sub.category === 'marketing' ? 'selected' : ''}>📢 Pazarlama</option>
-                            <option value="legal" ${sub.category === 'legal' ? 'selected' : ''}>⚖️ Yasal/KVKK</option>
-                            <option value="content" ${sub.category === 'content' ? 'selected' : ''}>📝 İçerik</option>
+                            <option value="marketing" ${sub.category === 'marketing' ? 'selected' : ''}>📢 Marketing</option>
+                            <option value="legal" ${sub.category === 'legal' ? 'selected' : ''}>⚖️ Legal</option>
+                            <option value="content" ${sub.category === 'content' ? 'selected' : ''}>📝 Content</option>
                         </select>
                         <select onchange="aiArchTreeData[${eIdx}].subtasks[${sIdx}].assigned_to = parseInt(this.value)" style="background:var(--bg-card); border:1px solid var(--border-subtle); color:var(--text-secondary); font-size:11px; padding:4px 6px; border-radius:4px;">
                             ${userOptions}
                         </select>
-                        <button type="button" onclick="aiArchTreeData[${eIdx}].subtasks[${sIdx}].show_desc = !aiArchTreeData[${eIdx}].subtasks[${sIdx}].show_desc; renderAiArchitectTree();" class="cu-ai-arch-btn-detail" title="Nasıl Yapılacak Açıklamasını Göster/Gizle">
-                            📝 ${showDesc ? 'Gizle' : 'Detay'}
+                        <button type="button" onclick="aiArchTreeData[${eIdx}].subtasks[${sIdx}].show_desc = !aiArchTreeData[${eIdx}].subtasks[${sIdx}].show_desc; renderAiArchitectTree();" class="cu-ai-arch-btn-detail" title="${toggleTitle}">
+                            📝 ${showDesc ? 'Hide' : 'Detail'}
                         </button>
                         <label class="cu-ai-arch-ai-badge ${sub.is_ai ? 'active' : ''}">
                             <input type="checkbox" ${sub.is_ai ? 'checked' : ''} onchange="aiArchTreeData[${eIdx}].subtasks[${sIdx}].is_ai = this.checked; renderAiArchitectTree();" style="display:none;">
                             <span>🤖 AI</span>
                         </label>
-                        <button type="button" onclick="aiArchTreeData[${eIdx}].subtasks.splice(${sIdx}, 1); renderAiArchitectTree();" style="background:none; border:none; color:#ff4757; cursor:pointer; font-size:13px;" title="Alt Görevi Sil">🗑️</button>
+                        <button type="button" onclick="aiArchTreeData[${eIdx}].subtasks.splice(${sIdx}, 1); renderAiArchitectTree();" style="background:none; border:none; color:#ff4757; cursor:pointer; font-size:13px;" title="${deleteSubTitle}">🗑️</button>
                     </div>
                     <!-- NASIL YAPILACAK / TEKNİK UYGULAMA AÇIKLAMASI (DoD) -->
                     <div class="cu-ai-arch-details-box" style="display:${showDesc ? 'block' : 'none'};">
-                        <div style="font-size:11px; font-weight:700; color:#c4b5fd; margin-bottom:4px;">🛠️ Nasıl Yapılacak? (Uygulama Adımları, Teknik Detaylar & Kabul Kriterleri):</div>
-                        <textarea rows="3" oninput="aiArchTreeData[${eIdx}].subtasks[${sIdx}].description = this.value" placeholder="Bu alt görevin nasıl yapılacağını, teknik gereksinimlerini ve kabul kriterlerini buraya yazın..." class="cu-ai-arch-details-textarea">${escapeAiHtml(sub.description || '')}</textarea>
+                        <textarea rows="3" oninput="aiArchTreeData[${eIdx}].subtasks[${sIdx}].description = this.value" placeholder="${descPh}" class="cu-ai-arch-details-textarea">${escapeAiHtml(sub.description || '')}</textarea>
                     </div>
                 </div>
             `;
         });
+
+        const deleteModuleTitle = escapeAiHtml(window.AI_ARCHITECT_I18N?.ai_arch_remove_module || 'Delete Module');
+        const epicDescPh = escapeAiHtml(window.AI_ARCHITECT_I18N?.ai_arch_epic_desc_ph || 'Description...');
+        const emptyModuleText = escapeAiHtml(window.AI_ARCHITECT_I18N?.ai_arch_empty_epic || 'Empty module.');
 
         epicBox.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
@@ -338,39 +349,45 @@ function renderAiArchitectTree() {
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
                     <select onchange="aiArchTreeData[${eIdx}].execution_mode = this.value; renderAiArchitectTree();" style="background:${isGated ? 'rgba(230,126,34,0.18)' : 'rgba(0,184,148,0.18)'}; border:1px solid ${isGated ? '#e67e22' : '#00b894'}; color:${isGated ? '#e67e22' : '#00b894'}; font-size:11px; font-weight:700; padding:5px 8px; border-radius:6px; cursor:pointer;">
-                        <option value="auto" ${!isGated ? 'selected' : ''}>🚀 Tam Otonom Akış (Gece Modu)</option>
-                        <option value="gated" ${isGated ? 'selected' : ''}>🛑 Onay Kapılı (Adım Adım Onaylı)</option>
+                        <option value="auto" ${!isGated ? 'selected' : ''}>🚀 Auto</option>
+                        <option value="gated" ${isGated ? 'selected' : ''}>🛑 Gated</option>
                     </select>
-                    <button type="button" onclick="addSubtaskToEpic(${eIdx})" style="background:rgba(123,104,238,0.15); border:1px solid rgba(123,104,238,0.4); color:#d8b4fe; font-size:11px; font-weight:700; padding:5px 10px; border-radius:5px; cursor:pointer;">+ Alt Görev</button>
-                    <button type="button" onclick="aiArchTreeData.splice(${eIdx}, 1); renderAiArchitectTree();" style="background:rgba(255,71,87,0.12); border:1px solid rgba(255,71,87,0.3); color:#ff4757; font-size:11px; padding:5px 8px; border-radius:5px; cursor:pointer;" title="Modülü Sil">✕</button>
+                    <button type="button" onclick="addSubtaskToEpic(${eIdx})" style="background:rgba(123,104,238,0.15); border:1px solid rgba(123,104,238,0.4); color:#d8b4fe; font-size:11px; font-weight:700; padding:5px 10px; border-radius:5px; cursor:pointer;">+ Subtask</button>
+                    <button type="button" onclick="aiArchTreeData.splice(${eIdx}, 1); renderAiArchitectTree();" style="background:rgba(255,71,87,0.12); border:1px solid rgba(255,71,87,0.3); color:#ff4757; font-size:11px; padding:5px 8px; border-radius:5px; cursor:pointer;" title="${deleteModuleTitle}">✕</button>
                 </div>
             </div>
             <!-- ANA MODÜL AÇIKLAMASI -->
             <div style="margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border-subtle);">
-                <input type="text" value="${escapeAiHtml(epic.description || '')}" oninput="aiArchTreeData[${eIdx}].description = this.value" placeholder="Ana modülün genel amacı, mimari kapsamı ve açıklaması..." class="cu-ai-arch-epic-desc-input">
+                <input type="text" value="${escapeAiHtml(epic.description || '')}" oninput="aiArchTreeData[${eIdx}].description = this.value" placeholder="${epicDescPh}" class="cu-ai-arch-epic-desc-input">
             </div>
-            <div>${subtasksHtml || '<div style="font-size:12px; color:var(--text-muted); padding:10px; text-align:center; border:1px dashed var(--border-subtle); border-radius:6px;">Bu modülde alt görev yok. Buraya alt görev sürükleyebilir veya "+ Alt Görev" butonuna basabilirsiniz.</div>'}</div>
+            <div>${subtasksHtml || `<div style="font-size:12px; color:var(--text-muted); padding:10px; text-align:center; border:1px dashed var(--border-subtle); border-radius:6px;">${emptyModuleText}</div>`}</div>
         `;
         container.appendChild(epicBox);
     });
 
-    const imgNote = aiArchExtractedImgs.length > 0 ? ` • 🖼️ <b>${aiArchExtractedImgs.length} Döküman Görseli</b> eklenecek` : '';
+    const imgNoteTemplate = window.AI_ARCHITECT_I18N?.img_note_badge || ' • 🖼️ <b>:count</b> images';
+    const imgNote = aiArchExtractedImgs.length > 0 ? imgNoteTemplate.replace(':count', aiArchExtractedImgs.length) : '';
     const badge = document.getElementById('aiArchSummaryBadge');
     if (badge) {
-        badge.innerHTML = `📊 Toplam <b>${aiArchTreeData.length} Ana Modül</b>, <b>${totalSubs} Detaylı Alt Görev</b> (<b>${totalAiSubs} tanesi 🤖 AI Otonom</b>)${imgNote}`;
+        const badgeTemplate = window.AI_ARCHITECT_I18N?.tree_summary_badge || 'Total :epics Epics, :subtasks Subtasks (:ai AI):imgNote';
+        badge.innerHTML = badgeTemplate
+            .replace(':epics', aiArchTreeData.length)
+            .replace(':subtasks', totalSubs)
+            .replace(':ai', totalAiSubs)
+            .replace(':imgNote', imgNote);
     }
 }
 
 function addNewBlankEpic() {
     aiArchTreeData.push({
-        title: 'Yeni Modül / Ana Görev',
-        description: 'Bu modül kapsamında yapılacak mimari geliştirmeler.',
+        title: window.AI_ARCHITECT_I18N?.new_epic_default_title || 'New Epic',
+        description: window.AI_ARCHITECT_I18N?.new_epic_default_desc || '',
         priority: 'normal',
         execution_mode: 'auto',
         subtasks: [
             {
-                title: 'Yeni alt görev 1',
-                description: '🛠️ NASIL YAPILACAK (Uygulama Adımları):\n1. Gerekli altyapıyı kodla.\n\n✅ KABUL KRİTERLERİ:\n- Canlı ortamda test edilmelidir.',
+                title: window.AI_ARCHITECT_I18N?.new_subtask_default_title || 'New Subtask',
+                description: window.AI_ARCHITECT_I18N?.new_subtask_default_desc || '',
                 category: 'coding',
                 priority: 'normal',
                 time_estimate: '2h',
@@ -389,8 +406,8 @@ function addSubtaskToEpic(epicIdx) {
         aiArchTreeData[epicIdx].subtasks = [];
     }
     aiArchTreeData[epicIdx].subtasks.push({
-        title: 'Yeni alt görev adımı',
-        description: '🛠️ NASIL YAPILACAK (Uygulama Adımları):\n1. Gerekli altyapıyı kodla.\n\n✅ KABUL KRİTERLERİ:\n- Canlı ortamda test edilmelidir.',
+        title: window.AI_ARCHITECT_I18N?.new_subtask_default_title || 'New Subtask',
+        description: window.AI_ARCHITECT_I18N?.new_subtask_default_desc || '',
         category: 'coding',
         priority: 'normal',
         time_estimate: '2h',
@@ -403,7 +420,7 @@ function addSubtaskToEpic(epicIdx) {
 
 async function submitAiArchitectTree() {
     if (!aiArchTreeData || aiArchTreeData.length === 0) {
-        showToast('Kaydedilecek modül bulunamadı.', 'error');
+        showToast(window.AI_ARCHITECT_I18N?.no_module_to_save || 'No modules to save.', 'error');
         return;
     }
 
@@ -413,7 +430,7 @@ async function submitAiArchitectTree() {
     const origText = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '⏳ Projeye İşleniyor...';
+        btn.innerHTML = window.AI_ARCHITECT_I18N?.processing_btn || 'Processing...';
     }
 
     try {
@@ -431,11 +448,11 @@ async function submitAiArchitectTree() {
             closeModal('modalAiArchitect');
             setTimeout(() => window.location.reload(), 700);
         } else {
-            showToast(data.message || 'Kaydedilemedi', 'error');
+            showToast(data.message || window.AI_ARCHITECT_I18N?.conn_error_toast || 'Error', 'error');
         }
     } catch (e) {
         console.error('submitAiArchitectTree error:', e);
-        showToast('Sunucu bağlantı hatası', 'error');
+        showToast(window.AI_ARCHITECT_I18N?.conn_error_toast || 'Connection error', 'error');
     } finally {
         if (btn) {
             btn.disabled = false;

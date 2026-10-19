@@ -4,11 +4,13 @@ window.TaskManagerStorage = {
         const sizeBytes = file.size;
         const maxBytes = maxSizeMb * 1024 * 1024;
         if (sizeBytes > maxBytes) {
-            return { valid: false, error: 'Dosya boyutu sınırı aşıyor.' };
+            const msg = (window.STORAGE_I18N && window.STORAGE_I18N.file_too_large) ? window.STORAGE_I18N.file_too_large : 'File size exceeds limit.';
+            return { valid: false, error: msg };
         }
         const ext = file.name.split('.').pop().toLowerCase();
         if (allowedExtensions && !allowedExtensions.includes(ext)) {
-            return { valid: false, error: 'İzin verilmeyen dosya formatı.' };
+            const msg = (window.STORAGE_I18N && window.STORAGE_I18N.invalid_extension) ? window.STORAGE_I18N.invalid_extension : 'Invalid file extension.';
+            return { valid: false, error: msg };
         }
         return { valid: true };
     }

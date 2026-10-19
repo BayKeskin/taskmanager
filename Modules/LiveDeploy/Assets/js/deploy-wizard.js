@@ -3,10 +3,12 @@
  * Canlı Dağıtım & Hosting Sihirbazı İstemci Mantığı
  */
 let currentDeployStep = 1;
+const deployI18n = window.DEPLOY_I18N || {};
 
 window.openDeployWizard = function(projectId) {
     if (!projectId) {
-        if (typeof showToast === 'function') showToast('Lütfen önce bir proje seçin.', 'error');
+        const msg = deployI18n.select_project_first || 'Please select a project first.';
+        if (typeof showToast === 'function') showToast(msg, 'error');
         return;
     }
 
@@ -27,7 +29,7 @@ window.openDeployWizard = function(projectId) {
                 }
             }
         })
-        .catch(err => console.error('Proje bilgileri alınamadı:', err));
+        .catch(err => console.error(deployI18n.err_project_info_failed || 'Project info error:', err));
 };
 
 window.closeDeployWizard = function() {
@@ -124,7 +126,7 @@ window.toggleDeployPanelFields = function() {
 window.testDeployPanelConnection = function() {
     const statusSpan = document.getElementById('deployPanelTestStatus');
     if (statusSpan) {
-        statusSpan.innerHTML = '⏳ Doğrulanıyor...';
+        statusSpan.innerHTML = deployI18n.status_verifying || 'Verifying...';
         statusSpan.style.color = 'var(--text-muted)';
     }
 
@@ -140,17 +142,17 @@ window.testDeployPanelConnection = function() {
         .then(res => {
             if (statusSpan) {
                 if (res.success) {
-                    statusSpan.innerHTML = '✅ ' + (res.message || 'Bağlantı başarılı!');
+                    statusSpan.innerHTML = '✅ ' + (res.message || deployI18n.status_conn_success || 'Success');
                     statusSpan.style.color = '#00b894';
                 } else {
-                    statusSpan.innerHTML = '❌ ' + (res.message || 'Bağlantı hatası.');
+                    statusSpan.innerHTML = '❌ ' + (res.message || deployI18n.status_conn_failed || 'Error');
                     statusSpan.style.color = '#e74c3c';
                 }
             }
         })
         .catch(err => {
             if (statusSpan) {
-                statusSpan.innerHTML = '❌ Sunucu hatası: ' + err.message;
+                statusSpan.innerHTML = '❌ ' + (deployI18n.status_server_error || 'Server error: ') + err.message;
                 statusSpan.style.color = '#e74c3c';
             }
         });
@@ -159,7 +161,7 @@ window.testDeployPanelConnection = function() {
 window.loadDeployGitDiff = function(projectId) {
     const badge = document.getElementById('deployDiffBadge');
     const details = document.getElementById('deployDiffDetails');
-    if (badge) badge.innerText = 'Hesaplanıyor...';
+    if (badge) badge.innerText = deployI18n.badge_calculating || 'Calculating...';
 
     const fd = new FormData();
     fd.append('project_id', projectId);
@@ -171,20 +173,27 @@ window.loadDeployGitDiff = function(projectId) {
                 const d = res.data.diff;
                 const migs = res.data.pending_migrations || [];
                 if (badge) {
-                    badge.innerText = d.is_full ? 'İlk Dağıtım (Tam Aktarım)' : 'Delta Senkronizasyon';
+                    badge.innerText = d.is_full ? (deployI18n.badge_initial_deploy || 'Initial') : (deployI18n.badge_delta_sync || 'Delta');
                 }
                 if (details) {
+                    const uploadMsg = (deployI18n.files_to_upload || 'Files: {added} new, {modified} modified')
+                        .replace('{added}', d.added.length)
+                        .replace('{modified}', d.modified.length);
+                    const deleteMsg = (deployI18n.files_to_delete || 'Delete: {deleted}')
+                        .replace('{deleted}', d.deleted.length);
+                    const migMsg = (deployI18n.migrations_to_run || 'Migrations: {count}')
+                        .replace('{count}', migs.length);
                     details.innerHTML = `
-                        <div>📁 <b>Yüklenecek Dosyalar:</b> ${d.added.length} yeni, ${d.modified.length} değişen</div>
-                        <div>🗑️ <b>Silinecek Dosyalar:</b> ${d.deleted.length} adet</div>
-                        <div>🗄️ <b>Yeni Şema Göçleri (.migrations):</b> ${migs.length} adet</div>
+                        <div>${uploadMsg}</div>
+                        <div>${deleteMsg}</div>
+                        <div>${migMsg}</div>
                     `;
                 }
             } else {
-                if (badge) badge.innerText = 'Fark bulunamadı veya ilk dağıtım';
+                if (badge) badge.innerText = deployI18n.badge_no_diff || 'No diff';
             }
         })
-        .catch(err => console.error('Delta diff alınamadı:', err));
+        .catch(err => console.error(deployI18n.err_delta_diff_failed || 'Delta error:', err));
 };
 
 window.startLiveDeployment = function() {
@@ -196,13 +205,13 @@ window.startLiveDeployment = function() {
 
     if (btnAction) {
         btnAction.disabled = true;
-        btnAction.innerText = '🚀 Dağıtılıyor...';
+        btnAction.innerText = deployI18n.btn_deploying || 'Deploying...';
     }
 
     if (logBox) {
         logBox.classList.remove('deploy-modal-hidden');
         logBox.style.display = 'block';
-        logBox.innerHTML = '<div>[1/4] Git diff ve dosya listesi hazırlanıyor...</div>';
+        logBox.innerHTML = '<div>' + (deployI18n.log_step1 || '[1/4] Preparing Git diff...') + '</div>';
     }
 
     const liveDomain = document.getElementById('deployLiveDomain')?.value || '';
@@ -217,29 +226,30 @@ window.startLiveDeployment = function() {
         .then(res => {
             if (res.success) {
                 if (logBox) {
-                    logBox.innerHTML += '<div>[2/4] Dosyalar canlı sunucuya aktarıldı.</div>';
-                    logBox.innerHTML += '<div>[3/4] Canlı şema göçleri kontrol edildi ve uygulandı.</div>';
-                    logBox.innerHTML += '<div>[4/4] Dağıtım kaydı tamamlandı: ID #' + res.data.deployment_id + '</div>';
+                    logBox.innerHTML += '<div>' + (deployI18n.log_step2 || '[2/4] Files transferred.') + '</div>';
+                    logBox.innerHTML += '<div>' + (deployI18n.log_step3 || '[3/4] Migrations applied.') + '</div>';
+                    const step4 = (deployI18n.log_step4 || '[4/4] Deployment recorded: ID #{id}').replace('{id}', res.data.deployment_id);
+                    logBox.innerHTML += '<div>' + step4 + '</div>';
                 }
-                if (title) title.innerText = '🎉 Dağıtım Başarıyla Tamamlandı!';
-                if (desc) desc.innerText = 'Canlı siteniz başarıyla güncellendi. Şimdi sağlık kontrolü yapılıyor...';
+                if (title) title.innerText = deployI18n.title_deploy_completed || 'Deployment Completed';
+                if (desc) desc.innerText = deployI18n.desc_deploy_completed || 'Site updated. Running healthcheck...';
                 if (btnAction) {
-                    btnAction.innerText = '✅ Dağıtım Tamam';
+                    btnAction.innerText = deployI18n.btn_deploy_done || 'Done';
                 }
                 triggerLiveHealthcheck(liveDomain);
             } else {
-                if (logBox) logBox.innerHTML += '<div style="color:#e74c3c;">[HATA] ' + res.message + '</div>';
+                if (logBox) logBox.innerHTML += '<div style="color:#e74c3c;">[ERROR] ' + res.message + '</div>';
                 if (btnAction) {
                     btnAction.disabled = false;
-                    btnAction.innerText = '🚀 Tekrar Dene';
+                    btnAction.innerText = deployI18n.btn_retry || 'Retry';
                 }
             }
         })
         .catch(err => {
-            if (logBox) logBox.innerHTML += '<div style="color:#e74c3c;">[HATA] ' + err.message + '</div>';
+            if (logBox) logBox.innerHTML += '<div style="color:#e74c3c;">[ERROR] ' + err.message + '</div>';
             if (btnAction) {
                 btnAction.disabled = false;
-                btnAction.innerText = '🚀 Tekrar Dene';
+                btnAction.innerText = deployI18n.btn_retry || 'Retry';
             }
         });
 };
@@ -247,7 +257,7 @@ window.startLiveDeployment = function() {
 window.triggerLiveHealthcheck = function(liveUrl) {
     const badge = document.getElementById('deployHealthBadge');
     if (badge) {
-        badge.innerHTML = '<span>🟡</span> <span>Sağlık kontrolü yapılıyor...</span>';
+        badge.innerHTML = '<span>🟡</span> <span>' + (deployI18n.badge_health_checking || 'Checking...') + '</span>';
         badge.style.color = '#f39c12';
         badge.style.borderColor = 'rgba(243,156,18,0.4)';
     }
@@ -262,7 +272,10 @@ window.triggerLiveHealthcheck = function(liveUrl) {
             if (res.success && res.data && res.data.result) {
                 const rData = res.data.result;
                 if (badge) {
-                    badge.innerHTML = `<span>🟢</span> <span>Canlı ve Sağlıklı (HTTP ${rData.http_code}, ${rData.response_time_ms}ms)</span>`;
+                    const healthSuccess = (deployI18n.badge_health_success || 'Live & Healthy (HTTP {code}, {time}ms)')
+                        .replace('{code}', rData.http_code)
+                        .replace('{time}', rData.response_time_ms);
+                    badge.innerHTML = `<span>🟢</span> <span>${healthSuccess}</span>`;
                     badge.style.color = '#00b894';
                     badge.style.borderColor = 'rgba(0,184,148,0.5)';
                     badge.style.background = 'rgba(0,184,148,0.1)';
@@ -270,7 +283,8 @@ window.triggerLiveHealthcheck = function(liveUrl) {
             } else {
                 if (badge) {
                     const code = res.data?.result?.http_code || 0;
-                    badge.innerHTML = `<span>🔴</span> <span>Sağlık Hatası (HTTP ${code})</span>`;
+                    const healthErr = (deployI18n.badge_health_error || 'Health Error (HTTP {code})').replace('{code}', code);
+                    badge.innerHTML = `<span>🔴</span> <span>${healthErr}</span>`;
                     badge.style.color = '#e74c3c';
                     badge.style.borderColor = 'rgba(231,76,60,0.5)';
                     badge.style.background = 'rgba(231,76,60,0.1)';
@@ -279,14 +293,15 @@ window.triggerLiveHealthcheck = function(liveUrl) {
         })
         .catch(err => {
             if (badge) {
-                badge.innerHTML = `<span>🔴</span> <span>Bağlantı Hatası</span>`;
+                badge.innerHTML = '<span>🔴</span> <span>' + (deployI18n.badge_health_conn_error || 'Connection Error') + '</span>';
                 badge.style.color = '#e74c3c';
             }
         });
 };
 
 window.executeDeployRollback = function() {
-    if (!confirm('Canlı sunucu önceki stabil sürüme geri alınacak. Devam etmek istiyor musunuz?')) {
+    const confirmPrompt = deployI18n.deploy_rollback_confirm || 'Revert to previous stable version?';
+    if (!window.confirm(confirmPrompt)) {
         return;
     }
 
@@ -295,7 +310,7 @@ window.executeDeployRollback = function() {
     if (logBox) {
         logBox.classList.remove('deploy-modal-hidden');
         logBox.style.display = 'block';
-        logBox.innerHTML += '<div>[ROLLBACK] Geri alma süreci başlatıldı...</div>';
+        logBox.innerHTML += '<div>' + (deployI18n.log_rollback_start || '[ROLLBACK] Rollback initiated...') + '</div>';
     }
 
     const fd = new FormData();
@@ -306,19 +321,22 @@ window.executeDeployRollback = function() {
         .then(res => {
             if (res.success) {
                 if (logBox) {
-                    logBox.innerHTML += '<div style="color:#2ecc71;">[ROLLBACK TAMAMLANDI] ' + res.message + '</div>';
+                    logBox.innerHTML += '<div style="color:#2ecc71;">[ROLLBACK] ' + res.message + '</div>';
                 }
-                if (typeof showToast === 'function') showToast('✅ Canlı başarıyla önceki sürüme döndürüldü.', 'success');
+                const msgSuccess = '✅ ' + (deployI18n.msg_rollback_done || 'Rollback complete.');
+                if (typeof showToast === 'function') showToast(msgSuccess, 'success');
                 triggerLiveHealthcheck(document.getElementById('deployLiveDomain')?.value);
             } else {
                 if (logBox) {
-                    logBox.innerHTML += '<div style="color:#e74c3c;">[ROLLBACK HATA] ' + res.message + '</div>';
+                    logBox.innerHTML += '<div style="color:#e74c3c;">[ROLLBACK ERROR] ' + res.message + '</div>';
                 }
-                if (typeof showToast === 'function') showToast('❌ ' + res.message, 'error');
+                const msgErr = '❌ ' + res.message;
+                if (typeof showToast === 'function') showToast(msgErr, 'error');
             }
         })
         .catch(err => {
-            if (typeof showToast === 'function') showToast('Geri alma hatası: ' + err.message, 'error');
+            const errLog = (deployI18n.err_rollback_msg || 'Rollback error: ') + err.message;
+            if (typeof showToast === 'function') showToast(errLog, 'error');
         });
 };
 

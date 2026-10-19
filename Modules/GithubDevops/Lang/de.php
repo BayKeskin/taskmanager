@@ -35,13 +35,30 @@ return array (
   'err_task_not_found' => 'Aufgabe nicht gefunden.',
   'err_no_commit_hash' => 'Für diese Aufgabe wurde kein Git-Commit-Hash gefunden.',
   'err_already_reverted' => 'Die Änderungen dieser Aufgabe wurden bereits zurückgesetzt.',
-  'rollback_reason_title' => "⚠️ CHIRURGISCHE ROLLBACK-ANFORDERUNG:\nÄnderungen in der Aufgabe `{task_code}` ({title}) sollen zurückgesetzt werden, spätere Aufgaben hängen jedoch davon ab.\n\nIHRE AUFGABE:\n1. Überprüfen Sie die Änderungen mit `git show {hash}`.\n2. Entfernen Sie sauber nur den Code und die Datenbankschema-Änderungen ({schema}) von `{task_code}`, ohne nachfolgende Aufgaben zu beschädigen.\n3. In Live-Umgebung testen und erneut einreichen!",
+  'rollback_reason_title' => '⚠️ CHIRURGISCHE ROLLBACK-ANFORDERUNG:
+Änderungen in der Aufgabe `{task_code}` ({title}) sollen zurückgesetzt werden, spätere Aufgaben hängen jedoch davon ab.
+
+IHRE AUFGABE:
+1. Überprüfen Sie die Änderungen mit `git show {hash}`.
+2. Entfernen Sie sauber nur den Code und die Datenbankschema-Änderungen ({schema}) von `{task_code}`, ohne nachfolgende Aufgaben zu beschädigen.
+3. In Live-Umgebung testen und erneut einreichen!',
   'msg_ai_surgeon_assigned' => '🤖 AI-Chirurg zugewiesen! Wird Code und DB-Änderungen der Aufgabe {task_code} isolieren und bereinigen.',
   'err_conflict_detected' => 'Konflikt / Abhängigkeit erkannt! Nachfolgende Aufgaben bauen auf Code aus {task_code} auf.',
   'activity_task_reverted' => '⏪ Aufgabenänderungen chirurgisch von GitHub{db_part} zurückgesetzt (Commit: {hash}).',
   'msg_task_reverted_success' => '✅ Code der Aufgabe {task_code} wurde chirurgisch von GitHub{db_part} zurückgesetzt, ohne Folgeaufgaben zu beeinträchtigen!',
   'part_and_db' => ' und Datenbank ({summary})',
   'part_and_db_mysql' => ' und erstellte Tabellen aus MySQL',
-  'default_schema_tables' => 'Tabellen falls vorhanden',
   'err_workspace_dir_missing' => 'Arbeitsbereichsverzeichnis nicht gefunden.',
+  'err_input_required' => 'Bitte geben Sie GitHub-Benutzername und PAT-Token ein.',
+  'err_general' => 'Ein Fehler ist aufgetreten.',
+  'err_server' => 'Serverfehler aufgetreten.',
+  'sync_confirm' => 'Möchten Sie das GitHub-Repository dieses Projekts überprüfen/erstellen und synchronisieren?',
+  'syncing' => 'Mit GitHub wird synchronisiert...',
+  'sync_failed' => 'Synchronisierung fehlgeschlagen.',
+  'rollback_confirm' => 'Möchten Sie Git-Commit-Änderungen und Datenbankauswirkungen für diese Aufgabe wirklich zurücksetzen?',
+  'ai_surgeon_running' => '🤖 AI-Chirurg analysiert und bereinigt Konflikte...',
+  'rollback_running' => '⏪ Rollback-Vorgang läuft...',
+  'rollback_success' => 'Rollback erfolgreich abgeschlossen.',
+  'rollback_failed' => 'Rollback fehlgeschlagen.',
+  'default_schema_tables' => 'Standard-Schematabellen',
 );

@@ -35,7 +35,7 @@ function updateProfileAvatarPreview() {
     const namePreview = document.getElementById('profileNamePreview');
     if (nameInput && avatar && namePreview) {
         const val = nameInput.value.trim();
-        namePreview.innerText = val || 'Kullanıcı';
+        namePreview.innerText = val || window.TEAM_I18N?.default_user_name || 'User';
         avatar.innerText = val ? val.charAt(0).toUpperCase() : 'U';
     }
 }
@@ -57,7 +57,8 @@ function handleUpdateProfile(e) {
     const btn = document.getElementById('btnSubmitProfile');
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> <span>Güncelleniyor...</span>';
+    const updatingTxt = window.TEAM_I18N?.updating_btn || 'Updating...';
+    btn.innerHTML = `<span>⏳</span> <span>${updatingTxt}</span>`;
 
     const form = e.target;
     const formData = new FormData(form);
@@ -69,19 +70,22 @@ function handleUpdateProfile(e) {
 
     if (newPass) {
         if (!currentPass) {
-            alert('Şifrenizi değiştirmek için lütfen mevcut şifrenizi girin.');
+            const msg = window.TEAM_I18N?.pwd_current_req_alert || 'Please enter current password.';
+            window.alert(msg);
             btn.disabled = false;
             btn.innerHTML = originalText;
             return;
         }
         if (newPass.length < 6) {
-            alert('Yeni şifreniz en az 6 karakter olmalıdır.');
+            const msg = window.TEAM_I18N?.pwd_min_len_alert || 'Password min 6 characters.';
+            window.alert(msg);
             btn.disabled = false;
             btn.innerHTML = originalText;
             return;
         }
         if (newPass !== newPassConfirm) {
-            alert('Yeni şifreler birbiriyle uyuşmuyor.');
+            const msg = window.TEAM_I18N?.pwd_mismatch_alert || 'Passwords do not match.';
+            window.alert(msg);
             btn.disabled = false;
             btn.innerHTML = originalText;
             return;
@@ -97,23 +101,26 @@ function handleUpdateProfile(e) {
         btn.disabled = false;
         btn.innerHTML = originalText;
         if (data.success) {
+            const successMsg = '✅ ' + data.message;
             if (typeof showToast === 'function') {
-                showToast('✅ ' + data.message, 'success');
+                showToast(successMsg, 'success');
             } else {
-                alert('✅ ' + data.message);
+                window.alert(successMsg);
             }
             closeProfileModal();
             setTimeout(() => {
                 location.reload();
             }, 600);
         } else {
-            alert('❌ Hata: ' + data.message);
+            const errMsg = '❌ ' + data.message;
+            window.alert(errMsg);
         }
     })
     .catch(err => {
         btn.disabled = false;
         btn.innerHTML = originalText;
-        alert('Sunucu hatası: ' + err.message);
+        const prefix = window.TEAM_I18N?.server_error_prefix || 'Server error: ';
+        window.alert(prefix + err.message);
     });
 }
 
@@ -153,12 +160,13 @@ function handleMemberRoleChange(role) {
     const projContainer = document.getElementById('clientProjectContainer');
     const projSelect = document.getElementById('clientProjectSelect');
     const titleInput = document.getElementById('memberTitleInput');
+    const i18n = window.TEAM_I18N || {};
     
     if (role === 'client') {
         if (projContainer) projContainer.style.display = 'block';
         if (projSelect) projSelect.required = true;
-        if (titleInput && (titleInput.value === 'Ekip Üyesi' || titleInput.value === '')) {
-            titleInput.value = 'Müşteri / Danışan';
+        if (titleInput && (titleInput.value === (i18n.title_member_default || '') || titleInput.value === '')) {
+            titleInput.value = i18n.title_client_default || '';
         }
     } else {
         if (projContainer) projContainer.style.display = 'none';
@@ -166,8 +174,8 @@ function handleMemberRoleChange(role) {
             projSelect.required = false;
             projSelect.value = '';
         }
-        if (titleInput && titleInput.value === 'Müşteri / Danışan') {
-            titleInput.value = (role === 'admin') ? 'Yönetici' : 'Ekip Üyesi';
+        if (titleInput && titleInput.value === (i18n.title_client_default || '')) {
+            titleInput.value = (role === 'admin') ? (i18n.title_admin_default || '') : (i18n.title_member_default || '');
         }
     }
 }
@@ -175,9 +183,10 @@ function handleMemberRoleChange(role) {
 function submitNewMember(e) {
     e.preventDefault();
     const btn = document.getElementById('btnSubmitMember');
+    const i18n = window.TEAM_I18N || {};
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span>⏳</span><span>Ekleniyor...</span>';
+        btn.innerHTML = '<span>⏳</span><span>' + (i18n.updating_btn || '...') + '</span>';
     }
 
     const formData = new FormData(e.target);
@@ -191,34 +200,37 @@ function submitNewMember(e) {
     .then(data => {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<span>💾</span><span>Kaydet ve Ekle</span>';
+            btn.innerHTML = '<span>💾</span><span>' + (document.getElementById('memberModalTitle')?.innerText || 'Kaydet') + '</span>';
         }
         if (data.success) {
+            const successMsg = data.message || i18n.member_added_toast || '';
             if (typeof showToast === 'function') {
-                showToast(data.message || 'Üye başarıyla eklendi', 'success');
+                showToast(successMsg, 'success');
             } else {
-                alert('✅ ' + data.message);
+                alert(successMsg);
             }
             setTimeout(() => location.reload(), 600);
         } else {
+            const errMsg = data.message || i18n.error_occurred || '';
             if (typeof showToast === 'function') {
-                showToast(data.message || 'Hata oluştu', 'error');
+                showToast(errMsg, 'error');
             } else {
-                alert('❌ Hata: ' + data.message);
+                alert(errMsg);
             }
         }
     })
     .catch(err => {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<span>💾</span><span>Kaydet ve Ekle</span>';
+            btn.innerHTML = '<span>💾</span><span>' + (document.getElementById('memberModalTitle')?.innerText || 'Kaydet') + '</span>';
         }
-        alert('Sunucu hatası oluştu: ' + err.message);
+        alert((i18n.server_error_prefix || '') + err.message);
     });
 }
 
 function deleteUser(userId, userName, skipConfirm = false) {
-    const confirmTemplate = (window.TEAM_I18N && window.TEAM_I18N.confirm_delete) ? window.TEAM_I18N.confirm_delete : ':name isimli ekip üyesini silmek istediğinize emin misiniz?';
+    const i18n = window.TEAM_I18N || {};
+    const confirmTemplate = i18n.confirm_delete || ':name';
     if (!skipConfirm && !window.__SKIP_CONFIRM__) {
         if (!confirm(confirmTemplate.replace(':name', userName).replace('{name}', userName))) {
             return;
@@ -236,38 +248,46 @@ function deleteUser(userId, userName, skipConfirm = false) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
+            const successMsg = data.message || i18n.member_deleted_toast || '';
             if (typeof showToast === 'function') {
-                showToast(data.message || 'Üye silindi', 'success');
+                showToast(successMsg, 'success');
             } else {
-                alert('✅ ' + data.message);
+                alert(successMsg);
             }
             setTimeout(() => {
                 location.reload();
             }, 400);
         } else {
+            const errMsg = data.message || i18n.delete_error_toast || '';
             if (typeof showToast === 'function') {
-                showToast(data.message || 'Silme hatası', 'error');
+                showToast(errMsg, 'error');
             } else {
-                alert('❌ Hata: ' + data.message);
+                alert(errMsg);
             }
         }
     })
     .catch(err => {
-        alert('Sunucu hatası: ' + err.message);
+        alert((i18n.server_error_prefix || '') + err.message);
     });
 }
 
 function copyClientInvite(name, email, projectTitle) {
+    const i18n = window.TEAM_I18N || {};
     const loginUrl = window.location.origin + '/taskmanager/login';
-    const inviteText = `Merhaba ${name},\n\n` +
-        `"${projectTitle}" projenizin süreçlerini şeffaf bir şekilde takip edebilmeniz ve tamamlanan teslimatları onaylayabilmeniz için TaskManager Müşteri Portalı hesabınız oluşturulmuştur.\n\n` +
-        `📌 Giriş Adresi: ${loginUrl}\n` +
-        `✉️ E-Posta: ${email}\n` +
-        `🔑 Varsayılan Şifre: 123456 (İlk girişinizde güncelleyebilirsiniz)\n\n` +
-        `İyi çalışmalar dileriz.`;
+    const intro = (i18n.invite_body_intro || '').replace(':project', projectTitle);
+    const loginLine = (i18n.invite_body_login || '').replace(':url', loginUrl);
+    const pwdLine = i18n.invite_body_pwd || '';
+    const outro = i18n.invite_body_outro || '';
 
-    const copiedMsg = (window.TEAM_I18N && window.TEAM_I18N.invite_copied) ? window.TEAM_I18N.invite_copied : '📋 Müşteri davet metni panoya kopyalandı:';
-    const promptMsg = (window.TEAM_I18N && window.TEAM_I18N.invite_prompt) ? window.TEAM_I18N.invite_prompt : 'Müşteri davet metni (Kopyalamak için Ctrl+C):';
+    const inviteText = `Merhaba ${name},\n\n` +
+        `${intro}\n\n` +
+        `${loginLine}\n` +
+        `✉️ E-Posta: ${email}\n` +
+        `${pwdLine}\n\n` +
+        `${outro}`;
+
+    const copiedMsg = i18n.invite_copied || '';
+    const promptMsg = i18n.invite_prompt || '';
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(inviteText).then(() => {
@@ -365,7 +385,7 @@ function initTeamEventListeners() {
     if (profileInputTitle) {
         profileInputTitle.addEventListener('input', function() {
             const prev = document.getElementById('profileTitlePreview');
-            if (prev) prev.innerText = this.value || 'Kullanıcı';
+            if (prev) prev.innerText = this.value || (window.TEAM_I18N?.default_user_name || 'User');
         });
     }
 
@@ -375,8 +395,9 @@ function initTeamEventListeners() {
             const tokenInput = document.getElementById('profileApiTokenInput');
             if (tokenInput && tokenInput.value) {
                 navigator.clipboard.writeText(tokenInput.value);
-                if (typeof showToast === 'function') showToast('API Token kopyalandı!', 'success');
-                else alert('Token kopyalandı!');
+                const toastMsg = window.TEAM_I18N?.token_copied_toast || '';
+                if (typeof showToast === 'function') showToast(toastMsg, 'success');
+                else alert(toastMsg);
             }
         });
     }

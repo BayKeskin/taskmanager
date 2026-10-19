@@ -238,51 +238,59 @@
         }
 
         // 3. UI Elementlerini Oluştur
+        const pI18n = window.PIN_I18N || {};
         const triggerBtn = document.createElement('button');
         triggerBtn.id = 'tm-pin-trigger';
-        triggerBtn.innerHTML = '<span>📍</span> <span>Hata Bildir</span>';
+        triggerBtn.innerHTML = `<span>📍</span> <span>${pI18n.title_required ? (pI18n.task_created ? 'Pin' : 'Pin') : 'Pin'}</span>`;
         document.body.appendChild(triggerBtn);
 
         const banner = document.createElement('div');
         banner.id = 'tm-pin-banner';
         banner.innerHTML = `
-            <span>🎯 <b>Görsel Pin Modu:</b> Sayfada hata gördüğünüz öğeye tıklayın</span>
-            <button id="tm-pin-cancel-mode" style="background:rgba(255,255,255,0.15); border:none; color:#fff; border-radius:15px; padding:3px 10px; cursor:pointer; font-size:11px;">Çıkış (ESC)</button>
+            <span>🎯 <b>Pin:</b> [Pin Mode]</span>
+            <button id="tm-pin-cancel-mode" style="background:rgba(255,255,255,0.15); border:none; color:#fff; border-radius:15px; padding:3px 10px; cursor:pointer; font-size:11px;">ESC</button>
         `;
         document.body.appendChild(banner);
 
         const dialog = document.createElement('div');
         dialog.id = 'tm-pin-dialog';
+        const pTitleHolder = pI18n.placeholder_title || 'Issue Title';
+        const pDescHolder = pI18n.placeholder_desc || 'Description...';
+        const pCancelText = pI18n.cancel || 'Cancel';
+        const pSendBtnText = pI18n.send_btn || 'Send';
+        const pItemLabel = pI18n.item_label || 'Element';
+        const pCapturing = pI18n.capturing || 'Capturing...';
+
         dialog.innerHTML = `
             <h4>
-                <span>📍 Görsel Hata Kaydı</span>
+                <span>📍 Pin</span>
                 <span style="font-size:11px; color:#7b68ee; font-weight:normal;">[${projectCode}]</span>
             </h4>
-            <span class="tm-meta-badge" id="tm-pin-meta">Öğe: ...</span>
+            <span class="tm-meta-badge" id="tm-pin-meta">${pItemLabel}: ...</span>
 
             <div id="tm-pin-preview-box" style="display:none; margin-bottom:8px; border-radius:6px; overflow:hidden; border:1px solid rgba(123,104,238,0.4); background:#0c0c14; text-align:center;">
                 <img id="tm-pin-preview-img" style="max-width:100%; max-height:130px; display:block; margin:0 auto; object-fit:contain;" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Preview">
                 <div style="font-size:10px; color:#00b894; padding:3px 6px; background:rgba(0,184,148,0.1); display:flex; align-items:center; justify-content:center; gap:4px;">
-                    <span>📸</span> <span>Ekran görüntüsü & pin hazır</span>
+                    <span>📸</span> <span>OK</span>
                 </div>
             </div>
 
-            <input type="text" id="tm-pin-title" placeholder="Hata Başlığı (Örn: Buton mobilde taşıyor)" required>
-            <textarea id="tm-pin-desc" placeholder="Açıklama ve beklenen davranış..."></textarea>
+            <input type="text" id="tm-pin-title" placeholder="${pTitleHolder}" required>
+            <textarea id="tm-pin-desc" placeholder="${pDescHolder}"></textarea>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
                 <select id="tm-pin-priority">
-                    <option value="normal" selected>⚡ Normal Öncelik</option>
-                    <option value="high">🔥 Yüksek</option>
-                    <option value="urgent">🚨 Acil (Kritik)</option>
-                    <option value="low">🌱 Düşük</option>
+                    <option value="normal" selected>⚡ Normal</option>
+                    <option value="high">🔥 High</option>
+                    <option value="urgent">🚨 Urgent</option>
+                    <option value="low">🌱 Low</option>
                 </select>
                 <div id="tm-pin-snapshot-status" style="font-size:10.5px; color:#00b894; display:flex; align-items:center; justify-content:center; font-weight:600;">
-                    ⏳ Ekran alınıyor...
+                    ${pCapturing}
                 </div>
             </div>
             <div class="tm-actions">
-                <button type="button" class="btn-cancel" id="tm-pin-dialog-cancel">İptal</button>
-                <button type="button" class="btn-submit" id="tm-pin-dialog-submit">🚀 TaskManager'a Gönder</button>
+                <button type="button" class="btn-cancel" id="tm-pin-dialog-cancel">${pCancelText}</button>
+                <button type="button" class="btn-submit" id="tm-pin-dialog-submit">${pSendBtnText}</button>
             </div>
         `;
         document.body.appendChild(dialog);
@@ -328,12 +336,12 @@
             isPinMode = typeof active === 'boolean' ? active : !isPinMode;
             if (isPinMode) {
                 triggerBtn.classList.add('active');
-                triggerBtn.innerHTML = '<span>✕</span> <span>İptal Et</span>';
+                triggerBtn.innerHTML = `<span>✕</span> <span>${pI18n.cancel || 'Cancel'}</span>`;
                 banner.style.display = 'flex';
                 document.body.style.cursor = 'crosshair';
             } else {
                 triggerBtn.classList.remove('active');
-                triggerBtn.innerHTML = '<span>📍</span> <span>Hata Bildir</span>';
+                triggerBtn.innerHTML = '<span>📍</span> <span>Pin</span>';
                 banner.style.display = 'none';
                 document.body.style.cursor = 'default';
                 if (hoveredElement) {
@@ -437,7 +445,8 @@
             ctx.fillText('📍 URL: ' + pageUrl, 28, 38);
             ctx.fillStyle = '#a4b0be';
             ctx.font = '12px monospace';
-            ctx.fillText('Seçici: ' + selector.substring(0, 80), 28, 58);
+            const selLabel = pI18n.selector_label || 'Selector';
+            ctx.fillText(selLabel + ': ' + selector.substring(0, 80), 28, 58);
 
             drawPinOnCanvas(ctx, clientX, clientY, 1);
             return canvas.toDataURL('image/jpeg', 0.85);
@@ -486,7 +495,7 @@
 
             if (previewBox) previewBox.style.display = 'none';
             if (snapshotStatus) {
-                snapshotStatus.textContent = '⏳ Ekran alınıyor...';
+                snapshotStatus.textContent = pI18n.capturing || 'Capturing...';
                 snapshotStatus.style.color = '#7b68ee';
             }
 
@@ -503,9 +512,11 @@
             dialog.style.top = Math.max(10, topPos) + 'px';
             dialog.style.display = 'block';
 
-            document.getElementById('tm-pin-meta').textContent = `Öğe: ${selector.substring(0, 48)}...`;
+            const itemLabel = pI18n.item_label || 'Element';
+            document.getElementById('tm-pin-meta').textContent = `${itemLabel}: ${selector.substring(0, 48)}...`;
             const titleInput = document.getElementById('tm-pin-title');
-            titleInput.value = `[Pin] ${target.tagName.toLowerCase()}${target.id ? '#' + target.id : ''} öğesinde sorun`;
+            const issueSuffix = pI18n.issue_in_element || 'issue';
+            titleInput.value = `[Pin] ${target.tagName.toLowerCase()}${target.id ? '#' + target.id : ''} ${issueSuffix}`;
 
             // Modal açık değilse doğrudan focus ver; modal açıksa focus-trap çakışmasını önlemek için gecikmeli ver
             if (!modalContainer) {
@@ -599,7 +610,7 @@
                             screenshotData = finalCanvas.toDataURL('image/jpeg', 0.85);
                         }
                     } catch (err) {
-                        console.warn('[TaskManager Pin] Yakalama uyarısı, sentetik harita devrede:', err.message);
+                        console.warn('[TaskManager Pin] Capture error:', err.message);
                     }
 
                     if (!screenshotData) {
@@ -616,7 +627,7 @@
                         previewBox.style.display = 'block';
                     }
                     if (snapshotStatus) {
-                        snapshotStatus.textContent = '📸 Resim Hazır';
+                        snapshotStatus.textContent = pI18n.image_ready || 'Image Ready';
                         snapshotStatus.style.color = '#00b894';
                     }
 
@@ -641,19 +652,22 @@
             const data = dialog._pinData || {};
 
             if (!title) {
-                alert('Lütfen hata için kısa bir başlık girin.');
+                const reqAlert = pI18n.title_required || 'Please enter title.';
+                alert(reqAlert);
                 return;
             }
 
             const submitBtn = document.getElementById('tm-pin-dialog-submit');
             submitBtn.disabled = true;
-            submitBtn.textContent = '⏳ Gönderiliyor...';
+            submitBtn.textContent = pI18n.sending || 'Sending...';
 
             try {
                 if (!data.screenshot && activeCapturePromise) {
                     await activeCapturePromise;
                 }
 
+                const pageWord = pI18n.page_label || 'Page';
+                const viewWord = pI18n.view_label || 'View';
                 const payload = {
                     project_code: projectCode,
                     title: title,
@@ -663,7 +677,7 @@
                     url: data.url,
                     viewport: data.viewport,
                     user_agent: data.userAgent,
-                    coords: `Sayfa: X:${data.x}, Y:${data.y} | Görünüm: X:${data.clientX}, Y:${data.clientY} (Scroll: ${data.scrollY}px)`,
+                    coords: `${pageWord}: X:${data.x}, Y:${data.y} | ${viewWord}: X:${data.clientX}, Y:${data.clientY} (Scroll: ${data.scrollY}px)`,
                     screenshot: dialog._pinData?.screenshot || '',
                     created_via: 'tm_visual_pin'
                 };
@@ -680,20 +694,29 @@
                 const result = await res.json();
                 if (result.success || result.task_code || result.id) {
                     const code = result.task_code || result.data?.task_code || 'TSK';
-                    alert(`✅ Görsel Hata Görevi Başarıyla Oluşturuldu!\nGörev Kodu: ${code}\nEkran görüntüsü ile birlikte TaskManager panosuna kaydedildi.`);
+                    const successHeading = pI18n.task_created || 'Success!';
+                    const codeLabel = pI18n.task_code || 'Task Code';
+                    const savedMsg = pI18n.task_saved || '';
+                    const alertMsg = `✅ ${successHeading}\n${codeLabel}: ${code}\n${savedMsg}`;
+                    alert(alertMsg);
                     dialog.style.display = 'none';
                     if (currentPin) {
                         currentPin.remove();
                         currentPin = null;
                     }
                 } else {
-                    alert('⚠️ Hata: ' + (result.message || 'Görev oluşturulamadı.'));
+                    const errWord = pI18n.error || 'Error';
+                    const failedWord = pI18n.create_failed || 'Failed';
+                    const errMsg = `⚠️ ${errWord}: ` + (result.message || failedWord);
+                    alert(errMsg);
                 }
             } catch (err) {
-                alert('❌ Bağlantı hatası: TaskManager API ulaşılamadı (' + err.message + ')');
+                const connWord = pI18n.conn_error || 'Connection error';
+                const alertConn = `❌ ${connWord} (` + err.message + ')';
+                alert(alertConn);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '🚀 TaskManager\'a Gönder';
+                submitBtn.textContent = pI18n.send_btn || 'Send';
             }
         });
     }

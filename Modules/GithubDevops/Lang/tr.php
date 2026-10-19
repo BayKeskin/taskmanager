@@ -35,13 +35,30 @@ return array (
   'err_task_not_found' => 'Görev bulunamadı.',
   'err_no_commit_hash' => 'Bu göreve ait kayıtlı bir Git Commit Hash bulunamadı.',
   'err_already_reverted' => 'Bu görevin değişiklikleri zaten daha önce geri alınmış.',
-  'rollback_reason_title' => "⚠️ CERRAHİ GERİ ALMA (ROLLBACK) TALEBİ:\n`{task_code}` ({title}) görevinde yapılan değişiklikler geri alınmak isteniyor ancak bu commit (`{hash}`) sonrasında başka bağımlı görevler tamamlandığı için doğrudan `git revert` çakışma (conflict) üretiyor.\n\nGÖREVİN:\n1. `git show {hash}` komutuyla bu görevde hangi dosya ve satırların değiştiğini dikkatle incele.\n2. Bu görevden SONRA yapılan diğer görevlerin kodlarına ve özelliklerine KESİNLİKLE ZARAR VERMEDEN, sadece `{task_code}` görevinde eklenen/değiştirilen kodları ve veritabanı yapılarını ({schema}) cımbızla sistemden temizle.\n3. Sistemi canlı ortamda test et, çalıştığını kanıtla ve tekrar teslim et!",
+  'rollback_reason_title' => '⚠️ CERRAHİ GERİ ALMA (ROLLBACK) TALEBİ:
+`{task_code}` ({title}) görevinde yapılan değişiklikler geri alınmak isteniyor ancak bu commit (`{hash}`) sonrasında başka bağımlı görevler tamamlandığı için doğrudan `git revert` çakışma (conflict) üretiyor.
+
+GÖREVİN:
+1. `git show {hash}` komutuyla bu görevde hangi dosya ve satırların değiştiğini dikkatle incele.
+2. Bu görevden SONRA yapılan diğer görevlerin kodlarına ve özelliklerine KESİNLİKLE ZARAR VERMEDEN, sadece `{task_code}` görevinde eklenen/değiştirilen kodları ve veritabanı yapılarını ({schema}) cımbızla sistemden temizle.
+3. Sistemi canlı ortamda test et, çalıştığını kanıtla ve tekrar teslim et!',
   'msg_ai_surgeon_assigned' => '🤖 AI Cerrah görevlendirildi! Sonraki görevlere dokunmadan sadece {task_code} görevinin kodlarını ve DB değişikliklerini ayıklayacak.',
   'err_conflict_detected' => 'Bağımlılık / Çakışma Tespit Edildi! {task_code} görevinden sonra yapılan bazı görevler bu görevin yazdığı kodların üstüne inşa edilmiş.',
   'activity_task_reverted' => '⏪ Görev değişiklikleri GitHub\'dan{db_part} cerrahi olarak geri alındı (Commit: {hash}).',
   'msg_task_reverted_success' => '✅ {task_code} görevinin kodları GitHub\'dan{db_part} diğer görevlere dokunulmadan cerrahi olarak geri alındı!',
   'part_and_db' => ' ve Veritabanından ({summary})',
   'part_and_db_mysql' => ' ve açtığı veritabanı yapıları MySQL\'den',
-  'default_schema_tables' => 'varsa tabloları',
   'err_workspace_dir_missing' => 'Workspace dizini yok.',
+  'err_input_required' => 'Lütfen GitHub kullanıcı adı ve PAT token giriniz.',
+  'err_general' => 'Hata oluştu.',
+  'err_server' => 'Sunucu hatası oluştu.',
+  'sync_confirm' => 'Bu projenin GitHub reposunu kontrol edip eksikse oluşturmak ve senkronize etmek istiyor musunuz?',
+  'syncing' => 'GitHub ile senkronize ediliyor...',
+  'sync_failed' => 'Senkronizasyon başarısız.',
+  'rollback_confirm' => 'Bu görevin Git commit değişikliklerini ve veritabanı etkilerini geri almak istediğinize emin misiniz?',
+  'ai_surgeon_running' => '🤖 AI Cerrah çakışmaları analiz edip temizliyor...',
+  'rollback_running' => '⏪ Geri alma işlemi yürütülüyor...',
+  'rollback_success' => 'Geri alma işlemi başarılı.',
+  'rollback_failed' => 'Geri alma başarısız.',
+  'default_schema_tables' => 'Varsayılan şema tabloları',
 );

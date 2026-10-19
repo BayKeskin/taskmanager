@@ -79,7 +79,33 @@ return array (
   'image_fallback' => 'Görsel',
   'bulk_create_error' => 'Toplu kayıt sırasında hata oluştu: :error',
   'bulk_create_success' => '✅ :epics Ana Modül ve :subtasks Detaylı Alt Görev başarıyla projeye işlendi!',
-  'empty_rules_error' => 'Lütfen derlenmesini istediğiniz kural veya kısıtlamaları kısaca yazın.',
   'empty_brief_error' => 'Lütfen ayrıştırılacak proje brifini yazın veya bir Word (.docx) / PDF dökümanı yükleyin.',
-  'default_doc_name' => 'Proje Şartnamesi'
+  'default_doc_name' => 'Proje Şartnamesi',
+  'ready_for_analysis' => 'Analize hazır',
+  'analyzing_btn' => '⏳ Döküman & Görev Adımları Analiz Ediliyor...',
+  'server_http_error' => 'Sunucu hatası (HTTP :status)',
+  'invalid_json_error' => 'Sunucu yanıtı okunamadı (Geçersiz JSON formatı).',
+  'default_module_title' => 'Modül',
+  'default_subtask_desc' => '🛠️ NASIL YAPILACAK:
+1. İlgili geliştirmeyi tamamla ve canlı ortamda test et.',
+  'decompose_done_toast' => '✨ Görev ağacı, uygulama adımları ve döküman görselleri hazır!',
+  'decompose_failed_toast' => 'Ayrıştırma başarısız oldu',
+  'conn_error_toast' => 'Sunucu bağlantı hatası',
+  'default_admin_name' => 'Yönetici',
+  'subtask_moved_toast' => 'Alt görev yeni modüle taşındı!',
+  'drag_handle_title' => 'Sürükle ve başka modüle bırak',
+  'toggle_how_to_title' => 'Nasıl Yapılacak Açıklamasını Göster/Gizle',
+  'img_note_badge' => ' • 🖼️ <b>:count Döküman Görseli</b> eklenecek',
+  'tree_summary_badge' => '📊 Toplam <b>:epics Ana Modül</b>, <b>:subtasks Detaylı Alt Görev</b> (<b>:ai tanesi 🤖 AI Otonom</b>):imgNote',
+  'new_epic_default_title' => 'Yeni Modül / Ana Görev',
+  'new_epic_default_desc' => 'Bu modül kapsamında yapılacak mimari geliştirmeler.',
+  'new_subtask_default_title' => 'Yeni alt görev',
+  'new_subtask_default_desc' => '🛠️ NASIL YAPILACAK (Uygulama Adımları):
+1. Gerekli altyapıyı kodla.
+
+✅ KABUL KRİTERLERİ:
+- Canlı ortamda test edilmelidir.',
+  'no_module_to_save' => 'Kaydedilecek modül bulunamadı.',
+  'processing_btn' => '⏳ Projeye İşleniyor...',
+  'empty_rules_error' => 'Kurallar boş olamaz.',
 );

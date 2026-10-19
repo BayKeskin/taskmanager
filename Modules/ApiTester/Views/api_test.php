@@ -273,6 +273,34 @@ $sampleTask = $sampleTask ?? 'TASK-1';
             </div>
         </div>
     </div>
+    <?php
+    $testerModel = new \Modules\ApiTester\Models\ApiTesterModel();
+    $endpointsCatalog = $testerModel->getEndpointsCatalog($sampleProject, $sampleTask);
+    \Core\AssetManager::localizeScript('apitester-live-js', 'APITESTER_LIVE_DATA', [
+        'catalog'       => $endpointsCatalog,
+        'baseUrl'       => $baseUrl,
+        'activeToken'   => $userToken,
+        'sampleProject' => $sampleProject,
+        'sampleTask'    => $sampleTask,
+        'i18n'          => [
+            'json_syntax_error'  => __('ApiTester::empty_response_title'),
+            'sending_request'    => __('ApiTester::btn_send'),
+            'network_error'      => __('ApiTester::response_not_sent'),
+            'network_error_desc' => __('ApiTester::empty_response_desc'),
+            'btn_send'           => __('ApiTester::btn_send'),
+            'batch_ready_count'  => __('ApiTester::batch_ready'),
+            'batch_scanning'     => __('ApiTester::btn_start_scan'),
+            'batch_testing'      => __('ApiTester::core_health_scan'),
+            'batch_retest'       => __('ApiTester::btn_start_scan'),
+            'batch_success_count'=> __('ApiTester::batch_ready'),
+            'batch_fail_count'   => __('ApiTester::batch_ready'),
+            'invalid_json'       => __('ApiTester::empty_response_title'),
+            'token_copied_alert' => __('ApiTester::token_copied'),
+            'response_copied'    => __('ApiTester::btn_copy_response'),
+            'command_copied'     => __('ApiTester::btn_copy')
+        ]
+    ]);
+    ?>
     <div id="apitesterConfigCarrier" 
          data-base-url="<?= htmlspecialchars(rtrim($baseUrl, '/'), ENT_QUOTES, 'UTF-8') ?>"
          data-active-token="<?= htmlspecialchars($userToken, ENT_QUOTES, 'UTF-8') ?>"

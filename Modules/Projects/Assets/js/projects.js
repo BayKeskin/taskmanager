@@ -4,6 +4,7 @@ async function handleCreateProject(e) {
     e.preventDefault();
     const form = e.target;
     const formData = new FormData(form);
+    const prI18n = window.PROJECTS_I18N || {};
 
     try {
         const res = await fetch('/taskmanager/ajax?action=create_project', {
@@ -12,14 +13,17 @@ async function handleCreateProject(e) {
         });
         const result = await res.json();
         if (result.success) {
-            showToast('Proje başarıyla oluşturuldu!', 'success');
+            const msg = prI18n.project_created || 'Project created successfully!';
+            showToast(msg, 'success');
             closeModal('modalNewProject');
             setTimeout(() => window.location.reload(), 700);
         } else {
-            showToast(result.message || 'Proje oluşturulamadı', 'error');
+            const failMsg = result.message || prI18n.project_create_failed || 'Failed';
+            showToast(failMsg, 'error');
         }
     } catch (err) {
-        showToast('Sunucu hatası', 'error');
+        const sErr = prI18n.server_error || 'Server error';
+        showToast(sErr, 'error');
     }
 }
 
@@ -63,7 +67,7 @@ function openEditProjectModal(projOrId) {
                     document.getElementById('editProjConvId').value = p.agent_conversation_id || '';
                 }
             })
-            .catch(err => console.error('Proje detayları yüklenemedi:', err));
+            .catch(err => console.error('Project details fetch error:', err));
     }
 }
 
@@ -71,6 +75,7 @@ async function handleUpdateProject(e) {
     e.preventDefault();
     const form = e.target;
     const formData = new FormData(form);
+    const prI18n = window.PROJECTS_I18N || {};
 
     try {
         const res = await fetch('/taskmanager/ajax?action=update_project', {
@@ -79,22 +84,27 @@ async function handleUpdateProject(e) {
         });
         const result = await res.json();
         if (result.success) {
-            showToast('✅ Proje ayarları kaydedildi!', 'success');
+            const savedMsg = prI18n.settings_saved || 'Settings saved!';
+            showToast(savedMsg, 'success');
             closeModal('modalEditProject');
             setTimeout(() => window.location.reload(), 700);
         } else {
-            showToast(result.message || 'Güncelleme başarısız', 'error');
+            const upFail = result.message || prI18n.update_failed || 'Failed';
+            showToast(upFail, 'error');
         }
     } catch (err) {
-        showToast('Sunucu hatası', 'error');
+        const sErr = prI18n.server_error || 'Server error';
+        showToast(sErr, 'error');
     }
 }
 
 async function testCurrentProjectWebhook() {
     const projId = document.getElementById('editProjId')?.value;
     if (!projId) return;
+    const prI18n = window.PROJECTS_I18N || {};
 
-    showToast('⏳ Webhook test sinyali gönderiliyor...', 'info');
+    const testingMsg = prI18n.webhook_testing || 'Sending webhook test...';
+    showToast(testingMsg, 'info');
 
     try {
         const formData = new FormData();
@@ -111,7 +121,8 @@ async function testCurrentProjectWebhook() {
             showToast(result.message, 'error');
         }
     } catch (err) {
-        showToast('Test bağlantı hatası', 'error');
+        const connErr = prI18n.conn_error || 'Connection error';
+        showToast(connErr, 'error');
     }
 }
 
@@ -119,8 +130,10 @@ async function syncCurrentProjectRules() {
     const projId = document.getElementById('editProjId')?.value;
     const rules = document.getElementById('editProjAgentRules')?.value;
     if (!projId) return;
+    const prI18n = window.PROJECTS_I18N || {};
 
-    showToast('⏳ Proje kural dosyaları (AGENTS.md) senkronize ediliyor...', 'info');
+    const syncMsg = prI18n.syncing_rules || 'Syncing rules...';
+    showToast(syncMsg, 'info');
 
     try {
         const formData = new FormData();
@@ -135,12 +148,15 @@ async function syncCurrentProjectRules() {
         });
         const result = await res.json();
         if (result.success) {
-            showToast('✅ ' + (result.message || 'Kural dosyaları güncellendi'), 'success');
+            const updatedMsg = '✅ ' + (result.message || prI18n.rules_updated || 'Updated');
+            showToast(updatedMsg, 'success');
         } else {
-            showToast('⚠️ ' + (result.message || 'Senkronizasyon başarısız'), 'error');
+            const syncFail = '⚠️ ' + (result.message || prI18n.sync_failed || 'Failed');
+            showToast(syncFail, 'error');
         }
     } catch (err) {
-        showToast('Bağlantı hatası', 'error');
+        const connErr = prI18n.conn_error || 'Connection error';
+        showToast(connErr, 'error');
     }
 }
 
@@ -150,12 +166,14 @@ async function refineProjectRules(isEdit) {
     const titleInput = isEdit ? document.getElementById('editProjTitle') : document.querySelector('#formNewProject [name="title"]');
     const codeInput = isEdit ? document.getElementById('editProjCode') : document.querySelector('#formNewProject [name="project_code"]');
     const projId = isEdit ? document.getElementById('editProjId')?.value : null;
+    const prI18n = window.PROJECTS_I18N || {};
 
     if (!textarea) return;
 
     let raw = textarea.value.trim();
     if (!raw) {
-        showToast('Lütfen derlenmesini istediğiniz kural veya kısıtlamaları kısaca yazın (Örn: "css kullanmak yasak, gutenberg projesi")', 'info');
+        const promptMsg = prI18n.refine_prompt || 'Please enter instructions.';
+        showToast(promptMsg, 'info');
         textarea.focus();
         return;
     }
@@ -163,7 +181,7 @@ async function refineProjectRules(isEdit) {
     const origBtnHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '⏳ AI Derliyor...';
+        btn.innerHTML = '⏳ AI...';
     }
 
     try {
@@ -180,12 +198,15 @@ async function refineProjectRules(isEdit) {
         const result = await res.json();
         if (result.success && result.data && result.data.refined_rules) {
             textarea.value = result.data.refined_rules;
-            showToast('✨ ' + (result.message || 'Kurallar yapay zeka ile başarıyla derlendi!'), 'success');
+            const successMsg = '✨ ' + (result.message || prI18n.rules_compiled || 'Compiled');
+            showToast(successMsg, 'success');
         } else {
-            showToast('⚠️ ' + (result.message || 'Kurallar derlenemedi'), 'error');
+            const failMsg = '⚠️ ' + (result.message || prI18n.rules_compile_failed || 'Failed');
+            showToast(failMsg, 'error');
         }
     } catch (err) {
-        showToast('Bağlantı hatası oluştu', 'error');
+        const connErr = prI18n.conn_error || 'Connection error';
+        showToast(connErr, 'error');
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -196,9 +217,10 @@ async function refineProjectRules(isEdit) {
 
 // 5. Projeyi Aktif <-> Geçmiş / Tamamlandı Olarak Değiştir
 async function toggleProjectStatus(projectId, newStatus) {
+    const prI18n = window.PROJECTS_I18N || {};
     const actionText = (newStatus === 'completed' || newStatus === 'archived') 
-        ? 'Bu projeyi geçmiş projelere taşımak istediğinize emin misiniz?' 
-        : 'Bu projeyi aktif projelere geri yüklemek istediğinize emin misiniz?';
+        ? (prI18n.archive_confirm || 'Archive this project?') 
+        : (prI18n.restore_confirm || 'Restore this project?');
 
     if (!confirm(actionText)) return;
 
@@ -216,7 +238,8 @@ async function toggleProjectStatus(projectId, newStatus) {
             showToast(data.message, 'success');
             setTimeout(() => window.location.reload(), 600);
         } else {
-            showToast(data.message || 'İşlem başarısız', 'error');
+            const actFail = data.message || prI18n.action_failed || 'Failed';
+            showToast(actFail, 'error');
         }
     } catch (e) {
         console.error(e);
@@ -225,7 +248,9 @@ async function toggleProjectStatus(projectId, newStatus) {
 
 // 6. Projeyi Tamamen Sil
 async function deleteProjectPermanently(projectId) {
-    if (!confirm('DİKKAT: Bu projeyi ve içindeki TÜM görevleri ve dökümanları kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
+    const prI18n = window.PROJECTS_I18N || {};
+    const delConfirm = prI18n.delete_confirm || 'Are you sure you want to delete this project?';
+    if (!confirm(delConfirm)) return;
 
     const formData = new FormData();
     formData.append('project_id', projectId);
