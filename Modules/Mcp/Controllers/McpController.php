@@ -60,4 +60,48 @@ class McpController extends BaseController
             'sync' => $syncResult
         ];
     }
+
+    /**
+     * MCP durumunu açar veya kapatır ve dosyalara senkronize eder
+     */
+    public function toggleProjectMcp(int $projectId, int $mcpCatalogId, bool $isEnabled): array
+    {
+        $existing = null;
+        $mcps = $this->mcpModel->getProjectMcps($projectId);
+        foreach ($mcps as $m) {
+            if ((int)$m->id === $mcpCatalogId) {
+                $existing = $m;
+                break;
+            }
+        }
+
+        $envValues = $existing ? ($existing->env_values ?? []) : [];
+        $customArgs = $existing ? ($existing->custom_args ?? []) : [];
+
+        $ok = $this->mcpModel->saveProjectMcp($projectId, $mcpCatalogId, $isEnabled, (array)$envValues, (array)$customArgs);
+        if (!$ok) {
+            return ['success' => false, 'error' => __('Mcp::update_failed')];
+        }
+
+        $syncResult = $this->mcpModel->syncProjectMcpFiles($projectId);
+
+        return [
+            'success' => true,
+            'message' => __('Mcp::status_updated'),
+            'sync' => $syncResult
+        ];
+    }
+
+    /**
+     * Projenin MCP dosyalarını yeniden senkronize eder
+     */
+    public function syncFiles(int $projectId): array
+    {
+        $syncResult = $this->mcpModel->syncProjectMcpFiles($projectId);
+        return [
+            'success' => !empty($syncResult['synced']),
+            'result' => $syncResult
+        ];
+    }
 }
+
