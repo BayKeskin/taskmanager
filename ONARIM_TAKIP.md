@@ -1,8 +1,9 @@
-# ONARIM VE İNCELEME TAKİP LİSTESİ: Team Modülü
+# ONARIM VE İNCELEME TAKİP LİSTESİ: Watchdog Modülü
 
 ## Tespit Edilen Durumlar ve Yapılan İşlemler
-- [x] 1. [Mimari/Yol] `Modules/Team/init.php` içinde sabit `/taskmanager/` script/stil yolu yerine dinamik bağıl yol `/Modules/Team/Assets/` tanımlandı.
-- [x] 2. [Görsel/CSS] Ekip tablosu satırları, rol rozetleri (Admin, Client, Member), dil bayrakları ve aktif/pasif durum göstergeleri karanlık temayla tam uyumlu hale getirildi.
-- [x] 3. [Görsel/CSS] Yeni Ekip Üyesi Modalı (`modalNewMember`) ve Kullanıcı Profil Ayarları Modalı (`modalProfileSettings`) form düzenleri, avatar renk seçicileri, şifre göster/gizle butonları kontrol edildi; taşma ve scroll sorunları giderildi.
-- [x] 4. [İşlev/JS] `team.js` içindeki `BASE_URL` entegrasyonu, AJAX kullanıcı silme (`delete_user`) ve davet kopyalama (`copyClientInvite`) fonksiyonları doğrulandı.
-- [x] 5. [Denetim/Audit] `taskmanager-audit/audit.php Team` ve `tests/audit_module.php Team` testleri çalıştırıldı; 0 ihlal ile `[PASS]` alındı.
+- [x] 1. [Mimari/HMVC] `Modules/Watchdog/` modülü self-contained yapısı (`module.json`, `init.php`, `Controllers/`, `Services/`, `Models/`, `Lang/`) incelendi.
+- [x] 2. [İşlev/Servis] `WatchdogService::runInspection()` servisi denetlendi; tıkanan ve birden fazla `in_progress` kalan görevlerin `assigned` durumuna çekilerek sıradaki görevin otonom tetiklendiği doğrulandı.
+- [x] 3. [İşlev/Sağlık Raporu] `WatchdogService::getHealthReport()` fonksiyonunun eşik süresini aşan (stale) görevleri tespit edip kurtardığı, bellek ve sistem sağlığı JSON çıktısını ürettiği doğrulandı.
+- [x] 4. [Model & DB İzolasyonu] SQL sorgularının doğrudan Controller veya Servis içinde değil, `WatchdogModel` içerisinde `Core\BaseModel` genişletilerek güvenli parametrik prepared statement ile yürütüldüğü doğrulandı.
+- [x] 5. [i18n Desteği] `Lang/tr.php`, `Lang/en.php` ve `Lang/de.php` sözlükleri incelendi, eksik dil anahtarı bulunmadığı doğrulandı.
+- [x] 6. [Denetim/Audit] `php taskmanager-audit/audit.php Watchdog` ve `php tests/audit_module.php Watchdog` çalıştırıldı; 0 ihlal ile `[PASS]` alındı.

@@ -7,7 +7,7 @@ use Core\AssetManager;
 use Modules\SSE\Services\SseBroadcaster;
 
 // 1. Canlı SSE Senkronizasyon İstemci Kütüphanesini Kuyruğa Al
-AssetManager::enqueueJs('sse-realtime', '/taskmanager/Modules/SSE/Assets/js/realtime.js');
+AssetManager::enqueueJs('sse-realtime', '/Modules/SSE/Assets/js/realtime.js');
 AssetManager::localizeScript('sse-realtime', 'SSE_I18N', [
     'unsupported_browser'  => __('SSE::unsupported_browser'),
     'team_member'          => __('SSE::team_member'),
