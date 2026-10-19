@@ -42,10 +42,18 @@ class StorageService
                         self::$config['max_size_bytes'] = (int)$s['max_file_upload_mb'] * 1024 * 1024;
                     }
                     if (!empty($s['allowed_file_types'])) {
-                        $extList = array_map('trim', explode(',', strtolower($s['allowed_file_types'])));
-                        $extList = array_filter($extList, fn($e) => !empty($e));
+                        $rawList = array_map(function($e) {
+                            return ltrim(trim(strtolower($e)), '.');
+                        }, explode(',', $s['allowed_file_types']));
+                        $extList = array_values(array_filter($rawList, fn($e) => !empty($e)));
+                        if (in_array('jpg', $extList, true) && !in_array('jpeg', $extList, true)) {
+                            $extList[] = 'jpeg';
+                        }
+                        if (in_array('jpeg', $extList, true) && !in_array('jpg', $extList, true)) {
+                            $extList[] = 'jpg';
+                        }
                         if (!empty($extList)) {
-                            self::$config['allowed_extensions'] = array_values($extList);
+                            self::$config['allowed_extensions'] = array_values(array_unique($extList));
                         }
                     }
                 }
@@ -90,6 +98,13 @@ class StorageService
         $allowedExts = $config['allowed_extensions'] ?? [];
         if (!empty($allowedExts)) {
             $allowedExts = array_values(array_unique(array_merge($allowedExts, $codeExtensions)));
+            // jpeg ve jpg eşdeğer kabul edilir
+            if (in_array('jpg', $allowedExts, true) && !in_array('jpeg', $allowedExts, true)) {
+                $allowedExts[] = 'jpeg';
+            }
+            if (in_array('jpeg', $allowedExts, true) && !in_array('jpg', $allowedExts, true)) {
+                $allowedExts[] = 'jpg';
+            }
         }
 
         if (!empty($allowedExts) && !in_array($ext, $allowedExts, true)) {

@@ -217,10 +217,12 @@ function submitNewMember(e) {
     });
 }
 
-function deleteUser(userId, userName) {
+function deleteUser(userId, userName, skipConfirm = false) {
     const confirmTemplate = (window.TEAM_I18N && window.TEAM_I18N.confirm_delete) ? window.TEAM_I18N.confirm_delete : ':name isimli ekip üyesini silmek istediğinize emin misiniz?';
-    if (!confirm(confirmTemplate.replace(':name', userName).replace('{name}', userName))) {
-        return;
+    if (!skipConfirm && !window.__SKIP_CONFIRM__) {
+        if (!confirm(confirmTemplate.replace(':name', userName).replace('{name}', userName))) {
+            return;
+        }
     }
 
     const formData = new FormData();
@@ -234,10 +236,20 @@ function deleteUser(userId, userName) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert('✅ ' + data.message);
-            location.reload();
+            if (typeof showToast === 'function') {
+                showToast(data.message || 'Üye silindi', 'success');
+            } else {
+                alert('✅ ' + data.message);
+            }
+            setTimeout(() => {
+                location.reload();
+            }, 400);
         } else {
-            alert('❌ Hata: ' + data.message);
+            if (typeof showToast === 'function') {
+                showToast(data.message || 'Silme hatası', 'error');
+            } else {
+                alert('❌ Hata: ' + data.message);
+            }
         }
     })
     .catch(err => {
@@ -269,7 +281,7 @@ function copyClientInvite(name, email, projectTitle) {
 }
 
 // Global Event Listeners for Team View
-document.addEventListener('DOMContentLoaded', function() {
+function initTeamEventListeners() {
     const btnOpenNew = document.getElementById('btnOpenNewMember');
     if (btnOpenNew) {
         btnOpenNew.addEventListener('click', function() {
@@ -277,21 +289,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    document.querySelectorAll('.btn-invite-client').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const name = this.getAttribute('data-name');
-            const email = this.getAttribute('data-email');
-            const proj = this.getAttribute('data-project');
-            copyClientInvite(name, email, proj);
-        });
-    });
+    // Delegated click handling on document for maximum reliability
+    document.addEventListener('click', function(e) {
+        const deleteBtn = e.target.closest('.btn-delete-team-user');
+        if (deleteBtn) {
+            e.preventDefault();
+            const uid = deleteBtn.getAttribute('data-id');
+            const uname = deleteBtn.getAttribute('data-name');
+            const skipConfirm = e.shiftKey || deleteBtn.hasAttribute('data-confirmed');
+            deleteUser(uid, uname, skipConfirm);
+            return;
+        }
 
-    document.querySelectorAll('.btn-delete-team-user').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const uid = this.getAttribute('data-id');
-            const uname = this.getAttribute('data-name');
-            deleteUser(uid, uname);
-        });
+        const inviteBtn = e.target.closest('.btn-invite-client');
+        if (inviteBtn) {
+            e.preventDefault();
+            const name = inviteBtn.getAttribute('data-name');
+            const email = inviteBtn.getAttribute('data-email');
+            const proj = inviteBtn.getAttribute('data-project');
+            copyClientInvite(name, email, proj);
+            return;
+        }
+
+        const closeBtn = e.target.closest('.btn-close-new-member');
+        if (closeBtn) {
+            e.preventDefault();
+            if (typeof closeModal === 'function') closeModal('modalNewMember');
+            return;
+        }
     });
 
     // Close buttons for new member modal
@@ -368,6 +393,12 @@ document.addEventListener('DOMContentLoaded', function() {
             togglePassVisibility(targetId, this);
         });
     });
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTeamEventListeners);
+} else {
+    initTeamEventListeners();
+}
 
 

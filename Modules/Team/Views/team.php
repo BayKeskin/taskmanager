@@ -135,4 +135,5 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
     </div>
 </div>
 
+<?php include __DIR__ . '/modals/new_member.php'; ?>
 <?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>
