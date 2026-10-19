@@ -258,3 +258,64 @@
         max-width: 100% !important;
     }
 }
+
+/* Helper Classes replacing inline styles */
+.billing-report-page .status-delivered {
+    color: var(--success, #00b894);
+    font-weight: 700;
+}
+.billing-report-page .kpi-val-tasks {
+    color: #0984e3;
+}
+.billing-report-page .kpi-val-hours {
+    color: var(--primary, #7B68EE);
+}
+.billing-report-page .kpi-val-cost {
+    color: var(--success, #00b894);
+}
+.billing-report-page .th-code {
+    width: 110px;
+}
+.billing-report-page .th-assignee {
+    width: 120px;
+}
+.billing-report-page .th-spent {
+    width: 80px;
+    text-align: center;
+}
+.billing-report-page .th-cost {
+    width: 110px;
+    text-align: right;
+}
+.billing-report-page .td-empty {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-muted, #94a3b8);
+}
+.billing-report-page .task-title-text {
+    font-weight: 700;
+    color: var(--dark, #0f172a);
+    margin-bottom: 2px;
+}
+.billing-report-page .td-spent {
+    text-align: center;
+    font-weight: 600;
+}
+.billing-report-page .td-cost {
+    text-align: right;
+    font-weight: 700;
+    color: var(--success, #00b894);
+}
+.billing-report-page .sig-title {
+    font-weight: 700;
+    font-size: 13px;
+}
+.billing-report-page .sig-sub {
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+    margin-top: 2px;
+}
+.billing-report-page .sig-note {
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+}

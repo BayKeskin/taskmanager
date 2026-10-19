@@ -6,3 +6,12 @@ window.BillingModule = {
         window.print();
     }
 };
+
+document.addEventListener('DOMContentLoaded', function() {
+    const btnPrint = document.getElementById('btnBillingPrint');
+    if (btnPrint) {
+        btnPrint.addEventListener('click', function() {
+            window.BillingModule.printReport();
+        });
+    }
+});
