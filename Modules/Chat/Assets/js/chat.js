@@ -1,18 +1,18 @@
-window.CURRENT_USER_ID = <?= (int)$currentUser->id ?>;
-window.IS_CLIENT_ROLE = <?= json_encode($currentUser->role === 'client') ?>;
-window.I18N_CHAT = {
-    channel_general: <?= json_encode(__('tasks.chat_channel_general')) ?>,
-    all_team: <?= json_encode(__('tasks.chat_all_team')) ?>,
-    general_desc: <?= json_encode(__('tasks.chat_header_general_desc')) ?>,
-    input_placeholder: <?= json_encode(__('tasks.chat_input_placeholder')) ?>,
-    loading: <?= json_encode(__('tasks.loading')) ?>,
-    loading_history: <?= json_encode(__('tasks.chat_loading_history')) ?>,
-    no_other_members: <?= json_encode(__('app.chat_no_other_members')) ?>,
-    default_role: <?= json_encode(__('app.chat_default_role')) ?>
+window.CURRENT_USER_ID = (window.CHAT_APP_DATA && window.CHAT_APP_DATA.currentUser) ? window.CHAT_APP_DATA.currentUser.id : 1;
+window.IS_CLIENT_ROLE = (window.CHAT_APP_DATA && window.CHAT_APP_DATA.currentUser) ? window.CHAT_APP_DATA.currentUser.isClient : false;
+window.I18N_CHAT = (window.CHAT_APP_DATA && window.CHAT_APP_DATA.i18n) ? window.CHAT_APP_DATA.i18n : {
+    channel_general: 'Genel Sohbet',
+    all_team: 'Tüm Ekip',
+    general_desc: 'Genel sohbet kanalı',
+    input_placeholder: 'Bir mesaj yazın...',
+    loading: 'Yükleniyor...',
+    loading_history: 'Geçmiş yükleniyor...',
+    no_other_members: 'Ekipte başka üye bulunamadı.',
+    default_role: 'Üye'
 };
 const currentUserId = window.CURRENT_USER_ID;
 
-let activeDirectUserId = <?= $initialTargetUserId > 0 ? $initialTargetUserId : 'null' ?>;
+let activeDirectUserId = (typeof window.INITIAL_TARGET_USER_ID !== 'undefined' && window.INITIAL_TARGET_USER_ID > 0) ? window.INITIAL_TARGET_USER_ID : null;
 let activeDirectUserObj = null;
 let lastChatMsgId = 0;
 let lastRenderedDate = '';
@@ -528,6 +528,87 @@ setInterval(checkIncomingMessages, 2500);
 
 // Sayfa yüklendiğinde başlat
 document.addEventListener('DOMContentLoaded', function() {
+    const chatWrapper = document.querySelector('.cu-chat-wrapper');
+    if (chatWrapper) {
+        const initUserId = chatWrapper.getAttribute('data-initial-target-user-id');
+        if (initUserId && parseInt(initUserId, 10) > 0) {
+            activeDirectUserId = parseInt(initUserId, 10);
+        }
+    }
+
+    // Mobil menü aç / kapa
+    const btnMobileToggle = document.getElementById('btnToggleMembersSidebar');
+    if (btnMobileToggle) {
+        btnMobileToggle.addEventListener('click', toggleMembersSidebar);
+    }
+    const btnCloseMobile = document.getElementById('btnCloseSidebarMobile');
+    if (btnCloseMobile) {
+        btnCloseMobile.addEventListener('click', toggleMembersSidebar);
+    }
+
+    // Genel sohbete dönüş
+    const btnGeneral = document.getElementById('btnChannelGeneral');
+    if (btnGeneral) {
+        btnGeneral.addEventListener('click', selectGeneralChat);
+    }
+    const btnBackGeneral = document.getElementById('btnBackToGeneral');
+    if (btnBackGeneral) {
+        btnBackGeneral.addEventListener('click', selectGeneralChat);
+    }
+
+    // Üye arama
+    const searchInput = document.getElementById('memberSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            filterDirectMembers(this.value);
+        });
+    }
+
+    // En alta kaydır butonu
+    if (btnScrollBottom) {
+        btnScrollBottom.addEventListener('click', scrollToBottom);
+    }
+
+    // Hızlı emoji butonları
+    document.querySelectorAll('.cu-emoji-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            const emoji = this.getAttribute('data-emoji') || this.innerText;
+            insertEmoji(emoji);
+        });
+    });
+
+    // Dosya ekleme tetikleyici
+    const btnTriggerFile = document.getElementById('btnTriggerFileInput');
+    const fileInput = document.getElementById('chatFileInput');
+    if (btnTriggerFile && fileInput) {
+        btnTriggerFile.addEventListener('click', function() {
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', function() {
+            handleChatFileSelect(this);
+        });
+    }
+
+    // Dosya temizleme
+    const btnClearFile = document.getElementById('btnClearChatFile');
+    if (btnClearFile) {
+        btnClearFile.addEventListener('click', clearChatFile);
+    }
+
+    // Form gönderme
+    const chatForm = document.getElementById('chatForm');
+    if (chatForm) {
+        chatForm.addEventListener('submit', handleSendChatMessage);
+    }
+
+    // Textarea otomatik boyutlanma ve tuş dinleme
+    if (chatInput) {
+        chatInput.addEventListener('input', function() {
+            handleChatInputAutoGrow(this);
+        });
+        chatInput.addEventListener('keydown', handleChatInputKeyDown);
+    }
+
     loadConversations();
     const isClientRole = window.IS_CLIENT_ROLE || false;
 

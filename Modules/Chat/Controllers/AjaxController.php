@@ -27,47 +27,17 @@ class AjaxController extends BaseController
     {
         $lastId = (int)($_GET['last_id'] ?? $_POST['last_id'] ?? 0);
         $receiverId = isset($_GET['receiver_id']) ? (int)$_GET['receiver_id'] : (isset($_POST['receiver_id']) ? (int)$_POST['receiver_id'] : 0);
-        
-        $sql = "
-            SELECT m.*, u.name as user_name, u.title as user_title, u.avatar_color, u.role as user_role
-            FROM chat_messages m
-            LEFT JOIN users u ON m.user_id = u.id
-        ";
-        $params = [];
 
-        if ($receiverId > 0) {
-            $sql .= " WHERE ((m.user_id = ? AND m.receiver_id = ?) OR (m.user_id = ? AND m.receiver_id = ?)) ";
-            $params[] = $this->user->id;
-            $params[] = $receiverId;
-            $params[] = $receiverId;
-            $params[] = $this->user->id;
-
-            if ($lastId > 0) {
-                $sql .= " AND m.id > ? ";
-                $params[] = $lastId;
-            }
-
-            $this->db->exec_query("UPDATE chat_messages SET is_read = 1 WHERE user_id = ? AND receiver_id = ? AND is_read = 0", [
-                $receiverId, $this->user->id
-            ]);
-        } else {
-            if ($this->user->role === 'client') {
-                $this->respond(false, 'Müşteriler şirket içi genel sohbet kanalına erişemez. Lütfen yetkili ekip üyesi ile özel mesajlaşmayı kullanın.');
-            }
-            $sql .= " WHERE (m.receiver_id IS NULL OR m.receiver_id = 0) ";
-            if ($lastId > 0) {
-                $sql .= " AND m.id > ? ";
-                $params[] = $lastId;
-            }
+        if ($receiverId === 0 && $this->user->role === 'client') {
+            $this->respond(false, __('Chat::client_channel_forbidden'));
+            return;
         }
 
-        $sql .= " ORDER BY m.id DESC LIMIT 60 ";
-        $messages = $this->db->multi_record_query($sql, $params) ?: [];
-        $messages = array_reverse($messages);
+        $messages = $this->chatModel->getMessages((int)$this->user->id, $receiverId, $lastId, 60);
 
         $targetUser = null;
         if ($receiverId > 0) {
-            $tRow = $this->db->row_query("SELECT id, name, title, role, avatar_color, status FROM users WHERE id = ? LIMIT 1", [$receiverId]);
+            $tRow = $this->chatModel->getUserById($receiverId);
             if ($tRow) {
                 $targetUser = [
                     'id'           => (int)$tRow->id,
@@ -80,7 +50,7 @@ class AjaxController extends BaseController
             }
         }
 
-        $this->respond(true, 'Mesajlar listelendi.', [
+        $this->respond(true, __('Chat::messages_listed'), [
             'messages'        => $messages,
             'target_user'     => $targetUser,
             'is_direct'       => ($receiverId > 0),
@@ -103,32 +73,28 @@ class AjaxController extends BaseController
         }
 
         if (empty($messageText) && empty($attachmentUrl)) {
-            $this->respond(false, 'Mesaj metni veya dosya eki zorunludur.');
+            $this->respond(false, __('Chat::message_required'));
+            return;
         }
 
         if ($receiverId === null && $this->user->role === 'client') {
-            $this->respond(false, 'Müşteriler şirket içi genel sohbet kanalına mesaj gönderemez. Lütfen bir ekip üyesine özel mesaj gönderin.');
+            $this->respond(false, __('Chat::client_channel_forbidden'));
+            return;
         }
 
         if ($receiverId !== null) {
-            $targetExists = $this->db->row_query("SELECT id, name FROM users WHERE id = ? LIMIT 1", [$receiverId]);
+            $targetExists = $this->chatModel->getUserById($receiverId);
             if (!$targetExists) {
-                $this->respond(false, 'Mesaj gönderilecek kullanıcı bulunamadı.');
+                $this->respond(false, __('Chat::user_not_found'));
+                return;
             }
             if ($receiverId == $this->user->id) {
-                $this->respond(false, 'Kendinize özel mesaj gönderemezsiniz.');
+                $this->respond(false, __('Chat::cannot_message_self'));
+                return;
             }
         }
 
-        $msgId = (int)$this->db->insert_return_count("chat_messages", [
-            'user_id', 'receiver_id', 'message', 'attachment_url', 'is_read'
-        ], [
-            $this->user->id, $receiverId, $messageText, $attachmentUrl, 0
-        ]);
-
-        if ($msgId <= 0) {
-            $msgId = (int)$this->db->single_query("SELECT MAX(id) FROM chat_messages");
-        }
+        $msgId = $this->chatModel->saveMessage((int)$this->user->id, $receiverId, $messageText, $attachmentUrl);
 
         $newMsg = (object)[
             'id'             => $msgId,
@@ -151,7 +117,7 @@ class AjaxController extends BaseController
             \Modules\SSE\Services\SseBroadcaster::broadcast('new_chat_message', null, null, (int)$this->user->id, (array)$newMsg);
         }
 
-        $this->respond(true, 'Mesaj gönderildi.', [
+        $this->respond(true, __('Chat::message_sent'), [
             'chat_message' => $newMsg,
             'message_item' => $newMsg
         ]);
@@ -159,52 +125,12 @@ class AjaxController extends BaseController
 
     public function getConversations(): void
     {
-        $userCondition = "u.status = 'active' AND u.id != ?";
-        if ($this->user->role === 'client') {
-            $userCondition .= " AND u.role != 'client'";
-        }
-        $users = $this->db->multi_record_query("
-            SELECT u.id, u.name, u.title, u.avatar_color, u.role, u.status
-            FROM users u
-            WHERE {$userCondition}
-            ORDER BY u.name ASC
-        ", [$this->user->id]) ?: [];
+        $isClient = ($this->user->role === 'client');
+        $convData = $this->chatModel->getConversations((int)$this->user->id, $isClient);
 
-        $conversations = [];
-        foreach ($users as $u) {
-            $unreadCount = (int)$this->db->single_query("
-                SELECT COUNT(*) FROM chat_messages
-                WHERE user_id = ? AND receiver_id = ? AND is_read = 0
-            ", [$u->id, $this->user->id]);
-
-            $lastMsg = $this->db->row_query("
-                SELECT message, attachment_url, created_at, user_id
-                FROM chat_messages
-                WHERE ((user_id = ? AND receiver_id = ?) OR (user_id = ? AND receiver_id = ?))
-                ORDER BY id DESC LIMIT 1
-            ", [$this->user->id, $u->id, $u->id, $this->user->id]);
-
-            $conversations[] = [
-                'id'                => (int)$u->id,
-                'name'              => $u->name,
-                'title'             => $u->title ?: ucfirst($u->role),
-                'avatar_color'      => $u->avatar_color ?: '#7B68EE',
-                'role'              => $u->role,
-                'unread_count'      => $unreadCount,
-                'last_message'      => $lastMsg ? ($lastMsg->message ?: ($lastMsg->attachment_url ? '📎 Dosya / Görsel' : '')) : null,
-                'last_message_time' => $lastMsg ? date('H:i', strtotime($lastMsg->created_at)) : null,
-                'last_message_by_me'=> $lastMsg ? ((int)$lastMsg->user_id === (int)$this->user->id) : false
-            ];
-        }
-
-        $totalUnread = (int)$this->db->single_query("
-            SELECT COUNT(*) FROM chat_messages
-            WHERE receiver_id = ? AND is_read = 0
-        ", [$this->user->id]);
-
-        $this->respond(true, 'Konuşmalar listelendi.', [
-            'conversations' => $conversations,
-            'total_unread'  => $totalUnread
+        $this->respond(true, __('Chat::conversations_listed'), [
+            'conversations' => $convData['conversations'],
+            'total_unread'  => $convData['total_unread']
         ]);
     }
 }

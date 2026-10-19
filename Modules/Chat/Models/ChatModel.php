@@ -32,9 +32,7 @@ class ChatModel extends BaseModel
             }
 
             // Okundu işaretle
-            $this->db->exec_query("UPDATE chat_messages SET is_read = 1 WHERE user_id = ? AND receiver_id = ? AND is_read = 0", [
-                $receiverId, $currentUserId
-            ]);
+            $this->markAsRead($receiverId, $currentUserId);
         } else {
             $sql .= " WHERE (m.receiver_id IS NULL OR m.receiver_id = 0) ";
             if ($lastId > 0) {
@@ -49,12 +47,29 @@ class ChatModel extends BaseModel
     }
 
     /**
+     * Mesajları okundu olarak işaretler
+     */
+    public function markAsRead(int $senderId, int $receiverId): void
+    {
+        $stmt = $this->getPdo()->prepare("UPDATE chat_messages SET is_read = 1 WHERE user_id = ? AND receiver_id = ? AND is_read = 0");
+        $stmt->execute([$senderId, $receiverId]);
+    }
+
+    /**
+     * Tek kullanıcı bilgilerini çeker
+     */
+    public function getUserById(int $userId): ?object
+    {
+        $rows = $this->query("SELECT id, name, title, role, avatar_color, status FROM users WHERE id = ? LIMIT 1", [$userId]);
+        return !empty($rows) ? (object)$rows[0] : null;
+    }
+
+    /**
      * Yeni sohbet mesajı ekler
      */
     public function saveMessage(int $userId, ?int $receiverId, string $message, string $attachmentUrl = ''): int
     {
-        $sql = "INSERT INTO chat_messages (user_id, receiver_id, message, attachment_url, is_read, created_at) VALUES (?, ?, ?, ?, 0, NOW())";
-        $stmt = $this->getPdo()->prepare($sql);
+        $stmt = $this->getPdo()->prepare("INSERT INTO chat_messages (user_id, receiver_id, message, attachment_url, is_read, created_at) VALUES (?, ?, ?, ?, 0, NOW())");
         $stmt->execute([$userId, $receiverId, $message, $attachmentUrl]);
         return (int)$this->getPdo()->lastInsertId();
     }
@@ -75,6 +90,8 @@ class ChatModel extends BaseModel
             WHERE {$userCondition}
             ORDER BY u.name ASC
         ", [$currentUserId]);
+
+        $attachmentText = __('Chat::attachment_label');
 
         $conversations = [];
         foreach ($users as $u) {
@@ -103,7 +120,7 @@ class ChatModel extends BaseModel
                 'avatar_color'      => $u->avatar_color ?: '#7B68EE',
                 'role'              => $u->role,
                 'unread_count'      => $unreadCount,
-                'last_message'      => $lastMsg ? ($lastMsg->message ?: (!empty($lastMsg->attachment_url) ? '📎 Dosya / Görsel' : '')) : null,
+                'last_message'      => $lastMsg ? ($lastMsg->message ?: (!empty($lastMsg->attachment_url) ? $attachmentText : '')) : null,
                 'last_message_time' => $lastMsg ? date('H:i', strtotime($lastMsg->created_at)) : null,
                 'last_message_by_me'=> $lastMsg ? ((int)$lastMsg->user_id === $currentUserId) : false
             ];

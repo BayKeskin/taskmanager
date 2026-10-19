@@ -3,8 +3,6 @@ namespace Modules\Chat\Controllers;
 
 use Core\BaseController;
 use Modules\Chat\Models\ChatModel;
-use Helper;
-use Storage;
 
 class ChatController extends BaseController
 {
@@ -21,7 +19,8 @@ class ChatController extends BaseController
      */
     public function index(?int $initialTargetUserId = null, ?object $currentUser = null): array
     {
-        $currentUser = $currentUser ?? ($_SESSION['user'] ?? (object)['id' => 1, 'name' => 'Kullanıcı', 'role' => 'admin']);
+        $defaultUserName = __('Chat::chat_default_user');
+        $currentUser = $currentUser ?? ($_SESSION['user'] ?? (object)['id' => 1, 'name' => $defaultUserName, 'role' => 'admin']);
         $isClient = ($currentUser->role === 'client');
         
         $convData = $this->chatModel->getConversations((int)$currentUser->id, $isClient);
@@ -46,7 +45,7 @@ class ChatController extends BaseController
         $lastId = isset($_GET['last_id']) ? (int)$_GET['last_id'] : 0;
 
         if ($receiverId === 0 && $currentUser->role === 'client') {
-            $this->json(['error' => 'Müşteriler genel kanala erişemez.'], 403);
+            $this->json(['error' => __('Chat::client_channel_forbidden')], 403);
             return;
         }
 
