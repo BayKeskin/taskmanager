@@ -1,10 +1,40 @@
 <?php
 return [
-    'gantt_title'       => 'Gantt & Zaman Çizelgesi',
-    'tab_calendar'      => 'Takvim Görünümü',
-    'tab_gantt'         => 'Gantt Şeması',
-    'scale_month'       => 'Ay',
-    'scale_week'        => 'Hafta',
-    'overdue_badge'     => 'Gecikmiş',
-    'no_tasks'          => 'Bu görünüm için henüz takvimli görev bulunmamaktadır.'
+    'gantt_title'            => 'Gantt & Zaman Çizelgesi',
+    'gantt_view_tab'         => 'Gantt Şeması',
+    'cal_view_tab'           => 'Standart Takvim',
+    'tab_calendar'           => 'Takvim Görünümü',
+    'tab_gantt'              => 'Gantt Şeması',
+    'gantt_filter_week'      => 'Haftalık',
+    'gantt_filter_month'     => 'Aylık',
+    'scale_month'            => 'Ay',
+    'scale_week'             => 'Hafta',
+    'cal_today_badge'        => 'Bugün',
+    'cal_btn_prev'           => '◀ Önceki',
+    'cal_btn_next'           => 'Sonraki ▶',
+    'gantt_tip'              => 'Görev çubuklarını takvim günlerine sürükleyerek teslim tarihini anında güncelleyebilirsiniz.',
+    'gantt_col_task'         => 'Görev ve Sorumlu',
+    'gantt_overdue_badge'    => 'Gecikmiş / Riskli',
+    'col_completed'          => 'Tamamlandı',
+    'col_in_progress'        => 'Çalışılıyor',
+    'overdue_badge'          => 'Gecikmiş',
+    'gantt_no_tasks'         => 'Bu görünüm için henüz takvimli görev bulunmamaktadır.',
+    'no_tasks'               => 'Bu görünüm için henüz takvimli görev bulunmamaktadır.',
+    'gantt_drag_success'     => '✅ Teslim tarihi başarıyla güncellendi: ',
+    'update_failed'          => 'Tarih güncellenemedi.',
+    'server_error'           => 'Sunucu hatası: ',
+    'months' => [
+        1 => 'Ocak', 2 => 'Şubat', 3 => 'Mart', 4 => 'Nisan',
+        5 => 'Mayıs', 6 => 'Haziran', 7 => 'Temmuz', 8 => 'Ağustos',
+        9 => 'Eylül', 10 => 'Ekim', 11 => 'Kasım', 12 => 'Aralık'
+    ],
+    'cal_days' => [
+        'mon' => 'Pzt',
+        'tue' => 'Sal',
+        'wed' => 'Çar',
+        'thu' => 'Per',
+        'fri' => 'Cum',
+        'sat' => 'Cmt',
+        'sun' => 'Paz'
+    ]
 ];

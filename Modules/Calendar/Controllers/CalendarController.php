@@ -25,13 +25,8 @@ class CalendarController extends BaseController
         $year = $year ?: (int)date('Y');
         $month = $month ?: (int)date('n');
 
-        $defaultMonths = [
-            'tr' => [1 => 'Ocak', 2 => 'Şubat', 3 => 'Mart', 4 => 'Nisan', 5 => 'Mayıs', 6 => 'Haziran', 7 => 'Temmuz', 8 => 'Ağustos', 9 => 'Eylül', 10 => 'Ekim', 11 => 'Kasım', 12 => 'Aralık'],
-            'de' => [1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April', 5 => 'Mai', 6 => 'Juni', 7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'],
-            'en' => [1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'],
-        ];
-        $currentLang = class_exists('\Language') ? \Language::current() : 'tr';
-        $monthNames = $defaultMonths[$currentLang] ?? $defaultMonths['en'];
+        $monthsLookup = __('Calendar::months');
+        $monthNames = is_array($monthsLookup) ? $monthsLookup : [];
 
         $firstDayTimestamp = mktime(0, 0, 0, $month, 1, $year);
         $daysInMonth = (int)date('t', $firstDayTimestamp);
