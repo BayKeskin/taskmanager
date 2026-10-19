@@ -77,4 +77,5 @@ return array (
   'workspace_not_found' => 'Workspace-Ordner nicht auf der Festplatte gefunden.',
   'btn_cancel' => 'Abbrechen',
   'btn_save' => 'Speichern',
+  'modal_ai_webhook_title' => 'Künstliche Intelligenz (AI Agent) Integration & Arbeitsbereich',
 );

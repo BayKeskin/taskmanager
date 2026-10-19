@@ -77,4 +77,5 @@ return array (
   'workspace_not_found' => 'Çalışma alanı klasörü diskte bulunamadı.',
   'btn_cancel' => 'İptal',
   'btn_save' => 'Kaydet',
+  'modal_ai_webhook_title' => 'Yapay Zeka (AI Agent) Entegrasyonu & Çalışma Alanı',
 );

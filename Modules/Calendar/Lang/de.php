@@ -36,5 +36,12 @@ return [
         'fri' => 'Fr',
         'sat' => 'Sa',
         'sun' => 'So'
-    ]
+    ],
+    'cal_days.mon' => 'Mo',
+    'cal_days.tue' => 'Di',
+    'cal_days.wed' => 'Mi',
+    'cal_days.thu' => 'Do',
+    'cal_days.fri' => 'Fr',
+    'cal_days.sat' => 'Sa',
+    'cal_days.sun' => 'So'
 ];

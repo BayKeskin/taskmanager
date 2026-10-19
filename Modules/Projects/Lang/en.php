@@ -77,4 +77,5 @@ return array (
   'workspace_not_found' => 'Workspace folder not found on disk.',
   'btn_cancel' => 'Cancel',
   'btn_save' => 'Save',
+  'modal_ai_webhook_title' => 'Artificial Intelligence (AI Agent) Integration & Workspace',
 );
