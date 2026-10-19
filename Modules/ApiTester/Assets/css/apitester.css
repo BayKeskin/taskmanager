@@ -13,3 +13,498 @@
     color: #38bdf8;
     overflow-x: auto;
 }
+
+/* API Docs Layout & Component Styles (Moved from inline styles) */
+.cu-docs-header-bar {
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 16px 24px;
+    background: var(--bg-card);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.cu-docs-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.cu-docs-title-icon {
+    font-size: 20px;
+}
+.cu-docs-title-heading {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-white);
+    margin: 0;
+}
+.cu-docs-badge-active {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    background: rgba(0, 184, 148, 0.15);
+    color: #00b894;
+    text-transform: uppercase;
+}
+.cu-docs-header-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin: 4px 0 0 0;
+}
+.cu-docs-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.cu-docs-lang-switch-box {
+    display: flex;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 3px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+}
+.cu-docs-lang-btn {
+    text-decoration: none;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 4px;
+    color: var(--text-muted);
+}
+.cu-docs-lang-btn.active {
+    background: var(--brand-primary);
+    color: #fff;
+}
+.cu-docs-btn-lab {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);
+}
+.cu-docs-btn-markdown {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-white);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.cu-docs-btn-health {
+    background: var(--brand-primary);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cu-docs-scroll-container {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Token Box */
+.cu-docs-token-card {
+    background: linear-gradient(135deg, rgba(123, 104, 238, 0.12), rgba(15, 17, 26, 0.6));
+    border: 1px solid rgba(123, 104, 238, 0.3);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.cu-docs-token-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 2fr;
+    gap: 20px;
+    align-items: center;
+}
+@media (max-width: 900px) {
+    .cu-docs-token-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.cu-docs-token-pill {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.cu-docs-user-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 4px 0 6px 0;
+}
+.cu-docs-token-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+.cu-docs-token-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.cu-docs-token-value-box {
+    flex: 1;
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: monospace;
+    font-size: 12.5px;
+    color: #00b894;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cu-docs-copy-token-btn {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.cu-docs-meta-row {
+    margin-top: 8px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.cu-docs-meta-code {
+    color: var(--text-white);
+}
+.cu-docs-meta-code-accent {
+    color: #00b894;
+}
+
+/* Live Lab Banner */
+.cu-docs-banner-card {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(15, 23, 42, 0.7));
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+.cu-docs-banner-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.cu-docs-banner-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: rgba(16, 185, 129, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+.cu-docs-banner-title {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--text-white);
+    margin: 0;
+}
+.cu-docs-banner-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 3px 0 0 0;
+}
+.cu-docs-banner-link {
+    background: #10b981;
+    color: #000;
+    text-decoration: none;
+    font-weight: 800;
+    padding: 8px 16px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* I18n Info Card */
+.cu-docs-i18n-card {
+    background: linear-gradient(135deg, rgba(0, 184, 148, 0.1), rgba(15, 17, 26, 0.6));
+    border: 1px solid rgba(0, 184, 148, 0.35);
+    border-radius: var(--radius-md);
+    padding: 18px 24px;
+    margin-bottom: 24px;
+}
+.cu-docs-i18n-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.cu-docs-i18n-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.cu-docs-i18n-icon {
+    font-size: 22px;
+}
+.cu-docs-i18n-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-white);
+    margin: 0;
+}
+.cu-docs-i18n-subtitle {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+}
+.cu-docs-i18n-pills {
+    display: flex;
+    gap: 8px;
+}
+.cu-docs-pill {
+    text-decoration: none;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+}
+.cu-docs-pill-tr.active {
+    background: rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+}
+.cu-docs-pill-en.active {
+    background: rgba(0, 184, 148, 0.25);
+    color: #00b894;
+    border: 1px solid rgba(0, 184, 148, 0.5);
+}
+.cu-docs-pill-de.active {
+    background: rgba(245, 158, 11, 0.25);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+}
+.cu-docs-i18n-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    font-size: 12px;
+}
+.cu-docs-channel-box {
+    background: var(--bg-base);
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+}
+.cu-docs-channel-title {
+    font-weight: 700;
+    color: var(--text-white);
+    margin-bottom: 4px;
+}
+.cu-docs-channel-code {
+    color: #00b894;
+    font-size: 11.5px;
+}
+.cu-docs-channel-desc {
+    color: var(--text-muted);
+    font-size: 11.5px;
+}
+
+/* AI Scenario Box */
+.cu-docs-ai-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(0, 184, 148, 0.4);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    margin-bottom: 28px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+.cu-docs-ai-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.cu-docs-ai-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(0, 184, 148, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+.cu-docs-ai-heading {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-white);
+    margin: 0;
+}
+.cu-docs-ai-subtitle {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+}
+.cu-docs-prompt-box {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 18px;
+}
+.cu-docs-prompt-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f59e0b;
+    margin-bottom: 6px;
+}
+.cu-docs-prompt-quote {
+    margin: 0;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--text-white);
+    line-height: 1.5;
+}
+.cu-docs-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+.cu-docs-step-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 12px;
+}
+.cu-docs-step-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #fff;
+    margin-bottom: 6px;
+}
+.cu-docs-step-badge-1 { background: #7B68EE; }
+.cu-docs-step-badge-2 { background: #3b82f6; }
+.cu-docs-step-badge-3 { background: #f59e0b; }
+.cu-docs-step-badge-4 { background: #00b894; }
+
+.cu-docs-step-title {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-white);
+}
+.cu-docs-step-endpoint {
+    font-family: monospace;
+    font-size: 11px;
+    color: #00b894;
+    margin-top: 4px;
+}
+.cu-docs-step-desc {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin: 4px 0 0 0;
+}
+
+/* Endpoints Grid */
+.cu-docs-sec-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.cu-docs-sec-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-white);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-docs-sec-note {
+    font-size: 11.5px;
+    color: var(--brand-primary);
+    font-weight: 600;
+}
+.cu-docs-endpoints-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+.cu-endpoint-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+.cu-endpoint-card-header {
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.cu-endpoint-cat-title {
+    font-weight: 700;
+    color: var(--text-white);
+    font-size: 14px;
+}
+.cu-endpoint-cat-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.cu-endpoint-card-body {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.api-row {
+    display: grid;
+    grid-template-columns: 120px 300px 1fr;
+    gap: 12px;
+    align-items: center;
+    font-size: 13px;
+}
+@media (max-width: 800px) {
+    .api-row {
+        grid-template-columns: 80px 1fr;
+    }
+}
+.method-badge-post { color: #3b82f6; font-weight: 700; font-family: monospace; }
+.method-badge-get { color: #00b894; font-weight: 700; font-family: monospace; }
+.method-badge-put { color: #f59e0b; font-weight: 700; font-family: monospace; }
+.method-badge-delete { color: #ff4757; font-weight: 700; font-family: monospace; }
+.path-code-default { font-family: monospace; color: var(--text-primary); }
+.path-code-purple { font-family: monospace; color: #7B68EE; font-weight: 700; }
+.path-code-green { font-family: monospace; color: #06D6A0; font-weight: 700; }
+.path-code-amber { font-family: monospace; color: #f59e0b; }
+.desc-text { color: var(--text-secondary); font-size: 12px; }
+.workflow-divider { border-top: 1px dashed var(--border-subtle); margin: 4px 0; }
+.workflow-title-label { font-size: 11px; font-weight: 700; color: var(--brand-primary); text-transform: uppercase; }

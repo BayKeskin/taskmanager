@@ -508,3 +508,187 @@
             font-size: 11px;
             cursor: pointer;
         }
+
+/* Classes added to remove inline styles from api_test.php */
+.api-lab-header-icon {
+    font-size: 22px;
+}
+.api-lab-header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.api-lab-header-title {
+    font-size: 16px;
+    font-weight: 800;
+    margin: 0;
+}
+.api-lab-header-desc {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+.api-lab-token-pill {
+    background: rgba(123, 104, 238, 0.12);
+    border: 1px solid rgba(123, 104, 238, 0.3);
+    border-radius: 6px;
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.api-lab-token-label {
+    font-size: 11px;
+    color: #a5b4fc;
+    font-weight: 600;
+}
+.api-lab-token-text {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #fff;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.api-lab-btn-copy-token {
+    background: none;
+    border: none;
+    color: #c7d2fe;
+    cursor: pointer;
+    font-size: 12px;
+}
+.api-lab-note-text {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.api-lab-json-btn-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+.api-lab-btn-sm-action {
+    font-size: 11.5px;
+    padding: 4px 10px;
+}
+.api-lab-field-group {
+    margin-bottom: 14px;
+}
+.api-lab-select-lang {
+    height: 36px;
+}
+.api-lab-pre-reset {
+    margin: 0;
+}
+.api-lab-label-spaced {
+    margin-top: 20px;
+}
+.api-lab-info-heading {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin-bottom: 8px;
+}
+.api-lab-info-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+.api-lab-info-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+.api-lab-info-tip-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brand-primary);
+    margin-bottom: 4px;
+}
+.api-lab-info-tip-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+.api-lab-info-doc-link {
+    font-size: 12px;
+}
+.api-lab-info-link-icon {
+    font-size: 11px;
+}
+.api-lab-response-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.api-lab-response-actions {
+    display: flex;
+    gap: 8px;
+}
+.api-lab-response-empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 60px 20px;
+}
+.api-lab-empty-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.3;
+}
+.api-lab-empty-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+.api-lab-empty-desc {
+    font-size: 12px;
+    margin-top: 4px;
+}
+.batch-modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.batch-modal-pulse-icon {
+    color: var(--accent-green);
+    font-size: 18px;
+}
+.batch-modal-title-text {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+}
+.batch-modal-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 18px;
+}
+.batch-modal-desc-text {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+.batch-modal-footer-bar {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+}
+.batch-modal-stats-text {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.batch-modal-btn-row {
+    display: flex;
+    gap: 8px;
+}
+.tab-content-hidden {
+    display: none;
+}

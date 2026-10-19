@@ -239,6 +239,81 @@ const SAMPLE_TASK = CFG.sampleTask || '01-01';
         document.addEventListener('DOMContentLoaded', () => {
             renderEndpointList();
             selectEndpoint(ENDPOINTS[0].id);
+
+            // Event Listeners for Header Actions
+            const btnCopyToken = document.getElementById('btnCopyActiveToken');
+            if (btnCopyToken) btnCopyToken.addEventListener('click', copyActiveToken);
+
+            const btnOpenBatch = document.getElementById('btnOpenBatchModal');
+            if (btnOpenBatch) btnOpenBatch.addEventListener('click', openBatchModal);
+
+            const btnCloseBatchX = document.getElementById('btnCloseBatchModalX');
+            if (btnCloseBatchX) btnCloseBatchX.addEventListener('click', closeBatchModal);
+
+            const btnCloseBatchBtn = document.getElementById('btnCloseBatchModalBtn');
+            if (btnCloseBatchBtn) btnCloseBatchBtn.addEventListener('click', closeBatchModal);
+
+            const btnStartBatch = document.getElementById('btnStartBatch');
+            if (btnStartBatch) btnStartBatch.addEventListener('click', runBatchTests);
+
+            // Search filter
+            const searchInput = document.getElementById('endpointSearchInput');
+            if (searchInput) searchInput.addEventListener('input', filterEndpoints);
+
+            // Method select & URL input
+            const methodSelect = document.getElementById('requestMethodSelect');
+            if (methodSelect) {
+                methodSelect.addEventListener('change', (e) => updateMethodColor(e.target.value));
+            }
+
+            const urlInput = document.getElementById('requestUrlInput');
+            if (urlInput) {
+                urlInput.addEventListener('input', updateSnippetViews);
+            }
+
+            // Send request button
+            const btnSend = document.getElementById('btnSendRequest');
+            if (btnSend) btnSend.addEventListener('click', executeCurrentRequest);
+
+            // Tab bar buttons
+            document.querySelectorAll('.panel-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabKey = btn.dataset.tab;
+                    if (tabKey) switchRequestTab(tabKey);
+                });
+            });
+
+            // JSON Editor buttons & inputs
+            const bodyJson = document.getElementById('requestBodyJson');
+            if (bodyJson) bodyJson.addEventListener('input', updateSnippetViews);
+
+            const btnFormatJson = document.getElementById('btnFormatJson');
+            if (btnFormatJson) btnFormatJson.addEventListener('click', formatJsonEditor);
+
+            const btnClearJson = document.getElementById('btnClearJson');
+            if (btnClearJson) btnClearJson.addEventListener('click', clearJsonEditor);
+
+            // Headers tab inputs
+            const headerAuthToken = document.getElementById('headerAuthToken');
+            if (headerAuthToken) headerAuthToken.addEventListener('input', updateSnippetViews);
+
+            const headerContentType = document.getElementById('headerContentType');
+            if (headerContentType) headerContentType.addEventListener('input', updateSnippetViews);
+
+            const headerLanguageSelect = document.getElementById('headerLanguageSelect');
+            if (headerLanguageSelect) headerLanguageSelect.addEventListener('change', updateSnippetViews);
+
+            // Copy Snippets
+            document.querySelectorAll('[data-copy-target]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-copy-target');
+                    if (targetId) copySnippetText(targetId);
+                });
+            });
+
+            // Response Copy
+            const btnCopyResponse = document.getElementById('btnCopyResponse');
+            if (btnCopyResponse) btnCopyResponse.addEventListener('click', copyResponseBody);
         });
 
         // Sol Menü Endpoint Listesi Render
