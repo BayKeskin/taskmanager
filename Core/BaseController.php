@@ -74,6 +74,26 @@ abstract class BaseController
     }
 
     /**
+     * View şablonunu render eder
+     */
+    protected function render(string $viewPathOrName, array $data = [], bool $returnAsString = false): string
+    {
+        extract($data, EXTR_SKIP);
+
+        if (file_exists($viewPathOrName)) {
+            if ($returnAsString) {
+                ob_start();
+                include $viewPathOrName;
+                return ob_get_clean();
+            }
+            include $viewPathOrName;
+            return '';
+        }
+
+        return \Core\View::render($viewPathOrName, $data, $returnAsString);
+    }
+
+    /**
      * JSON Yanıtı Döndürür
      */
     protected function json(mixed $data, int $statusCode = 200): void
