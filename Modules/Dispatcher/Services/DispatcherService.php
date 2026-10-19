@@ -4,14 +4,13 @@ namespace Modules\Dispatcher\Services;
 use Core\BaseService;
 use Modules\Dispatcher\Models\DispatcherModel;
 
-class DispatcherService extends BaseService
+class DispatcherService
 {
     private string $dispatcherDir;
     private DispatcherModel $model;
 
     public function __construct()
     {
-        parent::__construct();
         $this->dispatcherDir = dirname(__DIR__) . '/Bin';
         $this->model = new DispatcherModel();
     }
