@@ -13,6 +13,16 @@ class SseEventModel extends BaseModel
         $sql = "INSERT INTO task_activities (task_id, user_id, action_type, description, created_at) 
                 VALUES (?, ?, 'sse_broadcast', ?, NOW())";
         $desc = "SSE Event: {$eventType} for project " . ($projectId ?? 0);
-        return $this->execute($sql, [$taskId ?? 0, $userId ?? 1, $desc]);
+        return (int)$this->db->exec_query($sql, [$taskId ?? 0, $userId ?? 1, $desc]);
+    }
+
+    /**
+     * Canlı SSE olayını live_events tablosuna yazar
+     */
+    public function insertLiveEvent(string $eventType, ?int $projectId, ?int $taskId, ?int $userId, string $jsonPayload): bool
+    {
+        $sql = "INSERT INTO live_events (event_type, project_id, task_id, user_id, payload, created_at)
+                VALUES (?, ?, ?, ?, ?, NOW())";
+        return $this->db->exec_query($sql, [$eventType, $projectId, $taskId, $userId, $jsonPayload]) !== false;
     }
 }
