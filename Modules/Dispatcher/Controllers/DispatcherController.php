@@ -38,8 +38,8 @@ class DispatcherController extends BaseController
         $this->json([
             'status'  => $ok ? 'success' : 'error',
             'message' => $ok
-                ? __('Dispatcher::workspaces_synced', 'Çalışma alanları senkronize edildi.')
-                : 'Senkronizasyon hatası.'
+                ? __('Dispatcher::workspaces_synced')
+                : __('Dispatcher::sync_error')
         ]);
     }
 }

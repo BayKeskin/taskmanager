@@ -9,6 +9,7 @@ return [
     'dispatcher_stopped'   => 'Dispatcher gestoppt',
     'sync_workspaces'      => 'Arbeitsbereiche synchronisieren',
     'workspaces_synced'    => 'Arbeitsbereiche erfolgreich synchronisiert.',
+    'sync_error'           => 'Synchronisationsfehler.',
     'queue_dispatched'     => 'Aufgabe an die autonome KI-Warteschlange gesendet.',
     'active_lock_cleared'  => 'Aktive Aufgabensperre aufgehoben.',
 ];

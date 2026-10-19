@@ -9,6 +9,7 @@ return [
     'dispatcher_stopped'   => 'Dispatcher Durduruldu',
     'sync_workspaces'      => 'Çalışma Alanlarını Senkronize Et',
     'workspaces_synced'    => 'Çalışma alanları başarıyla senkronize edildi.',
+    'sync_error'           => 'Senkronizasyon hatası.',
     'queue_dispatched'     => 'Görev otonom yapay zeka kuyruğuna gönderildi.',
     'active_lock_cleared'  => 'Aktif görev kilidi temizlendi.',
 ];

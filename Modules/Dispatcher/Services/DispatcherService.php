@@ -1,16 +1,19 @@
 <?php
 namespace Modules\Dispatcher\Services;
 
-use Core\BaseModel;
+use Core\BaseService;
+use Modules\Dispatcher\Models\DispatcherModel;
 
-class DispatcherService extends BaseModel
+class DispatcherService extends BaseService
 {
     private string $dispatcherDir;
+    private DispatcherModel $model;
 
     public function __construct()
     {
         parent::__construct();
         $this->dispatcherDir = dirname(__DIR__) . '/Bin';
+        $this->model = new DispatcherModel();
     }
 
     /**
@@ -59,30 +62,29 @@ class DispatcherService extends BaseModel
                 $probeData = json_decode(trim($probeJson), true);
                 if (!empty($probeData['address'])) {
                     return [
-                        'address'    => $probeData['address'],
-                        'csrf_token' => $probeData['csrf_token'] ?? ''
+                        'address'    => (string)$probeData['address'],
+                        'csrf_token' => (string)($probeData['csrf_token'] ?? '')
                     ];
                 }
             }
         }
 
-        $lsEnvFile = $this->dispatcherDir . '/ls_env.json';
-        if (file_exists($lsEnvFile)) {
-            $data = json_decode((string)file_get_contents($lsEnvFile), true) ?: [];
-            $addr = $data['address'] ?? '';
-            $token = $data['csrf_token'] ?? '';
-            if (!empty($addr) && preg_match('/^(?:127\.0\.0\.1|localhost):(\d+)$/', $addr, $m)) {
-                $fp = @fsockopen('127.0.0.1', (int)$m[1], $errno, $errstr, 0.05);
-                if ($fp) {
-                    fclose($fp);
-                    return ['address' => $addr, 'csrf_token' => $token];
-                }
+        $probeFile = 'C:/Users/DELL/AppData/Roaming/Antigravity IDE/User/globalStorage/antigravity-ls-probe.json';
+        if (file_exists($probeFile)) {
+            $probeData = json_decode((string)file_get_contents($probeFile), true);
+            if (!empty($probeData['address'])) {
+                return [
+                    'address'    => (string)$probeData['address'],
+                    'csrf_token' => (string)($probeData['csrf_token'] ?? '')
+                ];
             }
         }
 
-        $lsFile = $this->dispatcherDir . '/ls_address.txt';
-        $addr = file_exists($lsFile) ? trim((string)file_get_contents($lsFile)) : (getenv('ANTIGRAVITY_LS_ADDRESS') ?: null);
-        return ['address' => $addr, 'csrf_token' => ''];
+        $lsAddress = $this->getAntigravityLsAddress();
+        return [
+            'address'    => $lsAddress,
+            'csrf_token' => null
+        ];
     }
 
     /**
@@ -90,13 +92,30 @@ class DispatcherService extends BaseModel
      */
     public function getAntigravityLsAddress(): ?string
     {
-        $lsFile = $this->dispatcherDir . '/ls_address.txt';
-        if (file_exists($lsFile)) {
-            $addr = trim((string)file_get_contents($lsFile));
-            if (!empty($addr)) {
-                return $addr;
+        $vscdb = 'C:/Users/DELL/AppData/Roaming/Antigravity IDE/User/globalStorage/state.vscdb';
+        if (file_exists($vscdb)) {
+            try {
+                $sdb = new \SQLite3($vscdb, SQLITE3_OPEN_READONLY);
+                $val = $this->model->querySqliteSingleValue($sdb, 'ItemTable', 'value', 'key', 'erennyuksell.ag-multi-account-switchboard');
+                $sdb->close();
+                if ($val) {
+                    $swData = json_decode((string)$val, true);
+                    $port = $swData['ag.lastContextWindow']['port'] ?? null;
+                    if ($port) {
+                        return '127.0.0.1:' . $port;
+                    }
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        $probeFile = 'C:/Users/DELL/AppData/Roaming/Antigravity IDE/User/globalStorage/antigravity-ls-probe.json';
+        if (file_exists($probeFile)) {
+            $probeData = json_decode((string)file_get_contents($probeFile), true);
+            if (!empty($probeData['address'])) {
+                return (string)$probeData['address'];
             }
         }
+
         return getenv('ANTIGRAVITY_LS_ADDRESS') ?: null;
     }
 
@@ -106,7 +125,7 @@ class DispatcherService extends BaseModel
     public function syncWorkspaces(): bool
     {
         try {
-            $projects = $this->query("SELECT project_code, workspace_path FROM projects WHERE workspace_path IS NOT NULL AND workspace_path != ''");
+            $projects = $this->model->getProjectsWithWorkspace();
             $jsonFile = $this->dispatcherDir . '/workspaces.json';
             $map = [];
             foreach ($projects as $proj) {
@@ -128,27 +147,27 @@ class DispatcherService extends BaseModel
      */
     public function removeProjectWorkspace(string $projectCode): bool
     {
-        $wsFile = $this->dispatcherDir . '/workspaces.json';
-        if (file_exists($wsFile) && !empty($projectCode)) {
-            $wsMap = json_decode(file_get_contents($wsFile), true) ?: [];
-            $changed = false;
-            foreach ($wsMap as $code => $paths) {
-                if (strcasecmp((string)$code, (string)$projectCode) === 0) {
-                    unset($wsMap[$code]);
-                    $changed = true;
-                }
+        try {
+            $jsonFile = $this->dispatcherDir . '/workspaces.json';
+            if (!file_exists($jsonFile)) {
+                return true;
             }
-            if ($changed) {
-                return file_put_contents($wsFile, json_encode($wsMap, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false;
+            $map = json_decode((string)file_get_contents($jsonFile), true) ?: [];
+            $code = strtoupper(trim($projectCode));
+            if (isset($map[$code])) {
+                unset($map[$code]);
+                return file_put_contents($jsonFile, json_encode($map, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false;
             }
+            return true;
+        } catch (\Throwable $e) {
+            return false;
         }
-        return true;
     }
 
     /**
-     * Antigravity SQLite oturumlarını tarayarak projeye ait en güncel açık pencereyi dinamik bulur.
+     * Verilen çalışma alanı ve proje kodu için en güncel Antigravity conversation_id değerini tespit eder.
      */
-    public function discoverLatestConversation(?string $workspacePath = null, ?string $projectCode = null): ?string
+    public function discoverLatestConversation(?string $workspacePath, ?string $projectCode = null): ?string
     {
         $convDir = 'C:/Users/DELL/.gemini/antigravity-ide/conversations';
         if (!is_dir($convDir)) {
@@ -156,17 +175,13 @@ class DispatcherService extends BaseModel
         }
 
         $targets = [];
-        if (!empty($workspacePath)) {
-            $targets[] = str_replace('\\', '/', strtolower(rtrim($workspacePath, '/')));
-        }
-
-        $wsFile = $this->dispatcherDir . '/workspaces.json';
-        if (file_exists($wsFile) && $projectCode) {
-            $wsMap = json_decode(file_get_contents($wsFile), true) ?: [];
-            if (!empty($wsMap[$projectCode])) {
-                foreach ((array)$wsMap[$projectCode] as $p) {
-                    $targets[] = str_replace('\\', '/', strtolower(rtrim($p, '/')));
-                }
+        if ($workspacePath) {
+            $normalizedWs = strtolower(str_replace('\\', '/', trim($workspacePath)));
+            $targets[] = $normalizedWs;
+            $targets[] = rtrim($normalizedWs, '/');
+            $wsBase = basename($normalizedWs);
+            if ($wsBase) {
+                $targets[] = $wsBase;
             }
         }
 
@@ -185,7 +200,7 @@ class DispatcherService extends BaseModel
         if (file_exists($vscdb)) {
             try {
                 $sdb = new \SQLite3($vscdb, SQLITE3_OPEN_READONLY);
-                $val = $sdb->querySingle("SELECT value FROM ItemTable WHERE key = 'erennyuksell.ag-multi-account-switchboard'");
+                $val = $this->model->querySqliteSingleValue($sdb, 'ItemTable', 'value', 'key', 'erennyuksell.ag-multi-account-switchboard');
                 $sdb->close();
                 if ($val) {
                     $swData = json_decode((string)$val, true);
@@ -194,7 +209,7 @@ class DispatcherService extends BaseModel
                         $activeDb = $convDir . '/' . $activeCid . '.db';
                         if (file_exists($activeDb)) {
                             $adb = new \SQLite3($activeDb, SQLITE3_OPEN_READONLY);
-                            $blob = $adb->querySingle("SELECT data FROM trajectory_metadata_blob WHERE id='main'");
+                            $blob = $this->model->querySqliteSingleValue($adb, 'trajectory_metadata_blob', 'data', 'id', 'main');
                             $adb->close();
                             if ($blob) {
                                 $decoded = strtolower(str_replace('\\', '/', rawurldecode((string)$blob)));
@@ -223,7 +238,7 @@ class DispatcherService extends BaseModel
             $cid = basename($file, '.db');
             try {
                 $sdb = new \SQLite3($file, SQLITE3_OPEN_READONLY);
-                $res = $sdb->querySingle("SELECT data FROM trajectory_metadata_blob WHERE id='main'");
+                $res = $this->model->querySqliteSingleValue($sdb, 'trajectory_metadata_blob', 'data', 'id', 'main');
                 $sdb->close();
                 if ($res) {
                     $decoded = rawurldecode((string)$res);
@@ -255,16 +270,14 @@ class DispatcherService extends BaseModel
 
         $agentRules = !empty($project->agent_rules) ? trim($project->agent_rules) : '';
         if (empty($agentRules) && !empty($project->id)) {
-            $db = $GLOBALS['db'] ?? null;
-            if ($db && !empty($db->connect)) {
-                $agentRules = (string)($db->get_single("projects", "agent_rules", "id", $project->id) ?? '');
-            }
+            $m = new DispatcherModel();
+            $agentRules = $m->getProjectAgentRules((int)$project->id);
         }
 
         $projectRulesBlock = '';
         if (!empty($agentRules)) {
             $projectRulesBlock = "\n\n---\n"
-                . "📌 **PROJECT-SPECIFIC AGENT RULES (PROJEYE ÖZEL AJAN KURALLARI):**\n"
+                . "📌 **PROJECT-SPECIFIC AGENT RULES:**\n"
                 . "> [!IMPORTANT]\n"
                 . "> The following project-specific technical rules, constraints, and instructions are MANDATORY for [{$projectCode}] {$projectTitle}:\n\n"
                 . $agentRules . "\n";
@@ -330,10 +343,10 @@ class DispatcherService extends BaseModel
                 . "> Before an engineer or AI agent tells the user \"It's done, please check\", \"Try it now\", or marks any task as completed:\n"
                 . "> **The agent is STRICTLY OBLIGATED to autonomously test and verify all screens, every button, every form step, UI visual flaws, and all state transitions in the LIVE ENVIRONMENT using headless browser, curl, PHP/CLI scripts, and API tests.**\n\n"
                 . "📋 **DEFINITION OF DONE & DELIVERY PROTOCOL:**\n"
-                . "1. **What Was Done (Neler Yapıldı):** Added/modified files, methods, DB schema changes.\n"
-                . "2. **Where to Test (Nereden Test Edilir):** Direct testable URLs.\n"
-                . "3. **How to Test (Nasıl Test Edilir):** Step-by-step actions and expected outcomes.\n"
-                . "4. **Autonomous Test Evidence (Otonom Test Kanıtı):** Automated test summary.\n\n"
+                . "1. **What Was Done:** Added/modified files, methods, DB schema changes.\n"
+                . "2. **Where to Test:** Direct testable URLs.\n"
+                . "3. **How to Test:** Step-by-step actions and expected outcomes.\n"
+                . "4. **Autonomous Test Evidence:** Automated test summary.\n\n"
                 . "🎯 **Directive:** Focus EXCLUSIVELY on this specific task: [{$taskCode}].\n\n"
                 . "🗄️ **DATABASE MIGRATION & ROLLBACK RULE:**\n"
                 . "If your task introduces database modifications, generate a reverse rollback SQL script inside: `.migrations/{$taskCode}_down.sql`.\n\n"
@@ -374,7 +387,7 @@ class DispatcherService extends BaseModel
 
         return "```powershell\n"
              . "\$headers = @{ 'Authorization' = 'Bearer {$token}'; 'Content-Type' = 'application/json; charset=utf-8' }\n"
-             . "\$body = @{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' } | ConvertTo-Json -Compress\n"
+             . "\$body = @{ notes = '1. What Was Done: ... 2. Where to Test: ... 3. How to Test: ... 4. Test Evidence: ...' } | ConvertTo-Json -Compress\n"
              . "Invoke-RestMethod -Uri '{$endpoint}' -Method Post -Headers \$headers -Body ([System.Text.Encoding]::UTF8.GetBytes(\$body))\n"
              . "```";
     }
@@ -395,7 +408,7 @@ class DispatcherService extends BaseModel
         $targetCid     = $discoveredCid ?: ($project->agent_conversation_id ?? '');
 
         if (!empty($discoveredCid) && $discoveredCid !== ($project->agent_conversation_id ?? '')) {
-            $this->exec("UPDATE projects SET agent_conversation_id = ? WHERE id = ?", [$discoveredCid, $project->id]);
+            $this->model->updateAgentConversationId((int)$project->id, $discoveredCid);
         }
 
         [$titleHeader, $messageText] = self::formatAgentMessage($event, $project, $data);
@@ -440,7 +453,7 @@ class DispatcherService extends BaseModel
             $newCid = $resJson['response']['newConversation']['conversationId'] ?? null;
             if ($newCid) {
                 $targetCid = $newCid;
-                $this->exec("UPDATE projects SET agent_conversation_id = ? WHERE id = ?", [$newCid, $project->id]);
+                $this->model->updateAgentConversationId((int)$project->id, $newCid);
             }
         }
 
@@ -459,7 +472,7 @@ class DispatcherService extends BaseModel
                     $newCid = $resJson['response']['newConversation']['conversationId'] ?? null;
                     if ($newCid) {
                         $targetCid = $newCid;
-                        $this->exec("UPDATE projects SET agent_conversation_id = ? WHERE id = ?", [$newCid, $project->id]);
+                        $this->model->updateAgentConversationId((int)$project->id, $newCid);
                     }
                 }
             }
