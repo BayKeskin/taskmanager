@@ -355,16 +355,18 @@ function scrollToBottom() {
 }
 
 // Kaydırma Takibi (En alta git butonu kontrolü)
-messagesContainer.addEventListener('scroll', function() {
-    const distFromBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
-    if (btnScrollBottom) {
-        if (distFromBottom > 160) {
-            btnScrollBottom.style.display = 'inline-flex';
-        } else {
-            btnScrollBottom.style.display = 'none';
+if (messagesContainer) {
+    messagesContainer.addEventListener('scroll', function() {
+        const distFromBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
+        if (btnScrollBottom) {
+            if (distFromBottom > 160) {
+                btnScrollBottom.style.display = 'inline-flex';
+            } else {
+                btnScrollBottom.style.display = 'none';
+            }
         }
-    }
-});
+    });
+}
 
 // Metin Alanı Otomatik Büyüme & Karakter Sayacı
 function handleChatInputAutoGrow(textarea) {
@@ -524,16 +526,19 @@ function checkIncomingMessages() {
         })
         .catch(() => {});
 }
-setInterval(checkIncomingMessages, 2500);
 
 // Sayfa yüklendiğinde başlat
 document.addEventListener('DOMContentLoaded', function() {
     const chatWrapper = document.querySelector('.cu-chat-wrapper');
-    if (chatWrapper) {
-        const initUserId = chatWrapper.getAttribute('data-initial-target-user-id');
-        if (initUserId && parseInt(initUserId, 10) > 0) {
-            activeDirectUserId = parseInt(initUserId, 10);
-        }
+    if (!chatWrapper) {
+        return; // Sohbet sayfasında değilsek dinleyicileri ve poller'ı çalıştırma
+    }
+
+    setInterval(checkIncomingMessages, 2500);
+
+    const initUserId = chatWrapper.getAttribute('data-initial-target-user-id');
+    if (initUserId && parseInt(initUserId, 10) > 0) {
+        activeDirectUserId = parseInt(initUserId, 10);
     }
 
     // Mobil menü aç / kapa
