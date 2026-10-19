@@ -27,8 +27,11 @@ const ENDPOINTS = _liveData.catalog && _liveData.catalog.length > 0 ? _liveData.
 
 let currentActiveEndpoint = ENDPOINTS[0];
 
-        // Sayfa Yüklendiğinde Başlat
+        // Sayfa Yüklendiğinde Başlat (Sadece ApiTester sayfasında çalış)
         document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('endpointContainer');
+            if (!container) return;
+
             renderEndpointList();
             selectEndpoint(ENDPOINTS[0].id);
 
