@@ -86,12 +86,14 @@ class StorageService
         $origName = basename($file['name']);
         $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
 
-        // 2. Dangerous Executable Binary Check
-        $disallowed = $config['disallowed_extensions'] ?? ['phtml', 'phar', 'exe', 'sh', 'bat', 'cmd', 'bin', 'vbs', 'scr', 'cgi', 'pl', 'msi', 'com'];
+        // 2. Dangerous Executable Binary Check (Binaries are blocked; code files like php/js/html are neutralized to .safe)
+        $codeExtensions = ['php', 'phtml', 'phar', 'js', 'html', 'htm', 'css', 'sql', 'py', 'json', 'ts', 'jsx', 'tsx', 'vue', 'xml', 'yaml', 'yml'];
+        $disallowed = ['exe', 'dll', 'so', 'bin', 'sh', 'bash', 'bat', 'cmd', 'ps1', 'vbs', 'scr', 'cgi', 'pl', 'msi', 'com', 'htaccess', 'htpasswd', 'env'];
         if (in_array($ext, $disallowed, true)) {
             $msg = __('Storage::disallowed_extension');
             return ['valid' => false, 'error' => $msg];
         }
+
 
         // 3. Allowed Extension Check
         $codeExtensions = ['php', 'js', 'css', 'html', 'sql', 'py', 'json', 'ts', 'jsx', 'tsx', 'vue', 'xml', 'yaml', 'yml'];
