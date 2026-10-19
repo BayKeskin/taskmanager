@@ -140,4 +140,8 @@ return [
     'batch_ready' => 'Ready',
     'btn_close' => 'Close',
     'btn_start_scan' => 'Start Scan',
+    'accepted_params_title' => 'Accepted Values & Parameters',
+    'expected_response_title' => 'Return & Response Format (Sample Response)',
+    'expected_status_label' => 'Expected HTTP Status Code:',
+    'no_params_needed' => 'This endpoint does not require additional request body or parameters.',
 ];

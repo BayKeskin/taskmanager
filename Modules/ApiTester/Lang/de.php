@@ -140,4 +140,8 @@ return [
     'batch_ready' => 'Bereit',
     'btn_close' => 'Schließen',
     'btn_start_scan' => 'Prüfung starten',
+    'accepted_params_title' => 'Akzeptierte Werte & Parameter',
+    'expected_response_title' => 'Rückgabe- & Antwortformat (Beispielantwort)',
+    'expected_status_label' => 'Erwarteter HTTP-Statuscode:',
+    'no_params_needed' => 'Dieser Endpunkt erfordert keinen zusätzlichen Anforderungstext oder Parameter.',
 ];

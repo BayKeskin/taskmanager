@@ -1,10 +1,10 @@
-# Chat (Ekip & Birebir Özel Sohbet) Modülü Onarım Takip Listesi (ONARIM_TAKIP.md)
+# ApiTester (REST API Canlı Test Konsolu) Onarım Takip Listesi (ONARIM_TAKIP.md)
 
 ## Tespit Edilen Durum ve İyileştirme Maddeleri
 
-- [x] 1. [Görsel/CSS] `/chat` iki panelli sohbet konteyneri (sol kenar paneli kanallar/DM listesi, sağ ana mesajlaşma tuvali) modern koyu temada tam hizalı.
-- [x] 2. [İşlev/JS] Genel Kanal (`# Genel`) ve Birebir Özel Sohbetler (DM) listesi dinamik olarak yükleniyor, okunmamış mesaj sayaç rozetleri doğru gösteriliyor.
-- [x] 3. [İşlev/JS] Üye arama kutusu (`#memberSearchInput`) ile ekip üyeleri gerçek zamanlı filtreleniyor.
-- [x] 4. [Görsel/CSS] Mesaj baloncukları (gönderen avatarı, isim, unvan, mesaj gövdesi, zaman damgası) ve gizlilik bildirimi kutusu okunaklı ve taşma yapmıyor.
-- [x] 5. [İşlev/JS] Hızlı emoji çubuğu, dosya yükleme tetikleyicisi (`📎`), karakter sayacı ve `🚀 Gönder` butonu üzerinden AJAX mesaj gönderimi (`send_chat_message`) ve gerçek zamanlı senkronizasyon kusursuz çalışıyor.
-- [x] 6. [Taşınabilirlik/Portability] Chat modülü `baseUrl()` ve global fetch interceptor köprüsüne tam uyumlu olup bağımsız çalışmaktadır.
+- [x] 1. [Katalog & Uç Noktalar] Eski sistemdeki ve tüm REST API mimarisindeki 41 uç noktanın tamamı (Auth, Profil, Projeler, Görevler, Otonom İş Akışı/AI Lifecycle, Kontrol Listeleri, Yorumlar, Atamalar, Dökümanlar, Ekip, Raporlar, Webhooklar) `ApiTesterModel::getEndpointsCatalog()` içerisine eksiksiz entegre edildi.
+- [x] 2. [Parametreler & Alabileceği Değerler] Her uç nokta için kabul ettiği tüm sorgu (query), başlık (header) ve gövde (JSON payload) parametreleri, tipleri ve zorunluluk durumları tanımlandı.
+- [x] 3. [Yanıt & Dönüş Biçimi] Her uç nokta için beklenen HTTP durum kodu (Status Code: 200, 201 vb.) ve gerçekçi JSON örnek yanıt formatı (Sample Response Schema) eklendi.
+- [x] 4. [Arayüz & JS Geliştirmesi] `api_test.php` ve `api_test.js` üzerinde "Endpoint Bilgisi" sekmesi geliştirilerek seçilen her uç noktanın parametre şeması, renkli HTTP durum rozeti ve sözdizimi vurgulu beklenen yanıt biçimi canlı görüntülendi.
+- [x] 5. [Üç Dilli Sözlük Standartı] İlgili tüm etiketler (`accepted_params_title`, `expected_response_title`, `expected_status_label`, `no_params_needed`) `Lang/tr.php`, `Lang/en.php` ve `Lang/de.php` dosyalarına senkronize eklendi.
+- [x] 6. [Mimari & Güvenlik] HMVC denetimi (`php tests/audit_module.php ApiTester`) 0 ihlal ile PASS geçti.

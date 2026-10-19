@@ -196,6 +196,33 @@ let currentActiveEndpoint = ENDPOINTS[0];
             document.getElementById('infoEndpointDesc').innerText = ep.desc;
             document.getElementById('infoDocTip').innerText = ep.tip;
 
+            // Parameters / Values
+            const paramsBox = document.getElementById('infoParamsBox');
+            if (paramsBox) {
+                if (ep.params && Object.keys(ep.params).length > 0) {
+                    paramsBox.innerHTML = '<pre style="margin:0; color:#38bdf8;">' + syntaxHighlightJson(ep.params) + '</pre>';
+                } else if (ep.body && Object.keys(ep.body).length > 0) {
+                    paramsBox.innerHTML = '<pre style="margin:0; color:#38bdf8;">' + syntaxHighlightJson(ep.body) + '</pre>';
+                } else {
+                    paramsBox.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">' + escapeHtml(_i18n.no_params_needed || 'No parameters required') + '</span>';
+                }
+            }
+
+            // Expected Response
+            const statusPill = document.getElementById('infoStatusPill');
+            const respBox = document.getElementById('infoResponseBox');
+            if (statusPill && respBox) {
+                const expCode = ep.expected_status || 200;
+                statusPill.innerText = (_i18n.expected_status || 'Expected Status:') + ' ' + expCode + ' ' + getHttpText(expCode);
+                statusPill.className = 'api-lab-info-status-pill ' + (expCode >= 200 && expCode < 300 ? 'status-2xx' : (expCode >= 400 && expCode < 500 ? 'status-4xx' : 'status-5xx'));
+
+                if (ep.response) {
+                    respBox.innerHTML = '<pre style="margin:0; color:#e2e8f0;">' + syntaxHighlightJson(ep.response) + '</pre>';
+                } else {
+                    respBox.innerHTML = '<pre style="margin:0; color:#94a3b8;">{\n  "success": true,\n  "data": { ... }\n}</pre>';
+                }
+            }
+
             // Snippets güncelle
             updateSnippetViews();
         }

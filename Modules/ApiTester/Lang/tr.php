@@ -140,4 +140,8 @@ return [
     'batch_ready' => 'Hazır',
     'btn_close' => 'Kapat',
     'btn_start_scan' => 'Taramayı Başlat',
+    'accepted_params_title' => 'Alabileceği Değerler & Parametreler',
+    'expected_response_title' => 'Dönüş & Yanıt Biçimi (Örnek Response)',
+    'expected_status_label' => 'Beklenen HTTP Durum Kodu:',
+    'no_params_needed' => 'Bu uç nokta ek bir istek gövdesi veya parametre gerektirmez.',
 ];

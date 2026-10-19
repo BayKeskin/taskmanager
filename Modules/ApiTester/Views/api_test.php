@@ -202,6 +202,20 @@ $sampleTask = $sampleTask ?? 'TASK-1';
                                 <div class="api-lab-info-tip-label"><?= htmlspecialchars(__('ApiTester::doc_tip_label')) ?></div>
                                 <div id="infoDocTip" class="api-lab-info-tip-text"><?= htmlspecialchars(__('ApiTester::doc_tip_default')) ?></div>
                             </div>
+
+                            <div class="api-lab-info-section-title">
+                                <i class="fa-solid fa-sliders"></i>
+                                <span><?= htmlspecialchars(__('ApiTester::accepted_params_title')) ?></span>
+                            </div>
+                            <div id="infoParamsBox" class="api-lab-info-code-block"></div>
+
+                            <div class="api-lab-info-section-title">
+                                <i class="fa-solid fa-code"></i>
+                                <span><?= htmlspecialchars(__('ApiTester::expected_response_title')) ?></span>
+                            </div>
+                            <div id="infoStatusPill" class="api-lab-info-status-pill status-2xx"></div>
+                            <div id="infoResponseBox" class="api-lab-info-code-block"></div>
+
                             <a href="<?= baseUrl('api-docs') ?>" target="_blank" class="btn-lab btn-lab-secondary api-lab-info-doc-link">
                                 <span><?= htmlspecialchars(__('ApiTester::open_doc_new_tab')) ?></span>
                                 <i class="fa-solid fa-arrow-up-right-from-square api-lab-info-link-icon"></i>
@@ -295,7 +309,9 @@ $sampleTask = $sampleTask ?? 'TASK-1';
             'invalid_json'       => __('ApiTester::empty_response_title'),
             'token_copied_alert' => __('ApiTester::token_copied'),
             'response_copied'    => __('ApiTester::btn_copy_response'),
-            'command_copied'     => __('ApiTester::btn_copy')
+            'command_copied'     => __('ApiTester::btn_copy'),
+            'expected_status'    => __('ApiTester::expected_status_label'),
+            'no_params_needed'   => __('ApiTester::no_params_needed')
         ]
     ]);
     ?>
