@@ -55,7 +55,7 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
                         $taskCount = $userTaskCounts[$u->id] ?? 0;
                         $assignedProj = ($u->role === 'client' && !empty($u->client_project_id)) ? ($projectsMap[$u->client_project_id] ?? null) : null;
                     ?>
-                        <tr class="cu-team-tr">
+                        <tr class="cu-team-tr" id="teamUserRow_<?= $u->id ?>" data-user-id="<?= $u->id ?>">
                             <td class="cu-team-td-user">
                                 <div class="cu-avatar cu-team-user-avatar cu-avatar-<?= $u->id ?>">
                                     <?= mb_substr($u->name, 0, 1) ?>
@@ -119,7 +119,7 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
                                         </button>
                                     <?php endif; ?>
                                     <?php if ($u->id != $currentUser->id): ?>
-                                        <button type="button" class="cu-btn cu-btn-secondary cu-team-btn-delete btn-delete-team-user" data-id="<?= $u->id ?>" data-name="<?= htmlspecialchars($u->name, ENT_QUOTES, 'UTF-8') ?>">
+                                        <button type="button" id="btnDeleteUser_<?= $u->id ?>" class="cu-btn cu-btn-secondary cu-team-btn-delete btn-delete-team-user" data-id="<?= $u->id ?>" data-name="<?= htmlspecialchars($u->name, ENT_QUOTES, 'UTF-8') ?>">
                                             <?= __('Team::team_btn_delete') ?>
                                         </button>
                                     <?php else: ?>
