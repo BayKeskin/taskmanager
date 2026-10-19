@@ -29,32 +29,38 @@ $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
     </div>
 
 <?php
-// Aktif Görünüm Bilgisini Belirle
 $activeViewIcon = '📌';
 $activeViewTitle = ($currentUser->role === 'client') ? __('app.sidebar_client_board') : __('app.sidebar_board');
 
-if ($currentPath === '/taskmanager/tasks') {
+$base = baseUrl();
+$relPath = $currentPath;
+if ($base !== '' && str_starts_with($relPath, $base)) {
+    $relPath = substr($relPath, strlen($base));
+}
+$relPath = '/' . trim($relPath, '/');
+
+if ($relPath === '/tasks') {
     $activeViewIcon = '📋';
     $activeViewTitle = __('app.sidebar_list');
-} elseif ($currentPath === '/taskmanager/calendar') {
+} elseif ($relPath === '/calendar') {
     $activeViewIcon = '📅';
     $activeViewTitle = __('app.sidebar_calendar');
-} elseif ($currentPath === '/taskmanager/reports') {
+} elseif ($relPath === '/reports') {
     $activeViewIcon = '📊';
     $activeViewTitle = __('app.sidebar_reports');
-} elseif ($currentPath === '/taskmanager/docs') {
+} elseif ($relPath === '/docs') {
     $activeViewIcon = '📄';
     $activeViewTitle = __('app.sidebar_docs');
-} elseif ($currentPath === '/taskmanager/chat') {
+} elseif ($relPath === '/chat') {
     $activeViewIcon = '💬';
     $activeViewTitle = ($currentUser->role === 'client') ? __('app.sidebar_client_chat') : __('app.sidebar_chat');
-} elseif ($currentPath === '/taskmanager/team') {
+} elseif ($relPath === '/team') {
     $activeViewIcon = '👥';
     $activeViewTitle = __('app.sidebar_team');
-} elseif ($currentPath === '/taskmanager/settings') {
+} elseif ($relPath === '/settings') {
     $activeViewIcon = '🛠️';
     $activeViewTitle = __('app.sidebar_settings');
-} elseif ($currentPath === '/taskmanager/api-docs') {
+} elseif ($relPath === '/api-docs') {
     $activeViewIcon = '⚡';
     $activeViewTitle = __('app.sidebar_api_docs');
 }
@@ -87,7 +93,7 @@ if ($currentPath === '/taskmanager/tasks') {
                     <span style="font-size:10px; color:var(--brand-primary); font-weight:600;"><?= __('app.sidebar_quick_select') ?></span>
                 </div>
                 
-                <a href="/taskmanager/board<?= $projQuery ?>" class="cu-nav-item <?= ($currentPath === '/taskmanager/' || $currentPath === '/taskmanager/board') ? 'active' : '' ?>">
+                <a href="<?= baseUrl('board' . $projQuery) ?>" class="cu-nav-item <?= ($relPath === '/' || $relPath === '/board') ? 'active' : '' ?>">
                     <div class="cu-nav-item-left">
                         <span>📌</span>
                         <span><?= ($currentUser->role === 'client') ? __('app.sidebar_client_board') : __('app.sidebar_board') ?></span>
@@ -96,19 +102,19 @@ if ($currentPath === '/taskmanager/tasks') {
                 </a>
 
                 <?php if ($currentUser->role !== 'client'): ?>
-                    <a href="/taskmanager/tasks<?= $projQuery ?>" class="cu-nav-item <?= ($currentPath === '/taskmanager/tasks') ? 'active' : '' ?>">
+                    <a href="<?= baseUrl('tasks' . $projQuery) ?>" class="cu-nav-item <?= ($relPath === '/tasks') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>📋</span>
                             <span><?= __('app.sidebar_list') ?></span>
                         </div>
                     </a>
-                    <a href="/taskmanager/calendar<?= $projQuery ?>" class="cu-nav-item <?= ($currentPath === '/taskmanager/calendar') ? 'active' : '' ?>">
+                    <a href="<?= baseUrl('calendar' . $projQuery) ?>" class="cu-nav-item <?= ($relPath === '/calendar') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>📅</span>
                             <span><?= __('app.sidebar_calendar') ?></span>
                         </div>
                     </a>
-                    <a href="/taskmanager/reports" class="cu-nav-item <?= ($currentPath === '/taskmanager/reports') ? 'active' : '' ?>">
+                    <a href="<?= baseUrl('reports') ?>" class="cu-nav-item <?= ($relPath === '/reports') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>📊</span>
                             <span><?= __('app.sidebar_reports') ?></span>
@@ -116,7 +122,7 @@ if ($currentPath === '/taskmanager/tasks') {
                     </a>
                 <?php endif; ?>
 
-                <a href="/taskmanager/docs<?= $projQuery ?>" class="cu-nav-item <?= ($currentPath === '/taskmanager/docs') ? 'active' : '' ?>">
+                <a href="<?= baseUrl('docs' . $projQuery) ?>" class="cu-nav-item <?= ($relPath === '/docs') ? 'active' : '' ?>">
                     <div class="cu-nav-item-left">
                         <span>📄</span>
                         <span><?= __('app.sidebar_docs') ?></span>
@@ -124,7 +130,7 @@ if ($currentPath === '/taskmanager/tasks') {
                     <span class="cu-nav-badge"><?= $totalDocsCount ?></span>
                 </a>
 
-                <a href="/taskmanager/chat" class="cu-nav-item <?= ($currentPath === '/taskmanager/chat') ? 'active' : '' ?>">
+                <a href="<?= baseUrl('chat') ?>" class="cu-nav-item <?= ($relPath === '/chat') ? 'active' : '' ?>">
                     <div class="cu-nav-item-left">
                         <span>💬</span>
                         <span><?= ($currentUser->role === 'client') ? __('app.sidebar_client_chat') : __('app.sidebar_chat') ?></span>
@@ -137,14 +143,14 @@ if ($currentPath === '/taskmanager/tasks') {
                 </a>
 
                 <?php if ($currentUser->role === 'admin'): ?>
-                    <a href="/taskmanager/team" class="cu-nav-item <?= ($currentPath === '/taskmanager/team') ? 'active' : '' ?>">
+                    <a href="<?= baseUrl('team') ?>" class="cu-nav-item <?= ($relPath === '/team') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>👥</span>
                             <span><?= __('app.sidebar_team') ?></span>
                         </div>
                         <span class="cu-nav-badge"><?= $totalUsersCount ?></span>
                     </a>
-                    <a href="/taskmanager/settings" class="cu-nav-item <?= ($currentPath === '/taskmanager/settings') ? 'active' : '' ?>">
+                    <a href="<?= baseUrl('settings') ?>" class="cu-nav-item <?= ($relPath === '/settings') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>🛠️</span>
                             <span><?= __('app.sidebar_settings') ?></span>
@@ -153,7 +159,7 @@ if ($currentPath === '/taskmanager/tasks') {
                 <?php endif; ?>
 
                 <?php if ($currentUser->role !== 'client'): ?>
-                    <a href="/taskmanager/api-docs" class="cu-nav-item <?= ($currentPath === '/taskmanager/api-docs') ? 'active' : '' ?>">
+                    <a href="<?= baseUrl('api-docs') ?>" class="cu-nav-item <?= ($relPath === '/api-docs') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>⚡</span>
                             <span><?= __('app.sidebar_api_docs') ?></span>
@@ -188,7 +194,7 @@ foreach ($projectsList as $p) {
                     $cpCount = $projectTaskCounts[$clientProj->id] ?? 0;
                 ?>
                     <div class="cu-nav-item active" style="display:flex; justify-content:space-between; align-items:center;">
-                        <a href="/taskmanager/board?project_id=<?= $clientProj->id ?>" style="flex:1; display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; overflow:hidden;">
+                        <a href="<?= baseUrl('board?project_id=' . $clientProj->id) ?>" style="flex:1; display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; overflow:hidden;">
                             <span style="display:inline-block; width:9px; height:9px; border-radius:3px; background:<?= htmlspecialchars($clientProj->color ?: '#00b894') ?>; flex-shrink:0;"></span>
                             <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12.5px; font-weight:600;" title="<?= htmlspecialchars($clientProj->title) ?>">
                                 <?= htmlspecialchars($clientProj->title) ?>
@@ -211,7 +217,7 @@ foreach ($projectsList as $p) {
             </div>
 
             <div style="margin-top:8px;">
-                <a href="/taskmanager/board" class="cu-nav-item <?= empty($activeProjectId) && ($currentPath === '/taskmanager/' || $currentPath === '/taskmanager/board') ? 'active' : '' ?>">
+                <a href="<?= baseUrl('board') ?>" class="cu-nav-item <?= empty($activeProjectId) && ($relPath === '/' || $relPath === '/board') ? 'active' : '' ?>">
                     <div class="cu-nav-item-left">
                         <span style="font-size:14px;">📁</span>
                         <span><?= __('app.sidebar_all_tasks') ?></span>
@@ -223,7 +229,7 @@ foreach ($projectsList as $p) {
                     $isPActive = ($activeProjectId == $proj->id);
                 ?>
                     <div class="cu-nav-item <?= $isPActive ? 'active' : '' ?>" style="display:flex; justify-content:space-between; align-items:center;">
-                        <a href="/taskmanager/board?project_id=<?= $proj->id ?>" style="flex:1; display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; overflow:hidden;">
+                        <a href="<?= baseUrl('board?project_id=' . $proj->id) ?>" style="flex:1; display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; overflow:hidden;">
                             <span style="display:inline-block; width:9px; height:9px; border-radius:3px; background:<?= htmlspecialchars($proj->color) ?>; flex-shrink:0;"></span>
                             <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12.5px;" title="<?= htmlspecialchars($proj->title) ?>">
                                 <?= htmlspecialchars($proj->title) ?>
@@ -262,7 +268,7 @@ foreach ($projectsList as $p) {
                         $isPActive = ($activeProjectId == $proj->id);
                     ?>
                         <div class="cu-nav-item <?= $isPActive ? 'active' : '' ?>" style="display:flex; justify-content:space-between; align-items:center; opacity:0.75;">
-                            <a href="/taskmanager/tasks?project_id=<?= $proj->id ?>" style="flex:1; display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; overflow:hidden;">
+                            <a href="<?= baseUrl('tasks?project_id=' . $proj->id) ?>" style="flex:1; display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; overflow:hidden;">
                                 <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#7f8c8d; flex-shrink:0;"></span>
                                 <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; text-decoration:line-through; color:var(--text-muted);" title="<?= htmlspecialchars($proj->title) ?>">
                                     <?= htmlspecialchars($proj->title) ?>

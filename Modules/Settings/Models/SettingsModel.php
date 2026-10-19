@@ -18,7 +18,7 @@ class SettingsModel extends BaseModel
         return (object)[
             'id'                        => 1,
             'title'                     => 'TaskManager Pro',
-            'siteurl'                   => 'http://localhost/taskmanager',
+            'siteurl'                   => function_exists('siteUrl') ? siteUrl() : 'http://localhost',
             'employee_can_create_tasks' => 1,
             'employee_can_ai_tasks'     => 0,
             'default_language'          => 'tr'
@@ -36,9 +36,10 @@ class SettingsModel extends BaseModel
                 session_timeout_minutes = ?, max_file_upload_mb = ?, allowed_file_types = ?
             WHERE id = 1";
 
+        $defaultSiteUrl = function_exists('siteUrl') ? siteUrl() : 'http://localhost';
         return $this->db->exec_query($sql, [
             $data['title'] ?? 'TaskManager Pro',
-            $data['siteurl'] ?? 'http://localhost/taskmanager',
+            $data['siteurl'] ?? $defaultSiteUrl,
             $data['employee_can_create_tasks'] ?? 1,
             $data['employee_can_ai_tasks'] ?? 0,
             $data['default_language'] ?? 'tr',

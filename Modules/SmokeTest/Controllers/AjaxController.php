@@ -8,7 +8,7 @@ class AjaxController extends BaseController
 {
     /**
      * AJAX üzerinden otonom smoke test çalıştırır
-     * POST/GET /taskmanager/ajax?action=run_smoke_test
+     * POST/GET ajax?action=run_smoke_test
      */
     public function runSmokeTest(): void
     {

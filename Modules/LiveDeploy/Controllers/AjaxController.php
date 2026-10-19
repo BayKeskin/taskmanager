@@ -141,7 +141,7 @@ class AjaxController extends BaseController
         $dumpData = ($_POST['dump_data'] ?? true) == true;
 
         $sqlDump = LiveConfigGenerator::dumpDatabaseWithModel($this->model, ['dump_data' => $dumpData]);
-        $oldDomain = 'http://localhost/taskmanager';
+        $oldDomain = function_exists('siteUrl') ? siteUrl() : 'http://localhost';
         $transformedSql = LiveConfigGenerator::replaceDomainsInSql($sqlDump, $oldDomain, $liveDomain);
 
         $this->respond(true, __('LiveDeploy::deploy_schema_dumped'), [

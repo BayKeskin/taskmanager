@@ -7,7 +7,7 @@ return [
         'local' => [
             'driver' => 'local',
             'root'   => dirname(__DIR__, 3) . '/Public/uploads',
-            'url'    => '/taskmanager/Public/uploads',
+            'url'    => function_exists('baseUrl') ? baseUrl('/Public/uploads') : '/Public/uploads',
         ],
 
         's3' => [

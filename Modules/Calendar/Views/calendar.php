@@ -82,11 +82,11 @@ $statusColors = [
 
     <!-- GÖRÜNÜM GEÇİŞİ: GANTT vs STANDART TAKVİM -->
     <div class="cu-cal-tab-group">
-        <a href="/taskmanager/calendar?tab=gantt&scale=<?= $ganttScale ?><?= $activeProjectId ? '&project_id='.$activeProjectId : '' ?>" 
+        <a href="<?= baseUrl('calendar?tab=gantt&scale=' . $ganttScale . ($activeProjectId ? '&project_id='.$activeProjectId : '')) ?>" 
            class="cu-cal-tab-btn <?= $viewTab === 'gantt' ? 'active' : '' ?>">
             <span>📊</span> <span><?= __('Calendar::gantt_view_tab') ?></span>
         </a>
-        <a href="/taskmanager/calendar?tab=calendar&year=<?= $year ?>&month=<?= $month ?><?= $activeProjectId ? '&project_id='.$activeProjectId : '' ?>" 
+        <a href="<?= baseUrl('calendar?tab=calendar&year=' . $year . '&month=' . $month . ($activeProjectId ? '&project_id='.$activeProjectId : '')) ?>" 
            class="cu-cal-tab-btn <?= $viewTab === 'calendar' ? 'active' : '' ?>">
             <span>📅</span> <span><?= __('Calendar::cal_view_tab') ?></span>
         </a>
@@ -97,11 +97,11 @@ $statusColors = [
         <?php if ($viewTab === 'gantt'): ?>
             <!-- Haftalık / Aylık Filtre Sekmeleri -->
             <div class="cu-cal-filter-group">
-                <a href="/taskmanager/calendar?tab=gantt&scale=week<?= $activeProjectId ? '&project_id='.$activeProjectId : '' ?>" 
+                <a href="<?= baseUrl('calendar?tab=gantt&scale=week' . ($activeProjectId ? '&project_id='.$activeProjectId : '')) ?>" 
                    class="cu-cal-filter-btn <?= $ganttScale === 'week' ? 'active' : '' ?>">
                     <?= __('Calendar::gantt_filter_week') ?>
                 </a>
-                <a href="/taskmanager/calendar?tab=gantt&scale=month&year=<?= $year ?>&month=<?= $month ?><?= $activeProjectId ? '&project_id='.$activeProjectId : '' ?>" 
+                <a href="<?= baseUrl('calendar?tab=gantt&scale=month&year=' . $year . '&month=' . $month . ($activeProjectId ? '&project_id='.$activeProjectId : '')) ?>" 
                    class="cu-cal-filter-btn <?= $ganttScale === 'month' ? 'active' : '' ?>">
                     <?= __('Calendar::gantt_filter_month') ?>
                 </a>
@@ -109,16 +109,16 @@ $statusColors = [
         <?php endif; ?>
 
         <?php if ($viewTab === 'calendar' || $ganttScale === 'month'): ?>
-            <a href="/taskmanager/calendar?tab=<?= $viewTab ?>&scale=<?= $ganttScale ?>&year=<?= date('Y') ?>&month=<?= date('n') ?><?= $activeProjectId ? '&project_id='.$activeProjectId : '' ?>" class="cu-btn-sm cu-cal-btn-today">
+            <a href="<?= baseUrl('calendar?tab=' . $viewTab . '&scale=' . $ganttScale . '&year=' . date('Y') . '&month=' . date('n') . ($activeProjectId ? '&project_id='.$activeProjectId : '')) ?>" class="cu-btn-sm cu-cal-btn-today">
                 <?= __('Calendar::cal_today_badge') ?>
             </a>
-            <a href="/taskmanager/calendar?tab=<?= $viewTab ?>&scale=<?= $ganttScale ?>&year=<?= $prevYear ?>&month=<?= $prevMonth ?><?= $activeProjectId ? '&project_id='.$activeProjectId : '' ?>" class="cu-btn-sm cu-cal-nav-btn">
+            <a href="<?= baseUrl('calendar?tab=' . $viewTab . '&scale=' . $ganttScale . '&year=' . $prevYear . '&month=' . $prevMonth . ($activeProjectId ? '&project_id='.$activeProjectId : '')) ?>" class="cu-btn-sm cu-cal-nav-btn">
                 <?= __('Calendar::cal_btn_prev') ?>
             </a>
             <h3 class="cu-cal-month-title">
                 <?= htmlspecialchars($monthNames[$month] ?? '') ?> <?= $year ?>
             </h3>
-            <a href="/taskmanager/calendar?tab=<?= $viewTab ?>&scale=<?= $ganttScale ?>&year=<?= $nextYear ?>&month=<?= $nextMonth ?><?= $activeProjectId ? '&project_id='.$activeProjectId : '' ?>" class="cu-btn-sm cu-cal-nav-btn">
+            <a href="<?= baseUrl('calendar?tab=' . $viewTab . '&scale=' . $ganttScale . '&year=' . $nextYear . '&month=' . $nextMonth . ($activeProjectId ? '&project_id='.$activeProjectId : '')) ?>" class="cu-btn-sm cu-cal-nav-btn">
                 <?= __('Calendar::cal_btn_next') ?>
             </a>
         <?php endif; ?>

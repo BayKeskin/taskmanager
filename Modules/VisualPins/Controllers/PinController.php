@@ -91,7 +91,7 @@ class PinController extends BaseController
                 $fileName = 'pin_' . $safeCode . '_' . time() . '.' . $ext;
                 $fullFilePath = $pinsDir . '/' . $fileName;
                 if (@file_put_contents($fullFilePath, $decoded)) {
-                    $screenshotUrl = '/taskmanager/Public/uploads/pins/' . $fileName;
+                    $screenshotUrl = baseUrl('/Public/uploads/pins/' . $fileName);
                     $fileSize = strlen($decoded);
                     $fullDesc .= "\n#### 📸 " . __('VisualPins::screenshot_section') . ":\n";
                     $fullDesc .= "![" . $title . "](" . $screenshotUrl . ")\n";

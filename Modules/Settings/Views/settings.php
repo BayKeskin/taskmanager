@@ -9,7 +9,7 @@ if (!$settingsData['isAuthorized']) {
     echo '<div class="cu-unauthorized-box">';
     echo '<h2>' . __('Settings::settings_unauthorized_title') . '</h2>';
     echo '<p>' . __('Settings::settings_unauthorized_desc') . '</p>';
-    echo '<a href="/taskmanager/board" class="cu-btn cu-btn-primary cu-unauthorized-btn">' . __('Settings::settings_btn_back_board') . '</a>';
+    echo '<a href="' . baseUrl('board') . '" class="cu-btn cu-btn-primary cu-unauthorized-btn">' . __('Settings::settings_btn_back_board') . '</a>';
     echo '</div>';
     include dirname(__DIR__, 3) . '/Core/Views/footer.php';
     exit;
@@ -18,7 +18,7 @@ if (!$settingsData['isAuthorized']) {
 // Mevcut Ayarlar (Model & Controller üzerinden)
 $s = $settingsData['s'];
 $title = $s->title ?? 'TaskManager Pro';
-$siteurl = $s->siteurl ?? 'http://localhost/taskmanager';
+$siteurl = $s->siteurl ?? siteUrl();
 $employeeCanCreate = (int)($s->employee_can_create_tasks ?? 1);
 $employeeCanAi = (int)($s->employee_can_ai_tasks ?? 0);
 $defaultLanguage = $s->default_language ?? 'tr';
@@ -603,7 +603,7 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
 
             <!-- KAYDET BUTONLARI (ALT) -->
             <div class="cu-settings-bottom-actions">
-                <a href="/taskmanager/board" class="cu-btn-sm cu-settings-btn-cancel-bottom">
+                <a href="<?= baseUrl('board') ?>" class="cu-btn-sm cu-settings-btn-cancel-bottom">
                     <?= __('Settings::settings_btn_cancel') ?>
                 </a>
                 <button type="submit" id="btnSaveSettingsBottom" class="cu-btn cu-btn-primary cu-settings-btn-save-bottom">

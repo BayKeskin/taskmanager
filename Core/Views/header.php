@@ -8,12 +8,12 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 if (empty($_SESSION['user'])) {
-    header("Location: /taskmanager/login");
+    header("Location: " . baseUrl('login'));
     exit;
 }
 
 $pageTitle = $system->title ?: 'TaskManager';
-$siteURL = 'http://localhost/taskmanager';
+$siteURL = siteUrl();
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars(Language::current(), ENT_QUOTES, 'UTF-8') ?>">
@@ -30,12 +30,13 @@ $siteURL = 'http://localhost/taskmanager';
             var theme = localStorage.getItem('taskmanager_theme') || 'dark';
             document.documentElement.setAttribute('data-theme', theme);
         })();
+        window.BASE_URL = '<?= addslashes(baseUrl()) ?>';
         window.CURRENT_USER_ID = <?= (int)($_SESSION['user']->id ?? 0) ?>;
         window.CURRENT_USER_ROLE = '<?= addslashes($_SESSION['user']->role ?? 'user') ?>';
         window.CURRENT_LANG = '<?= addslashes(Language::current()) ?>';
     </script>
     <!-- TaskManager Design System -->
-    <link rel="stylesheet" href="/taskmanager/Public/css/app.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= baseUrl('/Public/css/app.css') ?>?v=<?= time() ?>">
     <!-- Dynamic HMVC Module Stylesheets -->
     <?= \Core\AssetManager::renderStyles() ?>
 </head>

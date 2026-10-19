@@ -3,7 +3,6 @@ DirectoryIndex index.php View/index/board.php
 
 <IfModule mod_rewrite.c>
     RewriteEngine on
-    RewriteBase /taskmanager/
 
     # HTTP Authorization Header'ı PHP'ye aktar (Bearer Token desteği)
     RewriteCond %{HTTP:Authorization} .

@@ -17,7 +17,8 @@ function initRealtimeSync() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const activeProjId = urlParams.get('project_id');
-    const sseEndpoint = '/taskmanager/api/sse' + (activeProjId ? '?project_id=' + encodeURIComponent(activeProjId) : '');
+    const base = window.BASE_URL || '';
+    const sseEndpoint = base + '/api/sse' + (activeProjId ? '?project_id=' + encodeURIComponent(activeProjId) : '');
 
     try {
         if (sseSource) {
@@ -99,7 +100,8 @@ function initRealtimeSync() {
                     const msgSnippet = (data.message || (sI18n.attached_file || '')).substring(0, 35);
                     const sentMsg = sI18n.sent_private_message || '';
                     const chatLinkText = sI18n.go_to_chat || '';
-                    const toastText = `🔒 <b>${sender}</b> ${sentMsg}: "${msgSnippet}" <a href="/taskmanager/chat?user_id=${data.user_id}" style="color:#fff; text-decoration:underline; margin-left:6px;">${chatLinkText}</a>`;
+                    const base = window.BASE_URL || '';
+                    const toastText = `🔒 <b>${sender}</b> ${sentMsg}: "${msgSnippet}" <a href="${base}/chat?user_id=${data.user_id}" style="color:#fff; text-decoration:underline; margin-left:6px;">${chatLinkText}</a>`;
                     showToast(toastText, 'info');
                 }
             } catch (err) {
@@ -323,8 +325,9 @@ function handleLiveTaskCreated(data) {
 
     const urlParams = new URLSearchParams(window.location.search);
     const activeProjId = urlParams.get('project_id');
+    const base = window.BASE_URL || '';
 
-    fetch(`/taskmanager/ajax?action=get_task_card_html&task_id=${task_id}`)
+    fetch(`${base}/ajax?action=get_task_card_html&task_id=${task_id}`)
         .then(r => r.json())
         .then(res => {
             if (res.success && res.task) {
@@ -369,7 +372,8 @@ function handleLiveNewComment(data) {
 
     // Eğer Task Drawer açık ve bu göreve aitse yorumları ve aktiviteyi anında yenile
     if (typeof currentDrawerTaskId !== 'undefined' && currentDrawerTaskId == task_id) {
-        fetch(`/taskmanager/ajax?action=get_task_detail&id=${task_id}`)
+        const base = window.BASE_URL || '';
+        fetch(`${base}/ajax?action=get_task_detail&id=${task_id}`)
             .then(r => r.json())
             .then(res => {
                 if (res.success) {

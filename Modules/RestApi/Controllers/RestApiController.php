@@ -152,7 +152,7 @@ class RestApiController extends BaseController
                 'api_name'      => 'TaskManager REST API',
                 'version'       => '1.0.0',
                 'status'        => 'online',
-                'docs_url'      => '/taskmanager/api-docs',
+                'docs_url'      => baseUrl('api-docs'),
                 'authenticated' => !empty($currentUser),
                 'user'          => $currentUser ? ['id' => $currentUser->id, 'name' => $currentUser->name, 'email' => $currentUser->email, 'role' => $currentUser->role] : null,
                 'timestamp'     => date('c')
@@ -210,7 +210,7 @@ class RestApiController extends BaseController
                     'project'        => $data['project_title'],
                     'status'         => 'assigned',
                     'screenshot_url' => $data['screenshot_url'],
-                    'url'            => 'http://localhost/taskmanager/board?project_id=' . $data['project_id']
+                    'url'            => siteUrl('board?project_id=' . $data['project_id'])
                 ], __('RestApi::operation_successful'), 201);
             } else {
                 $this->apiError($result['error'] ?? __('RestApi::invalid_request'), $result['status_code'] ?? 400);

@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $loginResult = $authController->attemptLogin($email, $password);
     if ($loginResult['success']) {
-        header("Location: /taskmanager/");
+        header("Location: " . baseUrl());
         exit;
     } else {
         $error = $loginResult['error'];
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/taskmanager/Modules/Team/Assets/css/login.css">
+    <link rel="stylesheet" href="<?= baseUrl('/Modules/Team/Assets/css/login.css') ?>">
 </head>
 <body>
 
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     <?php endif; ?>
 
-    <form method="POST" action="/taskmanager/login" autocomplete="on">
+    <form method="POST" action="<?= baseUrl('login') ?>" autocomplete="on">
         <div class="cu-input-group">
             <label for="inputEmail"><?= __('Team::auth_email') ?></label>
             <div class="cu-input-wrapper">

@@ -223,8 +223,8 @@ class DeltaSyncEngine
         curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'TaskManager-HealthCheck/1.0 (+http://localhost/taskmanager)');
+        $uaUrl = function_exists('siteUrl') ? siteUrl() : 'http://localhost';
+        curl_setopt($ch, CURLOPT_USERAGENT, 'TaskManager-HealthCheck/1.0 (+' . $uaUrl . ')');
 
         $body = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

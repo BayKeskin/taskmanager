@@ -29,8 +29,9 @@ class AjaxController extends BaseController
             $this->respond(false, __('Settings::ajax_unauthorized_admin'));
         }
 
+        $defaultSiteUrl = function_exists('siteUrl') ? siteUrl() : 'http://localhost';
         $title = trim($_POST['title'] ?? 'TaskManager Pro');
-        $siteurl = trim($_POST['siteurl'] ?? 'http://localhost/taskmanager');
+        $siteurl = trim($_POST['siteurl'] ?? $defaultSiteUrl);
         $employeeCanCreate = !empty($_POST['employee_can_create_tasks']) ? 1 : 0;
         $employeeCanAi = !empty($_POST['employee_can_ai_tasks']) ? 1 : 0;
         $defaultLanguage = trim($_POST['default_language'] ?? 'tr');

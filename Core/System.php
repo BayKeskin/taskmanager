@@ -57,3 +57,47 @@ $system = new System($db);
 
 // Dil Motorunu Oturum ve Kullanıcı Tercihine Göre Başlat
 Language::init();
+
+/**
+ * Dinamik Web Dizin Yolu (Base URL/Path)
+ * Uygulamanın kurulu olduğu alt dizini (örn: /taskmanager, /taskold, /crm veya kök dizinse '') dinamik olarak çözer.
+ */
+function baseUrl(string $path = ''): string
+{
+    static $base = null;
+    if ($base === null) {
+        $projectRoot = str_replace('\\', '/', realpath(dirname(__DIR__)));
+        $docRoot = !empty($_SERVER['DOCUMENT_ROOT']) ? str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])) : '';
+
+        if (!empty($docRoot) && str_starts_with($projectRoot, $docRoot)) {
+            $rel = substr($projectRoot, strlen($docRoot));
+            $base = '/' . trim(str_replace('\\', '/', $rel), '/');
+        } elseif (!empty($_SERVER['SCRIPT_NAME'])) {
+            $dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+            $dir = preg_replace('#/(Controller|Public|View|System|Modules|Core|tests).*$#i', '', $dir);
+            $base = '/' . trim($dir, '/');
+        } else {
+            $base = '';
+        }
+        if ($base === '/') {
+            $base = '';
+        }
+    }
+
+    $cleanPath = ltrim($path, '/');
+    if ($cleanPath === '') {
+        return $base ?: '/';
+    }
+    return ($base ? $base : '') . '/' . $cleanPath;
+}
+
+/**
+ * Dinamik Tam Site URL (Scheme + Host + Base URL)
+ */
+function siteUrl(string $path = ''): string
+{
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['SERVER_PORT'] ?? 80) == 443) ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $base = baseUrl($path);
+    return rtrim($protocol . $host, '/') . '/' . ltrim($base, '/');
+}

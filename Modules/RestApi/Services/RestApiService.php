@@ -80,7 +80,7 @@ class RestApiService
      */
     public static function getDynamicApiConfig(): array
     {
-        $baseUrl = 'http://localhost/taskmanager';
+        $baseUrl = function_exists('siteUrl') ? siteUrl() : 'http://localhost';
         $apiToken = '';
 
         try {
@@ -88,9 +88,8 @@ class RestApiService
             $sUrl = $model->getSiteUrlSetting();
             if (!empty($sUrl)) {
                 $baseUrl = rtrim(trim((string)$sUrl), '/');
-            } elseif (!empty($_SERVER['HTTP_HOST'])) {
-                $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-                $baseUrl = $protocol . $_SERVER['HTTP_HOST'] . '/taskmanager';
+            } elseif (function_exists('siteUrl')) {
+                $baseUrl = siteUrl();
             }
 
             $adminUser = $model->getFirstActiveAdmin();

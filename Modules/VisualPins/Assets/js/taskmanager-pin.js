@@ -17,11 +17,11 @@
         const currentScript = document.currentScript || document.querySelector('script[src*="taskmanager-pin.js"]');
         const projectCode = currentScript?.getAttribute('data-project') || '01';
 
-        let baseOrigin = 'http://localhost/taskmanager';
+        let baseOrigin = (window.BASE_URL ? (window.location.origin + window.BASE_URL) : window.location.origin);
         if (currentScript && currentScript.src) {
             try {
                 const scriptUrl = new URL(currentScript.src, window.location.href);
-                const basePath = scriptUrl.pathname.replace(/\/Public\/js\/taskmanager-pin\.js.*$/i, '');
+                const basePath = scriptUrl.pathname.replace(/\/(Public\/js|Modules\/VisualPins\/Assets\/js)\/taskmanager-pin\.js.*$/i, '');
                 baseOrigin = scriptUrl.origin + basePath;
             } catch (e) { }
         }

@@ -20,12 +20,35 @@ class AssetManager
     }
 
     /**
+     * URL'yi normalize eder: eğer /taskmanager/ ile başlıyorsa veya /Modules, /Public ile başlıyorsa baseUrl() ile dinamikleştirir.
+     */
+    public static function normalizeSrc(string $src): string
+    {
+        if (str_starts_with($src, 'http://') || str_starts_with($src, 'https://') || str_starts_with($src, '//')) {
+            return $src;
+        }
+
+        $base = function_exists('baseUrl') ? baseUrl() : '';
+
+        if (str_starts_with($src, '/taskmanager/')) {
+            $relativePath = substr($src, strlen('/taskmanager/'));
+            return rtrim($base, '/') . '/' . ltrim($relativePath, '/');
+        }
+
+        if (str_starts_with($src, '/Modules/') || str_starts_with($src, '/Public/')) {
+            return rtrim($base, '/') . '/' . ltrim($src, '/');
+        }
+
+        return $src;
+    }
+
+    /**
      * JS dosyasını kuyruğa ekler
      */
     public static function enqueueJs(string $handle, string $src, array $deps = [], bool $inFooter = true): void
     {
         self::$scripts[$handle] = [
-            'src'       => $src,
+            'src'       => self::normalizeSrc($src),
             'deps'      => $deps,
             'in_footer' => $inFooter
         ];
@@ -37,7 +60,7 @@ class AssetManager
     public static function enqueueCss(string $handle, string $src): void
     {
         self::$styles[$handle] = [
-            'src' => $src
+            'src' => self::normalizeSrc($src)
         ];
     }
 

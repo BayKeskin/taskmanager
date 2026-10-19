@@ -8,7 +8,7 @@ $currentUser = $_SESSION['user'] ?? null;
         <button type="button" class="cu-mobile-menu-btn" id="cuMobileMenuBtn" onclick="toggleMobileSidebar()" title="<?= htmlspecialchars(__('app.sidebar_menu_toggle')) ?>" aria-label="<?= htmlspecialchars(__('app.sidebar_menu_toggle')) ?>">
             <span>☰</span>
         </button>
-        <a href="/taskmanager/" class="cu-logo">
+        <a href="<?= baseUrl() ?>" class="cu-logo">
             <div class="cu-logo-icon">
                 <svg viewBox="0 0 24 24">
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
@@ -48,7 +48,7 @@ $currentUser = $_SESSION['user'] ?? null;
         </button>
 
         <!-- HIZLI SOHBET BUTONU (TEAM CHAT) -->
-        <a href="/taskmanager/chat" class="cu-theme-toggle-btn" title="<?= htmlspecialchars(__('app.layout_quick_chat')) ?>" style="width:34px; height:34px; padding:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.04); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); font-size:15px; text-decoration:none; color:inherit; transition:var(--transition);">
+        <a href="<?= baseUrl('chat') ?>" class="cu-theme-toggle-btn" title="<?= htmlspecialchars(__('app.layout_quick_chat')) ?>" style="width:34px; height:34px; padding:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.04); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); font-size:15px; text-decoration:none; color:inherit; transition:var(--transition);">
             💬
         </a>
 
@@ -117,16 +117,16 @@ $currentUser = $_SESSION['user'] ?? null;
                             <span><?= __('app.layout_edit_profile') ?></span>
                         </button>
                         <?php if (($currentUser->role ?? '') === 'admin'): ?>
-                        <a href="/taskmanager/settings" style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:600; color:var(--text-primary); text-decoration:none; transition:var(--transition);" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
+                        <a href="<?= baseUrl('settings') ?>" style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:600; color:var(--text-primary); text-decoration:none; transition:var(--transition);" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
                             <span>🛠️</span>
                             <span><?= __('app.layout_system_settings') ?></span>
                         </a>
                         <?php endif; ?>
-                        <a href="/taskmanager/api-docs" style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:600; color:#7B68EE; text-decoration:none; transition:var(--transition);" onmouseover="this.style.background='rgba(123,104,238,0.1)'" onmouseout="this.style.background='transparent'">
+                        <a href="<?= baseUrl('api-docs') ?>" style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:600; color:#7B68EE; text-decoration:none; transition:var(--transition);" onmouseover="this.style.background='rgba(123,104,238,0.1)'" onmouseout="this.style.background='transparent'">
                             <span>⚡</span>
                             <span><?= __('app.layout_api_guide') ?></span>
                         </a>
-                        <a href="/taskmanager/logout" style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:600; color:#ff4757; text-decoration:none; transition:var(--transition);" onmouseover="this.style.background='rgba(255,71,87,0.1)'" onmouseout="this.style.background='transparent'">
+                        <a href="<?= baseUrl('logout') ?>" style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:600; color:#ff4757; text-decoration:none; transition:var(--transition);" onmouseover="this.style.background='rgba(255,71,87,0.1)'" onmouseout="this.style.background='transparent'">
                             <span>🚪</span>
                             <span><?= __('app.layout_logout') ?></span>
                         </a>
@@ -134,7 +134,7 @@ $currentUser = $_SESSION['user'] ?? null;
                 </div>
             </div>
         <?php else: ?>
-            <a href="/taskmanager/login" class="cu-btn-sm" style="background:var(--brand-primary); color:#fff; text-decoration:none; padding:6px 14px; font-weight:600;">
+            <a href="<?= baseUrl('login') ?>" class="cu-btn-sm" style="background:var(--brand-primary); color:#fff; text-decoration:none; padding:6px 14px; font-weight:600;">
                 <?= __('app.layout_login') ?>
             </a>
         <?php endif; ?>

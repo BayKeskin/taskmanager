@@ -92,7 +92,8 @@ function handleUpdateProfile(e) {
         }
     }
 
-    fetch('/taskmanager/ajax/update_profile', {
+    const base = window.BASE_URL || '';
+    fetch(base + '/ajax/update_profile', {
         method: 'POST',
         body: formData
     })
@@ -192,7 +193,8 @@ function submitNewMember(e) {
     const formData = new FormData(e.target);
     formData.append('action', 'create_user');
 
-    fetch('/taskmanager/ajax/create_user', {
+    const base = window.BASE_URL || '';
+    fetch(base + '/ajax/create_user', {
         method: 'POST',
         body: formData
     })
@@ -241,7 +243,8 @@ function deleteUser(userId, userName, skipConfirm = false) {
     formData.append('action', 'delete_user');
     formData.append('user_id', userId);
 
-    fetch('/taskmanager/ajax/delete_user', {
+    const base = window.BASE_URL || '';
+    fetch(base + '/ajax/delete_user', {
         method: 'POST',
         body: formData
     })
@@ -273,7 +276,8 @@ function deleteUser(userId, userName, skipConfirm = false) {
 
 function copyClientInvite(name, email, projectTitle) {
     const i18n = window.TEAM_I18N || {};
-    const loginUrl = window.location.origin + '/taskmanager/login';
+    const base = window.BASE_URL || '';
+    const loginUrl = window.location.origin + base + '/login';
     const intro = (i18n.invite_body_intro || '').replace(':project', projectTitle);
     const loginLine = (i18n.invite_body_login || '').replace(':url', loginUrl);
     const pwdLine = i18n.invite_body_pwd || '';

@@ -286,7 +286,8 @@ async function deleteActiveDoc() {
         const data = await res.json();
         if (data.success) {
             showToast(getDocI18n('docs_toast_deleted'), 'success');
-            window.location.href = '/taskmanager/docs';
+            const base = (typeof window.BASE_URL !== 'undefined') ? window.BASE_URL : '';
+            window.location.href = base + '/docs';
         } else {
             showToast(data.message || getDocI18n('docs_toast_delete_fail'), 'error');
         }

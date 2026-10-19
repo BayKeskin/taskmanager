@@ -150,31 +150,44 @@ function t(key) {
     return APP_TRANSLATIONS[lang][key] || key;
 }
 
-// Global fetch interceptor: automatically append active language to /ajax and /api calls
+// Global fetch interceptor: automatically normalize base URLs and append active language to /ajax and /api calls
 (function() {
     const originalFetch = window.fetch;
     window.fetch = function(url, options) {
         options = options || {};
         const lang = getAppLanguage();
-        if (typeof url === 'string' && (url.includes('/ajax') || url.includes('/api'))) {
-            if (!url.includes('lang=') && !url.includes('locale=') && !url.includes('set_lang=')) {
-                const separator = url.includes('?') ? '&' : '?';
-                url = `${url}${separator}lang=${encodeURIComponent(lang)}`;
+        const base = typeof window.BASE_URL !== 'undefined' ? window.BASE_URL : '';
+
+        if (typeof url === 'string') {
+            // 1. Dinamik Base URL Normalizasyonu:
+            // Eğer URL '/taskmanager/...' şeklinde sabit kalmışsa bunu dinamik BASE_URL ile değiştir.
+            if (url.startsWith('/taskmanager/')) {
+                url = (base ? base : '') + url.substring(12);
+            } else if ((url.startsWith('/ajax') || url.startsWith('/api')) && base !== '') {
+                url = base + url;
             }
-            options.headers = options.headers || {};
-            if (options.headers instanceof Headers) {
-                if (!options.headers.has('Accept-Language')) {
-                    options.headers.set('Accept-Language', lang);
+
+            // 2. Çok Dilli (i18n) Parametre ve Başlık Enjeksiyonu
+            if (url.includes('/ajax') || url.includes('/api')) {
+                if (!url.includes('lang=') && !url.includes('locale=') && !url.includes('set_lang=')) {
+                    const separator = url.includes('?') ? '&' : '?';
+                    url = `${url}${separator}lang=${encodeURIComponent(lang)}`;
                 }
-                if (!options.headers.has('X-Language')) {
-                    options.headers.set('X-Language', lang);
-                }
-            } else if (typeof options.headers === 'object') {
-                if (!options.headers['Accept-Language']) {
-                    options.headers['Accept-Language'] = lang;
-                }
-                if (!options.headers['X-Language']) {
-                    options.headers['X-Language'] = lang;
+                options.headers = options.headers || {};
+                if (options.headers instanceof Headers) {
+                    if (!options.headers.has('Accept-Language')) {
+                        options.headers.set('Accept-Language', lang);
+                    }
+                    if (!options.headers.has('X-Language')) {
+                        options.headers.set('X-Language', lang);
+                    }
+                } else if (typeof options.headers === 'object') {
+                    if (!options.headers['Accept-Language']) {
+                        options.headers['Accept-Language'] = lang;
+                    }
+                    if (!options.headers['X-Language']) {
+                        options.headers['X-Language'] = lang;
+                    }
                 }
             }
         }

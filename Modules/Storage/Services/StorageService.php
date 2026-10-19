@@ -174,7 +174,8 @@ class StorageService
             return ['success' => false, 'error' => __('Storage::save_error')];
         }
 
-        $webBase = rtrim($config['disks']['local']['url'] ?? '/taskmanager/Public/uploads', '/');
+        $defaultUrl = function_exists('baseUrl') ? baseUrl('/Public/uploads') : '/Public/uploads';
+        $webBase = rtrim($config['disks']['local']['url'] ?? $defaultUrl, '/');
         $webUrl = $webBase . '/' . $subfolder . '/' . $safeName;
 
         return [
@@ -211,7 +212,8 @@ class StorageService
             return ['success' => false, 'error' => __('Storage::write_error')];
         }
 
-        $webBase = rtrim($config['disks']['local']['url'] ?? '/taskmanager/Public/uploads', '/');
+        $defaultUrl = function_exists('baseUrl') ? baseUrl('/Public/uploads') : '/Public/uploads';
+        $webBase = rtrim($config['disks']['local']['url'] ?? $defaultUrl, '/');
         $webUrl = $webBase . '/' . $subfolder . '/' . $safeName;
 
         return [

@@ -79,7 +79,7 @@ foreach ($allTasks as $t) {
 
                 <?php if (!empty($activeProjectId)): ?>
                     <!-- Excel'e Aktar -->
-                    <a href="/taskmanager/kanban/export-excel?project_id=<?= (int)$activeProjectId ?>" 
+                    <a href="<?= baseUrl('kanban/export-excel?project_id=' . (int)$activeProjectId) ?>" 
                        id="btnExportExcel" 
                        target="_blank"
                        class="cu-tools-item cu-tools-item-excel">

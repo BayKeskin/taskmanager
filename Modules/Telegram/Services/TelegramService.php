@@ -365,7 +365,7 @@ class Telegram
                         'inline_keyboard' => [
                             [
                                 ['text' => $startBtn, 'callback_data' => "status:{$nextCode}:in_progress"],
-                                ['text' => $detailBtn, 'url' => "http://localhost/taskmanager/board?project_id=1"]
+                                ['text' => $detailBtn, 'url' => siteUrl('board?project_id=1')]
                             ]
                         ]
                     ];

@@ -395,8 +395,9 @@ class RestApiModel extends BaseModel
     public function notifyAdminsTaskSubmitted(int $taskId, string $taskTitle, int $projectId, string $userName): void
     {
         $admins = $this->query("SELECT id FROM users WHERE role = 'admin'");
+        $link = baseUrl("board?project_id={$projectId}");
         foreach ($admins as $adm) {
-            $this->db->exec_query("INSERT INTO notifications (user_id, title, message, link, is_read, created_at) VALUES (?, 'Task Submitted', ?, ?, 0, NOW())", [$adm->id, "{$userName} submitted '{$taskTitle}'", "/taskmanager/board?project_id={$projectId}"]);
+            $this->db->exec_query("INSERT INTO notifications (user_id, title, message, link, is_read, created_at) VALUES (?, 'Task Submitted', ?, ?, 0, NOW())", [$adm->id, "{$userName} submitted '{$taskTitle}'", $link]);
         }
     }
 
