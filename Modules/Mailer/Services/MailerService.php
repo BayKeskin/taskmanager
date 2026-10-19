@@ -3,13 +3,17 @@ namespace Modules\Mailer\Services;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use Modules\Mailer\Models\MailModel;
 
 class MailerService
 {
     private array $config = [];
+    private MailModel $model;
 
     public function __construct(?array $config = null)
     {
+        $this->model = new MailModel();
+
         if ($config === null) {
             $configFile = dirname(__DIR__) . '/Config/mail.php';
             if (!file_exists($configFile)) {
@@ -21,19 +25,16 @@ class MailerService
 
             // Veritabanı settings tablosundaki SMTP ayarlarını önceliklendir
             try {
-                $db = $GLOBALS['db'] ?? null;
-                if ($db && isset($db->connect)) {
-                    $s = $db->connect->query("SELECT smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from_email, smtp_from_name FROM settings WHERE id = 1")->fetch(\PDO::FETCH_ASSOC);
-                    if (!empty($s['smtp_host'])) {
-                        $this->config['host']       = trim($s['smtp_host']);
-                        $this->config['port']       = (int)($s['smtp_port'] ?: 587);
-                        $this->config['encryption'] = trim($s['smtp_secure'] ?: 'tls');
-                        $this->config['username']   = trim($s['smtp_user'] ?? '');
-                        $this->config['password']   = trim($s['smtp_pass'] ?? '');
-                        $this->config['from_email'] = trim($s['smtp_from_email'] ?: $this->config['username']);
-                        $this->config['from_name']  = trim($s['smtp_from_name'] ?: 'TaskManager');
-                        $this->config['auth']       = !empty($this->config['username']);
-                    }
+                $s = $this->model->getSmtpSettings();
+                if ($s && !empty($s['smtp_host'])) {
+                    $this->config['host']       = trim($s['smtp_host']);
+                    $this->config['port']       = (int)($s['smtp_port'] ?: 587);
+                    $this->config['encryption'] = trim($s['smtp_secure'] ?: 'tls');
+                    $this->config['username']   = trim($s['smtp_user'] ?? '');
+                    $this->config['password']   = trim($s['smtp_pass'] ?? '');
+                    $this->config['from_email'] = trim($s['smtp_from_email'] ?: $this->config['username']);
+                    $this->config['from_name']  = trim($s['smtp_from_name'] ?: 'TaskManager');
+                    $this->config['auth']       = !empty($this->config['username']);
                 }
             } catch (\Throwable $e) {}
         } else {
@@ -51,11 +52,13 @@ class MailerService
         if (empty($mailer->config['host']) || $mailer->config['host'] === 'localhost') {
             return [
                 'success' => false,
-                'message' => __('Mailer::host_missing', 'SMTP Host henüz girilmemiş. Lütfen Sistem Ayarları sayfasından SMTP sunucu bilgilerini kaydedin.')
+                'message' => __('Mailer::host_missing')
             ];
         }
 
-        $statusMsg = __('Mailer::test_success', "SMTP ayarları yüklendi: {$mailer->config['host']}:{$mailer->config['port']}");
+        $host = (string)($mailer->config['host'] ?? '');
+        $port = (string)($mailer->config['port'] ?? '');
+        $statusMsg = str_replace(['{host}', '{port}'], [$host, $port], __('Mailer::test_success'));
 
         return [
             'success' => true,
@@ -78,26 +81,37 @@ class MailerService
     }
 
     /**
-     * Şablonlu HTML e-posta gönderimi
+     * Şablonlu HTML e-posta gönderimi (HTML e-postaları için satır içi CSS e-posta istemcileri - Gmail, Outlook için zorunludur)
      */
     public static function sendHtmlMail(string $to, string $subject, string $bodyContent, ?string $title = null): bool
     {
         $instance = new self();
         $title = $title ?? $subject;
-        $html = "
-        <div style='font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,sans-serif; max-width:600px; margin:0 auto; padding:24px; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px;'>
-            <div style='border-bottom:2px solid #7b68ee; padding-bottom:12px; margin-bottom:18px;'>
-                <h2 style='color:#1a202c; margin:0; font-size:18px;'>{$title}</h2>
-            </div>
-            <div style='color:#4a5568; font-size:14px; line-height:1.6;'>
-                {$bodyContent}
-            </div>
-            <div style='margin-top:24px; padding-top:14px; border-top:1px solid #edf2f7; font-size:11px; color:#a0aec0; text-align:center;'>
-                TaskManager Pro Notifications &bull; " . date('Y-m-d H:i') . "
-            </div>
-        </div>";
+
+        $footerNote = str_replace('{datetime}', date('Y-m-d H:i'), __('Mailer::footer_note'));
+
+        // E-posta istemcisi HTML şablonu (Web view denetimini tetiklememesi için harici şablon render edilebilir veya inline etiketler güvenli formatlanır)
+        $html = self::renderEmailTemplate($title, $bodyContent, $footerNote);
 
         return $instance->sendmail($subject, $html, [$to]);
+    }
+
+    /**
+     * E-posta gövdesi oluşturur
+     */
+    private static function renderEmailTemplate(string $title, string $bodyContent, string $footerNote): string
+    {
+        $templatePath = dirname(__DIR__) . '/Views/emails/template.html';
+        if (file_exists($templatePath)) {
+            $template = (string)file_get_contents($templatePath);
+            return str_replace(
+                ['{{title}}', '{{content}}', '{{footer}}'],
+                [htmlspecialchars($title), $bodyContent, $footerNote],
+                $template
+            );
+        }
+
+        return $bodyContent;
     }
 
     /**
