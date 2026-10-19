@@ -1,10 +1,10 @@
-# Calendar (Takvim & Gantt Şeması) Modülü Onarım Takip Listesi (ONARIM_TAKIP.md)
+# Chat (Ekip & Birebir Özel Sohbet) Modülü Onarım Takip Listesi (ONARIM_TAKIP.md)
 
 ## Tespit Edilen Durum ve İyileştirme Maddeleri
 
-- [x] 1. [Görsel/CSS] Gantt Şeması görünümü (`?tab=gantt`) zaman çizelgesi sütunları (günler, tarihler, bugün vurgusu) ve görev çubukları karanlık temada tam hizalı.
-- [x] 2. [İşlev/JS] Gantt ölçek değiştirici (`scale=week` ve `scale=month`) ile zaman aralığı haftalık ve aylık görünümler arasında akıcı şekilde geçiş yapıyor.
-- [x] 3. [Görsel/CSS] Standart Takvim görünümü (`?tab=calendar`) haftanın 7 günü (Pazartesi'den Pazar'a) aylık grid yapısında ve gün numaraları doğru sıralamayla render ediliyor.
-- [x] 4. [Görsel/CSS] Görevler teslim tarihlerine (`due_date`) göre takvim hücrelerinde renkli durum/öncelik etiketleriyle listeleniyor.
-- [x] 5. [İşlev/JS] Takvim navigasyon butonları (`Bugün`, `◀ Önceki Ay`, `Sonraki Ay ▶`) dinamik `baseUrl()` linkleriyle ayları kesintisiz değiştiriyor.
-- [x] 6. [Taşınabilirlik/Portability] Tüm görünüm sekmeleri ve filtre butonları `baseUrl()` mimarisine geçirilerek her alt dizinde ve ana domainde çalışacak şekilde standardize edildi.
+- [x] 1. [Görsel/CSS] `/chat` iki panelli sohbet konteyneri (sol kenar paneli kanallar/DM listesi, sağ ana mesajlaşma tuvali) modern koyu temada tam hizalı.
+- [x] 2. [İşlev/JS] Genel Kanal (`# Genel`) ve Birebir Özel Sohbetler (DM) listesi dinamik olarak yükleniyor, okunmamış mesaj sayaç rozetleri doğru gösteriliyor.
+- [x] 3. [İşlev/JS] Üye arama kutusu (`#memberSearchInput`) ile ekip üyeleri gerçek zamanlı filtreleniyor.
+- [x] 4. [Görsel/CSS] Mesaj baloncukları (gönderen avatarı, isim, unvan, mesaj gövdesi, zaman damgası) ve gizlilik bildirimi kutusu okunaklı ve taşma yapmıyor.
+- [x] 5. [İşlev/JS] Hızlı emoji çubuğu, dosya yükleme tetikleyicisi (`📎`), karakter sayacı ve `🚀 Gönder` butonu üzerinden AJAX mesaj gönderimi (`send_chat_message`) ve gerçek zamanlı senkronizasyon kusursuz çalışıyor.
+- [x] 6. [Taşınabilirlik/Portability] Chat modülü `baseUrl()` ve global fetch interceptor köprüsüne tam uyumlu olup bağımsız çalışmaktadır.
