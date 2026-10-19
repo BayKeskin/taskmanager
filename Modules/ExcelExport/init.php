@@ -17,7 +17,7 @@ EventManager::addFilter('kanban.tools_menu', function(array $items, int $project
     $items[] = [
         'id'    => 'tool-excel-export',
         'icon'  => 'fas fa-file-excel',
-        'title' => __('ExcelExport::export_btn', 'Excel (.csv) İndir'),
+        'title' => __('ExcelExport::export_btn'),
         'url'   => '/taskmanager/board/export-excel?project_id=' . $projectId,
         'order' => 10
     ];

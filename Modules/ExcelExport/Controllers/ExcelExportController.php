@@ -25,7 +25,7 @@ class ExcelExportController extends BaseController
         $this->requireAuth();
 
         if ($projectId <= 0) {
-            echo "Geçersiz proje.";
+            echo __('ExcelExport::invalid_project');
             exit;
         }
 
@@ -33,7 +33,7 @@ class ExcelExportController extends BaseController
         $projectModel = new \Modules\Projects\Models\ProjectModel();
         $project = $projectModel->getProjectById($projectId);
         if (!$project) {
-            echo "Proje bulunamadı.";
+            echo __('ExcelExport::project_not_found');
             exit;
         }
 
@@ -55,33 +55,33 @@ class ExcelExportController extends BaseController
 
         // Başlık Satırı
         $headers = [
-            __('ExcelExport::export_task_id', 'Görev No'),
-            __('ExcelExport::export_title', 'Görev Başlığı'),
-            __('ExcelExport::export_status', 'Mevcut Durum'),
-            __('ExcelExport::export_priority', 'Öncelik'),
-            __('ExcelExport::export_assignee', 'Atanan'),
-            __('ExcelExport::export_creator', 'Oluşturan'),
-            __('ExcelExport::export_start_date', 'Başlangıç Tarihi'),
-            __('ExcelExport::export_due_date', 'Termin Tarihi'),
-            __('ExcelExport::export_progress', 'İlerleme'),
-            __('ExcelExport::export_created_at', 'Oluşturulma Tarihi')
+            __('ExcelExport::export_task_id'),
+            __('ExcelExport::export_title'),
+            __('ExcelExport::export_status'),
+            __('ExcelExport::export_priority'),
+            __('ExcelExport::export_assignee'),
+            __('ExcelExport::export_creator'),
+            __('ExcelExport::export_start_date'),
+            __('ExcelExport::export_due_date'),
+            __('ExcelExport::export_progress'),
+            __('ExcelExport::export_created_at')
         ];
         fputcsv($output, $headers, ';');
 
         $statusTitles = [
-            'assigned'               => __('tasks.col_assigned', 'YAPILACAK İŞLER'),
-            'accepted'               => __('tasks.list_group_accepted', 'KABUL EDİLENLER'),
-            'in_progress'            => __('tasks.col_in_progress', 'ÇALIŞILIYOR'),
-            'modification_requested' => __('tasks.col_modification_requested', 'REVİZYON İSTENDİ'),
-            'submitted'              => __('tasks.col_submitted', 'İNCELEMEDE'),
-            'completed'              => __('tasks.col_completed', 'TAMAMLANDI')
+            'assigned'               => __('ExcelExport::status_assigned'),
+            'accepted'               => __('ExcelExport::status_accepted'),
+            'in_progress'            => __('ExcelExport::status_in_progress'),
+            'modification_requested' => __('ExcelExport::status_modification_requested'),
+            'submitted'              => __('ExcelExport::status_submitted'),
+            'completed'              => __('ExcelExport::status_completed')
         ];
 
         $priorityTitles = [
-            'urgent' => __('tasks.priority_urgent_badge', 'Acil'),
-            'high'   => __('tasks.priority_high_badge', 'Yüksek'),
-            'normal' => __('tasks.priority_normal_badge', 'Normal'),
-            'low'    => __('tasks.priority_low_badge', 'Düşük')
+            'urgent' => __('ExcelExport::priority_urgent'),
+            'high'   => __('ExcelExport::priority_high'),
+            'normal' => __('ExcelExport::priority_normal'),
+            'low'    => __('ExcelExport::priority_low')
         ];
 
         foreach ($tasks as $task) {
@@ -103,10 +103,10 @@ class ExcelExportController extends BaseController
                 $tObj->title,
                 $statusTitles[$tObj->status] ?? $tObj->status,
                 $priorityTitles[$tObj->priority] ?? $tObj->priority,
-                !empty($tObj->assignee_name) ? trim($tObj->assignee_name) : __('ExcelExport::export_unassigned', 'Atanmamış'),
+                !empty($tObj->assignee_name) ? trim($tObj->assignee_name) : __('ExcelExport::export_unassigned'),
                 !empty($tObj->creator_name) ? trim($tObj->creator_name) : '-',
-                !empty($tObj->created_at) ? date('Y-m-d', strtotime($tObj->created_at)) : __('ExcelExport::export_no_date', 'Belirtilmedi'),
-                !empty($tObj->deadline) ? date('Y-m-d', strtotime($tObj->deadline)) : __('ExcelExport::export_no_date', 'Belirtilmedi'),
+                !empty($tObj->created_at) ? date('Y-m-d', strtotime($tObj->created_at)) : __('ExcelExport::export_no_date'),
+                !empty($tObj->deadline) ? date('Y-m-d', strtotime($tObj->deadline)) : __('ExcelExport::export_no_date'),
                 $progressStr,
                 date('Y-m-d H:i', strtotime($tObj->created_at))
             ], ';');
