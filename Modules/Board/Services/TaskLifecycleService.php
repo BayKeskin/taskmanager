@@ -21,15 +21,21 @@ class TaskLifecycleService extends BaseModel
         }
 
         static $replacements = [
-            'Ä±' => 'ı', 'ÄŸ' => 'ğ', 'Ã¼' => 'ü', 'ÅŸ' => 'ş', 'Ã¶' => 'ö', 'Ã§' => 'ç',
-            'Ä°' => 'İ', 'Äž' => 'Ğ', 'Ãœ' => 'Ü', 'Åž' => 'Ş', 'Ã–' => 'Ö', 'Ã‡' => 'Ç',
+            "\xC3\x84\xC2\xB1" => "\xC4\xB1", "\xC3\x84\xC4\x9F" => "\xC4\x9F", "\xC3\x83\xC2\xBC" => "\xC3\xBC",
+            "\xC3\x85\xC5\xB8" => "\xC5\x9F", "\xC3\x83\xC2\xB6" => "\xC3\xB6", "\xC3\x83\xC2\xA7" => "\xC3\xA7",
+            "\xC3\x84\xC2\xB0" => "\xC4\xB0", "\xC3\x84\xC4\x9E" => "\xC4\x9E", "\xC3\x83\xC5\x93" => "\xC3\x9C",
+            "\xC3\x85\xC5\xBD" => "\xC5\x9E", "\xC3\x83\xE2\x80\x93" => "\xC3\x96", "\xC3\x83\xE2\x80\xA1" => "\xC3\x87",
             'Ã¢' => 'â', 'Ã®' => 'î', 'Ã»' => 'û', 'Ã‚' => 'Â', 'ÃŽ' => 'Î',
             'â€™' => "'", 'â€œ' => '"', 'â€'  => '"', 'â€“' => '–', 'â€”' => '—',
-            'ğŸ”‘' => '🔑', 'âš ï¸ ' => '⚠️', 'âš ï¸' => '⚠️', 'âš ' => '⚠️', 'âš¡' => '⚡',
-            'âš™ï¸ ' => '⚙️', 'âš™ï¸' => '⚙️', 'âš™' => '⚙️', 'ğŸ§©' => '🧩', 'ğŸ’¾' => '💾',
-            'ğŸ”„' => '🔄', 'ğŸš€' => '🚀', 'ğŸ’¡' => '💡', 'ğŸ“ ' => '📝', 'ğŸ“Š' => '📊',
-            'ğŸ” ' => '🔍', 'âœ…' => '✅', 'â Œ' => '❌', 'âž¡' => '➡️', 'â¬…' => '⬅️',
-            'ğŸ‘ ' => '👍', 'ğŸ”¥' => '🔥', 'ğŸ“¦' => '📦'
+            "\xC4\x9F\xC5\xB8\xE2\x80\x9D\xE2\x80\x98" => '🔑', 'âš ï¸ ' => '⚠️', 'âš ï¸' => '⚠️', 'âš ' => '⚠️', 'âš¡' => '⚡',
+            'âš™ï¸ ' => '⚙️', 'âš™ï¸' => '⚙️', 'âš™' => '⚙️',
+            "\xC4\x9F\xC5\xB8\xC2\xA7\xC2\xA9" => '🧩', "\xC4\x9F\xC5\xB8\xE2\x80\x99\xC2\xBE" => '💾',
+            "\xC4\x9F\xC5\xB8\xE2\x80\x9D\xE2\x80\x9E" => '🔄', "\xC4\x9F\xC5\xB8\xC5\xA1\xE2\x82\xAC" => '🚀',
+            "\xC4\x9F\xC5\xB8\xE2\x80\x99\xC2\xA1" => '💡', "\xC4\x9F\xC5\xB8\xE2\x80\x9C " => '📝',
+            "\xC4\x9F\xC5\xB8\xE2\x80\x9C\xC5\xA0" => '📊', "\xC4\x9F\xC5\xB8\xE2\x80\x9D " => '🔍',
+            'âœ…' => '✅', 'â Œ' => '❌', 'âž¡' => '➡️', 'â¬…' => '⬅️',
+            "\xC4\x9F\xC5\xB8\xE2\x80\x98 " => '👍', "\xC4\x9F\xC5\xB8\xE2\x80\x9D\xC2\xA5" => '🔥',
+            "\xC4\x9F\xC5\xB8\xE2\x80\x9C\xC2\xA6" => '📦'
         ];
 
         return strtr($text, $replacements);
@@ -106,11 +112,8 @@ class TaskLifecycleService extends BaseModel
         }
 
         if ($parentId) {
-            $db = $GLOBALS['db'] ?? null;
-            if (!$db || empty($db->connect)) {
-                $db = new \Core\DataLayer();
-            }
-            $parentTags = (string)$db->single_query("SELECT tags FROM tasks WHERE id = ?", [$parentId]);
+            $taskModel = new \Modules\Board\Models\TaskModel();
+            $parentTags = $taskModel->getTaskTags($parentId);
             if (!empty($parentTags)) {
                 $pRawTags = array_map('trim', explode(',', mb_strtolower($parentTags)));
                 foreach ($pRawTags as $ptg) {
@@ -128,10 +131,14 @@ class TaskLifecycleService extends BaseModel
     /**
      * Antigravity Ajanı tarafından görevi tek hamlede İNCELEMEDE ('submitted') sütununa taşır.
      */
-    public static function submitTaskDirectly(int|string $taskIdOrCode, string $notes = 'Görev tamamlandı ve test edildi.'): array
+    public static function submitTaskDirectly(int|string $taskIdOrCode, string $notes = ''): array
     {
         $taskModel = new \Modules\Board\Models\TaskModel();
         $projectModel = new \Modules\Projects\Models\ProjectModel();
+
+        if ($notes === '') {
+            $notes = __('Board::task_completed_tested');
+        }
 
         try {
             $notes = self::fixUtf8Mojibake($notes);
@@ -202,7 +209,8 @@ class TaskLifecycleService extends BaseModel
             $taskModel->recordSubmission($taskId, 1, $notes, $attachmentUrl, $commitHash, $rollbackSql, $schemaDiffSummary);
 
             // 3. Aktivite kaydı
-            $taskModel->logActivity($taskId, 1, 'submitted', $oldStatus, 'submitted', "🤖 AI Agent görevi tamamladı ve İncelemede sütununa taşıdı: {$notes}");
+            $activityMsg = __('Board::activity_ai_submitted', ['notes' => $notes]);
+            $taskModel->logActivity($taskId, 1, 'submitted', $oldStatus, 'submitted', $activityMsg);
 
             // 4. Canlı SSE yayını
             SseBroadcaster::broadcast('task_submitted', $projectId, $taskId, 1, [
@@ -228,7 +236,7 @@ class TaskLifecycleService extends BaseModel
                 'task_id'   => $taskId,
                 'task_code' => $task->task_code,
                 'status'    => 'submitted',
-                'message'   => "Görev [{$task->task_code}] İNCELEMEDE sütununa taşındı. Şimdi başka hiçbir işlem yapmadan işlemin bittiğini özetle ve dur. Sıradaki görev 4 saniye içinde otomatik tetiklenecektir."
+                'message'   => __('Board::task_submitted_summary_msg', ['code' => $task->task_code])
             ];
         } catch (\Throwable $e) {
             error_log("submitTaskDirectly error: " . $e->getMessage());
@@ -241,41 +249,10 @@ class TaskLifecycleService extends BaseModel
      */
     public static function dispatchNextAiTaskIfAvailable(int $projectId, ?int $justFinishedTaskId = null): ?array
     {
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
+        $taskModel = new \Modules\Board\Models\TaskModel();
 
         try {
-            $inProgressSql = "
-                SELECT t.* FROM tasks t
-                LEFT JOIN tasks p ON t.parent_task_id = p.id
-                WHERE t.project_id = ? 
-                  AND t.status = 'in_progress'
-                  AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = t.id)
-                  AND (
-                      (
-                          LOWER(t.tags) LIKE '%ai%' 
-                          OR LOWER(t.tags) LIKE '%otonom%' 
-                          OR LOWER(t.tags) LIKE '%agent%'
-                          OR LOWER(t.tags) LIKE '%yapay zeka%'
-                          OR LOWER(t.tags) LIKE '%antigravity%'
-                      )
-                      OR (
-                          t.parent_task_id IS NOT NULL 
-                          AND (
-                              LOWER(p.tags) LIKE '%ai%' 
-                              OR LOWER(p.tags) LIKE '%otonom%' 
-                              OR LOWER(p.tags) LIKE '%agent%'
-                              OR LOWER(p.tags) LIKE '%yapay zeka%'
-                              OR LOWER(p.tags) LIKE '%antigravity%'
-                          )
-                      )
-                  )
-                ORDER BY t.id ASC
-                LIMIT 1
-            ";
-            $currentInProgress = $db->row_query($inProgressSql, [$projectId]);
+            $currentInProgress = $taskModel->getInProgressAiTask($projectId);
 
             if ($currentInProgress && (int)$currentInProgress->id !== $justFinishedTaskId) {
                 if (self::isAiTask($currentInProgress)) {
@@ -290,34 +267,7 @@ class TaskLifecycleService extends BaseModel
                 }
             }
 
-            $sql = "
-                SELECT t.* FROM tasks t
-                LEFT JOIN tasks p ON t.parent_task_id = p.id
-                WHERE t.project_id = ? 
-                  AND t.status = 'assigned'
-                  AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = t.id)
-                  AND (
-                      (
-                          LOWER(t.tags) LIKE '%ai%' 
-                          OR LOWER(t.tags) LIKE '%otonom%' 
-                          OR LOWER(t.tags) LIKE '%agent%'
-                          OR LOWER(t.tags) LIKE '%yapay zeka%'
-                          OR LOWER(t.tags) LIKE '%antigravity%'
-                      )
-                      OR (
-                          t.parent_task_id IS NOT NULL 
-                          AND (
-                              LOWER(p.tags) LIKE '%ai%' 
-                              OR LOWER(p.tags) LIKE '%otonom%' 
-                              OR LOWER(p.tags) LIKE '%agent%'
-                              OR LOWER(p.tags) LIKE '%yapay zeka%'
-                              OR LOWER(p.tags) LIKE '%antigravity%'
-                          )
-                      )
-                  )
-                ORDER BY t.parent_task_id ASC, t.id ASC
-            ";
-            $candidateTasks = $db->multi_record_query($sql, [$projectId]) ?: [];
+            $candidateTasks = $taskModel->getCandidateAiTasks($projectId);
 
             foreach ($candidateTasks as $candidate) {
                 if (!self::isAiTask($candidate)) {
@@ -327,13 +277,13 @@ class TaskLifecycleService extends BaseModel
                 $nextTask = $candidate;
                 $taskId = (int)$nextTask->id;
 
-                $db->exec_query("UPDATE tasks SET status = 'in_progress', updated_at = NOW() WHERE id = ?", [$taskId]);
+                $taskModel->updateTaskStatusAndTimestamp($taskId, 'in_progress');
 
                 if (!empty($nextTask->parent_task_id)) {
                     $parentId = (int)$nextTask->parent_task_id;
-                    $parentRow = $db->row_query("SELECT id, task_code, title, status FROM tasks WHERE id = ?", [$parentId]);
+                    $parentRow = $taskModel->getTaskParentRow($parentId);
                     if ($parentRow && $parentRow->status !== 'in_progress') {
-                        $db->exec_query("UPDATE tasks SET status = 'in_progress', updated_at = NOW() WHERE id = ?", [$parentId]);
+                        $taskModel->updateTaskStatusAndTimestamp($parentId, 'in_progress');
                         SseBroadcaster::broadcast('task_status_changed', $projectId, $parentId, 1, [
                             'task_id'    => $parentId,
                             'task_code'  => $parentRow->task_code,
@@ -345,10 +295,8 @@ class TaskLifecycleService extends BaseModel
                     }
                 }
 
-                $db->exec_query("
-                    INSERT INTO task_activities (task_id, user_id, action_type, old_value, new_value, comment, created_at)
-                    VALUES (?, 1, 'status_change', 'assigned', 'in_progress', '🤖 Otonom Yapay Zeka Kuyruk Yöneticisi sıradaki AI görevini başlattı.', NOW())
-                ", [$taskId]);
+                $activityNote = __('Board::autonomous_queue_started_task');
+                $taskModel->insertAutonomousActivity($taskId, $activityNote);
 
                 SseBroadcaster::broadcast('task_status_changed', $projectId, $taskId, 1, [
                     'task_id'    => $taskId,
@@ -382,13 +330,10 @@ class TaskLifecycleService extends BaseModel
      */
     public static function triggerTaskStartedWebhook(int $taskId, ?string $oldStatus = null, array $extra = []): array
     {
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
+        $taskModel = new \Modules\Board\Models\TaskModel();
 
         try {
-            $task = $db->row_query("SELECT * FROM tasks WHERE id = ?", [$taskId]);
+            $task = $taskModel->getTaskRowById($taskId);
             if (!$task) {
                 return ['sent' => false, 'reason' => 'Task not found'];
             }
@@ -399,20 +344,8 @@ class TaskLifecycleService extends BaseModel
                 return ['sent' => false, 'reason' => 'Not an AI task (human task - no ai tag)'];
             }
 
-            $checklists = $db->multi_record_query("
-                SELECT id, title, is_completed 
-                FROM task_checklists 
-                WHERE task_id = ? 
-                ORDER BY id ASC
-            ", [$taskId]) ?: [];
-
-            $assigneeRows = $db->multi_record_query("
-                SELECT u.name 
-                FROM task_assignees ta 
-                JOIN users u ON ta.user_id = u.id 
-                WHERE ta.task_id = ?
-            ", [$taskId]) ?: [];
-            $assignees = array_map(fn($a) => $a->name, $assigneeRows);
+            $checklists = $taskModel->getTaskChecklists($taskId);
+            $assignees = $taskModel->getTaskAssigneeNames($taskId);
 
             $isResumed = !empty($extra['resumed']);
             $taskTitle = $isResumed ? "🔄 [RESUMING TASK] " . $task->title : $task->title;
@@ -420,7 +353,7 @@ class TaskLifecycleService extends BaseModel
             $desc = $task->description ?: '(No description provided)';
 
             if (!empty($task->parent_task_id)) {
-                $parentTask = $db->row_query("SELECT task_code, title, description FROM tasks WHERE id = ?", [(int)$task->parent_task_id]);
+                $parentTask = $taskModel->getParentTaskContext((int)$task->parent_task_id);
                 if ($parentTask) {
                     $desc = "📌 **PARENT TASK ARCHITECTURAL CONTEXT:** [{$parentTask->task_code}] {$parentTask->title}\n"
                           . "📝 **Parent Task Overview:** " . ($parentTask->description ?: '-') . "\n\n"
@@ -432,12 +365,7 @@ class TaskLifecycleService extends BaseModel
                 $desc = "🔄 **Previous priority/revision task was completed! Resumed this pending task autonomously.**\n\n" . $desc;
             }
 
-            $attachmentRows = $db->multi_record_query("
-                SELECT id, file_name, file_path, file_type, file_size 
-                FROM task_attachments 
-                WHERE task_id = ? 
-                ORDER BY id ASC
-            ", [$taskId]) ?: [];
+            $attachmentRows = $taskModel->getTaskAttachments($taskId);
 
             $baseDir = dirname(__DIR__, 3);
             $apiCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
@@ -514,27 +442,18 @@ class TaskLifecycleService extends BaseModel
      */
     public static function triggerTaskRevisionWebhook(int $taskId, string $reason, array $extra = []): array
     {
-        $db = $GLOBALS['db'] ?? null;
-        if (!$db || empty($db->connect)) {
-            $db = new \Core\DataLayer();
-        }
+        $taskModel = new \Modules\Board\Models\TaskModel();
 
         try {
-            $task = $db->row_query("SELECT * FROM tasks WHERE id = ?", [$taskId]);
+            $task = $taskModel->getTaskRowById($taskId);
             if (!$task) return ['sent' => false];
 
             if (!self::isAiTask($task)) {
                 return ['sent' => false, 'reason' => 'Not an AI task (human task - no ai tag)'];
             }
 
-            $checklists = $db->multi_record_query("SELECT id, title, is_completed FROM task_checklists WHERE task_id = ? ORDER BY id ASC", [$taskId]) ?: [];
-
-            $attachmentRows = $db->multi_record_query("
-                SELECT id, file_name, file_path, file_type, file_size 
-                FROM task_attachments 
-                WHERE task_id = ? 
-                ORDER BY id ASC
-            ", [$taskId]) ?: [];
+            $checklists = $taskModel->getTaskChecklists($taskId);
+            $attachmentRows = $taskModel->getTaskAttachments($taskId);
 
             $baseDir = dirname(__DIR__, 3);
             $apiCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();

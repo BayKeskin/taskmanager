@@ -3304,3 +3304,430 @@ function sendStandupEmail() {
         .catch(err => alert((i18n.server_error || 'Sunucu hatası: ') + err.message));
 }
 
+// ==========================================================================
+// 8. UNOBTRUSIVE EVENT LISTENERS & DELEGATION (ZERO INLINE EVENT HANDLERS)
+// ==========================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Dinamik Renk / Background Attributelerini Uygula
+    function applyDynamicColors() {
+        document.querySelectorAll('[data-color]').forEach(el => {
+            const color = el.getAttribute('data-color');
+            if (color) {
+                if (el.classList.contains('cu-col-status-dot')) {
+                    el.style.backgroundColor = color;
+                } else if (el.classList.contains('cu-project-avatar-box')) {
+                    el.style.backgroundColor = color;
+                } else {
+                    el.style.color = color;
+                }
+            }
+        });
+
+        document.querySelectorAll('[data-bg]').forEach(el => {
+            const bg = el.getAttribute('data-bg');
+            if (bg) {
+                el.style.backgroundColor = bg;
+            }
+        });
+    }
+
+    applyDynamicColors();
+
+    // 2. Kanban Sürükle-Bırak Event Listenerlarını Bağla
+    const boardCardsContainers = document.querySelectorAll('.cu-board-cards');
+    boardCardsContainers.forEach(container => {
+        const colStatus = container.getAttribute('data-status');
+
+        container.addEventListener('dragover', function(e) {
+            handleDragOver(e);
+        });
+
+        container.addEventListener('dragleave', function(e) {
+            handleDragLeave(e);
+        });
+
+        container.addEventListener('drop', function(e) {
+            handleDrop(e, colStatus);
+        });
+    });
+
+    // 3. Kartlar Üzerindeki Drag & Click Listenerları
+    document.querySelectorAll('.cu-board-card').forEach(card => {
+        const taskId = card.getAttribute('data-task-id');
+        if (!taskId) return;
+
+        card.addEventListener('dragstart', function(e) {
+            handleDragStart(e, taskId);
+        });
+
+        card.addEventListener('dragend', function(e) {
+            handleDragEnd(e);
+        });
+
+        card.addEventListener('click', function(e) {
+            if (e.target.closest('.cu-client-actions-bar') || e.target.closest('button')) {
+                return;
+            }
+            if (typeof openTaskDrawer === 'function') {
+                openTaskDrawer(taskId);
+            }
+        });
+    });
+
+    // 4. Modal Kapatma Attribute Delegasyonu ([data-close-modal])
+    document.addEventListener('click', function(e) {
+        const closeBtn = e.target.closest('[data-close-modal]');
+        if (closeBtn) {
+            const modalId = closeBtn.getAttribute('data-close-modal');
+            if (modalId && typeof closeModal === 'function') {
+                closeModal(modalId);
+            }
+        }
+    });
+
+    // Modal Arkaplanına Tıklayınca Kapatma (Overlay Click)
+    document.querySelectorAll('.cu-modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay && typeof closeModal === 'function') {
+                closeModal(overlay.id);
+            }
+        });
+    });
+
+    // 5. Araçlar (Tools) Menüsü Tetikleyicisi
+    const btnKanbanTools = document.getElementById('btnKanbanTools');
+    const kanbanToolsMenu = document.getElementById('kanbanToolsMenu');
+    if (btnKanbanTools && kanbanToolsMenu) {
+        btnKanbanTools.addEventListener('click', function(e) {
+            e.stopPropagation();
+            kanbanToolsMenu.classList.toggle('active');
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!kanbanToolsMenu.contains(e.target) && e.target !== btnKanbanTools) {
+                kanbanToolsMenu.classList.remove('active');
+            }
+        });
+    }
+
+    // 6. Tools Menüsü Altındaki Butonlar
+    const btnDownloadDeliveryPdf = document.getElementById('btnDownloadDeliveryPdf');
+    if (btnDownloadDeliveryPdf) {
+        btnDownloadDeliveryPdf.addEventListener('click', function() {
+            if (kanbanToolsMenu) kanbanToolsMenu.classList.remove('active');
+            const pId = this.getAttribute('data-project-id') || 0;
+            if (typeof downloadDeliveryReportPdf === 'function') {
+                downloadDeliveryReportPdf(pId);
+            }
+        });
+    }
+
+    const btnOpenAiStandupModal = document.getElementById('btnOpenAiStandupModal');
+    if (btnOpenAiStandupModal) {
+        btnOpenAiStandupModal.addEventListener('click', function() {
+            if (kanbanToolsMenu) kanbanToolsMenu.classList.remove('active');
+            if (typeof openAiStandupModal === 'function') {
+                openAiStandupModal();
+            }
+        });
+    }
+
+    const btnOpenGithubSettings = document.getElementById('btnOpenGithubSettings');
+    if (btnOpenGithubSettings) {
+        btnOpenGithubSettings.addEventListener('click', function() {
+            if (kanbanToolsMenu) kanbanToolsMenu.classList.remove('active');
+            if (typeof openGithubSettingsModal === 'function') {
+                openGithubSettingsModal();
+            }
+        });
+    }
+
+    const btnSyncGithub = document.getElementById('btnSyncGithub');
+    if (btnSyncGithub) {
+        btnSyncGithub.addEventListener('click', function() {
+            if (kanbanToolsMenu) kanbanToolsMenu.classList.remove('active');
+            const pId = this.getAttribute('data-project-id') || 0;
+            if (typeof syncProjectToGithub === 'function') {
+                syncProjectToGithub(pId);
+            }
+        });
+    }
+
+    const btnOpenDeployWizard = document.getElementById('btnOpenDeployWizard');
+    if (btnOpenDeployWizard) {
+        btnOpenDeployWizard.addEventListener('click', function() {
+            if (kanbanToolsMenu) kanbanToolsMenu.classList.remove('active');
+            const pId = this.getAttribute('data-project-id') || 0;
+            if (typeof openDeployWizard === 'function') {
+                openDeployWizard(pId);
+            }
+        });
+    }
+
+    const btnOpenProjectMcp = document.getElementById('btnOpenProjectMcp');
+    if (btnOpenProjectMcp) {
+        btnOpenProjectMcp.addEventListener('click', function() {
+            if (kanbanToolsMenu) kanbanToolsMenu.classList.remove('active');
+            const pId = this.getAttribute('data-project-id') || 0;
+            if (typeof openProjectMcpModal === 'function') {
+                openProjectMcpModal(pId);
+            }
+        });
+    }
+
+    // 7. Üst Başlık Butonları (Yeni Görev & AI Mimar)
+    const btnOpenNewTaskModal = document.getElementById('btnOpenNewTaskModal');
+    if (btnOpenNewTaskModal) {
+        btnOpenNewTaskModal.addEventListener('click', function() {
+            if (typeof openNewTaskModal === 'function') {
+                openNewTaskModal();
+            }
+        });
+    }
+
+    const btnMobileQuickTask = document.getElementById('btnMobileQuickTask');
+    if (btnMobileQuickTask) {
+        btnMobileQuickTask.addEventListener('click', function() {
+            if (typeof openNewTaskModal === 'function') {
+                openNewTaskModal();
+            }
+        });
+    }
+
+    const btnOpenAiArchitectModal = document.getElementById('btnOpenAiArchitectModal');
+    if (btnOpenAiArchitectModal) {
+        btnOpenAiArchitectModal.addEventListener('click', function() {
+            if (typeof openAiArchitectModal === 'function') {
+                openAiArchitectModal();
+            }
+        });
+    }
+
+    // 8. Proje Yönetim Butonları (Geri Yükle, Sil, Arşive Taşı)
+    const btnRestoreProj = document.querySelector('.cu-btn-restore-project');
+    if (btnRestoreProj) {
+        btnRestoreProj.addEventListener('click', function() {
+            const pId = this.getAttribute('data-project-id');
+            if (pId && typeof toggleProjectStatus === 'function') {
+                toggleProjectStatus(pId, 'active');
+            }
+        });
+    }
+
+    const btnDeleteProj = document.querySelector('.cu-btn-delete-project');
+    if (btnDeleteProj) {
+        btnDeleteProj.addEventListener('click', function() {
+            const pId = this.getAttribute('data-project-id');
+            if (pId && typeof deleteProjectPermanently === 'function') {
+                deleteProjectPermanently(pId);
+            }
+        });
+    }
+
+    const btnArchiveProj = document.querySelector('.cu-btn-archive-project');
+    if (btnArchiveProj) {
+        btnArchiveProj.addEventListener('click', function() {
+            const pId = this.getAttribute('data-project-id');
+            if (pId && typeof toggleProjectStatus === 'function') {
+                toggleProjectStatus(pId, 'completed');
+            }
+        });
+    }
+
+    // 9. Kolon Akordeon Başlığı (Mobilde Daraltma/Genişletme)
+    document.querySelectorAll('.cu-col-toggle-header').forEach(header => {
+        header.addEventListener('click', function() {
+            if (typeof toggleColAccordion === 'function') {
+                toggleColAccordion(this);
+            }
+        });
+    });
+
+    // 10. Müşteri Portalı Onay ve Düzeltme Butonları
+    document.addEventListener('click', function(e) {
+        const approveBtn = e.target.closest('.cu-btn-client-approve');
+        if (approveBtn) {
+            e.stopPropagation();
+            const taskId = approveBtn.getAttribute('data-task-id');
+            if (taskId && typeof clientApproveTask === 'function') {
+                clientApproveTask(taskId);
+            }
+        }
+
+        const modBtn = e.target.closest('.cu-btn-client-mod');
+        if (modBtn) {
+            e.stopPropagation();
+            const taskId = modBtn.getAttribute('data-task-id');
+            if (taskId && typeof clientRequestChanges === 'function') {
+                clientRequestChanges(taskId);
+            }
+        }
+    });
+
+    // 11. Modal Form Submit Olayları
+    const formNewTask = document.getElementById('formNewTask');
+    if (formNewTask) {
+        formNewTask.addEventListener('submit', function(e) {
+            if (typeof handleCreateTask === 'function') {
+                handleCreateTask(e);
+            }
+        });
+    }
+
+    const formRequestMod = document.getElementById('formRequestMod');
+    if (formRequestMod) {
+        formRequestMod.addEventListener('submit', function(e) {
+            if (typeof handleRequestMod === 'function') {
+                handleRequestMod(e);
+            }
+        });
+    }
+
+    const formSubmitTask = document.getElementById('formSubmitTask');
+    if (formSubmitTask) {
+        formSubmitTask.addEventListener('submit', function(e) {
+            if (typeof handleSubmitTask === 'function') {
+                handleSubmitTask(e);
+            }
+        });
+    }
+
+    // 12. Submit Task Modal Dropzone & Önizleme
+    const submitTaskDropzone = document.getElementById('submitTaskDropzone');
+    const submitTaskFileInput = document.getElementById('submitTaskFileInput');
+    if (submitTaskDropzone && submitTaskFileInput) {
+        submitTaskDropzone.addEventListener('click', function(e) {
+            if (!e.target.closest('#btnClearSubmitTaskFile')) {
+                submitTaskFileInput.click();
+            }
+        });
+
+        submitTaskDropzone.addEventListener('dragover', function(e) {
+            if (typeof handleSubmitDropzoneOver === 'function') handleSubmitDropzoneOver(e);
+        });
+
+        submitTaskDropzone.addEventListener('dragleave', function(e) {
+            if (typeof handleSubmitDropzoneLeave === 'function') handleSubmitDropzoneLeave(e);
+        });
+
+        submitTaskDropzone.addEventListener('drop', function(e) {
+            if (typeof handleSubmitDropzoneDrop === 'function') handleSubmitDropzoneDrop(e);
+        });
+
+        submitTaskFileInput.addEventListener('change', function() {
+            if (typeof handleSubmitFileSelect === 'function') handleSubmitFileSelect(this);
+        });
+
+        const btnClearSubmitTaskFile = document.getElementById('btnClearSubmitTaskFile');
+        if (btnClearSubmitTaskFile) {
+            btnClearSubmitTaskFile.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (typeof clearSubmitTaskFile === 'function') clearSubmitTaskFile(e);
+            });
+        }
+    }
+
+    // 13. New Task Modal Dropzone
+    const modalNewTaskDropzone = document.getElementById('modalNewTaskDropzone');
+    const modalNewTaskFileInput = document.getElementById('modalNewTaskFileInput');
+    if (modalNewTaskDropzone && modalNewTaskFileInput) {
+        modalNewTaskDropzone.addEventListener('click', function() {
+            modalNewTaskFileInput.click();
+        });
+
+        modalNewTaskDropzone.addEventListener('dragover', function(e) {
+            if (typeof handleModalNewTaskDragOver === 'function') handleModalNewTaskDragOver(e);
+        });
+
+        modalNewTaskDropzone.addEventListener('dragleave', function(e) {
+            if (typeof handleModalNewTaskDragLeave === 'function') handleModalNewTaskDragLeave(e);
+        });
+
+        modalNewTaskDropzone.addEventListener('drop', function(e) {
+            if (typeof handleModalNewTaskDrop === 'function') handleModalNewTaskDrop(e);
+        });
+
+        modalNewTaskFileInput.addEventListener('change', function() {
+            if (typeof handleModalNewTaskFiles === 'function') handleModalNewTaskFiles(this.files);
+        });
+    }
+
+    // 14. New Task Modal AI Architect Paneli & Hızlı Etiketler
+    const btnToggleAiArchitectPanel = document.getElementById('btnToggleAiArchitectPanel');
+    if (btnToggleAiArchitectPanel) {
+        btnToggleAiArchitectPanel.addEventListener('click', function() {
+            if (typeof toggleAiArchitectPanel === 'function') toggleAiArchitectPanel();
+        });
+    }
+
+    const aiArchitectDropzone = document.getElementById('aiArchitectDropzone');
+    const aiArchitectFileInput = document.getElementById('aiArchitectFileInput');
+    if (aiArchitectDropzone && aiArchitectFileInput) {
+        aiArchitectDropzone.addEventListener('click', function() {
+            aiArchitectFileInput.click();
+        });
+
+        aiArchitectDropzone.addEventListener('dragover', function(e) {
+            if (typeof handleAiArchitectDragOver === 'function') handleAiArchitectDragOver(e);
+        });
+
+        aiArchitectDropzone.addEventListener('dragleave', function(e) {
+            if (typeof handleAiArchitectDragLeave === 'function') handleAiArchitectDragLeave(e);
+        });
+
+        aiArchitectDropzone.addEventListener('drop', function(e) {
+            if (typeof handleAiArchitectDrop === 'function') handleAiArchitectDrop(e);
+        });
+
+        aiArchitectFileInput.addEventListener('change', function() {
+            if (typeof handleAiArchitectFiles === 'function') handleAiArchitectFiles(this.files);
+        });
+    }
+
+    const btnRunAiArchitect = document.getElementById('btnRunAiArchitect');
+    if (btnRunAiArchitect) {
+        btnRunAiArchitect.addEventListener('click', function() {
+            if (typeof runAiArchitect === 'function') runAiArchitect();
+        });
+    }
+
+    const btnToggleAiTag = document.getElementById('btnToggleAiTag');
+    if (btnToggleAiTag) {
+        btnToggleAiTag.addEventListener('click', function() {
+            if (typeof toggleNewTaskAiTag === 'function') toggleNewTaskAiTag();
+        });
+    }
+
+    document.querySelectorAll('[data-quick-tag]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tag = this.getAttribute('data-quick-tag');
+            if (tag && typeof appendTagToModal === 'function') {
+                appendTagToModal(tag);
+            }
+        });
+    });
+
+    // 15. Assignee Arama Inputu (@ mention)
+    const modalAssigneeInput = document.getElementById('modalAssigneeInput');
+    if (modalAssigneeInput) {
+        ['click', 'input', 'focus'].forEach(evName => {
+            modalAssigneeInput.addEventListener(evName, function() {
+                if (typeof handleModalAssigneeSearch === 'function') {
+                    handleModalAssigneeSearch(this.value);
+                }
+            });
+        });
+    }
+
+    // 16. AI Standup Modal E-Posta Butonu
+    const btnSendStandupEmail = document.getElementById('btnSendStandupEmail');
+    if (btnSendStandupEmail) {
+        btnSendStandupEmail.addEventListener('click', function() {
+            if (typeof sendStandupEmail === 'function') {
+                sendStandupEmail();
+            }
+        });
+    }
+});
+
+

@@ -53,7 +53,7 @@ return array (
   'sort_priority_desc' => '🚩 Priorität (Höchste)',
   'sort_title_asc' => '🔤 Titel (A-Z)',
   'btn_reset_filters' => '✕ Zurücksetzen',
-  'total_tasks_count' => 'Insgesamt <strong id="cuVisibleTaskCount" style="color:var(--brand-primary);">:count</strong> Aufgaben',
+  'total_tasks_count' => 'Insgesamt <strong id="cuVisibleTaskCount" class="cu-task-count-accent">:count</strong> Aufgaben',
   'drawer_workspace' => 'Arbeitsbereich',
   'drawer_project_fallback' => 'Projekt',
   'drawer_btn_delete_task' => 'Aufgabe löschen',

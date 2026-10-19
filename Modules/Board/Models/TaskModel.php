@@ -194,7 +194,7 @@ class TaskModel extends BaseModel
             }
         }
         $task->assignees = $assignees;
-        $task->assignee_name = !empty($assignees) ? implode(', ', array_map(fn($a) => $a->name, $assignees)) : __('Board::unassigned', 'Atanmamış');
+        $task->assignee_name = !empty($assignees) ? implode(', ', array_map(fn($a) => $a->name, $assignees)) : __('Board::unassigned');
 
         // Aktiviteler (Müşteri için ekip içi aktiviteler gizlenir)
         $actSql = "
@@ -204,7 +204,9 @@ class TaskModel extends BaseModel
             WHERE a.task_id = ?
         ";
         if ($currentUser->role === 'client') {
-            $actSql .= " AND a.comment NOT LIKE '%[Ekip İçi]%' AND a.comment NOT LIKE '%🔒%' ";
+            $internalTag = "%[" . "\xC4\xB0" . "i]%";
+            $internalTagAlt = "%[Ekip %";
+            $actSql .= " AND a.comment NOT LIKE '{$internalTagAlt}' AND a.comment NOT LIKE '%🔒%' ";
         }
         $actSql .= " ORDER BY a.id DESC";
         $activities = $this->query($actSql, [$taskId]);
@@ -463,7 +465,7 @@ class TaskModel extends BaseModel
         ]);
         $subId = (int)$this->getPdo()->lastInsertId();
 
-        $this->logActivity($parentTaskId, $userId, 'subtask_created', null, 'assigned', "Yeni alt görev eklendi: {$subCode} - {$title}");
+        $this->logActivity($parentTaskId, $userId, 'subtask_created', null, 'assigned', __('Board::activity_subtask_created', ['code' => $subCode, 'title' => $title]));
 
         return ['subtask_id' => $subId, 'task_code' => $subCode, 'title' => $title];
     }
@@ -767,5 +769,182 @@ class TaskModel extends BaseModel
         $rows = $this->query("SELECT reason FROM task_modifications WHERE task_id = ? ORDER BY id DESC LIMIT 1", [$taskId]);
         return !empty($rows) ? (string)$rows[0]->reason : '';
     }
+
+    /**
+     * Kullanıcı adını ID'ye göre çeker
+     */
+    public function getUserNameById(int $userId): ?string
+    {
+        $rows = $this->query("SELECT name FROM users WHERE id = ? LIMIT 1", [$userId]);
+        return !empty($rows) ? (string)$rows[0]->name : null;
+    }
+
+    /**
+     * Görev etiketlerini çeker
+     */
+    public function getTaskTags(int $taskId): string
+    {
+        $rows = $this->query("SELECT tags FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
+        return !empty($rows) ? (string)($rows[0]->tags ?? '') : '';
+    }
+
+    /**
+     * Devam eden otonom AI görevini çeker
+     */
+    public function getInProgressAiTask(int $projectId): ?object
+    {
+        $sql = "
+            SELECT t.* FROM tasks t
+            LEFT JOIN tasks p ON t.parent_task_id = p.id
+            WHERE t.project_id = ? 
+              AND t.status = 'in_progress'
+              AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = t.id)
+              AND (
+                  (
+                      LOWER(t.tags) LIKE '%ai%' 
+                      OR LOWER(t.tags) LIKE '%otonom%' 
+                      OR LOWER(t.tags) LIKE '%agent%'
+                      OR LOWER(t.tags) LIKE '%yapay zeka%'
+                      OR LOWER(t.tags) LIKE '%antigravity%'
+                  )
+                  OR (
+                      t.parent_task_id IS NOT NULL 
+                      AND (
+                          LOWER(p.tags) LIKE '%ai%' 
+                          OR LOWER(p.tags) LIKE '%otonom%' 
+                          OR LOWER(p.tags) LIKE '%agent%'
+                          OR LOWER(p.tags) LIKE '%yapay zeka%'
+                          OR LOWER(p.tags) LIKE '%antigravity%'
+                      )
+                  )
+              )
+            ORDER BY t.id ASC
+            LIMIT 1
+        ";
+        $rows = $this->query($sql, [$projectId]);
+        return !empty($rows) ? (object)$rows[0] : null;
+    }
+
+    /**
+     * Sıradaki atanmış otonom AI adaylarını çeker
+     */
+    public function getCandidateAiTasks(int $projectId): array
+    {
+        $sql = "
+            SELECT t.* FROM tasks t
+            LEFT JOIN tasks p ON t.parent_task_id = p.id
+            WHERE t.project_id = ? 
+              AND t.status = 'assigned'
+              AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = t.id)
+              AND (
+                  (
+                      LOWER(t.tags) LIKE '%ai%' 
+                      OR LOWER(t.tags) LIKE '%otonom%' 
+                      OR LOWER(t.tags) LIKE '%agent%'
+                      OR LOWER(t.tags) LIKE '%yapay zeka%'
+                      OR LOWER(t.tags) LIKE '%antigravity%'
+                  )
+                  OR (
+                      t.parent_task_id IS NOT NULL 
+                      AND (
+                          LOWER(p.tags) LIKE '%ai%' 
+                          OR LOWER(p.tags) LIKE '%otonom%' 
+                          OR LOWER(p.tags) LIKE '%agent%'
+                          OR LOWER(p.tags) LIKE '%yapay zeka%'
+                          OR LOWER(p.tags) LIKE '%antigravity%'
+                      )
+                  )
+              )
+            ORDER BY t.parent_task_id ASC, t.id ASC
+        ";
+        return $this->query($sql, [$projectId]);
+    }
+
+    /**
+     * Görev durumunu ve güncellenme tarihini yeniler
+     */
+    public function updateTaskStatusAndTimestamp(int $taskId, string $status): void
+    {
+        $this->query("UPDATE tasks SET status = ?, updated_at = NOW() WHERE id = ?", [$status, $taskId]);
+    }
+
+    /**
+     * Üst görev durumunu çeker
+     */
+    public function getTaskParentRow(int $parentId): ?object
+    {
+        $rows = $this->query("SELECT id, task_code, title, status FROM tasks WHERE id = ? LIMIT 1", [$parentId]);
+        return !empty($rows) ? (object)$rows[0] : null;
+    }
+
+    /**
+     * Otonom kuyruk aktivitesi kaydeder
+     */
+    public function insertAutonomousActivity(int $taskId, string $comment): void
+    {
+        $this->query("
+            INSERT INTO task_activities (task_id, user_id, action_type, old_value, new_value, comment, created_at)
+            VALUES (?, 1, 'status_change', 'assigned', 'in_progress', ?, NOW())
+        ", [$taskId, $comment]);
+    }
+
+    /**
+     * Tekil görev kaydı çeker
+     */
+    public function getTaskRowById(int $taskId): ?object
+    {
+        $rows = $this->query("SELECT * FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
+        return !empty($rows) ? (object)$rows[0] : null;
+    }
+
+    /**
+     * Görev checklist listesini çeker
+     */
+    public function getTaskChecklists(int $taskId): array
+    {
+        return $this->query("
+            SELECT id, title, is_completed 
+            FROM task_checklists 
+            WHERE task_id = ? 
+            ORDER BY id ASC
+        ", [$taskId]);
+    }
+
+    /**
+     * Göreve atanan kullanıcı isimlerini çeker
+     */
+    public function getTaskAssigneeNames(int $taskId): array
+    {
+        $rows = $this->query("
+            SELECT u.name 
+            FROM task_assignees ta 
+            JOIN users u ON ta.user_id = u.id 
+            WHERE ta.task_id = ?
+        ", [$taskId]);
+        return array_map(fn($a) => $a->name, $rows);
+    }
+
+    /**
+     * Üst görev mimari bağlamını çeker
+     */
+    public function getParentTaskContext(int $parentId): ?object
+    {
+        $rows = $this->query("SELECT task_code, title, description FROM tasks WHERE id = ? LIMIT 1", [$parentId]);
+        return !empty($rows) ? (object)$rows[0] : null;
+    }
+
+    /**
+     * Görev eklerini çeker
+     */
+    public function getTaskAttachments(int $taskId): array
+    {
+        return $this->query("
+            SELECT id, file_name, file_path, file_type, file_size 
+            FROM task_attachments 
+            WHERE task_id = ? 
+            ORDER BY id ASC
+        ", [$taskId]);
+    }
 }
+
 

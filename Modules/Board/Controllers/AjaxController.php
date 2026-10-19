@@ -9,7 +9,7 @@ Language::init();
 $taskModel = new \Modules\Board\Models\TaskModel();
 
 $action = $_GET['action'] ?? ($_POST['action'] ?? '');
-$currentUser = $_SESSION['user'] ?? (object)['id' => 1, 'name' => 'Ahmet Yılmaz', 'role' => 'admin'];
+$currentUser = $_SESSION['user'] ?? (object)['id' => 1, 'name' => 'Admin User', 'role' => 'admin'];
 
 // 🚀 HMVC MODÜLER AJAX YÖNLENDİRİCİSİ (Core\AjaxRouter)
 // Eğer gelen eylem (action) Projects, Team, Settings, Docs, Chat, Mcp, LiveDeploy vb. bir modüle aitse
@@ -90,10 +90,10 @@ switch ($action) {
 
         $today = date('Y-m-d');
         $prLabels = [
-            'urgent' => __('Board::priority_urgent_badge', '🔴 Acil'),
-            'high'   => __('Board::priority_high_badge', '🟡 Yüksek'),
-            'normal' => __('Board::priority_normal_badge', '🔵 Normal'),
-            'low'    => __('Board::priority_low_badge', '⚪ Düşük')
+            'urgent' => __('Board::priority_urgent_badge'),
+            'high'   => __('Board::priority_high_badge'),
+            'normal' => __('Board::priority_normal_badge'),
+            'low'    => __('Board::priority_low_badge')
         ];
         $isOverdue = (!empty($task->deadline) && $task->deadline < $today && $task->status !== 'completed');
         $isAiTask = \Modules\Board\Services\TaskLifecycleService::isAiTask($task);
@@ -110,14 +110,11 @@ switch ($action) {
              data-priority="<?= $task->priority ?>"
              data-assignee-ids="<?= $assigneeIdsStr ?>"
              data-assignee-id="<?= $task->assigned_to ?>"
-             data-deadline="<?= $task->deadline ?: '9999-12-31' ?>"
-             ondragstart="handleDragStart(event, <?= $task->id ?>)"
-             ondragend="handleDragEnd(event)"
-             onclick="openTaskDrawer(<?= $task->id ?>)">
-            <div style="display:flex; align-items:center; justify-content:space-between;">
+             data-deadline="<?= $task->deadline ?: '9999-12-31' ?>">
+            <div class="cu-card-header-flex">
                 <span class="cu-task-code"><?= htmlspecialchars($task->task_code) ?></span>
-                <span class="cu-badge-project" style="color:<?= htmlspecialchars($task->project_color ?? '#7B68EE') ?>;">
-                    <?= htmlspecialchars($task->project_title ?? 'Proje') ?>
+                <span class="cu-badge-project cu-project-badge-color" data-color="<?= htmlspecialchars($task->project_color ?? '#7B68EE') ?>">
+                    <?= htmlspecialchars($task->project_title ?? __('Board::drawer_project_fallback')) ?>
                 </span>
             </div>
 
@@ -125,33 +122,33 @@ switch ($action) {
                 <?= htmlspecialchars($task->title) ?>
             </div>
 
-            <div style="margin: 6px 0; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                <span class="cu-priority-badge cu-priority-<?= $task->priority ?>" style="font-size:10.5px; padding:2px 6px;">
+            <div class="cu-card-badges-wrap">
+                <span class="cu-priority-badge cu-priority-<?= $task->priority ?> cu-priority-pill">
                     <?= $prLabels[$task->priority] ?? $task->priority ?>
                 </span>
                 <?php if ($isAiTask): ?>
-                    <span style="font-size:10px; padding:1px 6px; border-radius:4px; background:rgba(155, 93, 229, 0.2); border:1px solid rgba(155, 93, 229, 0.45); color:#d8b4fe; font-weight:700; display:inline-flex; align-items:center; gap:3px;" title="🤖 Otonom Kuyruk">
-                        <span>🤖</span><span>AI Otonom</span>
+                    <span class="cu-ai-queue-badge" title="<?= htmlspecialchars(__('Board::ai_autonomous_badge')) ?>">
+                        <span>🤖</span><span><?= __('Board::ai_autonomous_badge') ?></span>
                     </span>
                 <?php endif; ?>
             </div>
 
             <div class="cu-board-card-footer">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div class="cu-deadline <?= $isOverdue ? 'overdue' : '' ?>" style="font-size:11px;">
+                <div class="cu-card-footer-meta">
+                    <div class="cu-deadline <?= $isOverdue ? 'overdue' : '' ?> cu-deadline-font">
                         <span><?= $isOverdue ? '⚠️ ' : '📅 ' ?></span>
-                        <span><?= htmlspecialchars($task->deadline ?: __('Board::none', 'Yok')) ?></span>
+                        <span><?= htmlspecialchars($task->deadline ?: __('Board::none')) ?></span>
                     </div>
                     <?php if ($attCount > 0): ?>
-                        <span style="font-size:10.5px; color:var(--text-muted); display:inline-flex; align-items:center; gap:2px; font-weight:600;" title="<?= $attCount ?> adet resim/ek dosya">
+                        <span class="cu-card-attachment-badge" title="<?= $attCount ?>">
                             <span>📎</span><span><?= $attCount ?></span>
                         </span>
                     <?php endif; ?>
                 </div>
 
-                <div class="cu-card-avatars" style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                <div class="cu-card-avatars cu-avatars-wrap">
                     <?php foreach ($assignees as $asg): ?>
-                        <div class="cu-avatar" style="width:22px; height:22px; font-size:10px; background:<?= htmlspecialchars($asg->avatar_color ?? '#7B68EE') ?>;" title="<?= htmlspecialchars($asg->name ?? '') ?>">
+                        <div class="cu-avatar cu-avatar-sm" data-bg="<?= htmlspecialchars($asg->avatar_color ?? '#7B68EE') ?>" title="<?= htmlspecialchars($asg->name ?? '') ?>">
                             <?= mb_substr($asg->name ?? 'U', 0, 1) ?>
                         </div>
                     <?php endforeach; ?>
@@ -174,21 +171,20 @@ switch ($action) {
                  data-priority="<?= $task->priority ?>"
                  data-assignee-ids="<?= $assigneeIdsStr ?>"
                  data-assignee-id="<?= $task->assigned_to ?>"
-                 data-deadline="<?= $task->deadline ?: '9999-12-31' ?>"
-                 onclick="openTaskDrawer(<?= $task->id ?>)">
+                 data-deadline="<?= $task->deadline ?: '9999-12-31' ?>">
                 
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <span style="display:inline-block; width:15px;"></span>
+                <div class="cu-task-code-wrapper">
+                    <span class="cu-row-spacer"></span>
                     <div class="cu-task-code"><?= htmlspecialchars($task->task_code) ?></div>
                 </div>
 
                 <div class="cu-task-title">
-                    <span class="cu-badge-project" style="color:<?= htmlspecialchars($task->project_color ?? '#7B68EE') ?>; margin-right:6px;">
-                        <?= htmlspecialchars($task->project_title ?? __('Board::drawer_project_fallback', 'Proje')) ?>
+                    <span class="cu-badge-project cu-project-badge-color cu-project-badge-spacing" data-color="<?= htmlspecialchars($task->project_color ?? '#7B68EE') ?>">
+                        <?= htmlspecialchars($task->project_title ?? __('Board::drawer_project_fallback')) ?>
                     </span>
                     <?= htmlspecialchars($task->title) ?>
                     <?php if ($isAiTask): ?>
-                        <span style="font-size:10px; padding:1px 6px; border-radius:4px; background:rgba(155, 93, 229, 0.2); border:1px solid rgba(155, 93, 229, 0.45); color:#d8b4fe; font-weight:700; margin-left:6px;">
+                        <span class="cu-ai-pill-badge">
                             🤖 AI
                         </span>
                     <?php endif; ?>
@@ -202,12 +198,12 @@ switch ($action) {
 
                 <div class="cu-deadline <?= $isOverdue ? 'overdue' : '' ?>">
                     <span><?= $isOverdue ? '⚠️ ' : '📅 ' ?></span>
-                    <span><?= htmlspecialchars($task->deadline ?: __('Board::none', 'Yok')) ?></span>
+                    <span><?= htmlspecialchars($task->deadline ?: __('Board::none')) ?></span>
                 </div>
 
-                <div class="cu-task-assignee" style="display:flex; align-items:center; gap:4px; max-width:140px; overflow:hidden;">
+                <div class="cu-task-assignee cu-task-assignee-list">
                     <?php foreach ($assignees as $asg): ?>
-                        <div class="cu-avatar" style="width:22px; height:22px; font-size:10px; background:<?= htmlspecialchars($asg->avatar_color ?? '#7B68EE') ?>; flex-shrink:0;" title="<?= htmlspecialchars($asg->name ?? '') ?>">
+                        <div class="cu-avatar cu-avatar-sm" data-bg="<?= htmlspecialchars($asg->avatar_color ?? '#7B68EE') ?>" title="<?= htmlspecialchars($asg->name ?? '') ?>">
                             <?= mb_substr($asg->name ?? 'U', 0, 1) ?>
                         </div>
                     <?php endforeach; ?>
@@ -285,7 +281,7 @@ switch ($action) {
 
         if ($newTaskId > 0) {
             $taskModel->addAssignees($newTaskId, $assignedIds);
-            $taskModel->logActivity($newTaskId, $currentUser->id, 'created', null, 'assigned', "Görev oluşturuldu ve çalışanlara atandı.");
+            $taskModel->logActivity($newTaskId, $currentUser->id, 'created', null, 'assigned', __('Board::activity_task_created'));
 
             // Ek dosyalar
             if (!empty($_FILES['attachments'])) {
@@ -356,7 +352,7 @@ switch ($action) {
                     $otherRunning = $taskModel->getRunningAiTasks((int)$task->project_id, $taskId);
                     foreach ($otherRunning as $other) {
                         $taskModel->updateTaskStatus((int)$other->id, 'assigned');
-                        $taskModel->logActivity((int)$other->id, $currentUser->id, 'status_change', 'in_progress', 'assigned', "⏸️ Araya [{$task->task_code}] AI görevi kabul edildiği için bu görev duraklatıldı.");
+                        $taskModel->logActivity((int)$other->id, $currentUser->id, 'status_change', 'in_progress', 'assigned', __('Board::activity_ai_task_paused', ['code' => $task->task_code]));
                         \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, (int)$other->id, (int)$currentUser->id, [
                             'task_id'    => (int)$other->id,
                             'task_code'  => $other->task_code,
@@ -367,7 +363,7 @@ switch ($action) {
                 }
 
                 $taskModel->updateTaskStatus($taskId, 'in_progress');
-                $taskModel->logActivity($taskId, $currentUser->id, 'accepted', 'assigned', 'in_progress', "{$currentUser->name} görevi kabul etti ve çalışmaya başladı.");
+                $taskModel->logActivity($taskId, $currentUser->id, 'accepted', 'assigned', 'in_progress', __('Board::activity_user_accepted', ['user' => $currentUser->name]));
 
                 if (\Modules\Board\Services\TaskLifecycleService::isAiTask($task)) {
                     \Modules\Board\Services\TaskLifecycleService::triggerTaskStartedWebhook($taskId, 'assigned', ['triggered_by' => $currentUser->name]);
@@ -395,7 +391,7 @@ switch ($action) {
 
                 $taskModel->updateTaskStatus($taskId, 'modification_requested');
                 $taskModel->addModificationRequest($taskId, $currentUser->id, $reason);
-                $taskModel->logActivity($taskId, $currentUser->id, 'modification_requested', $task->status, 'modification_requested', "{$currentUser->name} revizyon talep etti: \"{$reason}\"");
+                $taskModel->logActivity($taskId, $currentUser->id, 'modification_requested', $task->status, 'modification_requested', __('Board::activity_mod_requested', ['user' => $currentUser->name, 'reason' => $reason]));
 
                 \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
                     'task_id'     => $taskId,
@@ -419,7 +415,7 @@ switch ($action) {
 
                 $taskModel->updateTaskStatus($taskId, 'assigned');
                 $taskModel->resolveModification($taskId);
-                $taskModel->logActivity($taskId, $currentUser->id, 'modification_resolved', 'modification_requested', 'assigned', "Yönetici {$currentUser->name} revizyonu inceledi ve görevi güncelleyerek tekrar atadı.");
+                $taskModel->logActivity($taskId, $currentUser->id, 'modification_resolved', 'modification_requested', 'assigned', __('Board::activity_mod_resolved', ['user' => $currentUser->name]));
 
                 jsonResponse(true, __('Board::revision_resolved_success'));
                 break;
@@ -445,7 +441,7 @@ switch ($action) {
 
                 $taskModel->updateTaskStatus($taskId, 'submitted');
                 $taskModel->addSubmission($taskId, $currentUser->id, $notes, $attachmentUrl);
-                $taskModel->logActivity($taskId, $currentUser->id, 'submitted', $task->status, 'submitted', "{$currentUser->name} görevi tamamladı ve incelemeye sundu. Not: {$notes}" . ($attachmentUrl ? " (Ek: {$attachmentUrl})" : ""));
+                $taskModel->logActivity($taskId, $currentUser->id, 'submitted', $task->status, 'submitted', __('Board::activity_user_submitted', ['user' => $currentUser->name, 'notes' => $notes]) . ($attachmentUrl ? " (Ek: {$attachmentUrl})" : ""));
 
                 \Modules\SSE\Services\SseBroadcaster::broadcast('task_submitted', (int)$task->project_id, $taskId, (int)$currentUser->id, [
                     'task_id'        => $taskId,
@@ -476,8 +472,8 @@ switch ($action) {
                 }
 
                 $taskModel->approveSubmission($taskId);
-                $userLabel = ($currentUser->role === 'client') ? "Müşteri" : "Yönetici";
-                $taskModel->logActivity($taskId, $currentUser->id, 'completed', 'submitted', 'completed', "{$userLabel} {$currentUser->name} teslimatı onayladı ve görevi tamamladı olarak kapattı.");
+                $userLabel = ($currentUser->role === 'client') ? __('Board::role_client') : __('Board::role_admin');
+                $taskModel->logActivity($taskId, $currentUser->id, 'completed', 'submitted', 'completed', __('Board::activity_delivery_approved', ['role' => $userLabel, 'user' => $currentUser->name]));
 
                 \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
                     'task_id'     => $taskId,
@@ -503,11 +499,11 @@ switch ($action) {
                     jsonResponse(false, __('Board::only_own_project_changes'));
                 }
 
-                $reason = trim($_POST['feedback'] ?? $_POST['reason'] ?? $_POST['notes'] ?? 'Düzeltme talep edildi.');
+                $reason = trim($_POST['feedback'] ?? $_POST['reason'] ?? $_POST['notes'] ?? __('Board::default_revision_reason'));
                 $taskModel->requestChanges($taskId, $currentUser->id, $reason);
 
-                $userLabel = ($currentUser->role === 'client') ? "Müşteri" : "Yönetici";
-                $taskModel->logActivity($taskId, $currentUser->id, 'modification_requested', 'submitted', 'modification_requested', "{$userLabel} {$currentUser->name} revizyon talep etti: {$reason}");
+                $userLabel = ($currentUser->role === 'client') ? __('Board::role_client') : __('Board::role_admin');
+                $taskModel->logActivity($taskId, $currentUser->id, 'modification_requested', 'submitted', 'modification_requested', __('Board::activity_delivery_changes_requested', ['role' => $userLabel, 'user' => $currentUser->name, 'reason' => $reason]));
 
                 \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
                     'task_id'     => $taskId,
@@ -560,13 +556,14 @@ switch ($action) {
 
         $commentId = $taskModel->addComment($taskId, $currentUser->id, $commentText, $isInternal);
         if ($commentId > 0) {
-            $taskModel->logActivity($taskId, $currentUser->id, 'comment', null, null, "{$currentUser->name} " . ($isInternal ? "🔒 [Ekip İçi] " : "") . "yorum yazdı: \"{$commentText}\"" . ($attachmentUrl ? " (Ek: {$attachmentUrl})" : ""));
+            $internalTagStr = $isInternal ? ("🔒 [" . __('Board::internal_team_badge') . "] ") : "";
+            $taskModel->logActivity($taskId, $currentUser->id, 'comment', null, null, __('Board::activity_comment_added', ['user' => $currentUser->name, 'tag' => $internalTagStr, 'comment' => $commentText]) . ($attachmentUrl ? " (Ek: {$attachmentUrl})" : ""));
 
             \Modules\SSE\Services\SseBroadcaster::broadcast('new_comment', (int)$task->project_id, $taskId, (int)$currentUser->id, [
                 'comment_id'     => $commentId,
                 'task_id'        => $taskId,
                 'task_code'      => $task->task_code ?? 'TSK',
-                'title'          => $task->title ?? 'Görev',
+                'title'          => $task->title ?? __('Board::default_task_title'),
                 'author'         => $currentUser->name,
                 'comment'        => $commentText,
                 'attachment_url' => $attachmentUrl,
@@ -603,7 +600,7 @@ switch ($action) {
 
         $updated = $taskModel->updateComment($commentId, $newText);
         if ($updated) {
-            $taskModel->logActivity((int)$comm->task_id, (int)$currentUser->id, 'comment_edit', null, null, "{$currentUser->name} yorumunu güncelledi: \"{$newText}\"");
+            $taskModel->logActivity((int)$comm->task_id, (int)$currentUser->id, 'comment_edit', null, null, __('Board::activity_comment_edited', ['user' => $currentUser->name, 'comment' => $newText]));
 
             \Modules\SSE\Services\SseBroadcaster::broadcast('comment_updated', (int)$comm->project_id, (int)$comm->task_id, (int)$currentUser->id, [
                 'comment_id' => $commentId,
@@ -696,7 +693,7 @@ switch ($action) {
             }
         }
 
-        $taskModel->logActivity($taskId, $currentUser->id, 'status_change', $oldStatus, $newStatus, "{$currentUser->name} görevi '{$oldStatus}' durumundan '{$newStatus}' durumuna taşıdı.");
+        $taskModel->logActivity($taskId, $currentUser->id, 'status_change', $oldStatus, $newStatus, __('Board::activity_status_changed', ['user' => $currentUser->name, 'old' => $oldStatus, 'new' => $newStatus]));
 
         \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, (int)$currentUser->id, [
             'task_id'     => $taskId,
@@ -714,7 +711,7 @@ switch ($action) {
                 $otherRunning = $taskModel->getRunningAiTasks((int)$task->project_id, $taskId);
                 foreach ($otherRunning as $other) {
                     $taskModel->updateTaskStatus((int)$other->id, 'assigned');
-                    $taskModel->logActivity((int)$other->id, $currentUser->id, 'status_change', 'in_progress', 'assigned', "⏸️ [{$task->task_code}] görevi ÇALIŞILIYOR sütununa alındığı için bu görev sıraya geri alındı.");
+                    $taskModel->logActivity((int)$other->id, $currentUser->id, 'status_change', 'in_progress', 'assigned', __('Board::activity_ai_task_requeued', ['code' => $task->task_code]));
                     \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, (int)$other->id, (int)$currentUser->id, [
                         'task_id'    => (int)$other->id,
                         'task_code'  => $other->task_code,
@@ -724,7 +721,7 @@ switch ($action) {
                 }
 
                 if ($oldStatus === 'modification_requested') {
-                    $revReason = $taskModel->getLastModificationReason($taskId) ?: 'Revizyon talep edildi.';
+                    $revReason = $taskModel->getLastModificationReason($taskId) ?: __('Board::default_revision_reason');
                     \Modules\Board\Services\TaskLifecycleService::triggerTaskRevisionWebhook($taskId, $revReason, ['triggered_by' => $currentUser->name]);
                 } else {
                     \Modules\Board\Services\TaskLifecycleService::triggerTaskStartedWebhook($taskId, $oldStatus, ['triggered_by' => $currentUser->name]);
@@ -783,7 +780,7 @@ switch ($action) {
 
         $ok = $taskModel->updateTaskField($taskId, $field, $value);
         if ($ok) {
-            $taskModel->logActivity($taskId, $currentUser->id, 'field_update', null, null, "{$currentUser->name} '{$field}' alanını '{$value}' olarak güncelledi.");
+            $taskModel->logActivity($taskId, $currentUser->id, 'field_update', null, null, __('Board::activity_field_updated', ['user' => $currentUser->name, 'field' => $field, 'value' => $value]));
             jsonResponse(true, __('Board::field_updated'), ['field' => $field, 'value' => $value]);
         }
         jsonResponse(false, __('Board::invalid_field_or_task'));
@@ -799,7 +796,7 @@ switch ($action) {
 
         $ok = $taskModel->logTime($taskId, $currentUser->id, $minutesAdded);
         if ($ok) {
-            $taskModel->logActivity($taskId, $currentUser->id, 'time_tracked', null, null, "{$currentUser->name} göreve {$minutesAdded} dakika süre kaydetti.");
+            $taskModel->logActivity($taskId, $currentUser->id, 'time_tracked', null, null, __('Board::activity_time_tracked', ['user' => $currentUser->name, 'minutes' => $minutesAdded]));
             jsonResponse(true, __('Board::time_tracked_success'));
         }
         jsonResponse(false, __('Board::invalid_task_or_time'));
@@ -817,7 +814,7 @@ switch ($action) {
 
         $ok = $taskModel->addDependency($taskId, $dependsOnTaskId, $depType);
         if ($ok) {
-            $taskModel->logActivity($taskId, $currentUser->id, 'dependency_added', null, null, "{$currentUser->name} göreve bağımlılık ekledi.");
+            $taskModel->logActivity($taskId, $currentUser->id, 'dependency_added', null, null, __('Board::activity_dependency_added', ['user' => $currentUser->name]));
             jsonResponse(true, __('Board::dependency_added_success'));
         }
         jsonResponse(false, __('Board::dependency_already_exists'));
@@ -848,11 +845,11 @@ switch ($action) {
         $uploadResult = \Modules\Storage\Services\StorageService::upload($file, 'tasks');
 
         if (!$uploadResult['success']) {
-            jsonResponse(false, $uploadResult['error'] ?? 'Dosya yüklenemedi.');
+            jsonResponse(false, $uploadResult['error'] ?? __('Board::file_upload_error'));
         }
 
         $attId = $taskModel->addAttachment($taskId, $currentUser->id, $uploadResult);
-        $taskModel->logActivity($taskId, $currentUser->id, 'attachment_uploaded', null, null, "{$currentUser->name} göreve görsel/ek ekledi: {$uploadResult['file_name']}");
+        $taskModel->logActivity($taskId, $currentUser->id, 'attachment_uploaded', null, null, __('Board::activity_attachment_uploaded', ['user' => $currentUser->name, 'file' => $uploadResult['file_name']]));
 
         $task = $taskModel->findByIdOrCode($taskId);
         $projId = $task ? (int)$task->project_id : 1;
@@ -896,7 +893,7 @@ switch ($action) {
         }
 
         \Modules\Storage\Services\StorageService::delete($att->file_path);
-        $taskModel->logActivity((int)$att->task_id, $currentUser->id, 'attachment_deleted', null, null, "{$currentUser->name} ek görseli sildi: {$att->file_name}");
+        $taskModel->logActivity((int)$att->task_id, $currentUser->id, 'attachment_deleted', null, null, __('Board::activity_attachment_deleted', ['user' => $currentUser->name, 'file' => $att->file_name]));
 
         $task = $taskModel->findByIdOrCode((int)$att->task_id);
         $projId = $task ? (int)$task->project_id : 1;
@@ -923,7 +920,7 @@ switch ($action) {
 
         $uploadResult = \Modules\Storage\Services\StorageService::upload($file, $context);
         if (!$uploadResult['success']) {
-            jsonResponse(false, $uploadResult['error'] ?? 'Dosya yükleme başarısız.');
+            jsonResponse(false, $uploadResult['error'] ?? __('Board::file_upload_error'));
         }
 
         $recordId = 0;
@@ -1032,7 +1029,7 @@ switch ($action) {
             jsonResponse(false, __('Board::assignee_already_added'));
         }
 
-        $taskModel->logActivity($taskId, $currentUser->id, 'assignee_added', null, null, "{$currentUser->name}, {$u->name} kullanıcısını göreve atadı.");
+        $taskModel->logActivity($taskId, $currentUser->id, 'assignee_added', null, null, __('Board::activity_assignee_added', ['user' => $currentUser->name, 'target' => $u->name]));
 
         jsonResponse(true, __('Board::assignee_added_success', ['name' => $u->name]), ['user' => $u]);
         break;
@@ -1046,11 +1043,10 @@ switch ($action) {
             jsonResponse(false, __('Board::invalid_params'));
         }
 
-        $userRows = $taskModel->query("SELECT name FROM users WHERE id = ? LIMIT 1", [$userId]);
-        $uName = !empty($userRows) ? $userRows[0]->name : 'Kullanıcı';
+        $uName = $taskModel->getUserNameById($userId) ?: __('Board::default_user');
 
         $taskModel->removeAssignee($taskId, $userId);
-        $taskModel->logActivity($taskId, $currentUser->id, 'assignee_removed', null, null, "{$currentUser->name}, {$uName} kullanıcısını görevden çıkardı.");
+        $taskModel->logActivity($taskId, $currentUser->id, 'assignee_removed', null, null, __('Board::activity_assignee_removed', ['user' => $currentUser->name, 'target' => $uName]));
 
         jsonResponse(true, __('Board::assignee_removed_success', ['name' => $uName]));
         break;

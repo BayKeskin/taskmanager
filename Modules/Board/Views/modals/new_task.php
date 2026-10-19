@@ -2,12 +2,12 @@
 <div class="cu-modal-overlay" id="modalNewTask">
     <div class="cu-modal">
         <div class="cu-modal-header">
-            <h3 style="font-size:15px; font-weight:700; color:var(--text-white); display:flex; align-items:center; gap:8px;">
+            <h3 class="cu-modal-title-white">
                 <span>➕</span> <?= __('Board::modal_new_task_title') ?>
             </h3>
-            <button onclick="closeModal('modalNewTask')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
+            <button type="button" class="cu-modal-close-icon" data-close-modal="modalNewTask">✕</button>
         </div>
-        <form id="formNewTask" onsubmit="handleCreateTask(event)">
+        <form id="formNewTask">
             <div class="cu-modal-body">
                 <div class="cu-form-group">
                     <label><?= __('Board::modal_project_space') ?></label>
@@ -28,66 +28,61 @@
                 </div>
 
                 <!-- 🪄 AI GÖREV MİMARI (TASK ARCHITECT PANEL) -->
-                <div class="cu-form-group" style="background:linear-gradient(135deg, rgba(123, 104, 238, 0.08) 0%, rgba(155, 93, 229, 0.04) 100%); border:1px solid rgba(123, 104, 238, 0.25); border-radius:var(--radius-sm); padding:12px; margin-bottom:14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleAiArchitectPanel()">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:14px;">🪄</span>
-                            <span style="font-size:12px; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.03em;">
+                <div class="cu-form-group cu-ai-architect-card-wrap">
+                    <div class="cu-ai-architect-card-header" id="btnToggleAiArchitectPanel">
+                        <div class="cu-ai-architect-header-left">
+                            <span class="cu-ai-architect-wand">🪄</span>
+                            <span class="cu-ai-architect-badge-text">
                                 <?= __('Board::modal_ai_architect_badge') ?>
                             </span>
-                            <span style="font-size:11px; color:var(--text-muted); font-weight:400;" class="d-none d-sm-inline">
+                            <span class="cu-ai-architect-sub-hint d-none d-sm-inline">
                                 — <?= __('Board::modal_ai_architect_title') ?>
                             </span>
                         </div>
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span id="aiArchitectToggleIcon" style="font-size:11px; color:var(--brand-primary); font-weight:700;">▼</span>
+                        <div class="cu-ai-architect-header-right">
+                            <span id="aiArchitectToggleIcon" class="cu-ai-architect-caret">▼</span>
                         </div>
                     </div>
 
                     <!-- Açılır Panel Gövdesi -->
-                    <div id="aiArchitectPanelBody" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed rgba(123, 104, 238, 0.2);">
-                        <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px; line-height:1.4;">
+                    <div id="aiArchitectPanelBody" class="cu-ai-architect-body-panel">
+                        <p class="cu-ai-architect-p-desc">
                             <?= __('Board::modal_ai_architect_desc') ?>
                         </p>
 
                         <!-- Kısa Talimat Alanı (Zorunlu) -->
-                        <div style="margin-bottom:10px;">
-                            <label style="font-size:11.5px; font-weight:600; color:var(--text-primary); margin-bottom:4px; display:block;">
-                                <?= __('Board::modal_ai_architect_prompt_label') ?> <span style="color:#ff4757;">*</span>
+                        <div class="cu-field-spacing-sm">
+                            <label class="cu-ai-prompt-label">
+                                <?= __('Board::modal_ai_architect_prompt_label') ?> <span class="cu-req-star">*</span>
                             </label>
-                            <textarea id="aiArchitectInstruction" class="cu-form-control" rows="2" style="font-size:12px; background:var(--bg-input);" placeholder="<?= htmlspecialchars(__('Board::modal_ai_architect_prompt_ph')) ?>"></textarea>
+                            <textarea id="aiArchitectInstruction" class="cu-form-control cu-ai-prompt-input" rows="2" placeholder="<?= htmlspecialchars(__('Board::modal_ai_architect_prompt_ph')) ?>"></textarea>
                         </div>
 
                         <!-- Opsiyonel Ekler (Görsel ve Kod Dosyası) -->
-                        <div style="margin-bottom:10px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <label style="font-size:11.5px; font-weight:600; color:var(--text-primary); margin-bottom:0;">
+                        <div class="cu-field-spacing-sm">
+                            <div class="cu-ref-header-flex">
+                                <label class="cu-ref-label">
                                     <?= __('Board::modal_ai_architect_ref_label') ?>
                                 </label>
-                                <span style="font-size:10.5px; color:var(--text-muted);"><?= __('Board::modal_ai_architect_ref_hint') ?></span>
+                                <span class="cu-ref-hint"><?= __('Board::modal_ai_architect_ref_hint') ?></span>
                             </div>
 
-                            <input type="file" id="aiArchitectFileInput" multiple accept="image/*,.php,.js,.blade.php,.sql,.html,.css,.json,.txt,.py" style="display:none;" onchange="handleAiArchitectFiles(this.files)">
+                            <input type="file" id="aiArchitectFileInput" multiple accept="image/*,.php,.js,.blade.php,.sql,.html,.css,.json,.txt,.py" class="cu-hidden-file-input">
 
                             <!-- Sürükle Bırak / Tıkla Alanı -->
-                            <div id="aiArchitectDropzone"
-                                 ondragover="handleAiArchitectDragOver(event)"
-                                 ondragleave="handleAiArchitectDragLeave(event)"
-                                 ondrop="handleAiArchitectDrop(event)"
-                                 onclick="document.getElementById('aiArchitectFileInput').click()"
-                                 style="border:1.5px dashed rgba(123, 104, 238, 0.35); border-radius:var(--radius-sm); padding:8px 12px; text-align:center; cursor:pointer; background:rgba(0,0,0,0.1); transition:var(--transition);">
-                                <span style="font-size:12px;">📁 📸</span>
-                                <span style="font-size:11px; font-weight:600; color:var(--brand-primary); margin-left:6px;">Dosya/Görsel Seç veya Sürükle (Opsiyonel)</span>
-                                <span style="font-size:10.5px; color:var(--text-muted); margin-left:6px;">(Ctrl+V ile görsel yapıştırılabilir)</span>
+                            <div id="aiArchitectDropzone" class="cu-ai-architect-dropzone">
+                                <span class="cu-dropzone-icon-pair">📁 📸</span>
+                                <span class="cu-dropzone-select-label"><?= __('Board::ai_dropzone_select_label') ?></span>
+                                <span class="cu-dropzone-paste-label"><?= __('Board::ai_dropzone_paste_label') ?></span>
                             </div>
 
                             <!-- Seçilen Referans Dosyalar Listesi -->
-                            <div id="aiArchitectFilesPreview" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;"></div>
+                            <div id="aiArchitectFilesPreview" class="cu-files-preview-flex"></div>
                         </div>
 
                         <!-- AI Üret Butonu -->
-                        <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px;">
-                            <button type="button" id="btnRunAiArchitect" onclick="runAiArchitect()" class="cu-btn-sm" style="background:var(--brand-primary); color:#ffffff; font-weight:700; display:inline-flex; align-items:center; gap:6px; padding:6px 14px; font-size:11.5px; border-radius:var(--radius-sm); cursor:pointer; border:none; transition:var(--transition);">
+                        <div class="cu-btn-align-right">
+                            <button type="button" id="btnRunAiArchitect" class="cu-btn-sm cu-btn-run-ai">
                                 <span>🪄</span> <span id="btnRunAiArchitectText"><?= __('Board::modal_ai_architect_btn') ?></span>
                             </button>
                         </div>
@@ -95,14 +90,14 @@
                 </div>
 
                 <div class="cu-form-group">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <label style="margin-bottom:0;"><?= __('Board::modal_desc_instructions') ?></label>
-                        <span style="font-size:11px; color:var(--text-muted);"><?= __('tasks.click_to_edit', 'Düzenlemek için tıklayın') ?></span>
+                    <div class="cu-form-label-between">
+                        <label class="cu-mb-0"><?= __('Board::modal_desc_instructions') ?></label>
+                        <span class="cu-label-hint"><?= __('tasks.click_to_edit') ?></span>
                     </div>
                     <textarea name="description" id="modalNewTaskDescription" class="cu-form-control" rows="5" placeholder="<?= htmlspecialchars(__('Board::modal_desc_placeholder')) ?>"></textarea>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="cu-form-grid-2">
                     <div class="cu-form-group">
                         <label><?= __('Board::modal_priority') ?></label>
                         <select name="priority" class="cu-form-control">
@@ -120,54 +115,54 @@
 
                 <!-- ETİKETLER (TAGS) & AI OTONOM SEÇİMİ -->
                 <div class="cu-form-group">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <label style="margin-bottom:0;"><?= __('Board::modal_tags') ?></label>
-                        <span style="font-size:11px; color:var(--text-muted);"><?= __('Board::modal_tags_hint') ?></span>
+                    <div class="cu-form-label-between">
+                        <label class="cu-mb-0"><?= __('Board::modal_tags') ?></label>
+                        <span class="cu-label-hint"><?= __('Board::modal_tags_hint') ?></span>
                     </div>
-                    <div style="position:relative; display:flex; gap:8px; align-items:center;">
-                        <input type="text" name="tags" id="modalNewTaskTagsInput" class="cu-form-control" placeholder="<?= htmlspecialchars(__('Board::modal_tags_placeholder')) ?>" style="flex:1;">
+                    <div class="cu-tag-input-row">
+                        <input type="text" name="tags" id="modalNewTaskTagsInput" class="cu-form-control cu-flex-1" placeholder="<?= htmlspecialchars(__('Board::modal_tags_placeholder')) ?>">
                         <?php if ($canUseAiTasks): ?>
-                            <button type="button" id="btnToggleAiTag" onclick="toggleNewTaskAiTag()" style="padding:6px 12px; font-size:11.5px; font-weight:700; border-radius:var(--radius-sm); border:1px solid rgba(155, 93, 229, 0.45); background:rgba(155, 93, 229, 0.15); color:#d8b4fe; cursor:pointer; display:flex; align-items:center; gap:5px; white-space:nowrap; transition:var(--transition);" title="<?= htmlspecialchars(__('Board::modal_ai_btn_title')) ?>">
+                            <button type="button" id="btnToggleAiTag" class="cu-btn-toggle-ai" title="<?= htmlspecialchars(__('Board::modal_ai_btn_title')) ?>">
                                 <span>🤖</span> <span id="btnToggleAiTagText"><?= __('Board::modal_ai_btn') ?></span>
                             </button>
                         <?php else: ?>
-                            <div style="font-size:11px; color:var(--text-muted); background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); padding:6px 10px; border-radius:var(--radius-sm); display:flex; align-items:center; gap:4px;" title="<?= htmlspecialchars(__('Board::modal_ai_admin_only_title')) ?>">
+                            <div class="cu-ai-locked-badge" title="<?= htmlspecialchars(__('Board::modal_ai_admin_only_title')) ?>">
                                 <span>🔒</span> <span><?= __('Board::modal_ai_admin_only') ?></span>
                             </div>
                         <?php endif; ?>
                     </div>
                     <!-- Hızlı Etiket Önerileri -->
-                    <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; align-items:center;">
-                        <span style="font-size:10.5px; color:var(--text-muted);"><?= __('Board::modal_quick_add_tags') ?></span>
-                        <button type="button" onclick="appendTagToModal('frontend')" class="cu-tag-pill">#frontend</button>
-                        <button type="button" onclick="appendTagToModal('backend')" class="cu-tag-pill">#backend</button>
-                        <button type="button" onclick="appendTagToModal('api')" class="cu-tag-pill">#api</button>
-                        <button type="button" onclick="appendTagToModal('bug')" class="cu-tag-pill">#bug</button>
-                        <button type="button" onclick="appendTagToModal('ui')" class="cu-tag-pill">#ui</button>
+                    <div class="cu-quick-tags-wrap">
+                        <span class="cu-quick-tags-label"><?= __('Board::modal_quick_add_tags') ?></span>
+                        <button type="button" class="cu-tag-pill" data-quick-tag="frontend">#frontend</button>
+                        <button type="button" class="cu-tag-pill" data-quick-tag="backend">#backend</button>
+                        <button type="button" class="cu-tag-pill" data-quick-tag="api">#api</button>
+                        <button type="button" class="cu-tag-pill" data-quick-tag="bug">#bug</button>
+                        <button type="button" class="cu-tag-pill" data-quick-tag="ui">#ui</button>
                     </div>
                 </div>
 
                 <!-- TaskManager ÇOKLU ÇALIŞAN ATAMA (@ MENTION SEÇİCİ) -->
                 <div class="cu-form-group">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <label style="margin-bottom:0;"><?= __('Board::modal_assignees') ?></label>
-                        <span style="font-size:11px; color:var(--text-muted);"><?= __('Board::modal_assignees_hint') ?></span>
+                    <div class="cu-form-label-between">
+                        <label class="cu-mb-0"><?= __('Board::modal_assignees') ?></label>
+                        <span class="cu-label-hint"><?= __('Board::modal_assignees_hint') ?></span>
                     </div>
 
                     <!-- Yan yana dizilen seçili çalışanlar alanı -->
-                    <div id="modalSelectedAssignees" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; min-height:40px; padding:6px 10px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); margin-bottom:8px;">
+                    <div id="modalSelectedAssignees" class="cu-selected-assignees-box">
                         <!-- JS ile dinamik chipler eklenecek -->
                     </div>
 
                     <!-- @ ile Arama Kutusu ve Popover Menü -->
-                    <div style="position:relative;">
-                        <div style="position:relative; display:flex; align-items:center;">
-                            <span style="position:absolute; left:12px; color:var(--brand-primary); font-weight:700; font-size:14px; pointer-events:none;">@</span>
-                            <input type="text" id="modalAssigneeInput" class="cu-form-control" style="padding-left:28px;" placeholder="<?= htmlspecialchars(__('Board::modal_assignees_placeholder')) ?>" autocomplete="off" onclick="handleModalAssigneeSearch(this.value)" oninput="handleModalAssigneeSearch(this.value)" onfocus="handleModalAssigneeSearch(this.value)">
+                    <div class="cu-pos-relative">
+                        <div class="cu-input-prefix-wrapper">
+                            <span class="cu-mention-at">@</span>
+                            <input type="text" id="modalAssigneeInput" class="cu-form-control cu-mention-input" placeholder="<?= htmlspecialchars(__('Board::modal_assignees_placeholder')) ?>" autocomplete="off">
                         </div>
 
                         <!-- @ Açılır Menüsü (Dropdown) -->
-                        <div id="modalAssigneeDropdown" style="display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); background:var(--bg-card); border:1px solid var(--border-focus); border-radius:var(--radius-sm); box-shadow:0 12px 36px rgba(0,0,0,0.4); z-index:99999; max-height:200px; overflow-y:auto;">
+                        <div id="modalAssigneeDropdown" class="cu-assignee-dropdown-popover">
                             <!-- Dinamik kullanıcı listesi -->
                         </div>
                     </div>
@@ -177,35 +172,30 @@
                 </div>
 
                 <!-- GÖREV RESİMLERİ & EKLERİ (TASK IMAGES & ATTACHMENTS) -->
-                <div class="cu-form-group" style="margin-bottom:0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <label style="margin-bottom:0; display:flex; align-items:center; gap:6px;">
+                <div class="cu-form-group cu-mb-0">
+                    <div class="cu-form-label-between">
+                        <label class="cu-attachments-label">
                             <span>🖼️</span> <?= __('Board::modal_attachments') ?>
                         </label>
-                        <span style="font-size:11px; color:var(--text-muted);"><?= __('Board::modal_attachments_hint') ?></span>
+                        <span class="cu-label-hint"><?= __('Board::modal_attachments_hint') ?></span>
                     </div>
 
                     <!-- Gizli File Input -->
-                    <input type="file" id="modalNewTaskFileInput" name="attachments[]" multiple accept="image/*,.pdf,.zip,.rar,.7z,.txt,.docx,.xlsx,.sql,.php,.js,.html,.css,.json" style="display:none;" onchange="handleModalNewTaskFiles(this.files)">
+                    <input type="file" id="modalNewTaskFileInput" name="attachments[]" multiple accept="image/*,.pdf,.zip,.rar,.7z,.txt,.docx,.xlsx,.sql,.php,.js,.html,.css,.json" class="cu-hidden-file-input">
 
                     <!-- Dropzone Alanı -->
-                    <div id="modalNewTaskDropzone"
-                         ondragover="handleModalNewTaskDragOver(event)"
-                         ondragleave="handleModalNewTaskDragLeave(event)"
-                         ondrop="handleModalNewTaskDrop(event)"
-                         onclick="document.getElementById('modalNewTaskFileInput').click()"
-                         style="border: 2px dashed var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.02); transition: var(--transition); margin-bottom: 8px;">
-                        <div style="font-size: 16px; margin-bottom: 2px;">📸 📤</div>
-                        <div style="font-size: 11.5px; font-weight: 600; color: var(--text-primary);"><?= __('Board::modal_dropzone_title') ?></div>
-                        <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;"><?= __('Board::modal_dropzone_sub') ?></div>
+                    <div id="modalNewTaskDropzone" class="cu-new-task-dropzone">
+                        <div class="cu-dropzone-camera-icon">📸 📤</div>
+                        <div class="cu-dropzone-header-title"><?= __('Board::modal_dropzone_title') ?></div>
+                        <div class="cu-dropzone-subtitle"><?= __('Board::modal_dropzone_sub') ?></div>
                     </div>
 
                     <!-- Seçilen / Yapıştırılan Dosyaların Önizleme Listesi -->
-                    <div id="modalNewTaskFilesPreview" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;"></div>
+                    <div id="modalNewTaskFilesPreview" class="cu-files-preview-wrap"></div>
                 </div>
             </div>
-            <div class="cu-modal-footer" style="padding:14px 20px; background:var(--bg-card-hover); border-top:1px solid var(--border-subtle); display:flex; justify-content:flex-end; gap:10px; align-items:center;">
-                <button type="button" class="cu-btn-sm" onclick="closeModal('modalNewTask')"><?= __('Board::modal_cancel') ?></button>
+            <div class="cu-modal-footer cu-modal-footer-clean">
+                <button type="button" class="cu-btn-sm" data-close-modal="modalNewTask"><?= __('Board::modal_cancel') ?></button>
                 <button type="submit" class="cu-btn-quick-task"><?= __('Board::modal_create_task') ?></button>
             </div>
         </form>

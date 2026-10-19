@@ -53,22 +53,22 @@ class BoardController extends BaseController
             'userEmail' => $currentUser->email ?? ''
         ]);
         \Core\AssetManager::localizeScript('board-js', 'BOARD_I18N', [
-            'approve_confirm' => __('Board::client_approve_confirm', 'Bu görevin teslimatını onaylayıp tamamlandı olarak işaretlemek istiyor musunuz?'),
-            'approve_success' => __('Board::client_approve_success', '✅ Teslimat başarıyla onaylandı ve görev tamamlandı!'),
-            'request_prompt'  => __('Board::client_request_reason_prompt', 'Lütfen yapılmasını istediğiniz düzeltme veya revizyon notunu yazınız:'),
-            'request_success' => __('Board::client_request_success', '✅ Düzeltme talebiniz geliştirici ekibe iletildi!'),
-            'analyzing'       => __('Board::ai_standup_analyzing', 'Yapay zeka son 24 saatin standup özetini analiz ediyor...'),
-            'period'          => __('Board::ai_standup_period_label', 'Dönem Aralığı'),
-            'last_24h'        => __('Board::ai_standup_last_24h', 'Son 24 Saat'),
-            'comp_stat'       => __('Board::ai_standup_completed_stat', '✅ :count Tamamlanan / Teslim'),
-            'in_prog_stat'    => __('Board::ai_standup_in_progress_stat', '⚡ :count Aktif Çalışılan'),
-            'delayed_stat'    => __('Board::ai_standup_delayed_stat', '⚠️ :count Riskli / Geciken'),
-            'email_prompt'    => __('Board::ai_standup_email_prompt', 'Bültenin gönderileceği e-posta adresini giriniz:'),
-            'email_success'   => __('Board::ai_standup_email_success', '✅ Standup e-posta bülteni başarıyla gönderildi: '),
-            'err_fetch'       => __('Board::ai_standup_err_fetch', 'Özet alınamadı: '),
-            'err_conn'        => __('Board::ai_standup_err_conn', 'Bağlantı hatası: '),
-            'server_error'    => __('Board::server_error', 'Sunucu hatası: '),
-            'error_prefix'    => __('Board::error_prefix', '❌ Hata: ')
+            'approve_confirm' => __('Board::client_approve_confirm'),
+            'approve_success' => __('Board::client_approve_success'),
+            'request_prompt'  => __('Board::client_request_reason_prompt'),
+            'request_success' => __('Board::client_request_success'),
+            'analyzing'       => __('Board::ai_standup_analyzing'),
+            'period'          => __('Board::ai_standup_period_label'),
+            'last_24h'        => __('Board::ai_standup_last_24h'),
+            'comp_stat'       => __('Board::ai_standup_completed_stat'),
+            'in_prog_stat'    => __('Board::ai_standup_in_progress_stat'),
+            'delayed_stat'    => __('Board::ai_standup_delayed_stat'),
+            'email_prompt'    => __('Board::ai_standup_email_prompt'),
+            'email_success'   => __('Board::ai_standup_email_success'),
+            'err_fetch'       => __('Board::ai_standup_err_fetch'),
+            'err_conn'        => __('Board::ai_standup_err_conn'),
+            'server_error'    => __('Board::server_error'),
+            'error_prefix'    => __('Board::error_prefix')
         ]);
 
         return [

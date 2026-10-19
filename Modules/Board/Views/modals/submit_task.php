@@ -2,15 +2,15 @@
 <div class="cu-modal-overlay" id="modalSubmitTask">
     <div class="cu-modal">
         <div class="cu-modal-header">
-            <h3 style="font-size:15px; font-weight:700; color:#9b5de5; display:flex; align-items:center; gap:8px;">
+            <h3 class="cu-modal-title-purple">
                 <span>🚀</span> <?= __('Board::modal_submit_task_title') ?>
             </h3>
-            <button onclick="closeModal('modalSubmitTask')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
+            <button type="button" class="cu-modal-close-icon" data-close-modal="modalSubmitTask">✕</button>
         </div>
-        <form id="formSubmitTask" onsubmit="handleSubmitTask(event)">
+        <form id="formSubmitTask">
             <input type="hidden" name="task_id" id="submitTaskId">
             <div class="cu-modal-body">
-                <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:14px;">
+                <p class="cu-modal-lead-desc">
                     <?= __('Board::modal_submit_task_desc') ?>
                 </p>
                 <div class="cu-form-group">
@@ -18,31 +18,26 @@
                     <textarea name="notes" class="cu-form-control" rows="3" placeholder="<?= htmlspecialchars(__('Board::modal_submit_task_notes_ph')) ?>" required></textarea>
                 </div>
                 <div class="cu-form-group">
-                    <label style="display:flex; justify-content:space-between; align-items:center;">
+                    <label class="cu-form-label-between">
                         <span>📎 <?= __('Board::modal_submit_task_attach') ?></span>
-                        <span style="font-size:11px; color:var(--text-muted);"><?= __('Board::modal_submit_task_attach_hint') ?></span>
+                        <span class="cu-label-hint"><?= __('Board::modal_submit_task_attach_hint') ?></span>
                     </label>
 
                     <!-- Drag & Drop & Paste Alanı -->
-                    <div id="submitTaskDropzone" 
-                         ondragover="handleSubmitDropzoneOver(event)" 
-                         ondragleave="handleSubmitDropzoneLeave(event)" 
-                         ondrop="handleSubmitDropzoneDrop(event)"
-                         onclick="document.getElementById('submitTaskFileInput').click()"
-                         style="border:2px dashed var(--border-subtle); border-radius:var(--radius-md); padding:16px; text-align:center; cursor:pointer; background:rgba(255,255,255,0.02); transition:all 0.2s;">
-                        <input type="file" id="submitTaskFileInput" name="attachment" onchange="handleSubmitFileSelect(this)" style="display:none;" accept="image/*,.pdf,.zip,.rar,.7z,.txt,.doc,.docx,.xls,.xlsx">
+                    <div id="submitTaskDropzone" class="cu-submit-task-dropzone">
+                        <input type="file" id="submitTaskFileInput" name="attachment" class="cu-hidden-file-input" accept="image/*,.pdf,.zip,.rar,.7z,.txt,.doc,.docx,.xls,.xlsx">
                         <div id="submitTaskUploadPrompt">
-                            <span style="font-size:24px; display:block; margin-bottom:4px;">☁️</span>
-                            <span style="font-size:12.5px; font-weight:600; color:var(--text-white);"><?= __('Board::modal_submit_task_drop') ?> <span style="color:var(--brand-primary); text-decoration:underline;"><?= __('Board::modal_submit_task_drop_select') ?></span></span>
-                            <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:3px;"><?= __('Board::modal_submit_task_drop_sub') ?></span>
+                            <span class="cu-dropzone-cloud-icon">☁️</span>
+                            <span class="cu-dropzone-main-text"><?= __('Board::modal_submit_task_drop') ?> <span class="cu-dropzone-link-text"><?= __('Board::modal_submit_task_drop_select') ?></span></span>
+                            <span class="cu-dropzone-sub-text"><?= __('Board::modal_submit_task_drop_sub') ?></span>
                         </div>
-                        <div id="submitTaskFilePreview" style="display:none; align-items:center; justify-content:center; gap:10px;">
+                        <div id="submitTaskFilePreview" class="cu-submit-task-preview">
                             <div id="submitTaskPreviewThumb"></div>
-                            <div style="text-align:left;">
-                                <div id="submitTaskPreviewName" style="font-size:12.5px; font-weight:600; color:var(--text-white);"></div>
-                                <div id="submitTaskPreviewSize" style="font-size:11px; color:var(--text-muted);"></div>
+                            <div class="cu-preview-info">
+                                <div id="submitTaskPreviewName" class="cu-preview-name"></div>
+                                <div id="submitTaskPreviewSize" class="cu-preview-size"></div>
                             </div>
-                            <button type="button" onclick="clearSubmitTaskFile(event)" style="background:rgba(231,76,60,0.2); border:none; color:#e74c3c; width:24px; height:24px; border-radius:50%; cursor:pointer; font-size:12px; margin-left:10px;">✕</button>
+                            <button type="button" id="btnClearSubmitTaskFile" class="cu-btn-clear-preview">✕</button>
                         </div>
                     </div>
                 </div>
@@ -52,8 +47,8 @@
                     <input type="text" name="attachment_url" id="submitTaskAttachmentUrl" class="cu-form-control" placeholder="<?= htmlspecialchars(__('Board::modal_submit_task_link_ph')) ?>">
                 </div>
             </div>
-            <div class="cu-modal-footer" style="padding:14px 20px; background:var(--bg-card-hover); border-top:1px solid var(--border-subtle); display:flex; justify-content:flex-end; gap:10px; align-items:center;">
-                <button type="button" class="cu-btn-sm" onclick="closeModal('modalSubmitTask')"><?= __('Board::modal_cancel') ?></button>
+            <div class="cu-modal-footer cu-modal-footer-clean">
+                <button type="button" class="cu-btn-sm" data-close-modal="modalSubmitTask"><?= __('Board::modal_cancel') ?></button>
                 <button type="submit" class="cu-btn-submit"><?= __('Board::modal_submit_task_submit') ?></button>
             </div>
         </form>

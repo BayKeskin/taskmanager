@@ -79,3 +79,790 @@
     align-items: center;
     gap: 6px;
 }
+.cu-task-count-accent { color: var(--brand-primary); }
+
+/* ==========================================================================
+   MODAL TYPOGRAPHY & SHARED ELEMENTS
+   ========================================================================== */
+.cu-modal-title-white {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-white);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+.cu-modal-title-warning {
+    font-size: 15px;
+    font-weight: 700;
+    color: #e67e22;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+.cu-modal-title-purple {
+    font-size: 15px;
+    font-weight: 700;
+    color: #9b5de5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+.cu-modal-close-icon {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+    line-height: 1;
+}
+.cu-modal-close-icon:hover {
+    color: var(--text-white);
+}
+.cu-modal-lead-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    line-height: 1.5;
+}
+.cu-modal-footer-clean {
+    padding: 14px 20px;
+    background: var(--bg-card-hover);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    align-items: center;
+}
+.cu-form-label-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.cu-label-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.cu-mb-0 {
+    margin-bottom: 0 !important;
+}
+.cu-flex-1 {
+    flex: 1;
+}
+.cu-pos-relative {
+    position: relative;
+}
+.cu-req-star {
+    color: #ff4757;
+}
+
+/* ==========================================================================
+   AI GÖREV MİMARI (TASK ARCHITECT IN NEW TASK MODAL)
+   ========================================================================== */
+.cu-ai-architect-card-wrap {
+    background: linear-gradient(135deg, rgba(123, 104, 238, 0.08) 0%, rgba(155, 93, 229, 0.04) 100%);
+    border: 1px solid rgba(123, 104, 238, 0.25);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 14px;
+}
+.cu-ai-architect-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+.cu-ai-architect-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-ai-architect-wand {
+    font-size: 14px;
+}
+.cu-ai-architect-badge-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brand-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.cu-ai-architect-sub-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+.cu-ai-architect-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.cu-ai-architect-caret {
+    font-size: 11px;
+    color: var(--brand-primary);
+    font-weight: 700;
+}
+.cu-ai-architect-body-panel {
+    display: none;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(123, 104, 238, 0.2);
+}
+.cu-ai-architect-p-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+.cu-field-spacing-sm {
+    margin-bottom: 10px;
+}
+.cu-ai-prompt-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    display: block;
+}
+.cu-ai-prompt-input {
+    font-size: 12px;
+    background: var(--bg-input);
+}
+.cu-ref-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.cu-ref-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0;
+}
+.cu-ref-hint {
+    font-size: 10.5px;
+    color: var(--text-muted);
+}
+.cu-hidden-file-input {
+    display: none;
+}
+.cu-ai-architect-dropzone {
+    border: 1.5px dashed rgba(123, 104, 238, 0.35);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
+}
+.cu-ai-architect-dropzone:hover,
+.cu-ai-architect-dropzone.drag-active {
+    border-color: var(--brand-primary);
+    background: rgba(123, 104, 238, 0.1);
+}
+.cu-dropzone-icon-pair {
+    font-size: 12px;
+}
+.cu-dropzone-select-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brand-primary);
+    margin-left: 6px;
+}
+.cu-dropzone-paste-label {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-left: 6px;
+}
+.cu-files-preview-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+.cu-btn-align-right {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+}
+.cu-btn-run-ai {
+    background: var(--brand-primary);
+    color: #ffffff;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    font-size: 11.5px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: none;
+    transition: var(--transition);
+}
+.cu-btn-run-ai:hover {
+    background: #6c5ce7;
+}
+
+/* ==========================================================================
+   NEW TASK MODAL FORM ELEMENTS & DROPDOWNS
+   ========================================================================== */
+.cu-form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.cu-tag-input-row {
+    position: relative;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.cu-btn-toggle-ai {
+    padding: 6px 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(155, 93, 229, 0.45);
+    background: rgba(155, 93, 229, 0.15);
+    color: #d8b4fe;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: var(--transition);
+}
+.cu-btn-toggle-ai:hover,
+.cu-btn-toggle-ai.active {
+    background: rgba(155, 93, 229, 0.35);
+    color: #fff;
+    border-color: #d8b4fe;
+}
+.cu-ai-locked-badge {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.cu-quick-tags-wrap {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.cu-quick-tags-label {
+    font-size: 10.5px;
+    color: var(--text-muted);
+}
+.cu-selected-assignees-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    min-height: 40px;
+    padding: 6px 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+}
+.cu-input-prefix-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.cu-mention-at {
+    position: absolute;
+    left: 12px;
+    color: var(--brand-primary);
+    font-weight: 700;
+    font-size: 14px;
+    pointer-events: none;
+}
+.cu-mention-input {
+    padding-left: 28px !important;
+}
+.cu-assignee-dropdown-popover {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    background: var(--bg-card);
+    border: 1px solid var(--border-focus);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+    z-index: 99999;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.cu-attachments-label {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.cu-new-task-dropzone {
+    border: 2px dashed var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+    transition: var(--transition);
+    margin-bottom: 8px;
+}
+.cu-new-task-dropzone:hover,
+.cu-new-task-dropzone.drag-active {
+    border-color: var(--brand-primary);
+    background: rgba(123, 104, 238, 0.08);
+}
+.cu-dropzone-camera-icon {
+    font-size: 16px;
+    margin-bottom: 2px;
+}
+.cu-dropzone-header-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.cu-dropzone-subtitle {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.cu-files-preview-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+/* ==========================================================================
+   SUBMIT TASK MODAL DROPZONE & PREVIEWS
+   ========================================================================== */
+.cu-submit-task-dropzone {
+    border: 2px dashed var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.2s;
+}
+.cu-submit-task-dropzone:hover,
+.cu-submit-task-dropzone.drag-active {
+    border-color: #9b5de5;
+    background: rgba(155, 93, 229, 0.08);
+}
+.cu-dropzone-cloud-icon {
+    font-size: 24px;
+    display: block;
+    margin-bottom: 4px;
+}
+.cu-dropzone-main-text {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-white);
+}
+.cu-dropzone-link-text {
+    color: var(--brand-primary);
+    text-decoration: underline;
+}
+.cu-dropzone-sub-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 3px;
+}
+.cu-submit-task-preview {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.cu-preview-info {
+    text-align: left;
+}
+.cu-preview-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-white);
+}
+.cu-preview-size {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.cu-btn-clear-preview {
+    background: rgba(231, 76, 60, 0.2);
+    border: none;
+    color: #e74c3c;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 10px;
+}
+.cu-btn-clear-preview:hover {
+    background: rgba(231, 76, 60, 0.35);
+}
+
+/* ==========================================================================
+   KANBAN VIEW HEADER, TOOLS DROPDOWN & PROJECT INFO
+   ========================================================================== */
+.cu-view-title-flex {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-view-header-icon {
+    font-size: 16px;
+}
+.cu-view-header-title-text {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-white);
+}
+.cu-filter-bar-flex {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-btn-ai-architect {
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #7B68EE, #e056fd);
+    border: none;
+    color: #ffffff;
+    font-weight: 700;
+    padding: 0 14px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(123, 104, 238, 0.35);
+    box-sizing: border-box;
+}
+.cu-btn-ai-architect:hover {
+    filter: brightness(1.1);
+}
+.cu-tools-dropdown-pos {
+    position: relative;
+    display: inline-block;
+}
+.cu-btn-tools-trigger {
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-white);
+    font-weight: 600;
+    padding: 0 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+.cu-btn-tools-trigger:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.cu-caret-down-icon {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-left: 2px;
+}
+.cu-tools-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 260px;
+    background: #1b1d29;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.65);
+    padding: 6px;
+    z-index: 1050;
+    backdrop-filter: blur(16px);
+}
+.cu-tools-dropdown-menu.active {
+    display: block;
+}
+.cu-tool-icon {
+    font-size: 16px;
+    width: 22px;
+    text-align: center;
+}
+.cu-tools-item-excel {
+    color: #2ecc71 !important;
+}
+.cu-tool-text-bold {
+    flex: 1;
+    font-weight: 600;
+}
+.cu-dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 5px 0;
+}
+.cu-devops-badge {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.cu-tools-item-github {
+    color: #3fb950 !important;
+}
+.cu-tools-item-deploy {
+    color: #00cec9 !important;
+}
+.cu-tool-text-deploy {
+    flex: 1;
+    font-weight: 700;
+}
+.cu-tools-item-mcp {
+    color: #f39c12 !important;
+}
+.cu-btn-add-task-header {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 12.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-sizing: border-box;
+}
+
+/* Project Info Card */
+.cu-project-info-card {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.cu-project-info-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.cu-project-avatar-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+.cu-project-title-heading {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 0;
+}
+.cu-project-code-muted {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.cu-project-desc-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 2px 0 0 0;
+}
+.cu-project-info-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-btn-restore-project {
+    background: rgba(123, 104, 238, 0.15);
+    color: var(--brand-primary);
+    border: 1px solid rgba(123, 104, 238, 0.3);
+    font-size: 11.5px;
+    padding: 4px 10px;
+}
+.cu-btn-delete-project {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    font-size: 11.5px;
+    padding: 4px 10px;
+}
+.cu-btn-archive-project {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    font-size: 11.5px;
+    padding: 4px 10px;
+}
+.cu-btn-clear-filter-link {
+    color: var(--text-muted);
+    font-size: 11.5px;
+    text-decoration: none;
+    padding: 4px 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   KANBAN COLUMNS & TASK CARDS
+   ========================================================================== */
+.cu-col-toggle-header {
+    cursor: pointer;
+}
+.cu-col-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-col-status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+.cu-col-title-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-white);
+    letter-spacing: 0.4px;
+}
+.cu-col-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.cu-card-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.cu-card-badges-wrap {
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.cu-priority-pill {
+    font-size: 10.5px !important;
+    padding: 2px 6px !important;
+}
+.cu-ai-queue-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(155, 93, 229, 0.2);
+    border: 1px solid rgba(155, 93, 229, 0.45);
+    color: #d8b4fe;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+.cu-card-footer-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-deadline-font {
+    font-size: 11px;
+}
+.cu-card-attachment-badge {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-weight: 600;
+}
+.cu-card-subtask-badge {
+    font-size: 10.5px;
+    color: var(--brand-primary);
+    background: rgba(123, 104, 238, 0.12);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+.cu-avatars-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.cu-avatar-sm {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+}
+.cu-client-actions-bar {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 8px;
+}
+.cu-btn-client-approve {
+    flex: 1;
+    background: #00b894;
+    color: #fff;
+    font-size: 11px;
+    padding: 6px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: background 0.15s ease;
+}
+.cu-btn-client-approve:hover {
+    background: #00a382;
+}
+.cu-btn-client-mod {
+    flex: 1;
+    background: #e67e22;
+    color: #fff;
+    font-size: 11px;
+    padding: 6px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: background 0.15s ease;
+}
+.cu-btn-client-mod:hover {
+    background: #d35400;
+}
