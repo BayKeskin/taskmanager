@@ -3,16 +3,9 @@
  * TaskManager Enterprise REST API Live Test & Explorer Laboratory
  * Interactive Swagger / Postman style live testing console
  */
-require_once dirname(__DIR__, 3) . '/Core/System.php';
-require_once dirname(__DIR__, 3) . '/Core/Language.php';
-
-Language::init();
-$currentLang = Language::current();
-
-$dynCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
-$currentUser = $_SESSION['user'] ?? null;
-$userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dynCfg['api_token'] ?: 'tm_live_demo_token');
-$baseUrl = $baseUrl ?? $dynCfg['base_url'];
+$currentLang = \Language::current();
+$userToken = $userToken ?? 'tm_live_demo_token';
+$baseUrl = $baseUrl ?? '';
 $sampleProject = $sampleProject ?? 'PROJECT';
 $sampleTask = $sampleTask ?? 'TASK-1';
 ?>
@@ -27,7 +20,7 @@ $sampleTask = $sampleTask ?? 'TASK-1';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= baseUrl('/Modules/ApiTester/Assets/css/api_test.css') ?>">
+    <?= \Core\AssetManager::renderStyles() ?>
 </head>
 <body>
 
@@ -285,41 +278,11 @@ $sampleTask = $sampleTask ?? 'TASK-1';
             </div>
         </div>
     </div>
-    <?php
-    $testerModel = new \Modules\ApiTester\Models\ApiTesterModel();
-    $endpointsCatalog = $testerModel->getEndpointsCatalog($sampleProject, $sampleTask);
-    \Core\AssetManager::localizeScript('apitester-live-js', 'APITESTER_LIVE_DATA', [
-        'catalog'       => $endpointsCatalog,
-        'baseUrl'       => $baseUrl,
-        'activeToken'   => $userToken,
-        'sampleProject' => $sampleProject,
-        'sampleTask'    => $sampleTask,
-        'i18n'          => [
-            'json_syntax_error'  => __('ApiTester::empty_response_title'),
-            'sending_request'    => __('ApiTester::btn_send'),
-            'network_error'      => __('ApiTester::response_not_sent'),
-            'network_error_desc' => __('ApiTester::empty_response_desc'),
-            'btn_send'           => __('ApiTester::btn_send'),
-            'batch_ready_count'  => __('ApiTester::batch_ready'),
-            'batch_scanning'     => __('ApiTester::btn_start_scan'),
-            'batch_testing'      => __('ApiTester::core_health_scan'),
-            'batch_retest'       => __('ApiTester::btn_start_scan'),
-            'batch_success_count'=> __('ApiTester::batch_ready'),
-            'batch_fail_count'   => __('ApiTester::batch_ready'),
-            'invalid_json'       => __('ApiTester::empty_response_title'),
-            'token_copied_alert' => __('ApiTester::token_copied'),
-            'response_copied'    => __('ApiTester::btn_copy_response'),
-            'command_copied'     => __('ApiTester::btn_copy'),
-            'expected_status'    => __('ApiTester::expected_status_label'),
-            'no_params_needed'   => __('ApiTester::no_params_needed')
-        ]
-    ]);
-    ?>
     <div id="apitesterConfigCarrier" 
          data-base-url="<?= htmlspecialchars(rtrim($baseUrl, '/'), ENT_QUOTES, 'UTF-8') ?>"
          data-active-token="<?= htmlspecialchars($userToken, ENT_QUOTES, 'UTF-8') ?>"
          data-sample-project="<?= htmlspecialchars($sampleProject, ENT_QUOTES, 'UTF-8') ?>"
          data-sample-task="<?= htmlspecialchars($sampleTask, ENT_QUOTES, 'UTF-8') ?>"></div>
-    <script src="<?= baseUrl('/Modules/ApiTester/Assets/js/api_test.js') ?>"></script>
+    <?= \Core\AssetManager::renderScripts() ?>
 </body>
 </html>
