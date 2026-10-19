@@ -11,9 +11,9 @@ require_once __DIR__ . '/Services/TelegramService.php';
 EventManager::listen('task.created', function(array $data) {
     if (class_exists('Telegram')) {
         $msg = "📌 <b>" . __('Telegram::notify_created') . "</b>\n";
-        $msg .= "Kod: <code>" . ($data['task_code'] ?? '') . "</code>\n";
-        $msg .= "Başlık: " . ($data['title'] ?? '') . "\n";
-        $msg .= "Öncelik: " . ($data['priority'] ?? 'normal') . "\n";
+        $msg .= __('Telegram::field_code') . ": <code>" . ($data['task_code'] ?? '') . "</code>\n";
+        $msg .= __('Telegram::field_title') . ": " . ($data['title'] ?? '') . "\n";
+        $msg .= __('Telegram::field_priority') . ": " . ($data['priority'] ?? 'normal') . "\n";
         @\Telegram::sendNotification($msg);
     }
 });
@@ -22,8 +22,8 @@ EventManager::listen('task.created', function(array $data) {
 EventManager::listen('task.status_changed', function(array $data) {
     if (class_exists('Telegram')) {
         $msg = "⚡ <b>" . __('Telegram::notify_status') . "</b>\n";
-        $msg .= "Kod: <code>" . ($data['task_code'] ?? '') . "</code>\n";
-        $msg .= "Durum: " . ($data['new_status'] ?? '') . "\n";
+        $msg .= __('Telegram::field_code') . ": <code>" . ($data['task_code'] ?? '') . "</code>\n";
+        $msg .= __('Telegram::field_status') . ": " . ($data['new_status'] ?? '') . "\n";
         @\Telegram::sendNotification($msg);
     }
 });
