@@ -2,13 +2,13 @@
 // Modules/SmokeTest/Views/report.php
 ?>
 <div class="cu-smoketest-report">
-    <h3><?= htmlspecialchars(__('SmokeTest::starting_suite', 'Smoke Test Raporu')) ?></h3>
+    <h3><?= htmlspecialchars(__('SmokeTest::starting_suite')) ?></h3>
     <table class="cu-table">
         <thead>
             <tr>
-                <th>Test</th>
-                <th>Durum</th>
-                <th>Detay</th>
+                <th><?= htmlspecialchars(__('SmokeTest::th_test')) ?></th>
+                <th><?= htmlspecialchars(__('SmokeTest::th_status')) ?></th>
+                <th><?= htmlspecialchars(__('SmokeTest::th_details')) ?></th>
             </tr>
         </thead>
         <tbody>
