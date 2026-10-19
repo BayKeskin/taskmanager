@@ -75,7 +75,7 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
             </div>
 
             <div class="cu-settings-header-actions">
-                <a href="/taskmanager/board" class="cu-btn-sm cu-settings-btn-back">
+                <a href="<?= baseUrl('board') ?>" class="cu-btn-sm cu-settings-btn-back">
                     <?= __('Settings::settings_btn_back_board') ?>
                 </a>
                 <button type="button" id="btnSaveSettingsTop" class="cu-btn cu-btn-primary cu-settings-btn-save">

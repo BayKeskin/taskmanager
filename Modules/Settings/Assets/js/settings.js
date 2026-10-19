@@ -1,5 +1,7 @@
 // Modules/Settings/Assets/js/settings.js
 
+const settingsBaseUrl = (typeof window.BASE_URL !== 'undefined') ? window.BASE_URL.replace(/\/+$/, '') : '';
+
 // Sekme Değiştirici
 function switchSettingsTab(tabId, btn) {
     document.querySelectorAll('.cu-settings-tab-btn').forEach(b => b.classList.remove('active'));
@@ -39,7 +41,7 @@ async function handleSaveSettings(e) {
     const i18n = window.SettingsI18n || {};
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=save_system_settings', {
+        const res = await fetch(`${settingsBaseUrl}/ajax?action=save_system_settings`, {
             method: 'POST',
             body: fd
         });
@@ -80,7 +82,7 @@ async function handleTestTelegram() {
     }
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=test_telegram_connection');
+        const res = await fetch(`${settingsBaseUrl}/ajax?action=test_telegram_connection`);
         const data = await res.json();
         if (btn) {
             btn.disabled = false;
@@ -121,7 +123,7 @@ async function handleTestSmtp() {
     }
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=test_smtp_connection');
+        const res = await fetch(`${settingsBaseUrl}/ajax?action=test_smtp_connection`);
         const data = await res.json();
         if (btn) {
             btn.disabled = false;
@@ -168,7 +170,7 @@ async function handleTestWebhook(type) {
     }
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=' + action);
+        const res = await fetch(`${settingsBaseUrl}/ajax?action=` + action);
         const data = await res.json();
         if (btn) {
             btn.disabled = false;
@@ -208,7 +210,7 @@ async function toggleModuleStatus(slug, isActive) {
     fd.append('status', isActive ? '1' : '0');
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=toggle_module_status', {
+        const res = await fetch(`${settingsBaseUrl}/ajax?action=toggle_module_status`, {
             method: 'POST',
             body: fd
         });
