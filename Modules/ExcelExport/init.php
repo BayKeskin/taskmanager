@@ -23,3 +23,9 @@ EventManager::addFilter('kanban.tools_menu', function(array $items, int $project
     ];
     return $items;
 });
+
+// 3. Statik Asset Kayıtları (AssetManager)
+if (class_exists('Core\AssetManager')) {
+    \Core\AssetManager::enqueueCss('excel-export-css', baseUrl('Modules/ExcelExport/Assets/css/excel_export.css'));
+    \Core\AssetManager::enqueueJs('excel-export-js', baseUrl('Modules/ExcelExport/Assets/js/excel_export.js'));
+}

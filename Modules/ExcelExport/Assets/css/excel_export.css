@@ -1,0 +1,8 @@
+/* Modules/ExcelExport/Assets/css/excel_export.css */
+.cu-tools-item-excel {
+    color: #107c41;
+}
+
+.cu-tools-item-excel:hover {
+    background: rgba(16, 124, 65, 0.12);
+}

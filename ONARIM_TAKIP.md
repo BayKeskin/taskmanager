@@ -1,11 +1,11 @@
-# Board (Kanban & Liste Görünümü) Onarım Takip Listesi (ONARIM_TAKIP.md)
+# ExcelExport (Excel & CSV Görev Dışa Aktarımı) Onarım Takip Listesi (ONARIM_TAKIP.md)
 
 ## Tespit Edilen Durum ve İyileştirme Maddeleri
 
-- [x] 1. [Liste Görünümü & Eski Sistem Eşleştirmesi] Eski sistemdeki (`old/View/index/index.php`) tam özellikli liste görünümü (`cu-group`, `cu-task-list`, `cu-task-row`) yeni HMVC Board modülüne entegre edildi.
-- [x] 2. [Durum Akordeonları & Sayaçlar] Görevler durumlarına göre gruplandı (`assigned`, `accepted`, `in_progress`, `modification_requested`, `submitted`, `completed`) ve durum rozetleri, sayaçlar ve dinamik filtreleme tam desteklendi.
-- [x] 3. [İç İçe Alt Görev Ağacı (Nested Subtasks Tree)] Ana görevlerin altında yer alan alt görev ağacı (`cu-subtasks-tree`) açma/kapatma (toggle `▶/▼`), hızlı satır içi alt görev oluşturma (`quickSubtaskInput`), silme (`deleteSubtask`) ve detay çekmecesi açma işlevleri eksiksiz bağlandı.
-- [x] 4. [Görünüm Değiştirici (View Switcher)] Üst başlık çubuğuna (`cu-view-header`) Kanban Panosu (`📌 Kanban`) ve Liste Görünümü (`📋 Liste`) arasında kesintisiz geçiş sağlayan şık görünüm değiştirici sekmeler eklendi (aktif proje ve filtre parametrelerini koruyarak).
-- [x] 5. [HMVC & Model Ayrımı] `TaskModel::getSubtaskMap()` metodu eklenerek alt görevler veritabanı seviyesinde temiz bir şekilde çekildi; `BoardController` veri hazırlığını üstlenip `board.php` şablonuna aktardı.
-- [x] 6. [Üç Dilli Sözlük Desteği] TR, EN ve DE dillerinde tüm liste grubu başlıkları, aksiyon butonları ve alt görev etiketleri senkronize edildi.
-- [x] 7. [Sıfır İhlal & Güvenlik] `php tests/audit_module.php Board` çalıştırılarak 0 kural ihlali (`[PASS]`) doğrulandı.
+- [x] 1. [HMVC Modül Yapısı & İzolasyon] ExcelExport modülü `Modules/ExcelExport/` altında `module.json`, `init.php`, `Controllers/`, `Models/`, `Lang/` ve `Assets/` bileşenleriyle tam izole HMVC standardına kavuşturuldu.
+- [x] 2. [UTF-8 BOM ve Veri Dışa Aktarım Bütünlüğü] Eski sistemdeki `TaskModel::getTasksForExport` mantığı `ExcelExportModel::getTasksForExport` katmanına aktarıldı; Excel için `\xEF\xBB\xBF` UTF-8 BOM byte sırası ve noktalı virgül (`;`) ayracı ile Türkçe/Almanca karakterlerin Excel'de kusursuz açılması garantilendi.
+- [x] 3. [Kapsamlı Rapor Alanları] Görev Kodu, Görev Başlığı, Mevcut Durum, Öncelik, Atanan Kişi, Oluşturan Kişi, Başlangıç Tarihi, Termin Tarihi, Alt Görev Yüzdesel İlerlemesi (% Progress) ve Oluşturulma Zamanı kolonları eksiksiz üretildi.
+- [x] 4. [Çok Dilli Başlıklar (TR/EN/DE)] İndirilen CSV/Excel raporunun kolon başlıkları, durum isimleri ve öncelik etiketleri kullanıcının aktif dil tercihine (`?lang=tr`, `?lang=en`, `?lang=de`) göre dinamik olarak yerelleştirildi.
+- [x] 5. [Statik Varlıklar ve AssetManager Kuyruğu] `Assets/css/excel_export.css` ve `Assets/js/excel_export.js` oluşturularak `init.php` üzerinden `AssetManager::enqueueCss/Js` ile kuyruğa alındı.
+- [x] 6. [Rota ve Erişim Doğrulaması] `GET /taskmanager/kanban/export-excel?project_id=1` uç noktası doğrudan ve Kanban Araçlar menüsünden test edilerek canlı akışla CSV dosyasının başarıyla indirildiği doğrulandı.
+- [x] 7. [Mimari Denetim Kilidi] `php tests/audit_module.php ExcelExport` çalıştırılarak 0 kural ihlali (`[PASS]`) tescillendi.

@@ -33,8 +33,8 @@ ob_end_clean();
 
 // 3. Test Full Output Buffer of Controller Export
 $pid = 1;
-require_once __DIR__ . '/../Model/ProjectModel.php';
-$project = (new \ProjectModel($db))->getProjectById($pid);
+$projectModel = new \Modules\Projects\Models\ProjectModel();
+$project = $projectModel->getProjectById($pid);
 assert($project !== null, "Project 1 must exist.");
 echo "[PASS] Project: " . $project->title . " (Code: " . $project->project_code . ")" . PHP_EOL;
 
