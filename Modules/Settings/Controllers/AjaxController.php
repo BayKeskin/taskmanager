@@ -26,7 +26,7 @@ class AjaxController extends BaseController
     public function saveSettings(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim: Sistem ayarlarını yalnızca yöneticiler değiştirebilir.');
+            $this->respond(false, __('Settings::ajax_unauthorized_admin'));
         }
 
         $title = trim($_POST['title'] ?? 'TaskManager Pro');
@@ -69,25 +69,41 @@ class AjaxController extends BaseController
         $maxFileUpload = (int)($_POST['max_file_upload_mb'] ?? 25);
         $allowedFileTypes = trim($_POST['allowed_file_types'] ?? 'jpg,png,pdf,zip,docx,xlsx,txt');
 
-        $updated = $this->db->exec_query("
-            UPDATE settings 
-            SET title = ?, siteurl = ?, employee_can_create_tasks = ?, employee_can_ai_tasks = ?, default_language = ?,
-                active_ai_provider = ?, default_ai_model = ?, openai_api_key = ?, anthropic_api_key = ?, gemini_api_key = ?, deepseek_api_key = ?, ai_system_prompt_prefix = ?,
-                telegram_bot_token = ?, telegram_chat_id = ?, telegram_notifications_enabled = ?, slack_webhook_url = ?, discord_webhook_url = ?,
-                smtp_host = ?, smtp_port = ?, smtp_secure = ?, smtp_user = ?, smtp_pass = ?, smtp_from_email = ?, smtp_from_name = ?,
-                bugherd_api_key = ?, bugherd_project_id = ?, github_token = ?, github_repo = ?,
-                session_timeout_minutes = ?, max_file_upload_mb = ?, allowed_file_types = ?
-            WHERE id = 1
-        ", [
-            $title, $siteurl, $employeeCanCreate, $employeeCanAi, $defaultLanguage,
-            $activeAiProvider, $defaultAiModel, $openaiApiKey, $anthropicApiKey, $geminiApiKey, $deepseekApiKey, $aiSystemPromptPrefix,
-            $telegramBotToken, $telegramChatId, $telegramNotifications, $slackWebhook, $discordWebhook,
-            $smtpHost, $smtpPort, $smtpSecure, $smtpUser, $smtpPass, $smtpFromEmail, $smtpFromName,
-            $bugherdApiKey, $bugherdProjectId, $githubToken, $githubRepo,
-            $sessionTimeout, $maxFileUpload, $allowedFileTypes
+        $updated = $this->settingsModel->updateSettings([
+            'title'                         => $title,
+            'siteurl'                       => $siteurl,
+            'employee_can_create_tasks'     => $employeeCanCreate,
+            'employee_can_ai_tasks'         => $employeeCanAi,
+            'default_language'              => $defaultLanguage,
+            'active_ai_provider'            => $activeAiProvider,
+            'default_ai_model'              => $defaultAiModel,
+            'openai_api_key'                => $openaiApiKey,
+            'anthropic_api_key'             => $anthropicApiKey,
+            'gemini_api_key'                => $geminiApiKey,
+            'deepseek_api_key'              => $deepseekApiKey,
+            'ai_system_prompt_prefix'       => $aiSystemPromptPrefix,
+            'telegram_bot_token'            => $telegramBotToken,
+            'telegram_chat_id'              => $telegramChatId,
+            'telegram_notifications_enabled'=> $telegramNotifications,
+            'slack_webhook_url'             => $slackWebhook,
+            'discord_webhook_url'           => $discordWebhook,
+            'smtp_host'                     => $smtpHost,
+            'smtp_port'                     => $smtpPort,
+            'smtp_secure'                   => $smtpSecure,
+            'smtp_user'                     => $smtpUser,
+            'smtp_pass'                     => $smtpPass,
+            'smtp_from_email'               => $smtpFromEmail,
+            'smtp_from_name'                => $smtpFromName,
+            'bugherd_api_key'               => $bugherdApiKey,
+            'bugherd_project_id'            => $bugherdProjectId,
+            'github_token'                  => $githubToken,
+            'github_repo'                   => $githubRepo,
+            'session_timeout_minutes'       => $sessionTimeout,
+            'max_file_upload_mb'            => $maxFileUpload,
+            'allowed_file_types'            => $allowedFileTypes
         ]);
 
-        if ($updated !== false) {
+        if ($updated) {
             \Language::setSystemDefaultLanguageCache($defaultLanguage);
             \Modules\SSE\Services\SseBroadcaster::broadcast('system_settings_updated', 0, 0, (int)$this->user->id, [
                 'employee_can_create_tasks' => $employeeCanCreate,
@@ -97,43 +113,43 @@ class AjaxController extends BaseController
                 'updated_by'                => $this->user->name
             ]);
 
-            $this->respond(true, 'Tüm sistem ve API yapılandırmaları başarıyla kaydedildi!', [
+            $this->respond(true, __('Settings::ajax_save_success'), [
                 'title'                     => $title,
                 'employee_can_create_tasks' => $employeeCanCreate,
                 'employee_can_ai_tasks'     => $employeeCanAi,
                 'active_ai_provider'        => $activeAiProvider
             ]);
         }
-        $this->respond(false, 'Ayarlar kaydedilirken hata oluştu.');
+        $this->respond(false, __('Settings::ajax_save_error'));
     }
 
     public function toggleModuleStatus(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, __('Settings::settings_modules_toggle_fail', 'Yetkisiz erişim: Modülleri yalnızca yönetici yönetebilir.'));
+            $this->respond(false, __('Settings::settings_modules_toggle_fail'));
         }
 
         $slug = trim($_POST['slug'] ?? '');
         $status = !empty($_POST['status']) && ($_POST['status'] === 'true' || $_POST['status'] === '1' || $_POST['status'] === 1);
 
         if (empty($slug)) {
-            $this->respond(false, 'Geçersiz modül slug değeri.');
+            $this->respond(false, __('Settings::ajax_invalid_slug'));
         }
 
         $res = \Core\ModuleLoader::setModuleStatus($slug, $status);
         if ($res) {
-            $this->respond(true, __('Settings::settings_modules_toggle_success', 'Modül durumu güncellendi.'), [
+            $this->respond(true, __('Settings::settings_modules_toggle_success'), [
                 'slug'      => $slug,
                 'is_active' => $status
             ]);
         }
-        $this->respond(false, __('Settings::settings_modules_toggle_fail', 'Modül durumu kaydedilemedi.'));
+        $this->respond(false, __('Settings::settings_modules_toggle_fail'));
     }
 
     public function testTelegram(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
+            $this->respond(false, __('Settings::ajax_unauthorized_test'));
         }
         $testResult = \Telegram::testConnection();
         $this->respond((bool)$testResult['success'], $testResult['message'], $testResult);
@@ -142,7 +158,7 @@ class AjaxController extends BaseController
     public function testSmtp(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
+            $this->respond(false, __('Settings::ajax_unauthorized_test'));
         }
         $testResult = \Modules\Mailer\Services\MailerService::testConnection();
         $this->respond((bool)$testResult['success'], $testResult['message'], $testResult);
@@ -151,40 +167,42 @@ class AjaxController extends BaseController
     public function testSlack(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
+            $this->respond(false, __('Settings::ajax_unauthorized_test'));
         }
-        $s = $this->db->row_query("SELECT slack_webhook_url FROM settings WHERE id = 1");
-        $url = trim($s->slack_webhook_url ?? '');
+        $url = $this->settingsModel->getSlackWebhookUrl();
         if (empty($url)) {
-            $this->respond(false, 'Slack Webhook URL henüz kaydedilmemiş.');
+            $this->respond(false, __('Settings::ajax_slack_no_url'));
         }
+        $testMsg = str_replace(':time', date('H:i:s'), __('Settings::ajax_slack_test_msg'));
         $res = \Modules\RestApi\Services\WebhookService::postJsonWebhook($url, [
-            'text' => '🚀 *TaskManager Slack Entegrasyon Testi:* Bağlantı başarıyla doğrulandı! (Zaman: ' . date('H:i:s') . ')'
+            'text' => $testMsg
         ]);
         if ($res['success']) {
-            $this->respond(true, '✅ Slack Webhook bağlantısı başarılı! Test mesajı iletildi.');
+            $this->respond(true, __('Settings::ajax_slack_success'));
         } else {
-            $this->respond(false, '❌ Slack Webhook hatası (HTTP ' . $res['code'] . '): ' . ($res['body'] ?: $res['error']));
+            $errMsg = str_replace([':code', ':error'], [$res['code'], ($res['body'] ?: $res['error'])], __('Settings::ajax_slack_error'));
+            $this->respond(false, $errMsg);
         }
     }
 
     public function testDiscord(): void
     {
         if ($this->user->role !== 'admin') {
-            $this->respond(false, 'Yetkisiz erişim: Yalnızca yöneticiler test edebilir.');
+            $this->respond(false, __('Settings::ajax_unauthorized_test'));
         }
-        $s = $this->db->row_query("SELECT discord_webhook_url FROM settings WHERE id = 1");
-        $url = trim($s->discord_webhook_url ?? '');
+        $url = $this->settingsModel->getDiscordWebhookUrl();
         if (empty($url)) {
-            $this->respond(false, 'Discord Webhook URL henüz kaydedilmemiş.');
+            $this->respond(false, __('Settings::ajax_discord_no_url'));
         }
+        $testMsg = str_replace(':time', date('H:i:s'), __('Settings::ajax_discord_test_msg'));
         $res = \Modules\RestApi\Services\WebhookService::postJsonWebhook($url, [
-            'content' => '🚀 **TaskManager Discord Entegrasyon Testi:** Bağlantı başarıyla doğrulandı! (Zaman: ' . date('H:i:s') . ')'
+            'content' => $testMsg
         ]);
         if ($res['success']) {
-            $this->respond(true, '✅ Discord Webhook bağlantısı başarılı! Test mesajı iletildi.');
+            $this->respond(true, __('Settings::ajax_discord_success'));
         } else {
-            $this->respond(false, '❌ Discord Webhook hatası (HTTP ' . $res['code'] . '): ' . ($res['body'] ?: $res['error']));
+            $errMsg = str_replace([':code', ':error'], [$res['code'], ($res['body'] ?: $res['error'])], __('Settings::ajax_discord_error'));
+            $this->respond(false, $errMsg);
         }
     }
 }

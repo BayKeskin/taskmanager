@@ -1,3 +1,5 @@
+// Modules/Settings/Assets/js/settings.js
+
 // Sekme Değiştirici
 function switchSettingsTab(tabId, btn) {
     document.querySelectorAll('.cu-settings-tab-btn').forEach(b => b.classList.remove('active'));
@@ -26,12 +28,15 @@ async function handleSaveSettings(e) {
     if (e) e.preventDefault();
 
     const form = document.getElementById('formSystemSettings');
+    if (!form) return;
     const fd = new FormData(form);
 
     const btnTop = document.getElementById('btnSaveSettingsTop');
     const btnBottom = document.getElementById('btnSaveSettingsBottom');
     if (btnTop) btnTop.disabled = true;
     if (btnBottom) btnBottom.disabled = true;
+
+    const i18n = window.SettingsI18n || {};
 
     try {
         const res = await fetch('/taskmanager/ajax?action=save_system_settings', {
@@ -44,31 +49,34 @@ async function handleSaveSettings(e) {
         if (btnBottom) btnBottom.disabled = false;
 
         if (data.success) {
+            const successMsg = data.message || i18n.saved_success || 'Settings saved successfully';
             if (typeof showToast === 'function') {
-                showToast(<?= json_encode(__('Settings::settings_saved_success')) ?>, 'success');
+                showToast(successMsg, 'success');
             } else {
-                alert(<?= json_encode(__('Settings::settings_saved_success')) ?>);
+                alert(successMsg);
             }
         } else {
+            const failMsg = data.message || i18n.saved_fail || 'Failed to save settings';
             if (typeof showToast === 'function') {
-                showToast(data.message || <?= json_encode(__('Settings::settings_saved_fail')) ?>, 'error');
+                showToast(failMsg, 'error');
             } else {
-                alert('Hata: ' + (data.message || <?= json_encode(__('Settings::settings_saved_fail')) ?>));
+                alert(failMsg);
             }
         }
     } catch (err) {
         if (btnTop) btnTop.disabled = false;
         if (btnBottom) btnBottom.disabled = false;
-        alert('Sunucu bağlantı hatası: ' + err.message);
+        alert((i18n.server_error || 'Server error: ') + err.message);
     }
 }
 
 // Telegram Bağlantı Testi
 async function handleTestTelegram() {
     const btn = document.getElementById('btnTestTelegram');
+    const i18n = window.SettingsI18n || {};
     if (btn) {
         btn.disabled = true;
-        btn.innerText = 'Test ediliyor...';
+        btn.innerText = i18n.test_testing || 'Testing...';
     }
 
     try {
@@ -76,37 +84,40 @@ async function handleTestTelegram() {
         const data = await res.json();
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<span>📡</span> <span>Bağlantıyı Test Et</span>';
+            btn.innerHTML = '<span>📡</span> <span>' + (i18n.test_telegram_btn || 'Test Connection') + '</span>';
         }
 
         if (data.success) {
+            const msg = data.message || i18n.test_telegram_ok || 'Connection successful';
             if (typeof showToast === 'function') {
-                showToast(data.message || '✅ Bağlantı başarılı!', 'success');
+                showToast(msg, 'success');
             } else {
-                alert(data.message || 'Bağlantı başarılı!');
+                alert(msg);
             }
         } else {
+            const msg = data.message || i18n.test_telegram_fail || 'Connection failed';
             if (typeof showToast === 'function') {
-                showToast(data.message || '❌ Bağlantı kurulamadı.', 'error');
+                showToast(msg, 'error');
             } else {
-                alert(data.message || 'Bağlantı kurulamadı.');
+                alert(msg);
             }
         }
     } catch (err) {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<span>📡</span> <span>Bağlantıyı Test Et</span>';
+            btn.innerHTML = '<span>📡</span> <span>' + (i18n.test_telegram_btn || 'Test Connection') + '</span>';
         }
-        alert('Bağlantı testi hatası: ' + err.message);
+        alert((i18n.test_telegram_err || 'Connection test error: ') + err.message);
     }
 }
 
 // SMTP Bağlantı Testi
 async function handleTestSmtp() {
     const btn = document.getElementById('btnTestSmtp');
+    const i18n = window.SettingsI18n || {};
     if (btn) {
         btn.disabled = true;
-        btn.innerText = 'Test ediliyor...';
+        btn.innerText = i18n.test_testing || 'Testing...';
     }
 
     try {
@@ -114,28 +125,30 @@ async function handleTestSmtp() {
         const data = await res.json();
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<span>✉️</span> <span>SMTP Bağlantısını Test Et</span>';
+            btn.innerHTML = '<span>✉️</span> <span>' + (i18n.test_smtp_btn || 'Test SMTP') + '</span>';
         }
 
         if (data.success) {
+            const msg = data.message || i18n.test_smtp_ok || 'SMTP connection successful';
             if (typeof showToast === 'function') {
-                showToast(data.message || '✅ SMTP bağlantısı başarılı!', 'success');
+                showToast(msg, 'success');
             } else {
-                alert(data.message || 'SMTP bağlantısı başarılı!');
+                alert(msg);
             }
         } else {
+            const msg = data.message || i18n.test_smtp_fail || 'SMTP connection error';
             if (typeof showToast === 'function') {
-                showToast(data.message || '❌ SMTP bağlantı hatası.', 'error');
+                showToast(msg, 'error');
             } else {
-                alert(data.message || 'SMTP bağlantı hatası.');
+                alert(msg);
             }
         }
     } catch (err) {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<span>✉️</span> <span>SMTP Bağlantısını Test Et</span>';
+            btn.innerHTML = '<span>✉️</span> <span>' + (i18n.test_smtp_btn || 'Test SMTP') + '</span>';
         }
-        alert('SMTP test hatası: ' + err.message);
+        alert((i18n.test_smtp_err || 'SMTP test error: ') + err.message);
     }
 }
 
@@ -143,12 +156,15 @@ async function handleTestSmtp() {
 async function handleTestWebhook(type) {
     const btnId = (type === 'slack') ? 'btnTestSlack' : 'btnTestDiscord';
     const action = (type === 'slack') ? 'test_slack_webhook' : 'test_discord_webhook';
-    const label = (type === 'slack') ? 'Slack Test Gönder' : 'Discord Test Gönder';
+    const i18n = window.SettingsI18n || {};
+    const label = (type === 'slack') 
+        ? (i18n.test_slack_btn || 'Send Slack Test') 
+        : (i18n.test_discord_btn || 'Send Discord Test');
     const btn = document.getElementById(btnId);
 
     if (btn) {
         btn.disabled = true;
-        btn.innerText = 'Gönderiliyor...';
+        btn.innerText = i18n.test_sending || 'Sending...';
     }
 
     try {
@@ -160,16 +176,18 @@ async function handleTestWebhook(type) {
         }
 
         if (data.success) {
+            const msg = data.message || i18n.test_webhook_ok || 'Webhook sent';
             if (typeof showToast === 'function') {
-                showToast(data.message || '✅ Webhook mesajı iletildi!', 'success');
+                showToast(msg, 'success');
             } else {
-                alert(data.message || 'Webhook mesajı iletildi!');
+                alert(msg);
             }
         } else {
+            const msg = data.message || i18n.test_webhook_fail || 'Webhook failed';
             if (typeof showToast === 'function') {
-                showToast(data.message || '❌ Webhook iletilemedi.', 'error');
+                showToast(msg, 'error');
             } else {
-                alert(data.message || 'Webhook iletilemedi.');
+                alert(msg);
             }
         }
     } catch (err) {
@@ -177,13 +195,14 @@ async function handleTestWebhook(type) {
             btn.disabled = false;
             btn.innerHTML = (type === 'slack' ? '<span>💬</span> ' : '<span>🎮</span> ') + '<span>' + label + '</span>';
         }
-        alert('Webhook test hatası: ' + err.message);
+        alert((i18n.test_webhook_err || 'Webhook error: ') + err.message);
     }
 }
 
 // Modül Durumu Aç / Kapat (Module Manager)
 async function toggleModuleStatus(slug, isActive) {
     const badge = document.getElementById('badge-status-slug-' + slug) || document.getElementById('badge-status-' + slug);
+    const i18n = window.SettingsI18n || {};
     const fd = new FormData();
     fd.append('slug', slug);
     fd.append('status', isActive ? '1' : '0');
@@ -196,32 +215,95 @@ async function toggleModuleStatus(slug, isActive) {
         const data = await res.json();
         if (data.success) {
             if (badge) {
-                badge.innerText = isActive ? '<?= __('Settings::settings_modules_active_badge', 'Aktif') ?>' : '<?= __('Settings::settings_modules_passive_badge', 'Pasif') ?>';
+                badge.innerText = isActive 
+                    ? (i18n.active_badge || 'Active') 
+                    : (i18n.passive_badge || 'Inactive');
                 badge.style.color = isActive ? '#00b894' : '#eb5757';
             }
             if (typeof showToast === 'function') {
-                showToast(data.message || '<?= __('Settings::settings_modules_toggle_success', 'Modül durumu güncellendi.') ?>', 'success');
+                showToast(data.message || i18n.toggle_success || 'Module status updated', 'success');
             }
         } else {
-            alert(data.message || '<?= __('Settings::settings_modules_toggle_fail', 'Modül durumu güncellenemedi.') ?>');
-            // Geri al
+            alert(data.message || i18n.toggle_fail || 'Failed to update module status');
             const toggle = document.getElementById('toggle-mod-' + slug);
             if (toggle) toggle.checked = !isActive;
         }
     } catch (err) {
-        alert('Modül toggle hatası: ' + err.message);
+        alert((i18n.module_toggle_err || 'Module toggle error: ') + err.message);
         const toggle = document.getElementById('toggle-mod-' + slug);
         if (toggle) toggle.checked = !isActive;
     }
 }
 
-// URL tab parametresi desteği (?tab=modules vb.)
+// Event Listeners bağlama (Zero Inline JS)
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Sekme butonları
+    document.querySelectorAll('.cu-settings-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+            if (tabId) {
+                switchSettingsTab(tabId, btn);
+            }
+        });
+    });
+
+    // 2. Şifre göster / gizle butonları
+    document.querySelectorAll('.cu-toggle-pwd-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-target');
+            if (targetId) {
+                togglePasswordVisibility(targetId, btn);
+            }
+        });
+    });
+
+    // 3. Form submit ve Kaydet butonları
+    const form = document.getElementById('formSystemSettings');
+    if (form) {
+        form.addEventListener('submit', handleSaveSettings);
+    }
+    const btnSaveTop = document.getElementById('btnSaveSettingsTop');
+    if (btnSaveTop) {
+        btnSaveTop.addEventListener('click', handleSaveSettings);
+    }
+
+    // 4. Test butonları
+    const btnTelegram = document.getElementById('btnTestTelegram');
+    if (btnTelegram) {
+        btnTelegram.addEventListener('click', handleTestTelegram);
+    }
+
+    const btnSmtp = document.getElementById('btnTestSmtp');
+    if (btnSmtp) {
+        btnSmtp.addEventListener('click', handleTestSmtp);
+    }
+
+    const btnSlack = document.getElementById('btnTestSlack');
+    if (btnSlack) {
+        btnSlack.addEventListener('click', () => handleTestWebhook('slack'));
+    }
+
+    const btnDiscord = document.getElementById('btnTestDiscord');
+    if (btnDiscord) {
+        btnDiscord.addEventListener('click', () => handleTestWebhook('discord'));
+    }
+
+    // 5. Modül toggle checkboxları
+    document.querySelectorAll('.cu-mod-toggle-input').forEach(input => {
+        input.addEventListener('change', () => {
+            const slug = input.getAttribute('data-slug');
+            if (slug) {
+                toggleModuleStatus(slug, input.checked);
+            }
+        });
+    });
+
+    // 6. URL tab parametresi desteği (?tab=modules vb.)
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
     if (tabParam) {
         const tabPaneId = 'tab-' + tabParam;
-        const targetBtn = document.querySelector(`[onclick*="${tabPaneId}"]`);
+        const targetBtn = document.querySelector(`.cu-settings-tab-btn[data-tab="${tabPaneId}"]`);
         if (targetBtn) {
             targetBtn.click();
         }
