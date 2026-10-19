@@ -9,7 +9,7 @@ class StorageController extends BaseController
     public function upload(): void
     {
         if (empty($_FILES['file']) && empty($_FILES['attachment'])) {
-            $this->json(['error' => __('\Modules\Storage\Services\StorageService::upload_error', 'Yüklenecek dosya bulunamadı.')], 400);
+            $this->json(['error' => __('Storage::upload_no_file')], 400);
             return;
         }
 

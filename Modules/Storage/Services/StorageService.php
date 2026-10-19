@@ -35,9 +35,9 @@ class StorageService
 
             // Settings tablosundaki dinamik depolama kısıtlamalarını uygula
             try {
-                $db = $GLOBALS['db'] ?? null;
-                if ($db && isset($db->connect)) {
-                    $s = $db->connect->query("SELECT max_file_upload_mb, allowed_file_types FROM settings WHERE id = 1")->fetch(\PDO::FETCH_ASSOC);
+                $storageModel = new \Modules\Storage\Models\StorageModel();
+                $s = $storageModel->getStorageSettings();
+                if ($s) {
                     if (!empty($s['max_file_upload_mb']) && (int)$s['max_file_upload_mb'] > 0) {
                         self::$config['max_size_bytes'] = (int)$s['max_file_upload_mb'] * 1024 * 1024;
                     }
@@ -63,7 +63,7 @@ class StorageService
 
         if (empty($file) || !isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
             $errCode = $file['error'] ?? UPLOAD_ERR_NO_FILE;
-            $msg = __('\Modules\Storage\Services\StorageService::upload_error', "Dosya yükleme hatası (Hata kodu: {$errCode}).");
+            $msg = __('Storage::upload_error');
             return ['valid' => false, 'error' => $msg];
         }
 
@@ -71,7 +71,7 @@ class StorageService
         $maxBytes = $config['max_size_bytes'] ?? (20 * 1024 * 1024);
         if ($file['size'] > $maxBytes) {
             $maxMb = round($maxBytes / (1024 * 1024));
-            $msg = __('\Modules\Storage\Services\StorageService::file_too_large', "Dosya boyutu çok büyük. İzin verilen maksimum: {$maxMb} MB.");
+            $msg = __('Storage::file_too_large');
             return ['valid' => false, 'error' => $msg];
         }
 
@@ -81,7 +81,7 @@ class StorageService
         // 2. Dangerous Executable Binary Check
         $disallowed = $config['disallowed_extensions'] ?? ['phtml', 'phar', 'exe', 'sh', 'bat', 'cmd', 'bin', 'vbs', 'scr', 'cgi', 'pl', 'msi', 'com'];
         if (in_array($ext, $disallowed, true)) {
-            $msg = __('\Modules\Storage\Services\StorageService::disallowed_extension', "Güvenlik uyarısı: '{$ext}' uzantılı çalıştırılabilir dosyalar yüklenemez.");
+            $msg = __('Storage::disallowed_extension');
             return ['valid' => false, 'error' => $msg];
         }
 
@@ -93,7 +93,7 @@ class StorageService
         }
 
         if (!empty($allowedExts) && !in_array($ext, $allowedExts, true)) {
-            $msg = __('\Modules\Storage\Services\StorageService::invalid_extension', "Desteklenmeyen dosya türü.");
+            $msg = __('Storage::invalid_extension');
             return ['valid' => false, 'error' => $msg];
         }
 
@@ -154,7 +154,7 @@ class StorageService
             : (@copy($file['tmp_name'], $destPath) || @rename($file['tmp_name'], $destPath));
 
         if (!$moved) {
-            return ['success' => false, 'error' => __('\Modules\Storage\Services\StorageService::upload_error', 'Dosya sunucu dizinine kaydedilemedi.')];
+            return ['success' => false, 'error' => __('Storage::save_error')];
         }
 
         $webBase = rtrim($config['disks']['local']['url'] ?? '/taskmanager/Public/uploads', '/');
@@ -191,7 +191,7 @@ class StorageService
 
         $destPath = $targetDir . DIRECTORY_SEPARATOR . $safeName;
         if (file_put_contents($destPath, $content) === false) {
-            return ['success' => false, 'error' => __('\Modules\Storage\Services\StorageService::upload_error', 'Dosya içeriği diske yazılamadı.')];
+            return ['success' => false, 'error' => __('Storage::write_error')];
         }
 
         $webBase = rtrim($config['disks']['local']['url'] ?? '/taskmanager/Public/uploads', '/');
