@@ -1,7 +1,9 @@
 <!-- 🪄 AI PROJE MİMARI & SÜRÜKLE-BIRAK GÖREV AYRIŞTIRMA MODALI -->
 <?php
 $aiArchProjects = $projects ?? ($allProjects ?? []);
+$selectedProjectId = $activeProjectId ?? (isset($_GET['project_id']) ? (int)$_GET['project_id'] : null);
 ?>
+
 <div class="cu-modal-overlay" id="modalAiArchitect" data-action="close-modal-on-overlay">
     <div class="cu-modal cu-ai-arch-modal">
         <div class="cu-modal-header cu-ai-arch-header">
@@ -51,7 +53,7 @@ $aiArchProjects = $projects ?? ($allProjects ?? []);
                             <div class="cu-ai-arch-proj-wrapper">
                                 <select id="aiArchProjectSelect" class="cu-ai-arch-project-select">
                                     <?php foreach ($aiArchProjects as $p): ?>
-                                        <option value="<?= $p->id ?>" <?= (isset($activeProjectId) && $activeProjectId == $p->id) ? 'selected' : '' ?>>
+                                        <option value="<?= $p->id ?>" <?= ($selectedProjectId && (int)$selectedProjectId === (int)$p->id) ? 'selected' : '' ?>>
                                             [<?= htmlspecialchars($p->project_code) ?>] <?= htmlspecialchars($p->title) ?>
                                         </option>
                                     <?php endforeach; ?>

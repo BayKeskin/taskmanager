@@ -57,7 +57,23 @@ function openAiArchitectModal() {
     if (s2) s2.style.display = 'none';
     if (btnApprove) btnApprove.style.display = 'none';
     if (badge) badge.innerText = '';
+
+    // Aktif bulunulan projeyi otomatik seçili getir
+    const projSelect = document.getElementById('aiArchProjectSelect');
+    if (projSelect) {
+        let activeId = null;
+        if (window.BOARD_CONTEXT && window.BOARD_CONTEXT.projectId) {
+            activeId = String(window.BOARD_CONTEXT.projectId);
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            activeId = urlParams.get('project_id');
+        }
+        if (activeId && projSelect.querySelector(`option[value="${activeId}"]`)) {
+            projSelect.value = activeId;
+        }
+    }
 }
+
 
 function handleAiArchDragOver(e) {
     e.preventDefault();
