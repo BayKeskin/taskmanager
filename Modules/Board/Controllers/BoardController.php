@@ -46,6 +46,8 @@ class BoardController extends BaseController
         $allTasks = $this->taskModel->getTasksForBoard($activeProjectId);
         $assigneesMap = $this->taskModel->getAssigneesMap();
         $attachmentCounts = $this->taskModel->getAttachmentCounts();
+        $subtaskMap = $this->taskModel->getSubtaskMap();
+        $currentView = ($_GET['view'] ?? '') === 'list' ? 'list' : 'board';
 
         // JS Client-Side i18n & Context köprüsü (Inline script bloğu yerine AssetManager üzerinden)
         \Core\AssetManager::localizeScript('board-js', 'BOARD_CONTEXT', [
@@ -203,6 +205,8 @@ class BoardController extends BaseController
             'allTasks'               => $allTasks,
             'assigneesMap'           => $assigneesMap,
             'attachmentCounts'       => $attachmentCounts,
+            'subtaskMap'             => $subtaskMap,
+            'currentView'            => $currentView,
             'ghCreds'                => $ghCreds,
         ];
     }

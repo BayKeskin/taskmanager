@@ -41,13 +41,48 @@ foreach ($allTasks as $t) {
         }
     }
 }
+// 3. Durumlara Göre Liste Grupları (List View Groups)
+$listGroups = [
+    'assigned'               => ['title' => __('Board::list_group_assigned'), 'color' => '#4f8ff7', 'tasks' => []],
+    'accepted'               => ['title' => __('Board::list_group_accepted'), 'color' => '#00b4d8', 'tasks' => []],
+    'in_progress'            => ['title' => __('Board::list_group_in_progress'), 'color' => '#9b5de5', 'tasks' => []],
+    'modification_requested' => ['title' => __('Board::list_group_revision'), 'color' => '#e67e22', 'tasks' => []],
+    'submitted'              => ['title' => __('Board::list_group_submitted'), 'color' => '#e056fd', 'tasks' => []],
+    'completed'              => ['title' => __('Board::list_group_completed'), 'color' => '#00b894', 'tasks' => []],
+];
+
+foreach ($allTasks as $t) {
+    if (isset($listGroups[$t->status])) {
+        $listGroups[$t->status]['tasks'][] = $t;
+    } else {
+        $listGroups['assigned']['tasks'][] = $t;
+    }
+}
+
+$boardQuery = !empty($activeProjectId) ? 'project_id=' . (int)$activeProjectId : '';
+$kanbanUrl = baseUrl('board' . (!empty($boardQuery) ? '?' . $boardQuery : ''));
+$listUrl = baseUrl('board?' . (!empty($boardQuery) ? $boardQuery . '&view=list' : 'view=list'));
 ?>
 
 <!-- ÜST GÖRÜNÜM ÇUBUĞU (VIEW HEADER) -->
 <div class="cu-view-header">
     <div class="cu-view-title-wrap cu-view-title-flex">
-        <span class="cu-view-header-icon">📌</span>
-        <span class="cu-view-header-title-text"><?= $isClient ? __('Board::view_client_portal') : __('Board::view_board') ?></span>
+        <span class="cu-view-header-icon"><?= $currentView === 'list' ? '📋' : '📌' ?></span>
+        <span class="cu-view-header-title-text"><?= $isClient ? __('Board::view_client_portal') : ($currentView === 'list' ? __('Board::view_list') : __('Board::view_board')) ?></span>
+        
+        <?php if (!$isClient): ?>
+            <!-- GÖRÜNÜM DEĞİŞTİRİCİ TABLAR (KANBAN / LİSTE) -->
+            <div class="cu-view-switcher">
+                <a href="<?= htmlspecialchars($kanbanUrl) ?>" class="cu-view-switcher-btn <?= $currentView !== 'list' ? 'active' : '' ?>">
+                    <span>📌</span>
+                    <span><?= __('Board::view_board') ?></span>
+                </a>
+                <a href="<?= htmlspecialchars($listUrl) ?>" class="cu-view-switcher-btn <?= $currentView === 'list' ? 'active' : '' ?>">
+                    <span>📋</span>
+                    <span><?= __('Board::view_list') ?></span>
+                </a>
+            </div>
+        <?php endif; ?>
     </div>
 
     <div class="cu-filter-bar cu-filter-bar-flex">
@@ -191,6 +226,185 @@ foreach ($allTasks as $t) {
     </div>
 <?php endif; ?>
 
+<?php if ($currentView === 'list'): ?>
+    <!-- LİSTE İÇERİK ALANI (LIST VIEW CONTAINER) -->
+    <div class="cu-content-scroll">
+        <?php 
+        $today = date('Y-m-d');
+        $prLabels = [
+            'urgent' => __('Board::priority_urgent_badge'),
+            'high'   => __('Board::priority_high_badge'),
+            'normal' => __('Board::priority_normal_badge'),
+            'low'    => __('Board::priority_low_badge'),
+        ];
+        foreach ($listGroups as $statusKey => $group): 
+            $taskCount = count($group['tasks']);
+        ?>
+            <div class="cu-group" id="group-<?= $statusKey ?>">
+                <div class="cu-group-header">
+                    <div class="cu-group-header-left">
+                        <span class="cu-group-pill cu-project-badge-color" data-color="<?= $group['color'] ?>">
+                            <?= $group['title'] ?>
+                        </span>
+                        <span class="cu-group-count" id="count-group-<?= $statusKey ?>">
+                            <?= str_replace(':count', (string)$taskCount, __('Board::list_task_count')) ?>
+                        </span>
+                    </div>
+                    <?php if ($currentUser->role === 'admin'): ?>
+                        <button type="button" class="cu-btn-sm cu-btn-quick-add-group" data-group-status="<?= $statusKey ?>">
+                            <?= __('Board::list_quick_add') ?>
+                        </button>
+                    <?php endif; ?>
+                </div>
+
+                <div class="cu-task-list" id="taskList-<?= $statusKey ?>">
+                    <?php if ($taskCount === 0): ?>
+                        <div class="cu-empty-group-msg cu-empty-group-box">
+                            <?= __('Board::list_empty_group') ?>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($group['tasks'] as $t): 
+                            $isOverdue = (!empty($t->deadline) && $t->deadline < $today && $t->status !== 'completed');
+                            $subtasks = $subtaskMap[$t->id] ?? [];
+                            $hasSubtasks = count($subtasks) > 0;
+                            $tAssignees = $assigneesMap[$t->id] ?? [];
+                            if (empty($tAssignees) && !empty($t->assigned_to)) {
+                                $tAssignees = [(object)['user_id' => $t->assigned_to, 'name' => $t->assignee_name, 'avatar_color' => $t->assignee_color]];
+                            }
+                            $assigneeIdsStr = implode(',', array_map(fn($a) => $a->user_id, $tAssignees));
+                        ?>
+                            <div class="cu-task-container" id="task-container-<?= $t->id ?>">
+                                <div class="cu-task-row" 
+                                     id="task-row-<?= $t->id ?>"
+                                     data-task-id="<?= $t->id ?>"
+                                     data-title="<?= htmlspecialchars(mb_strtolower($t->title)) ?>"
+                                     data-code="<?= htmlspecialchars(mb_strtolower($t->task_code)) ?>"
+                                     data-tags="<?= htmlspecialchars(mb_strtolower($t->tags ?? '')) ?>"
+                                     data-priority="<?= $t->priority ?>"
+                                     data-assignee-ids="<?= $assigneeIdsStr ?>"
+                                     data-assignee-id="<?= $t->assigned_to ?>"
+                                     data-deadline="<?= $t->deadline ?: '9999-12-31' ?>">
+                                    
+                                    <!-- Subtask Toggle Butonu & TSK Kodu -->
+                                    <div class="cu-list-task-code-wrap">
+                                        <?php if ($hasSubtasks): ?>
+                                            <button type="button" 
+                                                    class="cu-btn-tree-toggle"
+                                                    id="btnTreeToggle-<?= $t->id ?>"
+                                                    data-parent-id="<?= $t->id ?>"
+                                                    title="<?= htmlspecialchars(__('Board::subtasks')) ?>">
+                                                ▶
+                                            </button>
+                                        <?php else: ?>
+                                            <span class="cu-tree-toggle-placeholder"></span>
+                                        <?php endif; ?>
+
+                                        <div class="cu-task-code"><?= htmlspecialchars($t->task_code) ?></div>
+                                    </div>
+
+                                    <!-- Başlık & Proje Rozeti -->
+                                    <div class="cu-task-title">
+                                        <span class="cu-badge-project cu-project-badge-color" data-color="<?= htmlspecialchars($t->project_color ?? '#7B68EE') ?>">
+                                            <?= htmlspecialchars($t->project_title ?? __('Board::drawer_project_fallback')) ?>
+                                        </span>
+                                        <?= htmlspecialchars($t->title) ?>
+                                        
+                                        <?php if ($hasSubtasks): ?>
+                                            <span class="cu-nav-badge cu-list-badge-subtasks">
+                                                <?= str_replace(':count', (string)count($subtasks), __('Board::list_count_subtasks')) ?>
+                                            </span>
+                                        <?php endif; ?>
+
+                                        <?php if (!empty($t->tags)): 
+                                            $firstTag = explode(',', $t->tags)[0];
+                                        ?>
+                                            <span class="cu-list-tag-badge">
+                                                #<?= htmlspecialchars(trim($firstTag)) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <!-- Öncelik Bayrağı -->
+                                    <div>
+                                        <span class="cu-priority-badge cu-priority-<?= $t->priority ?>">
+                                            <?= $prLabels[$t->priority] ?? $t->priority ?>
+                                        </span>
+                                    </div>
+
+                                    <!-- Son Teslim Tarihi -->
+                                    <div class="cu-deadline <?= $isOverdue ? 'overdue' : '' ?>">
+                                        <span><?= $isOverdue ? '⚠️ ' : '📅 ' ?></span>
+                                        <span><?= htmlspecialchars($t->deadline ?: __('Board::list_no_date')) ?></span>
+                                    </div>
+
+                                    <!-- Atanan Çalışanlar (Yan Yana Avatarlar) -->
+                                    <div class="cu-task-assignee cu-list-assignees-avatars">
+                                        <?php foreach ($tAssignees as $asg): ?>
+                                            <div class="cu-avatar cu-avatar-sm" data-bg="<?= htmlspecialchars($asg->avatar_color ?? '#7B68EE') ?>" title="<?= htmlspecialchars($asg->name ?? '') ?>">
+                                                <?= mb_substr($asg->name ?? 'U', 0, 1) ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+
+                                    <!-- Aksiyon Butonları -->
+                                    <div class="cu-row-actions cu-list-actions-wrap">
+                                        <button type="button" class="cu-btn-sm cu-btn-list-subtask" data-parent-id="<?= $t->id ?>" title="<?= htmlspecialchars(__('Board::list_btn_subtask')) ?>">
+                                            <?= __('Board::list_btn_subtask') ?>
+                                        </button>
+                                        <button type="button" class="cu-btn-sm cu-btn-list-detail" data-task-id="<?= $t->id ?>">
+                                            <?= __('Board::list_btn_detail') ?>
+                                        </button>
+                                        <button type="button" class="cu-btn-sm cu-btn-list-delete" data-task-id="<?= $t->id ?>" title="<?= htmlspecialchars(__('Board::delete_task')) ?>">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- NESTED SUBTASKS TREE (GİRİNTİLİ ALT GÖREVLER) -->
+                                <div class="cu-subtasks-tree cu-subtasks-tree-wrap" id="subtasksTree-<?= $t->id ?>">
+                                    <div id="subtasksRows-<?= $t->id ?>">
+                                        <?php foreach ($subtasks as $st): ?>
+                                            <div class="cu-task-row cu-subtask-row" data-task-id="<?= $st->id ?>">
+                                                <div class="cu-subtask-code-prefix">
+                                                    └── <strong class="cu-task-code"><?= htmlspecialchars($st->task_code) ?></strong>
+                                                </div>
+                                                <div class="cu-subtask-title-cell">
+                                                    <?= htmlspecialchars($st->title) ?>
+                                                </div>
+                                                <div>
+                                                    <span class="cu-priority-badge cu-priority-<?= $st->priority ?> cu-subtask-pr-badge">
+                                                        <?= $prLabels[$st->priority] ?? $st->priority ?>
+                                                    </span>
+                                                </div>
+                                                <div class="cu-task-assignee cu-subtask-assignee-cell">
+                                                    <div class="cu-avatar cu-avatar-sm" data-bg="<?= htmlspecialchars($st->assignee_color ?? '#7B68EE') ?>">
+                                                        <?= mb_substr($st->assignee_name ?? 'U', 0, 1) ?>
+                                                    </div>
+                                                    <span class="cu-project-desc-text">
+                                                        <?= htmlspecialchars(explode(' ', $st->assignee_name ?? __('Board::unassigned'))[0]) ?>
+                                                    </span>
+                                                </div>
+                                                <button type="button" class="cu-subtask-delete-btn" data-subtask-id="<?= $st->id ?>" title="<?= htmlspecialchars(__('Board::delete_subtask')) ?>">
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+
+                                    <!-- Hızlı Alt Görev Ekleme Satırı (Inline Subtask Creator) -->
+                                    <div class="cu-quick-subtask-bar">
+                                        <input type="text" id="quickSubtaskInput-<?= $t->id ?>" class="cu-form-control cu-quick-subtask-input" placeholder="<?= htmlspecialchars(__('Board::list_subtask_placeholder')) ?>" data-parent-id="<?= $t->id ?>">
+                                        <button type="button" class="cu-btn-sm cu-quick-subtask-btn" data-parent-id="<?= $t->id ?>"><?= __('Board::btn_add') ?></button>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+<?php else: ?>
 <div class="cu-board-container">
     <?php 
     $today = date('Y-m-d');
@@ -315,6 +529,8 @@ foreach ($allTasks as $t) {
         </div>
     <?php endforeach; ?>
 </div>
+<?php endif; ?>
+
 
 <!-- 🐙 GITHUB DEVOPS AYARLARI MODALI -->
 

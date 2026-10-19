@@ -3730,6 +3730,100 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // 17. LIST VIEW EVENT LISTENERS & DELEGATION
+    document.addEventListener('click', function(e) {
+        const treeToggleBtn = e.target.closest('.cu-btn-tree-toggle');
+        if (treeToggleBtn) {
+            e.stopPropagation();
+            const parentId = treeToggleBtn.getAttribute('data-parent-id');
+            if (parentId && typeof toggleSubtasksTree === 'function') {
+                toggleSubtasksTree(parentId);
+            }
+            return;
+        }
+
+        const subtaskAddBtn = e.target.closest('.cu-btn-list-subtask');
+        if (subtaskAddBtn) {
+            e.stopPropagation();
+            const parentId = subtaskAddBtn.getAttribute('data-parent-id');
+            if (parentId && typeof expandAndFocusSubtask === 'function') {
+                expandAndFocusSubtask(parentId);
+            }
+            return;
+        }
+
+        const detailBtn = e.target.closest('.cu-btn-list-detail');
+        if (detailBtn) {
+            e.stopPropagation();
+            const taskId = detailBtn.getAttribute('data-task-id');
+            if (taskId && typeof openTaskDrawer === 'function') {
+                openTaskDrawer(taskId);
+            }
+            return;
+        }
+
+        const deleteBtn = e.target.closest('.cu-btn-list-delete');
+        if (deleteBtn) {
+            e.stopPropagation();
+            const taskId = deleteBtn.getAttribute('data-task-id');
+            if (taskId && typeof deleteTaskFromList === 'function') {
+                deleteTaskFromList(taskId);
+            }
+            return;
+        }
+
+        const subtaskDeleteBtn = e.target.closest('.cu-subtask-delete-btn');
+        if (subtaskDeleteBtn) {
+            e.stopPropagation();
+            const subtaskId = subtaskDeleteBtn.getAttribute('data-subtask-id');
+            if (subtaskId && typeof deleteSubtask === 'function') {
+                deleteSubtask(subtaskId);
+            }
+            return;
+        }
+
+        const quickSubtaskBtn = e.target.closest('.cu-quick-subtask-btn');
+        if (quickSubtaskBtn) {
+            e.stopPropagation();
+            const parentId = quickSubtaskBtn.getAttribute('data-parent-id');
+            if (parentId && typeof handleQuickAddSubtask === 'function') {
+                handleQuickAddSubtask(parentId);
+            }
+            return;
+        }
+
+        const quickAddGroupBtn = e.target.closest('.cu-btn-quick-add-group');
+        if (quickAddGroupBtn) {
+            e.stopPropagation();
+            if (typeof openNewTaskModal === 'function') {
+                openNewTaskModal();
+            }
+            return;
+        }
+
+        const taskRow = e.target.closest('.cu-task-row');
+        if (taskRow && !e.target.closest('button') && !e.target.closest('input')) {
+            const taskId = taskRow.getAttribute('data-task-id');
+            if (taskId && typeof openTaskDrawer === 'function') {
+                openTaskDrawer(taskId);
+            }
+            return;
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const input = e.target.closest('.cu-quick-subtask-input');
+            if (input) {
+                e.preventDefault();
+                const parentId = input.getAttribute('data-parent-id');
+                if (parentId && typeof handleQuickAddSubtask === 'function') {
+                    handleQuickAddSubtask(parentId);
+                }
+            }
+        }
+    });
 });
 
 

@@ -51,17 +51,39 @@ class TaskModel extends BaseModel
     }
 
     /**
-     * Görevlere ait dosya/ek sayılarını çeker
+     * Gorevlere ait dosya/ek sayilarini ceker
      */
     public function getAttachmentCounts(): array
     {
         $sql = "SELECT task_id, COUNT(*) as count FROM task_attachments GROUP BY task_id";
         $rows = $this->query($sql);
+        $map = [];
         foreach ($rows as $r) {
             $row = (object)$r;
             $map[$row->task_id] = (int)$row->count;
         }
         return $map;
+    }
+
+    /**
+     * Alt gorev agac haritasini ceker
+     */
+    public function getSubtaskMap(): array
+    {
+        $sql = "
+            SELECT s.*, u.name as assignee_name, u.avatar_color as assignee_color
+            FROM tasks s
+            LEFT JOIN users u ON s.assigned_to = u.id
+            WHERE s.parent_task_id IS NOT NULL
+            ORDER BY s.id ASC
+        ";
+        $allSubtasks = $this->query($sql);
+        $subtaskMap = [];
+        foreach ($allSubtasks as $sub) {
+            $subObj = (object)$sub;
+            $subtaskMap[$subObj->parent_task_id][] = $subObj;
+        }
+        return $subtaskMap;
     }
 
     /**

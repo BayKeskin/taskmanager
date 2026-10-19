@@ -866,3 +866,207 @@
 .cu-btn-client-mod:hover {
     background: #d35400;
 }
+
+/* ==========================================================================
+   VIEW SWITCHER (KANBAN vs LIST TABS)
+   ========================================================================== */
+.cu-view-switcher {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    gap: 2px;
+    margin-left: 14px;
+}
+
+.cu-view-switcher-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 4px;
+    transition: var(--transition);
+}
+
+.cu-view-switcher-btn:hover {
+    color: var(--text-white);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.cu-view-switcher-btn.active {
+    color: #ffffff;
+    background: var(--brand-primary);
+    box-shadow: 0 2px 6px rgba(123, 104, 238, 0.35);
+}
+
+/* ==========================================================================
+   LIST VIEW ENHANCEMENTS
+   ========================================================================== */
+.cu-btn-tree-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: var(--transition);
+}
+
+.cu-btn-tree-toggle:hover {
+    color: var(--brand-primary);
+}
+
+.cu-tree-toggle-placeholder {
+    display: inline-block;
+    width: 15px;
+}
+
+.cu-list-task-code-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cu-list-badge-subtasks {
+    background: rgba(123, 104, 238, 0.15);
+    color: #7B68EE;
+    font-size: 10px;
+    margin-left: 6px;
+    font-weight: 700;
+}
+
+.cu-list-tag-badge {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(123, 104, 238, 0.12);
+    color: #7B68EE;
+    border: 1px solid rgba(123, 104, 238, 0.25);
+    font-weight: 600;
+    margin-left: 6px;
+}
+
+.cu-list-assignees-avatars {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 140px;
+    overflow: hidden;
+}
+
+.cu-list-actions-wrap {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.cu-btn-list-subtask {
+    background: rgba(123, 104, 238, 0.15);
+    color: #7B68EE;
+    border: 1px solid rgba(123, 104, 238, 0.3);
+    font-size: 11px;
+    padding: 3px 8px;
+}
+
+.cu-btn-list-delete {
+    background: rgba(231, 76, 60, 0.12);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.25);
+    font-size: 11px;
+    padding: 3px 7px;
+}
+
+.cu-subtasks-tree-wrap {
+    display: none;
+    padding-left: 36px;
+    background: rgba(0, 0, 0, 0.15);
+    border-left: 2px solid rgba(123, 104, 238, 0.4);
+    margin-left: 14px;
+}
+
+.cu-subtask-row {
+    padding: 7px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.cu-subtask-code-prefix {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: monospace;
+    margin-right: 8px;
+}
+
+.cu-subtask-title-cell {
+    flex: 1;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.cu-subtask-pr-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+.cu-subtask-assignee-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 12px;
+}
+
+.cu-subtask-delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 6px;
+    margin-left: 8px;
+}
+
+.cu-subtask-delete-btn:hover {
+    color: #e74c3c;
+}
+
+.cu-quick-subtask-bar {
+    padding: 8px 16px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.cu-quick-subtask-input {
+    height: 28px;
+    font-size: 11.5px;
+    background: rgba(0, 0, 0, 0.25);
+    flex: 1;
+}
+
+.cu-quick-subtask-btn {
+    height: 28px;
+    font-size: 11px;
+    padding: 0 10px;
+    background: var(--brand-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.cu-empty-group-box {
+    padding: 16px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+}
