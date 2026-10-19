@@ -1,8 +1,5 @@
 <?php
-use Core\EventManager;
 use Core\AssetManager;
 
-EventManager::listen('app.init', function() {
-    AssetManager::enqueueCss('/Modules/ApiTester/Assets/css/apitester.css');
-    AssetManager::enqueueJs('/Modules/ApiTester/Assets/js/apitester.js');
-});
+AssetManager::enqueueCss('apitester-css', '/taskmanager/Modules/ApiTester/Assets/css/apitester.css');
+AssetManager::enqueueJs('apitester-js', '/taskmanager/Modules/ApiTester/Assets/js/apitester.js');

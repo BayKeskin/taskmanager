@@ -37,6 +37,10 @@ $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dyn
             <span>🧪</span>
             <span><?= htmlspecialchars(__('ApiTester::live_console_badge')) ?></span>
         </a>
+        <a href="<?= baseUrl('API_DOCUMENTATION.md') ?>" target="_blank" class="cu-btn-sm cu-docs-btn-markdown">
+            <span>📄</span>
+            <span><?= htmlspecialchars(__('ApiTester::btn_markdown')) ?></span>
+        </a>
         <a href="<?= baseUrl('api/health') ?>" target="_blank" class="cu-btn-sm cu-docs-btn-health">
             <span>🟢</span>
             <span><?= htmlspecialchars(__('ApiTester::btn_health')) ?></span>
@@ -443,7 +447,7 @@ $userToken = (!empty($currentUser->api_token)) ? $currentUser->api_token : ($dyn
 </div>
 
 <?php
-\Core\AssetManager::localizeScript('api-docs-js', 'APITESTER_DOCS_I18N', [
+\Core\AssetManager::localizeScript('apitester-js', 'APITESTER_DOCS_I18N', [
     'token_copied' => __('ApiTester::token_copied')
 ]);
 ?>
