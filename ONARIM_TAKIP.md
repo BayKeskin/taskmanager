@@ -1,9 +1,10 @@
-# Docs (Dökümanlar) Modülü Onarım Takip Listesi (ONARIM_TAKIP.md)
+# AiArchitect (AI Proje Mimarı) Modülü Onarım Takip Listesi (ONARIM_TAKIP.md)
 
-## Tespit Edilen Eksikler ve İyileştirme Maddeleri
+## Tespit Edilen Durum ve İnceleme Maddeleri
 
-- [x] 1. [Görsel/CSS] Eski sistemdeki zengin Quill editör tipografi kuralları (`.ql-editor h1`, `h2`, `h3`, `h4`, `p`, ardışık boş satır temizleme kuralları, `strong`, `code`, `pre`, `blockquote`, `ul`, `ol`) `Modules/Docs/Assets/css/docs.css` içine taşınmamış.
-- [x] 2. [Görsel/CSS] Eski sistemdeki gelişmiş tablo stilleri (`.ql-editor table`, `tr`, `td`, `th`, ilk satır başlık vurgusu, zebra satır renkleri ve yatay scroll desteği) `docs.css` dosyasında eksik.
-- [x] 3. [Görsel/CSS] Açık tema (Light Theme) desteği kuralları (`[data-theme="light"] .cu-doc-paper`, `#rawSourceTextarea`, `.ql-code-block`, `.ql-editor blockquote`) `docs.css` içinde eksik.
-- [x] 4. [İşlev/JS] Mobil görünümde dökümanlar çekmecesini açan `.cu-mobile-docs-toggle` butonunun click event listener'ı ve mobil toggle davranışı eksik.
-- [x] 5. [Görsel/CSS] Sol döküman listesinde (`cu-doc-item-title`) döküman başlıklarının metin taşma (`text-overflow: ellipsis`) ve esneklik davranışı için kapsayıcı stillerinin tam uyumu.
+- [x] 1. [Görsel/CSS] Üst Kanban barındaki `🪄 AI Proje Mimarı` butonunun (`#btnOpenAiArchitectModal`) yerleşimi, ikonu ve açılış animasyonu tam uyumlu.
+- [x] 2. [Görsel/CSS] `#modalAiArchitect` modalında Adım 1 Brif metin alanı (`#aiArchBriefInput`), sürükle-bırak döküman alanı (`#aiArchDropzone`) ve proje seçimi kutusu karanlık tema renk şemasına tam uyumlu.
+- [x] 3. [İşlev/JS] Brif girilip `btnRunAiDecompose` tıklandığında yükleme animasyonu ve Adım 2 (İnteraktif Görev Ağacı) geçişi sorunsuz çalışıyor.
+- [x] 4. [Görsel/CSS] Adım 2 Epik ve Alt Görev kartları, sürükleme tutamakları (`::`), durum rozetleri ve alt görev detay kutuları kusursuz render ediliyor.
+- [x] 5. [İşlev/JS] `btnAiArchToggleAllDetails` (tüm detayları aç/kapat), `btnAiArchAddNewEpic` (yeni modül ekle) ve `btnAiArchBackToStep1` (brife geri dön) aksiyon butonları hatasız çalışıyor.
+- [x] 6. [Görsel/CSS] Modal alt bilgi çubuğunda özet sayaç rozeti (`#aiArchSummaryBadge`) ve panoya aktarma onay butonu (`#btnApproveAiArch`) tam hizalı ve erişilebilir.
