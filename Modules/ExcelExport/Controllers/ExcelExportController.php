@@ -20,9 +20,13 @@ class ExcelExportController extends BaseController
     /**
      * CSV/Excel indirme işlemini yürütür
      */
-    public function export(int $projectId): void
+    public function export(int $projectId, ?object $currentUser = null): void
     {
-        $this->requireAuth();
+        if ($currentUser) {
+            $this->user = $currentUser;
+        } else {
+            $this->requireAuth();
+        }
 
         if ($projectId <= 0) {
             echo __('ExcelExport::invalid_project');
