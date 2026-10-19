@@ -39,10 +39,13 @@ class PinController extends BaseController
         }
 
         if (!$proj) {
-            return ['success' => false, 'error' => 'Geçerli bir proje bulunamadı.', 'status_code' => 404];
+            return ['success' => false, 'error' => __('VisualPins::project_not_found'), 'status_code' => 404];
         }
 
-        $title = trim($requestData['title'] ?? '📍 Görsel Pin Geri Bildirimi');
+        $title = trim($requestData['title'] ?? '');
+        if ($title === '') {
+            $title = __('VisualPins::pin_title');
+        }
         $userDesc = trim($requestData['description'] ?? '');
         $selector = trim($requestData['selector'] ?? '');
         $url = trim($requestData['url'] ?? '');
@@ -51,16 +54,16 @@ class PinController extends BaseController
         $coords = trim($requestData['coords'] ?? '');
         $priority = in_array($requestData['priority'] ?? '', ['low', 'normal', 'high', 'urgent']) ? $requestData['priority'] : 'normal';
 
-        $fullDesc = "### 📍 Görsel Pin / Hata Bildirimi (In-House BugHerd)\n\n";
+        $fullDesc = "### " . __('VisualPins::pin_title') . " (In-House BugHerd)\n\n";
         if ($userDesc) {
-            $fullDesc .= "#### 📝 Kullanıcı Açıklaması:\n" . $userDesc . "\n\n";
+            $fullDesc .= "#### 📝 " . __('VisualPins::pin_desc') . ":\n" . $userDesc . "\n\n";
         }
-        $fullDesc .= "#### 🔍 Teknik Meta Veriler:\n";
-        if ($url) $fullDesc .= "- **Sayfa URL:** " . $url . "\n";
-        if ($selector) $fullDesc .= "- **Hedef Öğe (CSS Selector):** `" . $selector . "`\n";
-        if ($coords) $fullDesc .= "- **Tıklama Koordinatları:** " . $coords . "\n";
-        if ($viewport) $fullDesc .= "- **Çözünürlük (Viewport):** " . $viewport . "\n";
-        if ($userAgent) $fullDesc .= "- **Tarayıcı / İşletim Sistemi:** `" . $userAgent . "`\n";
+        $fullDesc .= "#### 🔍 " . __('VisualPins::tech_meta') . ":\n";
+        if ($url) $fullDesc .= "- **" . __('VisualPins::page_url') . ":** " . $url . "\n";
+        if ($selector) $fullDesc .= "- **" . __('VisualPins::selector') . ":** `" . $selector . "`\n";
+        if ($coords) $fullDesc .= "- **" . __('VisualPins::coords') . ":** " . $coords . "\n";
+        if ($viewport) $fullDesc .= "- **" . __('VisualPins::viewport') . ":** " . $viewport . "\n";
+        if ($userAgent) $fullDesc .= "- **" . __('VisualPins::user_agent') . ":** `" . $userAgent . "`\n";
 
         $taskCode = $this->pinModel->getNextTaskCode($proj->project_code);
         $creatorId = $currentUser->id ?? 1;
@@ -90,7 +93,7 @@ class PinController extends BaseController
                 if (@file_put_contents($fullFilePath, $decoded)) {
                     $screenshotUrl = '/taskmanager/Public/uploads/pins/' . $fileName;
                     $fileSize = strlen($decoded);
-                    $fullDesc .= "\n#### 📸 Görsel Ekran Görüntüsü & Hata Konumu:\n";
+                    $fullDesc .= "\n#### 📸 " . __('VisualPins::screenshot_section') . ":\n";
                     $fullDesc .= "![" . $title . "](" . $screenshotUrl . ")\n";
                 }
             }
@@ -117,7 +120,7 @@ class PinController extends BaseController
 
         return [
             'success' => true,
-            'message' => 'Görsel pin görevi başarıyla oluşturuldu ve panoya eklendi.',
+            'message' => __('VisualPins::success_created'),
             'data'    => [
                 'task_id'        => $newTaskId,
                 'task_code'      => $taskCode,
