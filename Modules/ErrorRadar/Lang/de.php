@@ -1,0 +1,28 @@
+<?php
+return [
+    'task_title_prefix'          => '[AUTO-BUG]',
+    'js_console_error'           => 'JavaScript-Konsolenfehler',
+    'network_error'              => 'Netzwerk- / HTTP-Fehler',
+    'php_xdebug_error'           => 'PHP- / Xdebug-Fehler',
+    'broken_i18n_key'            => 'Defekter Übersetzungsschlüssel (i18n)',
+    'unhandled_rejection'        => 'Unbehandelte Promise-Ablehnung',
+    'static_asset_error'         => '404 Ladefehler für statische Dateien',
+    'error_source_url'           => 'Quell-URL',
+    'error_type'                 => 'Fehlertyp',
+    'error_message'              => 'Fehlermeldung',
+    'error_location'             => 'Datei & Zeile',
+    'error_stack_trace'          => 'Stapelüberwachung (Stack Trace)',
+    'error_http_status'          => 'HTTP-Statuscode',
+    'error_request_endpoint'     => 'Anfrage-Endpunkt',
+    'error_response_body'        => 'Antwortvorschau (Response Preview)',
+    'error_reproduction_steps'   => 'Wie man reproduziert (Autonome Details)',
+    'repro_step_1'               => '1. Öffnen Sie die folgende URL im Browser: ',
+    'repro_step_2'               => '2. Beobachten Sie die Hintergrundanfrage an den Endpunkt: ',
+    'repro_step_3'               => '3. Öffnen Sie die Konsole und das Netzwerkfenster, um 0 Fehler zu überprüfen: ',
+    'error_fingerprint'          => 'Fehler-Fingerabdruck',
+    'duplicate_error_ignored'    => 'Eine aktive Aufgabe für diesen Fehler existiert bereits, dedupliziert.',
+    'task_created_success'       => 'Fehleraufgabe erfolgreich durch das Fehlerradar erstellt.',
+    'invalid_error_payload'      => 'Ungültige oder leere Fehlerdaten übermittelt.',
+    'project_not_found'          => 'Gültiges Projekt nicht gefunden.',
+    'unauthorized'               => 'Unbefugter Zugriff.'
+];

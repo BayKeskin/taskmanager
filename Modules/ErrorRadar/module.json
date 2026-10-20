@@ -1,0 +1,7 @@
+{
+    "name": "Autonomous Error & Network Radar",
+    "slug": "error-radar",
+    "description": "Autonomous browser and network error tracking engine. Captures JS errors, 404/500 HTTP failures, Xdebug/PHP fatal traces, and untranslated i18n keys to automatically create Kanban bug tasks.",
+    "version": "1.0.0",
+    "active": true
+}

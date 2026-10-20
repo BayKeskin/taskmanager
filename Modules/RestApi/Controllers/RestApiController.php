@@ -99,11 +99,12 @@ class RestApiController extends BaseController
         }
         $segments = $path !== '' ? explode('/', $path) : [];
 
-        $publicRoutes = ['', 'health', 'status', 'auth/login', 'webhooks/listener', 'visual-feedback', 'dispatcher', 'dispatcher/status', 'watchdog', 'watchdog/health'];
+        $publicRoutes = ['', 'health', 'status', 'auth/login', 'webhooks/listener', 'visual-feedback', 'dispatcher', 'dispatcher/status', 'watchdog', 'watchdog/health', 'error-radar', 'error-radar/report'];
         $isPublic = in_array($path, $publicRoutes) 
             || (count($segments) >= 2 && $segments[0] === 'auth' && $segments[1] === 'login') 
             || (count($segments) >= 2 && $segments[0] === 'webhooks' && $segments[1] === 'listener')
-            || (count($segments) >= 1 && $segments[0] === 'watchdog');
+            || (count($segments) >= 1 && $segments[0] === 'watchdog')
+            || (count($segments) >= 1 && $segments[0] === 'error-radar');
 
         // 5. Token Extraction
         $token = null;
@@ -214,6 +215,17 @@ class RestApiController extends BaseController
                 ], __('RestApi::operation_successful'), 201);
             } else {
                 $this->apiError($result['error'] ?? __('RestApi::invalid_request'), $result['status_code'] ?? 400);
+            }
+        }
+
+        // AUTONOMOUS ERROR & NETWORK RADAR
+        if ($resource === 'error-radar') {
+            $errorRadarCtrl = new \Modules\ErrorRadar\Controllers\ErrorRadarController();
+            $result = $errorRadarCtrl->processReport($requestData);
+            if (!empty($result['success'])) {
+                $this->apiResponse($result['data'] ?? null, $result['message'] ?? __('RestApi::operation_successful'), $result['status_code'] ?? 200);
+            } else {
+                $this->apiError($result['error'] ?? ($result['message'] ?? __('RestApi::invalid_request')), $result['status_code'] ?? 400);
             }
         }
 

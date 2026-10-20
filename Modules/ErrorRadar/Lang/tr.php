@@ -1,0 +1,28 @@
+<?php
+return [
+    'task_title_prefix'          => '[AUTO-BUG]',
+    'js_console_error'           => 'JavaScript Konsol Hatası',
+    'network_error'              => 'Ağ / HTTP Hatası',
+    'php_xdebug_error'           => 'PHP / Xdebug Hatası',
+    'broken_i18n_key'            => 'Kırık Dil Anahtarı (i18n)',
+    'unhandled_rejection'        => 'İşlenmemiş Promise Reddi',
+    'static_asset_error'         => '404 Statik Dosya Yükleme Hatası',
+    'error_source_url'           => 'Kaynak URL',
+    'error_type'                 => 'Hata Tipi',
+    'error_message'              => 'Hata Mesajı',
+    'error_location'             => 'Dosya ve Satır',
+    'error_stack_trace'          => 'Yığın İzleme (Stack Trace)',
+    'error_http_status'          => 'HTTP Durum Kodu',
+    'error_request_endpoint'     => 'İstek Uç Noktası (Endpoint)',
+    'error_response_body'        => 'Yanıt Gövdesi (Response Preview)',
+    'error_reproduction_steps'   => 'Nasıl Tekrarlanır (Otonom Detay)',
+    'repro_step_1'               => '1. İlgili adresi tarayıcıda açın: ',
+    'repro_step_2'               => '2. Arka planda uç noktaya yapılan isteği gözlemleyin: ',
+    'repro_step_3'               => '3. Konsol ve Ağ panelini açarak hatanın giderildiğini ve sıfır hata olduğunu doğrulayın: ',
+    'error_fingerprint'          => 'Hata Parmak İzi (Fingerprint)',
+    'duplicate_error_ignored'    => 'Aynı hata için açık bir görev zaten mevcut, tekilleştirildi.',
+    'task_created_success'       => 'Hata radarı tarafından yeni görev başarıyla oluşturuldu.',
+    'invalid_error_payload'      => 'Geçersiz veya boş hata verisi gönderildi.',
+    'project_not_found'          => 'Geçerli bir proje bulunamadı.',
+    'unauthorized'               => 'Yetkisiz erişim.'
+];

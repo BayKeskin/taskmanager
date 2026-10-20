@@ -1,0 +1,28 @@
+<?php
+return [
+    'task_title_prefix'          => '[AUTO-BUG]',
+    'js_console_error'           => 'JavaScript Console Error',
+    'network_error'              => 'Network / HTTP Error',
+    'php_xdebug_error'           => 'PHP / Xdebug Error',
+    'broken_i18n_key'            => 'Broken Translation Key (i18n)',
+    'unhandled_rejection'        => 'Unhandled Promise Rejection',
+    'static_asset_error'         => '404 Static Asset Loading Error',
+    'error_source_url'           => 'Source URL',
+    'error_type'                 => 'Error Type',
+    'error_message'              => 'Error Message',
+    'error_location'             => 'File & Line',
+    'error_stack_trace'          => 'Stack Trace',
+    'error_http_status'          => 'HTTP Status Code',
+    'error_request_endpoint'     => 'Request Endpoint',
+    'error_response_body'        => 'Response Preview',
+    'error_reproduction_steps'   => 'How to Reproduce (Autonomous Detail)',
+    'repro_step_1'               => '1. Open the following URL in browser: ',
+    'repro_step_2'               => '2. Observe the background request sent to endpoint: ',
+    'repro_step_3'               => '3. Open Console & Network tab to verify 0 errors: ',
+    'error_fingerprint'          => 'Error Fingerprint',
+    'duplicate_error_ignored'    => 'An active task for this error already exists, deduplicated.',
+    'task_created_success'       => 'Bug task successfully created by error radar.',
+    'invalid_error_payload'      => 'Invalid or empty error payload provided.',
+    'project_not_found'          => 'Valid project not found.',
+    'unauthorized'               => 'Unauthorized access.'
+];
