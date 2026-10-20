@@ -176,6 +176,18 @@
         }
 
         if (hasPhpError) {
+            // Yanıt geçerli bir JSON ise ve bir görev detayı / API veri paketi içeriyorsa (örn: task description içinde geçen hata metni)
+            // bu bir PHP çökmesi değil, veri içeriğidir. Sadece gerçek sunucu çökmelerini (HTML/xdebug tablo/plain-text hata) raporla.
+            try {
+                var trimmed = responseText.trim();
+                if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+                    var parsed = JSON.parse(trimmed);
+                    if (parsed && (parsed.task || parsed.tasks || parsed.task_id || parsed.fingerprint || (parsed.success !== undefined && parsed.data && parsed.data.task_code))) {
+                        return;
+                    }
+                }
+            } catch (e) {}
+
             var snippet = responseText;
             var cleanText = snippet.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
             sendReport({
