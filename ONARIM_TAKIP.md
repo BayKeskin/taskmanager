@@ -1,7 +1,0 @@
-# ONARIM VE İNCELEME TAKİP LİSTESİ: Reports Modülü
-
-## Tespit Edilen Durumlar ve Yapılan İşlemler
-- [x] 1. [Görsel/Varlık Yükleme Hatası]: `Modules/Reports/init.php` içinde CSS ve JS varlıklarının tetiklenmeyen `reports.rendered` EventManager event dinleyicisi içerisine hapsedilmesi nedeniyle `reports.css` ve `reports.js` sayfaya yüklenmiyordu; bu durum ekranın tamamen ham, biçimsiz ve stil dosyasız (unstyle plain text) görünmesine sebep oluyordu. Event sarmalayıcısı kaldırılarak doğrudan `AssetManager::enqueueCss` ve `enqueueJs` ile kuyruğa eklendi.
-- [x] 2. [Mimari / Kural 2 İhlali]: `Modules/Reports/Services/StandupService.php` içerisindeki 4 adet SQL sorgusu (`$db->multi_record_query`), HMVC Kural 2 (Servis/Controller SQL Yasağı) gereğince `Modules/Reports/Models/ReportModel.php` içine taşındı (`getStandupCompletedTasks`, `getStandupInProgressTasks`, `getStandupDelayedTasks`, `getStandupNewTasks`).
-- [x] 3. [Canlı Tarayıcı Doğrulaması]: `http://localhost/taskmanager/reports` ekranı canlı tarayıcıda açılarak test edildi. Efor & Hakediş kartları, KPI paneli (Tamamlanan, Efor, Bedel, Oran, SLA), Proje İlerleme çubukları ve Ekip Performans tablosu modern kart yapıları, degradeler ve renklerle eksiksiz render edildi; konsolda 0 JS hatası ve 0 404 varlık hatası doğrulandı.
-- [x] 4. [Denetim/Audit]: `php taskmanager-audit/audit.php Reports` ve `php tests/audit_module.php Reports` çalıştırıldı, 0 ihlal ile `[PASS]` alındı.
