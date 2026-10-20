@@ -64,7 +64,9 @@ def poll_live_tasks(api_url, token, project_code, interval=10):
                         
                         # 1. Yerel açık Antigravity penceresini ve port/CSRF token ikilisini bul
                         ls_address, csrf_token = get_antigravity_ls_env()
-                        cid, uri = discover_latest_conversation(project_code, task.get('title', ''), workspace_path=task.get('workspace_path', ''))
+                        cid, uri, _, _ = discover_latest_conversation(project_code, task.get('title', ''), workspace_path=task.get('workspace_path', ''))
+                        if cid:
+                            cid = str(cid).strip()
                         
                         title_header = f"🚀 [LIVE SERVER] {task_code}: {task.get('title')}"
                         desc = task.get('description', '') or '*(No description provided)*'
@@ -132,7 +134,9 @@ if __name__ == '__main__':
     token = args.token.strip()
     if not token:
         try:
-            root_dir = os.path.dirname(BASE_DIR)
+            root_dir = os.path.abspath(os.path.join(BASE_DIR, '..', '..', '..'))
+            if not os.path.exists(os.path.join(root_dir, 'Core', 'System.php')):
+                root_dir = os.path.dirname(BASE_DIR)
             php_code = "require_once 'Core/System.php'; echo \\Modules\\RestApi\\Services\\RestApiService::getDynamicApiConfig()['api_token'];"
             res = subprocess.run(['php', '-r', php_code], cwd=root_dir, capture_output=True, text=True, timeout=5)
             if res.returncode == 0 and res.stdout.strip():

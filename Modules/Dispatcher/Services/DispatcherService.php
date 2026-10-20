@@ -227,13 +227,9 @@ class DispatcherService
 
         $files = glob($convDir . '/*.db') ?: [];
         usort($files, fn($a, $b) => filemtime($b) - filemtime($a));
+        $files = array_slice($files, 0, 30);
 
-        $now = time();
         foreach ($files as $file) {
-            if (($now - filemtime($file)) > 14400) {
-                continue;
-            }
-
             $cid = basename($file, '.db');
             try {
                 $sdb = new \SQLite3($file, SQLITE3_OPEN_READONLY);
@@ -404,9 +400,9 @@ class DispatcherService
         $workspacePath = $project->workspace_path ?? '';
         $projectCode   = $project->project_code ?? '';
         $discoveredCid = $this->discoverLatestConversation($workspacePath, $projectCode);
-        $targetCid     = $discoveredCid ?: ($project->agent_conversation_id ?? '');
+        $targetCid     = trim($discoveredCid ?: ($project->agent_conversation_id ?? ''));
 
-        if (!empty($discoveredCid) && $discoveredCid !== ($project->agent_conversation_id ?? '')) {
+        if (!empty($discoveredCid) && $discoveredCid !== trim((string)($project->agent_conversation_id ?? ''))) {
             $this->model->updateAgentConversationId((int)$project->id, $discoveredCid);
         }
 

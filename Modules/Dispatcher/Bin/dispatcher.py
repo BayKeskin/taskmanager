@@ -15,6 +15,13 @@ import urllib.parse
 import threading
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_ROOT = os.path.abspath(os.path.join(BASE_DIR, '..', '..', '..'))
+if not os.path.exists(os.path.join(APP_ROOT, 'Core', 'System.php')):
+    # Fallback if directory structure varies
+    possible_root = os.path.dirname(BASE_DIR)
+    if os.path.exists(os.path.join(possible_root, 'Core', 'System.php')):
+        APP_ROOT = possible_root
+
 LOG_FILE = os.path.join(BASE_DIR, 'dispatcher.log')
 WORKSPACES_CONFIG = os.path.join(BASE_DIR, 'workspaces.json')
 LS_ENV_FILE = os.path.join(BASE_DIR, 'ls_env.json')
@@ -43,7 +50,7 @@ def run_silent(cmd, **kwargs):
 def watchdog_loop():
     print("🛡️ [WATCHDOG] Otonom Kurtarma ve Kuyruk Denetim Motoru Aktif (Sessiz Mod)!")
     time.sleep(10)
-    app_root = os.path.dirname(BASE_DIR)
+    app_root = APP_ROOT
 
     while True:
         try:
@@ -138,13 +145,13 @@ def get_all_ls_instances():
     instances = []
     try:
         ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
-        ps_res = run_silent(['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps_cmd], capture_output=True, text=True, timeout=5)
+        ps_res = run_silent(['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps_cmd], capture_output=True, text=True, timeout=10)
         if ps_res.returncode == 0 and ps_res.stdout.strip():
             procs = json.loads(ps_res.stdout)
             if isinstance(procs, dict):
                 procs = [procs]
 
-            netstat_res = run_silent(['netstat', '-ano'], capture_output=True, text=True, timeout=5)
+            netstat_res = run_silent(['netstat', '-ano'], capture_output=True, text=True, timeout=8)
             netstat = netstat_res.stdout or ''
             for proc in procs:
                 pid = str(proc.get('ProcessId', ''))
@@ -225,8 +232,8 @@ def load_workspaces_map():
     mapping = {}
     # 1. Veritabanından dinamik olarak tüm projelerin workspace_path değerlerini çek
     try:
-        app_root = os.path.dirname(BASE_DIR)
-        php_code = 'require "Model/DataLayer.php"; $db = new Database(); $rows = $db->connect->query("SELECT project_code, workspace_path FROM projects WHERE workspace_path IS NOT NULL AND workspace_path != \'\'")->fetchAll(PDO::FETCH_KEY_PAIR); echo json_encode($rows);'
+        app_root = APP_ROOT
+        php_code = 'require "Core/System.php"; $db = new Database(); $rows = $db->connect->query("SELECT project_code, workspace_path FROM projects WHERE workspace_path IS NOT NULL AND workspace_path != \'\'")->fetchAll(PDO::FETCH_KEY_PAIR); echo json_encode($rows);'
         res = run_silent(['php', '-r', php_code], cwd=app_root, capture_output=True, text=True, timeout=5)
         if res.returncode == 0 and res.stdout.strip():
             db_projects = json.loads(res.stdout.strip())
@@ -270,7 +277,7 @@ def get_project_primary_dir(project_code, workspace_path=""):
         for p in ws_map[project_code]:
             if os.path.isdir(p):
                 return p
-    return os.path.dirname(BASE_DIR)
+    return APP_ROOT
 
 def discover_latest_conversation(project_code, project_title="", workspace_path=""):
     workspaces_map = load_workspaces_map()
@@ -311,9 +318,10 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
 
 def sync_conversation_id_to_db(project_code, conv_id):
     try:
-        root_dir = os.path.dirname(BASE_DIR)
+        conv_id = str(conv_id).strip()
+        root_dir = APP_ROOT
         php_code = (
-            f"require_once 'Model/DataLayer.php'; "
+            f"require_once 'Core/System.php'; "
             f"$db = new Database(); "
             f"$stmt =$db->connect->prepare('UPDATE projects SET agent_conversation_id = :cid WHERE project_code = :pcode'); "
             f"$stmt->execute([':cid' => '{conv_id}', ':pcode' => '{project_code}']);"
@@ -325,14 +333,15 @@ def sync_conversation_id_to_db(project_code, conv_id):
 def process_webhook_async(payload, header_conv_id):
     event = payload.get('event', 'unknown')
     project_id = payload.get('project_id')
-    project_code = str(payload.get('project_code', ''))
+    project_code = str(payload.get('project_code', '')).strip()
     project_title = payload.get('project_title', '')
-    incoming_conv_id = payload.get('agent_conversation_id') or header_conv_id
+    raw_incoming = payload.get('agent_conversation_id') or header_conv_id
+    incoming_conv_id = str(raw_incoming).strip() if raw_incoming else None
     data = payload.get('data', {})
     if not isinstance(data, dict):
         data = {}
 
-    task_code = str(data.get('task_code', ''))
+    task_code = str(data.get('task_code', '')).strip()
     task_id = data.get('task_id')
     is_watchdog_check = bool(data.get('watchdog_check', False))
     api_base_url = (payload.get('api_base_url') or 'http://localhost/taskmanager').rstrip('/')
@@ -345,7 +354,7 @@ def process_webhook_async(payload, header_conv_id):
         print(f"✅ [GÖREV TESLİM EDİLDİ] [{project_code}] {task_code} -> Ajanın yanıtını bitirmesi için 4 sn bekleniyor...")
         time.sleep(4)
         if project_id:
-            app_root = os.path.dirname(BASE_DIR)
+            app_root = APP_ROOT
             fin_id = int(task_id) if task_id else 'null'
             next_cmd = ['php', '-r', f"require 'Core/System.php'; \\Modules\\Board\\Services\\TaskLifecycleService::dispatchNextAiTaskIfAvailable({int(project_id)}, {fin_id});"]
             run_silent(next_cmd, capture_output=True, text=True, cwd=app_root, timeout=10)
@@ -359,12 +368,16 @@ def process_webhook_async(payload, header_conv_id):
     project_dir = get_project_primary_dir(project_code, workspace_path)
 
     discovered_cid, matched_uri, disc_addr, disc_tok = discover_latest_conversation(project_code, project_title, workspace_path)
+    if discovered_cid:
+        discovered_cid = str(discovered_cid).strip()
 
     ls_address = disc_addr
     csrf_token = disc_tok
 
     # Kullanıcı elle girdiyse öncelik ver ve asla silme!
     target_conv_id = incoming_conv_id or discovered_cid
+    if target_conv_id:
+        target_conv_id = str(target_conv_id).strip()
 
     if target_conv_id:
         addr, tok = find_active_ls_for_conversation(target_conv_id)
