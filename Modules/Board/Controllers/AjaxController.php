@@ -733,6 +733,12 @@ switch ($action) {
             }
         } elseif ($newStatus === 'submitted' || $newStatus === 'completed') {
             \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
+        } elseif ($oldStatus === 'in_progress' && $newStatus === 'assigned' && $isCurrentTaskAi) {
+            \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.requeued', [
+                'task_id'    => $taskId,
+                'task_code'  => $task->task_code,
+                'project_id' => (int)$task->project_id
+            ]);
         }
 
         jsonResponse(true, __('Board::task_status_updated'), ['new_status' => $newStatus]);

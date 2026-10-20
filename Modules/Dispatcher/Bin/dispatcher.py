@@ -347,17 +347,18 @@ def process_webhook_async(payload, header_conv_id):
     api_base_url = (payload.get('api_base_url') or 'http://localhost/taskmanager').rstrip('/')
     api_token = str(payload.get('api_token') or '').strip()
 
-    # 1. GÖREV TESLİM EDİLDİĞİNDE: Kilidi temizle, 4 saniye bekle (ajan cevabını tamamlasın), sonra sıradaki görevi başlat!
-    if event == 'task.submitted':
+    # 1. GÖREV TESLİM EDİLDİĞİNDE VEYA GERİ ALINDIĞINDA: Kilidi temizle
+    if event in ('task.submitted', 'task.requeued'):
         with state_lock:
             project_active_state.pop(project_code, None)
-        print(f"✅ [GÖREV TESLİM EDİLDİ] [{project_code}] {task_code} -> Ajanın yanıtını bitirmesi için 4 sn bekleniyor...")
-        time.sleep(4)
-        if project_id:
-            app_root = APP_ROOT
-            fin_id = int(task_id) if task_id else 'null'
-            next_cmd = ['php', '-r', f"require 'Core/System.php'; \\Modules\\Board\\Services\\TaskLifecycleService::dispatchNextAiTaskIfAvailable({int(project_id)}, {fin_id});"]
-            run_silent(next_cmd, capture_output=True, text=True, cwd=app_root, timeout=10)
+        if event == 'task.submitted':
+            print(f"✅ [GÖREV TESLİM EDİLDİ] [{project_code}] {task_code} -> Ajanın yanıtını bitirmesi için 4 sn bekleniyor...")
+            time.sleep(4)
+            if project_id:
+                app_root = APP_ROOT
+                fin_id = int(task_id) if task_id else 'null'
+                next_cmd = ['php', '-r', f"require 'Core/System.php'; \\Modules\\Board\\Services\\TaskLifecycleService::dispatchNextAiTaskIfAvailable({int(project_id)}, {fin_id});"]
+                run_silent(next_cmd, capture_output=True, text=True, cwd=app_root, timeout=10)
         return
 
     if event in IGNORED_AGENT_EVENTS:
