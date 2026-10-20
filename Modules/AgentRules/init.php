@@ -4,15 +4,13 @@ use Core\AssetManager;
 use Core\EventManager;
 
 // 1. Varlık Yükleme (Assets & Çeviriler)
-EventManager::listen('app.init', function() {
-    AssetManager::enqueueCss('/Modules/AgentRules/Assets/css/agent-rules.css');
-    AssetManager::enqueueJs('/Modules/AgentRules/Assets/js/agent-rules.js');
-    AssetManager::localizeScript('agentRulesTranslations', [
-        'confirmSyncAll' => __('AgentRules::confirm_sync_all'),
-        'syncing'        => __('AgentRules::btn_sync_single'),
-        'statusSynced'   => __('AgentRules::status_synced')
-    ]);
-});
+AssetManager::enqueueCss('agent-rules-css', '/Modules/AgentRules/Assets/css/agent-rules.css');
+AssetManager::enqueueJs('agent-rules-js', '/Modules/AgentRules/Assets/js/agent-rules.js');
+AssetManager::localizeScript('agent-rules-js', 'agentRulesTranslations', [
+    'confirmSyncAll' => __('AgentRules::confirm_sync_all'),
+    'syncing'        => __('AgentRules::btn_sync_single'),
+    'statusSynced'   => __('AgentRules::status_synced')
+]);
 
 // 3. Proje Eklendiğinde veya Düzenlendiğinde Otomatik AGENTS.md Senkronizasyonu
 EventManager::listen('project.created', function($payload) {
