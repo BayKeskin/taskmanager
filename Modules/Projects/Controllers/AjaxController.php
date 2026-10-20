@@ -43,6 +43,10 @@ class AjaxController extends BaseController
             $this->respond(false, __('Projects::title_code_required'));
         }
 
+        if ($this->projectModel->getProjectByCode($projectCode)) {
+            $this->respond(false, __('Projects::project_code_exists'));
+        }
+
         $newId = $this->projectModel->createProject([
             'project_code'          => $projectCode,
             'title'                 => $title,

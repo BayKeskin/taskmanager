@@ -57,6 +57,7 @@ return array (
   'unauthorized_edit' => 'Yetkisiz erişim: Sadece yöneticiler proje güncelleyebilir.',
   'unauthorized_sync' => 'Yetkisiz erişim: Sadece yöneticiler kural senkronizasyonu yapabilir.',
   'title_code_required' => 'Proje adı ve proje kodu zorunludur.',
+  'project_code_exists' => 'Bu proje kodu zaten kullanılıyor. Lütfen benzersiz bir proje kodu girin.',
   'project_created_success' => 'Proje başarıyla oluşturuldu!',
   'project_create_failed' => 'Proje eklenirken hata oluştu.',
   'invalid_project_id' => 'Geçersiz proje ID.',

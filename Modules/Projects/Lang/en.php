@@ -57,6 +57,7 @@ return array (
   'unauthorized_edit' => 'Unauthorized access: Only administrators can update projects.',
   'unauthorized_sync' => 'Unauthorized access: Only administrators can synchronize rules.',
   'title_code_required' => 'Project title and project code are required.',
+  'project_code_exists' => 'This project code is already in use. Please enter a unique project code.',
   'project_created_success' => 'Project created successfully!',
   'project_create_failed' => 'Error occurred while creating project.',
   'invalid_project_id' => 'Invalid project ID.',

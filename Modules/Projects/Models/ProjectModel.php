@@ -75,9 +75,14 @@ class ProjectModel extends BaseModel
         $colsSql = implode(', ', $cols) . ', created_at, updated_at';
         $placeholdersSql = implode(', ', $placeholders) . ', NOW(), NOW()';
 
-        $stmt = $this->getPdo()->prepare("INSERT INTO projects ({$colsSql}) VALUES ({$placeholdersSql})");
-        $ok = $stmt->execute($values);
-        return $ok ? (int)$this->getPdo()->lastInsertId() : 0;
+        try {
+            $stmt = $this->getPdo()->prepare("INSERT INTO projects ({$colsSql}) VALUES ({$placeholdersSql})");
+            $ok = $stmt->execute($values);
+            return $ok ? (int)$this->getPdo()->lastInsertId() : 0;
+        } catch (\PDOException $e) {
+            error_log("createProject PDOException: " . $e->getMessage());
+            return 0;
+        }
     }
 
     /**
