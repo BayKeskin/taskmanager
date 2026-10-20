@@ -9,6 +9,7 @@ return [
     'btn_save_global'           => '💾 Save Global Rules',
     'btn_sync_all'              => '🚀 Synchronize All Projects',
     'btn_sync_single'           => '🔄 Sync Project',
+    'btn_create_agents'         => '✨ Create AGENTS.md',
     'col_project'               => 'Project',
     'col_workspace'             => 'Workspace Path',
     'col_custom_rules'          => 'Custom Directives',

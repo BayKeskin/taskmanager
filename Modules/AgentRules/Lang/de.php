@@ -9,6 +9,7 @@ return [
     'btn_save_global'           => '💾 Globale Regeln speichern',
     'btn_sync_all'              => '🚀 Alle Projekte synchronisieren',
     'btn_sync_single'           => '🔄 Synchronisieren',
+    'btn_create_agents'         => '✨ AGENTS.md erstellen',
     'col_project'               => 'Projekt',
     'col_workspace'             => 'Arbeitsbereich-Pfad',
     'col_custom_rules'          => 'Benutzerdefinierte Regeln',

@@ -195,11 +195,49 @@
 }
 
 .badge-tag {
-    display: inline-block;
-    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
     border-radius: 9999px;
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 600;
+    line-height: 1.3;
+}
+
+.badge-defined {
+    background: rgba(123, 104, 238, 0.12);
+    color: #a29bfe;
+    border: 1px solid rgba(123, 104, 238, 0.25);
+}
+
+.badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+}
+
+.btn-agent-create {
+    background: rgba(0, 184, 148, 0.15);
+    color: #00b894;
+    border: 1px solid rgba(0, 184, 148, 0.35);
+    border-radius: 6px;
+    padding: 5px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-agent-create:hover {
+    background: #00b894;
+    color: #ffffff;
+    border-color: #00b894;
 }
 
 .badge-success {

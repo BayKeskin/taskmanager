@@ -70,7 +70,10 @@ include dirname(__DIR__, 2) . '/../Core/Views/header.php';
                                     </td>
                                     <td>
                                         <?php if ($p['rules_length'] > 0): ?>
-                                            <span class="badge-tag badge-success"><?= sprintf(__('AgentRules::status_has_rules'), $p['rules_length']) ?></span>
+                                            <span class="badge-tag badge-success badge-defined">
+                                                <span class="badge-dot"></span>
+                                                <?= sprintf(__('AgentRules::status_has_rules'), $p['rules_length']) ?>
+                                            </span>
                                         <?php else: ?>
                                             <span class="badge-tag badge-neutral"><?= __('AgentRules::status_no_rules') ?></span>
                                         <?php endif; ?>
@@ -89,9 +92,15 @@ include dirname(__DIR__, 2) . '/../Core/Views/header.php';
                                     </td>
                                     <td class="text-right">
                                         <?php if ($p['has_dir']): ?>
-                                            <button type="button" class="btn-agent-sync btn-sync-single" data-project-id="<?= $p['id'] ?>">
-                                                <?= __('AgentRules::btn_sync_single') ?>
-                                            </button>
+                                            <?php if ($p['has_file']): ?>
+                                                <button type="button" class="btn-agent-sync btn-sync-single" data-project-id="<?= $p['id'] ?>">
+                                                    <?= __('AgentRules::btn_sync_single') ?>
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="button" class="btn-agent-create btn-sync-single" data-project-id="<?= $p['id'] ?>">
+                                                    <?= __('AgentRules::btn_create_agents') ?>
+                                                </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

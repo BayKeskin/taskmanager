@@ -9,6 +9,7 @@ return [
     'btn_save_global'           => '💾 Genel Kuralları Kaydet',
     'btn_sync_all'              => '🚀 Tüm Projeleri Senkronize Et',
     'btn_sync_single'           => '🔄 Senkronize Et',
+    'btn_create_agents'         => '✨ AGENTS.md Oluştur',
     'col_project'               => 'Proje',
     'col_workspace'             => 'Çalışma Alanı (Workspace)',
     'col_custom_rules'          => 'Özel Kurallar',
