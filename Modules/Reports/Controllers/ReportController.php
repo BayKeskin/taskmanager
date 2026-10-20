@@ -17,19 +17,26 @@ class ReportController extends BaseController
     /**
      * Raporlar ve analitik paneli için metrikleri döner
      */
-    public function index(?object $currentUser = null): array
+    public function index(?int $activeProjectId = null, ?object $currentUser = null): array
     {
         $currentUser = $currentUser ?? ($_SESSION['user'] ?? (object)['id' => 1, 'role' => 'admin']);
-        $metrics = $this->reportModel->getAnalyticsSummary();
-
         $isClient = ($currentUser->role === 'client');
-        $activeProjectId = $isClient ? (int)($currentUser->client_project_id ?? 0) : null;
+        if ($isClient) {
+            $activeProjectId = (int)($currentUser->client_project_id ?? 0);
+        }
+
+        $metrics = $this->reportModel->getAnalyticsSummary($activeProjectId);
         $billingSummary = $this->reportModel->getProjectBillingSummary($activeProjectId);
 
+        $projectModel = new \Modules\Projects\Models\ProjectModel();
+        $allProjects = $projectModel->getProjects();
+
         return array_merge([
-            'currentUser'    => $currentUser,
-            'isClient'       => $isClient,
-            'billingSummary' => $billingSummary
+            'currentUser'     => $currentUser,
+            'isClient'        => $isClient,
+            'activeProjectId' => $activeProjectId,
+            'allProjects'     => $allProjects,
+            'billingSummary'  => $billingSummary
         ], $metrics);
     }
 

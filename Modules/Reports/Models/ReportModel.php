@@ -8,17 +8,23 @@ class ReportModel extends BaseModel
     /**
      * Raporlar ekranı için tüm metrikleri toplar
      */
-    public function getAnalyticsSummary(): array
+    public function getAnalyticsSummary(?int $projectId = null): array
     {
         $today = date('Y-m-d');
+        $paramsStatus = [];
+        $whereStatus = "WHERE parent_task_id IS NULL";
+        if ($projectId !== null && $projectId > 0) {
+            $whereStatus .= " AND project_id = ?";
+            $paramsStatus[] = $projectId;
+        }
 
         // Görev durumu sayıları
         $taskCounts = $this->query("
             SELECT status, COUNT(*) as cnt 
             FROM tasks 
-            WHERE parent_task_id IS NULL 
+            {$whereStatus} 
             GROUP BY status
-        ");
+        ", $paramsStatus);
 
         $statusMap = [];
         $totalTasks = 0;
@@ -37,17 +43,28 @@ class ReportModel extends BaseModel
         $completionRate = $totalTasks > 0 ? (int)round(($completedTasks / $totalTasks) * 100) : 0;
 
         // Geciken görev sayısı
+        $whereOverdue = "WHERE parent_task_id IS NULL AND status NOT IN ('completed', 'cancelled') AND deadline IS NOT NULL AND deadline < ?";
+        $paramsOverdue = [$today];
+        if ($projectId !== null && $projectId > 0) {
+            $whereOverdue .= " AND project_id = ?";
+            $paramsOverdue[] = $projectId;
+        }
+
         $overdueRow = $this->queryOne("
             SELECT COUNT(*) as cnt 
             FROM tasks 
-            WHERE parent_task_id IS NULL 
-              AND status NOT IN ('completed', 'cancelled') 
-              AND deadline IS NOT NULL 
-              AND deadline < ?
-        ", [$today]);
+            {$whereOverdue}
+        ", $paramsOverdue);
         $overdueCount = (int)($overdueRow->cnt ?? 0);
 
         // Ekip performans ve iş yükü istatistikleri
+        $taskJoinCond = "(u.id = t.assigned_to AND t.parent_task_id IS NULL)";
+        $paramsTeam = [$today];
+        if ($projectId !== null && $projectId > 0) {
+            $taskJoinCond .= " AND t.project_id = ?";
+            $paramsTeam[] = $projectId;
+        }
+
         $teamStats = $this->query("
             SELECT u.id, u.name, u.title, u.avatar_color,
                    COUNT(t.id) as total_assigned,
@@ -55,22 +72,30 @@ class ReportModel extends BaseModel
                    SUM(CASE WHEN t.status IN ('in_progress', 'assigned', 'submitted', 'modification_requested') THEN 1 ELSE 0 END) as total_active,
                    SUM(CASE WHEN t.deadline < ? AND t.status NOT IN ('completed', 'cancelled') THEN 1 ELSE 0 END) as total_overdue
             FROM users u
-            LEFT JOIN tasks t ON (u.id = t.assigned_to AND t.parent_task_id IS NULL)
+            LEFT JOIN tasks t ON {$taskJoinCond}
             WHERE u.status = 'active'
             GROUP BY u.id, u.name, u.title, u.avatar_color
             ORDER BY total_assigned DESC, u.name ASC
-        ", [$today]);
+        ", $paramsTeam);
 
         // Proje ilerleme istatistikleri
+        $whereProjects = "";
+        $paramsProjects = [];
+        if ($projectId !== null && $projectId > 0) {
+            $whereProjects = "WHERE p.id = ?";
+            $paramsProjects[] = $projectId;
+        }
+
         $projectStats = $this->query("
             SELECT p.id, p.title, p.project_code, p.color,
                    COUNT(t.id) as total_tasks,
                    SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) as completed_tasks
             FROM projects p
             LEFT JOIN tasks t ON (t.project_id = p.id AND t.parent_task_id IS NULL)
+            {$whereProjects}
             GROUP BY p.id, p.title, p.project_code, p.color
             ORDER BY p.id ASC
-        ");
+        ", $paramsProjects);
 
         return [
             'totalTasks'       => $totalTasks,

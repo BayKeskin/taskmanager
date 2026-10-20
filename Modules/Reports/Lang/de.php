@@ -9,6 +9,7 @@ return [
     'overdue_count'      => 'Überfällige Aufgaben',
     'team_performance'   => 'Teamleistung',
     'all_projects'       => 'Alle Projekte',
+    'filter_project'     => 'Projekt:',
     'standup_prepared'   => 'Tägliche KI-Standup-Zusammenfassung erstellt.',
     'email_required'     => 'E-Mail-Adresse nicht angegeben.',
     'standup_email_sent' => 'Tägliche Standup-E-Mail erfolgreich versendet.',

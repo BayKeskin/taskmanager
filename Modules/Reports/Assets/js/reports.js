@@ -42,7 +42,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnPdfTop) {
         btnPdfTop.addEventListener('click', function() {
             if (typeof downloadDeliveryReportPdf === 'function') {
-                downloadDeliveryReportPdf();
+                const projectFilter = document.getElementById('reportsProjectFilter');
+                const pId = projectFilter ? (parseInt(projectFilter.value, 10) || 0) : 0;
+                downloadDeliveryReportPdf(pId);
             }
         });
     }
@@ -55,6 +57,20 @@ document.addEventListener('DOMContentLoaded', function() {
             if (typeof downloadDeliveryReportPdf === 'function') {
                 downloadDeliveryReportPdf(pId);
             }
+        });
+    }
+    // Project Filter Change Listener
+    const projectFilter = document.getElementById('reportsProjectFilter');
+    if (projectFilter) {
+        projectFilter.addEventListener('change', function() {
+            const selectedProjectId = this.value;
+            const currentUrl = new URL(window.location.href);
+            if (selectedProjectId) {
+                currentUrl.searchParams.set('project_id', selectedProjectId);
+            } else {
+                currentUrl.searchParams.delete('project_id');
+            }
+            window.location.href = currentUrl.toString();
         });
     }
 });

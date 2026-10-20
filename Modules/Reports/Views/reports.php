@@ -1,7 +1,8 @@
 <?php
 // TaskManager Raporlar & Analitik Paneli (Reports View)
 $reportController = new \Modules\Reports\Controllers\ReportController();
-$reportData = $reportController->index();
+$activeProjectId = isset($_GET['project_id']) && is_numeric($_GET['project_id']) ? (int)$_GET['project_id'] : null;
+$reportData = $reportController->index($activeProjectId);
 extract($reportData);
 
 $system->title = __('Reports::rep_title');
@@ -13,7 +14,23 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
         <span class="cu-rep-header-icon">📊</span>
         <span class="cu-rep-header-title"><?= __('Reports::view_analytics') ?></span>
     </div>
-    <div class="cu-filter-bar">
+    <div class="cu-filter-bar cu-rep-filter-bar">
+        <?php if (!$isClient): ?>
+            <div class="cu-rep-filter-group">
+                <label for="reportsProjectFilter" class="cu-rep-filter-label"><?= __('Reports::filter_project') ?></label>
+                <select id="reportsProjectFilter" class="cu-form-control cu-rep-project-select">
+                    <option value=""><?= __('Reports::all_projects') ?></option>
+                    <?php foreach (($allProjects ?? []) as $proj): 
+                        $pObj = (object)$proj;
+                    ?>
+                        <option value="<?= (int)$pObj->id ?>" <?= ($activeProjectId === (int)$pObj->id) ? 'selected' : '' ?>>
+                            📁 <?= htmlspecialchars($pObj->title) ?> (<?= htmlspecialchars($pObj->project_code) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        <?php endif; ?>
+
         <button type="button" class="cu-btn-sm cu-rep-btn-delivery-pdf" id="btnDownloadDeliveryReportTop" title="<?= htmlspecialchars(__('Reports::tooltip_pdf_report')) ?>">
             <span>📄</span> <span><?= __('Reports::btn_pdf_report') ?></span>
         </button>

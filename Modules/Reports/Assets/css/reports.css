@@ -51,6 +51,36 @@
     font-size: 14px;
     color: var(--text-white);
 }
+.cu-rep-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.cu-rep-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-rep-filter-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.cu-rep-project-select {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    cursor: pointer;
+    min-width: 170px;
+}
+.cu-rep-project-select:focus {
+    border-color: #7B68EE;
+    outline: none;
+}
 .cu-rep-btn-delivery-pdf {
     height: 32px;
     display: inline-flex;

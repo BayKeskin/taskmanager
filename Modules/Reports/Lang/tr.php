@@ -9,6 +9,7 @@ return [
     'overdue_count'      => 'Geciken Görevler',
     'team_performance'   => 'Ekip Performansı',
     'all_projects'       => 'Tüm Projeler',
+    'filter_project'     => 'Proje:',
     'standup_prepared'   => 'Günlük AI standup özeti hazırlandı.',
     'email_required'     => 'E-posta adresi belirtilmedi.',
     'standup_email_sent' => 'Günlük standup e-postası başarıyla iletildi.',

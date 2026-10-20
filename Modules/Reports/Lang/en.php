@@ -9,6 +9,7 @@ return [
     'overdue_count'      => 'Overdue Tasks',
     'team_performance'   => 'Team Performance',
     'all_projects'       => 'All Projects',
+    'filter_project'     => 'Project:',
     'standup_prepared'   => 'Daily AI standup summary prepared.',
     'email_required'     => 'Email address not provided.',
     'standup_email_sent' => 'Daily standup email sent successfully.',
