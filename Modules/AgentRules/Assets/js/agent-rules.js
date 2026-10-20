@@ -38,6 +38,36 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const btnSaveQaGlobal = document.getElementById('btnSaveQaGlobal');
+    const qaGlobalRulesInput = document.getElementById('qaGlobalRulesInput');
+    if (btnSaveQaGlobal && qaGlobalRulesInput) {
+        btnSaveQaGlobal.addEventListener('click', async function () {
+            const content = qaGlobalRulesInput.value.trim();
+            btnSaveQaGlobal.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('qa_global_rules', content);
+
+                const response = await fetch(getBaseUrl() + '/ajax?action=save_qa_global_rules', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                } else {
+                    alert(data.message || 'Error');
+                }
+            } catch (err) {
+                alert('Connection error');
+            } finally {
+                btnSaveQaGlobal.disabled = false;
+            }
+        });
+    }
+
     if (btnSyncAll) {
         btnSyncAll.addEventListener('click', async function () {
             const confirmMsg = (window.agentRulesTranslations && window.agentRulesTranslations.confirmSyncAll) 

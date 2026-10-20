@@ -2,8 +2,8 @@
 // TaskManager HMVC Modüller & Mimari Kullanım Rehberi (Accordion View)
 $docController = new \Modules\Docs\Controllers\DocController();
 $guideData = $docController->modulesGuide();
-$modules = $guideData['modules'];
-$metadataMap = $guideData['metadata'];
+$modules = $guideData['modules'] ?? [];
+$metadataMap = $guideData['metadata'] ?? [];
 
 $activeCount = count(array_filter($modules, fn($m) => !empty($m['is_active'])));
 $totalCount = count($modules);
@@ -60,13 +60,13 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
             $version = $mod['version'] ?? '1.0.0';
             $dirName = basename($mod['_dir'] ?? $slug);
 
-            $meta = $metadataMap[$dirName] ?? [
+            $meta = $metadataMap[$dirName] ?? ($metadataMap[$slug] ?? [
                 'icon' => '📦',
-                'capabilities' => ['HMVC component.'],
-                'how_to_use' => ['See module docs.'],
-                'tech_info' => 'Configured under Modules/' . $dirName,
+                'capabilities' => [__('Docs::modules_total_label')],
+                'how_to_use' => [__('Docs::view_docs')],
+                'tech_info' => 'Modules/' . $dirName,
                 'key_files' => ['module.json', 'init.php']
-            ];
+            ]);
         ?>
             <div class="cu-accordion-item" data-module-slug="<?= htmlspecialchars(strtolower($slug)) ?>">
                 <button type="button" class="cu-accordion-header">

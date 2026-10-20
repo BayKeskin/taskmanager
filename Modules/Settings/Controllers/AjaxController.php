@@ -137,6 +137,11 @@ class AjaxController extends BaseController
             $this->respond(false, __('Settings::ajax_invalid_slug'));
         }
 
+        $coreModuleSlugs = ['board', 'settings', 'storage', 'smoketest', 'team'];
+        if (!$status && in_array($slug, $coreModuleSlugs, true)) {
+            $this->respond(false, __('Settings::settings_modules_core_cannot_disable'));
+        }
+
         $res = \Core\ModuleLoader::setModuleStatus($slug, $status);
         if ($res) {
             $this->respond(true, __('Settings::settings_modules_toggle_success'), [

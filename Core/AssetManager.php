@@ -65,24 +65,37 @@ class AssetManager
     }
 
     /**
-     * Header içinde CSS etiketlerini basar
+     * Header içinde CSS etiketlerini basar (Otomatik Cache Busting ile)
      */
     public static function renderStyles(): string
     {
         $html = '';
+        $root = dirname(__DIR__);
         foreach (self::$styles as $handle => $style) {
-            $src = htmlspecialchars($style['src'], ENT_QUOTES, 'UTF-8');
-            $html .= "<link rel=\"stylesheet\" id=\"cu-style-{$handle}\" href=\"{$src}\">\n";
+            $src = $style['src'];
+            $cleanPath = ltrim(parse_url($src, PHP_URL_PATH) ?? '', '/');
+            if (function_exists('baseUrl')) {
+                $base = trim(baseUrl(), '/');
+                if ($base !== '' && str_starts_with($cleanPath, $base . '/')) {
+                    $cleanPath = substr($cleanPath, strlen($base) + 1);
+                }
+            }
+            $localFile = $root . '/' . $cleanPath;
+            $ver = file_exists($localFile) ? filemtime($localFile) : time();
+            $glue = str_contains($src, '?') ? '&' : '?';
+            $finalSrc = htmlspecialchars($src . $glue . 'v=' . $ver, ENT_QUOTES, 'UTF-8');
+            $html .= "<link rel=\"stylesheet\" id=\"cu-style-{$handle}\" href=\"{$finalSrc}\">\n";
         }
         return $html;
     }
 
     /**
-     * Footer içinde JS etiketlerini ve bağlı local data objelerini basar
+     * Footer içinde JS etiketlerini ve bağlı local data objelerini basar (Otomatik Cache Busting ile)
      */
     public static function renderScripts(): string
     {
         $html = '';
+        $root = dirname(__DIR__);
         foreach (self::$scripts as $handle => $script) {
             if (!empty(self::$localized[$handle])) {
                 $html .= "<script id=\"cu-localize-{$handle}\">\n";
@@ -92,8 +105,19 @@ class AssetManager
                 }
                 $html .= "</script>\n";
             }
-            $src = htmlspecialchars($script['src'], ENT_QUOTES, 'UTF-8');
-            $html .= "<script id=\"cu-script-{$handle}\" src=\"{$src}\"></script>\n";
+            $src = $script['src'];
+            $cleanPath = ltrim(parse_url($src, PHP_URL_PATH) ?? '', '/');
+            if (function_exists('baseUrl')) {
+                $base = trim(baseUrl(), '/');
+                if ($base !== '' && str_starts_with($cleanPath, $base . '/')) {
+                    $cleanPath = substr($cleanPath, strlen($base) + 1);
+                }
+            }
+            $localFile = $root . '/' . $cleanPath;
+            $ver = file_exists($localFile) ? filemtime($localFile) : time();
+            $glue = str_contains($src, '?') ? '&' : '?';
+            $finalSrc = htmlspecialchars($src . $glue . 'v=' . $ver, ENT_QUOTES, 'UTF-8');
+            $html .= "<script id=\"cu-script-{$handle}\" src=\"{$finalSrc}\"></script>\n";
         }
         return $html;
     }

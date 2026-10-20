@@ -31,15 +31,17 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
             </div>
         <?php endif; ?>
 
+        <?php if (\Core\ModuleLoader::isModuleActive('billing')): ?>
         <button type="button" class="cu-btn-sm cu-rep-btn-delivery-pdf" id="btnDownloadDeliveryReportTop" title="<?= htmlspecialchars(__('Reports::tooltip_pdf_report')) ?>">
             <span>📄</span> <span><?= __('Reports::btn_pdf_report') ?></span>
         </button>
+        <?php endif; ?>
     </div>
 </div>
 
 <div class="cu-content-scroll">
     <!-- EFOR, MALİYET VE HAKEDİŞ ÖZETİ KARTI (TSK-194) -->
-    <?php if (!empty($billingSummary)): ?>
+    <?php if (\Core\ModuleLoader::isModuleActive('billing') && !empty($billingSummary)): ?>
         <div class="cu-rep-billing-box">
             <div class="cu-rep-billing-top">
                 <div class="cu-rep-billing-info">

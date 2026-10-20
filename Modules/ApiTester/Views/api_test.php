@@ -63,11 +63,13 @@ $sampleTask = $sampleTask ?? 'TASK-1';
                 <span>📖 <?= htmlspecialchars(__('ApiTester::api_doc')) ?></span>
             </a>
 
+            <?php if (\Core\ModuleLoader::isModuleActive('docs')): ?>
             <!-- AI Doc Link -->
             <a href="<?= baseUrl('docs?project_id=1') ?>" class="btn-lab btn-lab-secondary" title="<?= htmlspecialchars(__('ApiTester::ai_guide')) ?>">
                 <i class="fa-solid fa-robot"></i>
                 <span><?= htmlspecialchars(__('ApiTester::ai_guide')) ?></span>
             </a>
+            <?php endif; ?>
 
             <!-- Board Link -->
             <a href="<?= baseUrl('board') ?>" class="btn-lab btn-lab-primary">

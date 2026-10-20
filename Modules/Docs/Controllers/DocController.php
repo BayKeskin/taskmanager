@@ -65,8 +65,18 @@ class DocController extends BaseController
         $allModules = \Core\ModuleLoader::getAllAvailableModules();
         ksort($allModules);
 
+        $metaFile = dirname(__DIR__) . '/modules_meta.json';
+        $metadata = [];
+        if (file_exists($metaFile)) {
+            $decoded = json_decode((string)file_get_contents($metaFile), true);
+            if (is_array($decoded)) {
+                $metadata = $decoded;
+            }
+        }
+
         return [
-            'modules' => $allModules
+            'modules'  => $allModules,
+            'metadata' => $metadata
         ];
     }
 }

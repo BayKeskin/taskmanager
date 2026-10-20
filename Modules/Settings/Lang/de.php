@@ -28,6 +28,8 @@ return array (
   'settings_modules_count_badge' => 'Gesamte Module',
   'settings_modules_active_badge' => 'Aktiv',
   'settings_modules_passive_badge' => 'Inaktiv',
+  'settings_modules_core_badge' => 'Systemkern (Kann nicht deaktiviert werden)',
+  'settings_modules_core_cannot_disable' => 'Dieses Modul ist eine Systemkernkomponente und kann nicht deaktiviert werden.',
   'settings_modules_col_name' => 'Modulname & Beschreibung',
   'settings_modules_col_version' => 'Version & Autor',
   'settings_modules_col_deps' => 'Abhängigkeiten',

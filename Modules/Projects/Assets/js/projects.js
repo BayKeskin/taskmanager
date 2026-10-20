@@ -45,6 +45,12 @@ function openEditProjectModal(projOrId) {
         document.getElementById('editProjAgentRules').value = projOrId.agent_rules || '';
         document.getElementById('editProjWebhookUrl').value = projOrId.webhook_url || '';
         document.getElementById('editProjConvId').value = projOrId.agent_conversation_id || '';
+        const devInput = document.getElementById('editProjDevConvId');
+        if (devInput) devInput.value = projOrId.dev_conversation_id || projOrId.agent_conversation_id || '';
+        const qaInput = document.getElementById('editProjQaConvId');
+        if (qaInput) qaInput.value = projOrId.qa_conversation_id || '';
+        const qaInst = document.getElementById('editProjQaInstructions');
+        if (qaInst) qaInst.value = projOrId.qa_test_instructions || '';
     } else {
         projId = projOrId;
         document.getElementById('editProjId').value = projId;
@@ -66,6 +72,12 @@ function openEditProjectModal(projOrId) {
                     document.getElementById('editProjAgentRules').value = p.agent_rules || '';
                     document.getElementById('editProjWebhookUrl').value = p.webhook_url || '';
                     document.getElementById('editProjConvId').value = p.agent_conversation_id || '';
+                    const dIn = document.getElementById('editProjDevConvId');
+                    if (dIn) dIn.value = p.dev_conversation_id || p.agent_conversation_id || '';
+                    const qIn = document.getElementById('editProjQaConvId');
+                    if (qIn) qIn.value = p.qa_conversation_id || '';
+                    const qInst = document.getElementById('editProjQaInstructions');
+                    if (qInst) qInst.value = p.qa_test_instructions || '';
                 }
             })
             .catch(err => console.error('Project details fetch error:', err));

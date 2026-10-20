@@ -48,9 +48,11 @@ $currentUser = $_SESSION['user'] ?? null;
         </button>
 
         <!-- HIZLI SOHBET BUTONU (TEAM CHAT) -->
+        <?php if (\Core\ModuleLoader::isModuleActive('chat')): ?>
         <a href="<?= baseUrl('chat') ?>" class="cu-theme-toggle-btn" title="<?= htmlspecialchars(__('app.layout_quick_chat')) ?>" style="width:34px; height:34px; padding:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.04); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); font-size:15px; text-decoration:none; color:inherit; transition:var(--transition);">
             💬
         </a>
+        <?php endif; ?>
 
         <!-- BİLDİRİM ZİLİ (NOTIFICATIONS) -->
         <div style="position:relative;">
@@ -122,10 +124,12 @@ $currentUser = $_SESSION['user'] ?? null;
                             <span><?= __('app.layout_system_settings') ?></span>
                         </a>
                         <?php endif; ?>
+                        <?php if (\Core\ModuleLoader::isModuleActive('apitester')): ?>
                         <a href="<?= baseUrl('api-docs') ?>" style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:600; color:#7B68EE; text-decoration:none; transition:var(--transition);" onmouseover="this.style.background='rgba(123,104,238,0.1)'" onmouseout="this.style.background='transparent'">
                             <span>⚡</span>
                             <span><?= __('app.layout_api_guide') ?></span>
                         </a>
+                        <?php endif; ?>
                         <a href="<?= baseUrl('logout') ?>" style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:600; color:#ff4757; text-decoration:none; transition:var(--transition);" onmouseover="this.style.background='rgba(255,71,87,0.1)'" onmouseout="this.style.background='transparent'">
                             <span>🚪</span>
                             <span><?= __('app.layout_logout') ?></span>

@@ -87,7 +87,9 @@ if ($currentUser):
                         <span class="cu-profile-api-title">
                             <span>⚡</span> <?= __('Team::modal_profile_api_token') ?>
                         </span>
+                        <?php if (\Core\ModuleLoader::isModuleActive('apitester')): ?>
                         <a href="<?= baseUrl('api-docs') ?>" target="_blank" class="cu-profile-api-link"><?= __('Team::modal_profile_api_doc') ?></a>
+                        <?php endif; ?>
                     </div>
                     <div class="cu-profile-api-row">
                         <input type="text" id="profileApiTokenInput" readonly value="<?= htmlspecialchars($currentUser->api_token ?? __('Team::modal_profile_no_token')) ?>" class="cu-profile-api-input">

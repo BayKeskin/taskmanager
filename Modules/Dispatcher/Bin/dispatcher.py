@@ -335,8 +335,16 @@ def process_webhook_async(payload, header_conv_id):
     project_id = payload.get('project_id')
     project_code = str(payload.get('project_code', '')).strip()
     project_title = payload.get('project_title', '')
-    raw_incoming = payload.get('agent_conversation_id') or header_conv_id
-    incoming_conv_id = str(raw_incoming).strip() if raw_incoming else None
+    
+    # Dual Agent IDs
+    dev_conv_id = payload.get('dev_conversation_id') or payload.get('agent_conversation_id') or header_conv_id
+    dev_conv_id = str(dev_conv_id).strip() if dev_conv_id else None
+    qa_conv_id = payload.get('qa_conversation_id')
+    qa_conv_id = str(qa_conv_id).strip() if qa_conv_id else None
+
+    qa_test_instructions = (payload.get('qa_test_instructions') or '').strip()
+    qa_global_instructions = (payload.get('qa_global_instructions') or '').strip()
+
     data = payload.get('data', {})
     if not isinstance(data, dict):
         data = {}
@@ -347,19 +355,30 @@ def process_webhook_async(payload, header_conv_id):
     api_base_url = (payload.get('api_base_url') or 'http://localhost/taskmanager').rstrip('/')
     api_token = str(payload.get('api_token') or '').strip()
 
-    # 1. GÖREV TESLİM EDİLDİĞİNDE VEYA GERİ ALINDIĞINDA: Kilidi temizle
-    if event in ('task.submitted', 'task.requeued'):
+    # 1. GÖREV TESLİM EDİLDİĞİNDE VEYA GERİ ALINDIĞINDA:
+    if event == 'task.requeued':
         with state_lock:
             project_active_state.pop(project_code, None)
-        if event == 'task.submitted':
-            print(f"✅ [GÖREV TESLİM EDİLDİ] [{project_code}] {task_code} -> Ajanın yanıtını bitirmesi için 4 sn bekleniyor...")
+        return
+
+    # Eğer task.submitted geldiyse:
+    # DURUM A: Eğer projede qa_conversation_id tanımlı ise, QA Ajanına devret!
+    # DURUM B: Eğer qa_conversation_id yoksa, klasik akış (kilidi sil, 4 sn bekle, sıradaki göreve geç)
+    if event == 'task.submitted':
+        with state_lock:
+            project_active_state.pop(project_code, None)
+
+        if not qa_conv_id:
+            print(f"✅ [GÖREV TESLİM EDİLDİ - TEK AJAN MODU] [{project_code}] {task_code} -> 4 sn bekleniyor...")
             time.sleep(4)
             if project_id:
                 app_root = APP_ROOT
                 fin_id = int(task_id) if task_id else 'null'
                 next_cmd = ['php', '-r', f"require 'Core/System.php'; \\Modules\\Board\\Services\\TaskLifecycleService::dispatchNextAiTaskIfAvailable({int(project_id)}, {fin_id});"]
                 run_silent(next_cmd, capture_output=True, text=True, cwd=app_root, timeout=10)
-        return
+            return
+        else:
+            print(f"🔬 [GÖREV TESLİM EDİLDİ - ÇİFT AJAN MODU] [{project_code}] {task_code} -> QA Ajanına ({qa_conv_id}) yönlendiriliyor...")
 
     if event in IGNORED_AGENT_EVENTS:
         return
@@ -375,8 +394,14 @@ def process_webhook_async(payload, header_conv_id):
     ls_address = disc_addr
     csrf_token = disc_tok
 
-    # Kullanıcı elle girdiyse öncelik ver ve asla silme!
-    target_conv_id = incoming_conv_id or discovered_cid
+    # Hedef pencere seçimi:
+    # task.submitted ise -> qa_conv_id
+    # task.started / revision / vb. ise -> dev_conv_id
+    if event == 'task.submitted':
+        target_conv_id = qa_conv_id
+    else:
+        target_conv_id = dev_conv_id or incoming_conv_id or discovered_cid
+
     if target_conv_id:
         target_conv_id = str(target_conv_id).strip()
 
@@ -485,6 +510,56 @@ def process_webhook_async(payload, header_conv_id):
             f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
             f"$body = @{{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' }} | ConvertTo-Json -Compress\n"
             f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow/submit' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"
+            f"```"
+        )
+    elif event == 'task.submitted':
+        submission_notes = data.get('submission_notes', '').strip() or '*(No submission notes provided)*'
+        title_header = f"🔍 [QA AUDIT REQUIRED] {task_code}: {task_title}"
+
+        custom_qa_section = ""
+        if qa_test_instructions:
+            custom_qa_section += f"\n\n### 🛠️ PROJECT-SPECIFIC QA TEST INSTRUCTIONS:\n{qa_test_instructions}\n"
+        if qa_global_instructions:
+            custom_qa_section += f"\n\n### 🌐 GLOBAL QA TEST PROTOCOL:\n{qa_global_instructions}\n"
+
+        message_text = (
+            f"🚨 **[MANDATORY QA VERIFICATION DIRECTIVE — NO CODE MODIFICATION ALLOWED!]**\n"
+            f"> **ROLE:** You are the Lead QA & Autonomous Testing Inspector. You CANNOT write feature code. Your ONLY objective is to rigorously test, verify, and audit task **{task_code}** delivered by the Developer Agent.\n\n"
+            f"### 📋 DELIVERED TASK CONTEXT:\n"
+            f"- **Project:** [{project_code}] {project_title} (`{project_dir}`)\n"
+            f"- **Task Code:** `{task_code}` | **Title:** {task_title}\n"
+            f"- **Developer Submission Notes:**\n{submission_notes}\n\n"
+            f"### 🔍 MANDATORY STEP-BY-STEP TESTING PROTOCOL:\n"
+            f"1. **LIVE BROWSER TEST (UI & USABILITY):**\n"
+            f"   - Open the relevant module URL using your browser subagent.\n"
+            f"   - Inspect visually: Verify responsiveness, CSS layouts, padding/margins, text visibility, and button clickability.\n"
+            f"2. **NETWORK & CONSOLE AUDIT (ZERO TOLERANCE):**\n"
+            f"   - Check Developer Console: Must contain **0 JS errors** and **0 404 assets**.\n"
+            f"   - Check Network Response: Inspect payload body. Even if HTTP 200, ensure NO `xdebug-error`, `Fatal error`, `PDOException`, `Warning`, or `Notice`.\n"
+            f"3. **MANDATORY GATEKEEPER CLI AUDIT:**\n"
+            f"   - Execute in terminal: `php taskmanager-audit/audit.php ALL` (or specific module)\n"
+            f"   - Ensure it returns `0 Violations / [PASS]`.\n"
+            f"4. **TRI-LINGUAL (TR, EN, DE) & SECURITY CHECK:**\n"
+            f"   - Test `?lang=tr`, `?lang=en`, and `?lang=de`. Verify no raw untranslated strings exist.\n"
+            f"   - Verify basic input security and permissions.\n"
+            f"{custom_qa_section}\n"
+            f"---\n\n"
+            f"### ⚖️ FINAL VERDICT COMMANDS (CHOOSE EXACTLY ONE):\n\n"
+            f"**OPTION A — IF ALL TESTS PASS WITHOUT ANY FLAW (APPROVE & CLOSE):**\n"
+            f"Execute in PowerShell:\n"
+            f"```powershell\n"
+            f"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8;\n"
+            f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
+            f"$body = @{{ action = 'review'; decision = 'approved'; feedback = 'All live browser UI, Console, Network, and Audit tests passed with zero defects.' }} | ConvertTo-Json -Compress\n"
+            f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"
+            f"```\n\n"
+            f"**OPTION B — IF ANY BUG, CSS GLITCH, JS ERROR OR AUDIT FAIL IS FOUND (REJECT & REQUEST REVISION):**\n"
+            f"Execute in PowerShell (Clearly document the defect with reproduction steps):\n"
+            f"```powershell\n"
+            f"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8;\n"
+            f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
+            f"$body = @{{ action = 'review'; decision = 'rejected'; feedback = '[QA DEFECT REPORT]\n1. Visual/CSS Bug: ...\n2. Console/Network Bug: ...\n3. Audit Failure: ...\nPlease fix and re-submit.' }} | ConvertTo-Json -Compress\n"
+            f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"
             f"```"
         )
     elif event == 'project.webhook_test':

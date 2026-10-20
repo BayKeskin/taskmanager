@@ -95,5 +95,16 @@ return array (
   'js_archive_confirm' => 'Möchten Sie dieses Projekt wirklich in archivierte Projekte verschieben?',
   'js_restore_confirm' => 'Möchten Sie dieses Projekt wirklich in aktive Projekte wiederherstellen?',
   'js_action_failed' => 'Aktion fehlgeschlagen',
-  'js_delete_confirm' => 'ACHTUNG: Möchten Sie dieses Projekt und ALLE zugehörigen Aufgaben und Dokumente wirklich dauerhaft löschen? Dies kann nicht rückgängig gemacht werden!'
+  'js_delete_confirm' => 'ACHTUNG: Möchten Sie dieses Projekt und ALLE zugehörigen Aufgaben und Dokumente wirklich dauerhaft löschen? Dies kann nicht rückgängig gemacht werden!',
+  'modal_dev_conv_id' => '🔵 Entwickler-Agent Fenster-ID (Dev Window ID)',
+  'modal_dev_conv_id_ph' => 'z.B. c4a28f41-b883-4a12-881b-530dd6093836',
+  'modal_dev_conv_id_hint' => 'Konversationsfenster-ID des Hauptentwickler-Agenten für Aufgaben.',
+  'modal_qa_conv_id' => '🟣 QA- & Tester-Agent Fenster-ID (QA Window ID)',
+  'modal_qa_conv_id_ph' => 'z.B. f8b19a22-1102-47e5-9c88-7201bc613891',
+  'modal_qa_conv_id_hint' => 'Autonome QA-Inspektor-Fenster-ID für Live-Browser-, UI-, Konsolen-, Netzwerk- und Audit-Prüfungen.',
+  'modal_qa_instructions' => '🧪 Projektspezifische QA-Direktiven & PowerShell-Testbefehle',
+  'modal_qa_instructions_ph' => 'z.B.:
+- http://localhost/taskmanager/board öffnen und Aufgaben-Modal testen.
+- API-Antwort über Invoke-RestMethod prüfen.',
+  'modal_qa_instructions_hint' => 'Diese Anweisungen und Befehle werden bei Aufgabenabgabe an den QA-Agenten gesendet.'
 );

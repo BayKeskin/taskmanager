@@ -28,6 +28,8 @@ return array (
   'settings_modules_count_badge' => 'Toplam Modül',
   'settings_modules_active_badge' => 'Aktif',
   'settings_modules_passive_badge' => 'Pasif',
+  'settings_modules_core_badge' => 'Sistem Çekirdeği (Kapatılamaz)',
+  'settings_modules_core_cannot_disable' => 'Bu modül sistem çekirdeğidir ve kapatılamaz.',
   'settings_modules_col_name' => 'Modül Adı & Açıklama',
   'settings_modules_col_version' => 'Sürüm & Yazar',
   'settings_modules_col_deps' => 'Bağımlılıklar',

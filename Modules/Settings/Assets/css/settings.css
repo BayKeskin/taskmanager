@@ -544,6 +544,25 @@
 .cu-module-status-badge.status-passive {
     color: #eb5757;
 }
+.cu-module-core-badge {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(0, 184, 148, 0.15);
+    color: #00b894;
+    border: 1px solid rgba(0, 184, 148, 0.3);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.cu-toggle-disabled {
+    opacity: 0.55;
+    cursor: not-allowed !important;
+}
+.cu-toggle-disabled input {
+    cursor: not-allowed !important;
+}
 
 /* Unauthorized state */
 .cu-unauthorized-box {

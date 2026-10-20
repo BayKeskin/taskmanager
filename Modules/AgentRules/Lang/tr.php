@@ -29,5 +29,10 @@ return [
     'nav_menu_title'            => 'AGENTS.md Yönetimi',
     'unauthorized'              => 'Bu işlem için yetkiniz bulunmamaktadır.',
     'prompt_workspace_path'     => '[%s] projesi için çalışma alanı (workspace) dizin yolunu girin:',
-    'dir_created_note'          => 'Dizin otomatik oluşturuldu ve AGENTS.md dosyası yazıldı.'
+    'dir_created_note'          => 'Dizin otomatik oluşturuldu ve AGENTS.md dosyası yazıldı.',
+    'qa_protocol_title'         => '🧪 Test & QA Ajanı Evrensel Test Protokolü (Global QA Directives)',
+    'qa_protocol_subtitle'      => 'Görev teslim edildiğinde Test Ajanına (QA) otomatik gönderilecek canlı tarayıcı, konsol, network ve denetim talimatlarıdır.',
+    'btn_save_qa_global'        => '💾 Test Protokolünü Kaydet',
+    'qa_save_success'           => 'Test Ajanı evrensel test protokolü başarıyla kaydedildi.',
+    'qa_save_error'             => 'Test protokolü kaydedilirken hata oluştu.'
 ];

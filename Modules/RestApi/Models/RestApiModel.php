@@ -42,7 +42,7 @@ class RestApiModel extends BaseModel
 
     public function getProjectWebhookConfig(int $projectId): ?object
     {
-        $rows = $this->query("SELECT id, project_code, title, webhook_url, workspace_path, agent_rules, agent_conversation_id, webhook_secret FROM projects WHERE id = ? LIMIT 1", [$projectId]);
+        $rows = $this->query("SELECT id, project_code, title, webhook_url, workspace_path, agent_rules, agent_conversation_id, dev_conversation_id, qa_conversation_id, qa_test_instructions, webhook_secret FROM projects WHERE id = ? LIMIT 1", [$projectId]);
         return !empty($rows) ? (object)$rows[0] : null;
     }
 

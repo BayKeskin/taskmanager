@@ -27,6 +27,7 @@
                     <input type="text" name="title" id="modalNewTaskTitleInput" class="cu-form-control" placeholder="<?= htmlspecialchars(__('Board::modal_task_title_placeholder')) ?>" required>
                 </div>
 
+                <?php if (\Core\ModuleLoader::isModuleActive('aiarchitect')): ?>
                 <!-- 🪄 AI GÖREV MİMARI (TASK ARCHITECT PANEL) -->
                 <div class="cu-form-group cu-ai-architect-card-wrap">
                     <div class="cu-ai-architect-card-header" id="btnToggleAiArchitectPanel">
@@ -88,6 +89,7 @@
                         </div>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <div class="cu-form-group">
                     <div class="cu-form-label-between">

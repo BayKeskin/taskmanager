@@ -967,6 +967,33 @@ class TaskModel extends BaseModel
             ORDER BY id ASC
         ", [$taskId]);
     }
+
+    /**
+     * QA Revizyon sayacını 1 artırır ve güncel sayıyı döner
+     */
+    public function incrementQaRevisionCount(int $taskId): int
+    {
+        $this->db->exec_query("UPDATE tasks SET qa_revision_count = COALESCE(qa_revision_count, 0) + 1, updated_at = NOW() WHERE id = ?", [$taskId]);
+        $rows = $this->query("SELECT qa_revision_count FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
+        return !empty($rows) ? (int)$rows[0]->qa_revision_count : 1;
+    }
+
+    /**
+     * Görevin mevcut QA Revizyon sayısını döner
+     */
+    public function getQaRevisionCount(int $taskId): int
+    {
+        $rows = $this->query("SELECT qa_revision_count FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
+        return !empty($rows) ? (int)($rows[0]->qa_revision_count ?? 0) : 0;
+    }
+
+    /**
+     * QA Revizyon sayacını sıfırlar
+     */
+    public function resetQaRevisionCount(int $taskId): void
+    {
+        $this->db->exec_query("UPDATE tasks SET qa_revision_count = 0, updated_at = NOW() WHERE id = ?", [$taskId]);
+    }
 }
 
 

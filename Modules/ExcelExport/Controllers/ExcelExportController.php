@@ -28,6 +28,12 @@ class ExcelExportController extends BaseController
             $this->requireAuth();
         }
 
+        if (!\Core\ModuleLoader::isModuleActive('excel-export')) {
+            http_response_code(403);
+            require_once dirname(__DIR__, 2) . '/Core/Views/module_disabled.php';
+            exit;
+        }
+
         if ($projectId <= 0) {
             echo __('ExcelExport::invalid_project');
             exit;

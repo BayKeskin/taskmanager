@@ -25,18 +25,25 @@ class WebhookService extends BaseModel
 
         $apiCfg = RestApiService::getDynamicApiConfig();
 
+        $qaModel = new \Modules\AgentRules\Models\AgentRulesModel();
+        $qaGlobal = $qaModel->getQaGlobalInstructions();
+
         $payload = [
-            'event'                 => $event,
-            'project_id'            => (int)$project->id,
-            'project_code'          => $project->project_code,
-            'project_title'         => $project->title,
-            'workspace_path'        => $project->workspace_path ?: null,
-            'agent_rules'           => $project->agent_rules ?: null,
-            'agent_conversation_id' => $project->agent_conversation_id ?: null,
-            'api_base_url'          => $apiCfg['base_url'],
-            'api_token'             => $apiCfg['api_token'],
-            'timestamp'             => date('c'),
-            'data'                  => $data
+            'event'                  => $event,
+            'project_id'             => (int)$project->id,
+            'project_code'           => $project->project_code,
+            'project_title'          => $project->title,
+            'workspace_path'         => $project->workspace_path ?: null,
+            'agent_rules'            => $project->agent_rules ?: null,
+            'agent_conversation_id'  => $project->agent_conversation_id ?: null,
+            'dev_conversation_id'    => $project->dev_conversation_id ?: ($project->agent_conversation_id ?: null),
+            'qa_conversation_id'     => $project->qa_conversation_id ?: null,
+            'qa_test_instructions'   => $project->qa_test_instructions ?: null,
+            'qa_global_instructions' => $qaGlobal ?: null,
+            'api_base_url'           => $apiCfg['base_url'],
+            'api_token'              => $apiCfg['api_token'],
+            'timestamp'              => date('c'),
+            'data'                   => $data
         ];
 
         $jsonPayload = json_encode($payload, JSON_UNESCAPED_UNICODE);

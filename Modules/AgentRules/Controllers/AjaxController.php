@@ -27,4 +27,9 @@ class AjaxController extends BaseController
     {
         $this->controller->syncSingle();
     }
+
+    public function saveQaGlobalRules(): void
+    {
+        $this->controller->saveQaGlobal();
+    }
 }

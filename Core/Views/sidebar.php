@@ -66,6 +66,9 @@ if ($relPath === '/tasks') {
 } elseif ($relPath === '/modules') {
     $activeViewIcon = '🧩';
     $activeViewTitle = __('Docs::modules_nav_menu_title');
+} elseif ($relPath === '/agent-rules') {
+    $activeViewIcon = '🛡️';
+    $activeViewTitle = __('AgentRules::nav_menu_title');
 }
 
 // unreadDmCount is provided by LayoutController
@@ -111,20 +114,25 @@ if ($relPath === '/tasks') {
                             <span><?= __('app.sidebar_list') ?></span>
                         </div>
                     </a>
+                    <?php if (\Core\ModuleLoader::isModuleActive('calendar')): ?>
                     <a href="<?= baseUrl('calendar' . $projQuery) ?>" class="cu-nav-item <?= ($relPath === '/calendar') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>📅</span>
                             <span><?= __('app.sidebar_calendar') ?></span>
                         </div>
                     </a>
+                    <?php endif; ?>
+                    <?php if (\Core\ModuleLoader::isModuleActive('reports')): ?>
                     <a href="<?= baseUrl('reports') ?>" class="cu-nav-item <?= ($relPath === '/reports') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>📊</span>
                             <span><?= __('app.sidebar_reports') ?></span>
                         </div>
                     </a>
+                    <?php endif; ?>
                 <?php endif; ?>
 
+                <?php if (\Core\ModuleLoader::isModuleActive('docs')): ?>
                 <a href="<?= baseUrl('docs' . $projQuery) ?>" class="cu-nav-item <?= ($relPath === '/docs') ? 'active' : '' ?>">
                     <div class="cu-nav-item-left">
                         <span>📄</span>
@@ -132,7 +140,9 @@ if ($relPath === '/tasks') {
                     </div>
                     <span class="cu-nav-badge"><?= $totalDocsCount ?></span>
                 </a>
+                <?php endif; ?>
 
+                <?php if (\Core\ModuleLoader::isModuleActive('chat')): ?>
                 <a href="<?= baseUrl('chat') ?>" class="cu-nav-item <?= ($relPath === '/chat') ? 'active' : '' ?>">
                     <div class="cu-nav-item-left">
                         <span>💬</span>
@@ -144,6 +154,7 @@ if ($relPath === '/tasks') {
                         <span class="cu-nav-badge" style="background:rgba(0,184,148,0.2); color:#00b894; font-size:10px; font-weight:700;">Live</span>
                     <?php endif; ?>
                 </a>
+                <?php endif; ?>
 
                 <?php if ($currentUser->role === 'admin'): ?>
                     <a href="<?= baseUrl('team') ?>" class="cu-nav-item <?= ($relPath === '/team') ? 'active' : '' ?>">
@@ -159,15 +170,18 @@ if ($relPath === '/tasks') {
                             <span><?= __('app.sidebar_settings') ?></span>
                         </div>
                     </a>
+                    <?php if (\Core\ModuleLoader::isModuleActive('agent-rules')): ?>
                     <a href="<?= baseUrl('agent-rules') ?>" class="cu-nav-item <?= ($relPath === '/agent-rules') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>🛡️</span>
                             <span><?= __('AgentRules::nav_menu_title') ?></span>
                         </div>
                     </a>
+                    <?php endif; ?>
                 <?php endif; ?>
 
                 <?php if ($currentUser->role !== 'client'): ?>
+                    <?php if (\Core\ModuleLoader::isModuleActive('apitester')): ?>
                     <a href="<?= baseUrl('api-docs') ?>" class="cu-nav-item <?= ($relPath === '/api-docs') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>⚡</span>
@@ -175,6 +189,8 @@ if ($relPath === '/tasks') {
                         </div>
                         <span class="cu-nav-badge" style="background:rgba(123,104,238,0.25); color:#7B68EE; font-size:10px; font-weight:700;">v1.0</span>
                     </a>
+                    <?php endif; ?>
+                    <?php if (\Core\ModuleLoader::isModuleActive('docs')): ?>
                     <a href="<?= baseUrl('modules') ?>" class="cu-nav-item <?= ($relPath === '/modules') ? 'active' : '' ?>">
                         <div class="cu-nav-item-left">
                             <span>🧩</span>
@@ -182,6 +198,7 @@ if ($relPath === '/tasks') {
                         </div>
                         <span class="cu-nav-badge" style="background:rgba(0,184,148,0.2); color:#00b894; font-size:10px; font-weight:700;">HMVC</span>
                     </a>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>

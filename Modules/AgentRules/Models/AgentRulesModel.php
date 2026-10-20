@@ -35,6 +35,21 @@ Always reply in the **user's/task's language** (e.g., Turkish) using this exact 
 ---
 MARKDOWN;
 
+    private const DEFAULT_QA_GLOBAL_INSTRUCTIONS = <<<MARKDOWN
+1. LIVE BROWSER TEST (UI & USABILITY):
+   - Open target URL in the live browser.
+   - Inspect visually: Verify responsiveness, CSS layouts, text visibility, and button clickability.
+2. NETWORK & CONSOLE AUDIT (ZERO TOLERANCE):
+   - Console: Verify 0 JS errors and 0 404 missing assets.
+   - Network: Inspect response body. Ensure NO xdebug-error, Fatal error, PDOException, Warning, or Notice.
+3. MANDATORY GATEKEEPER CLI AUDIT:
+   - Execute in terminal: php taskmanager-audit/audit.php ALL (or specific module).
+   - Ensure it returns 0 Violations / [PASS].
+4. TRI-LINGUAL (TR, EN, DE) & SECURITY CHECK:
+   - Verify ?lang=tr, ?lang=en, ?lang=de without broken or untranslated keys.
+   - Verify input sanitization and authorization boundaries.
+MARKDOWN;
+
     /**
      * Genel kural şablonunu settings tablosundan okur, yoksa varsayılanı döner.
      */
@@ -53,6 +68,27 @@ MARKDOWN;
     public function saveGlobalRules(string $content): bool
     {
         $this->query("UPDATE settings SET global_agent_rules = ? WHERE id = 1", [$content]);
+        return true;
+    }
+
+    /**
+     * Genel QA test protokolü şablonunu settings tablosundan okur.
+     */
+    public function getQaGlobalInstructions(): string
+    {
+        $rows = $this->query("SELECT qa_global_instructions FROM settings WHERE id = 1 LIMIT 1");
+        if (!empty($rows) && !empty($rows[0]->qa_global_instructions)) {
+            return (string)$rows[0]->qa_global_instructions;
+        }
+        return self::DEFAULT_QA_GLOBAL_INSTRUCTIONS;
+    }
+
+    /**
+     * Genel QA test protokolünü kaydeder.
+     */
+    public function saveQaGlobalInstructions(string $content): bool
+    {
+        $this->query("UPDATE settings SET qa_global_instructions = ? WHERE id = 1", [$content]);
         return true;
     }
 

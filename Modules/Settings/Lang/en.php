@@ -28,6 +28,8 @@ return array (
   'settings_modules_count_badge' => 'Total Modules',
   'settings_modules_active_badge' => 'Active',
   'settings_modules_passive_badge' => 'Inactive',
+  'settings_modules_core_badge' => 'System Core (Cannot be disabled)',
+  'settings_modules_core_cannot_disable' => 'This module is a system core component and cannot be disabled.',
   'settings_modules_col_name' => 'Module Name & Description',
   'settings_modules_col_version' => 'Version & Author',
   'settings_modules_col_deps' => 'Dependencies',

@@ -223,12 +223,13 @@ class TaskLifecycleService extends BaseModel
                 'user_name'  => 'AI Agent'
             ]);
 
-            // 5. Dispatcher'daki aktif görev kilidini temizlemek ve 4sn sonra sıradaki görevi tetiklemek için webhook gönder
+            // 5. Dispatcher'daki aktif görev kilidini temizlemek ve QA / sıradaki görevi tetiklemek için webhook gönder
             \Modules\RestApi\Services\WebhookService::triggerProjectWebhook($projectId, 'task.submitted', [
-                'task_id'    => $taskId,
-                'task_code'  => $task->task_code,
-                'title'      => $task->title,
-                'project_id' => $projectId
+                'task_id'          => $taskId,
+                'task_code'        => $task->task_code,
+                'title'            => $task->title,
+                'project_id'       => $projectId,
+                'submission_notes' => $notes
             ]);
 
             return [
@@ -518,5 +519,78 @@ class TaskLifecycleService extends BaseModel
             error_log("triggerTaskRevisionWebhook error: " . $e->getMessage());
             return ['sent' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * QA Ajanının onay veya ret kararını işler (Dev + QA Döngüsü & Circuit Breaker)
+     *
+     * @param int $taskId
+     * @param string $decision 'approved' veya 'rejected'
+     * @param string $feedback İnceleme notu / hata raporu
+     * @param int $userId İncelemeyi yapan kullanıcı ID
+     * @param string $userName İncelemeyi yapan kullanıcı adı
+     * @return array Sonuç durumu
+     */
+    public static function handleQaReviewDecision(int $taskId, string $decision, string $feedback, int $userId = 1, string $userName = 'QA Inspector'): array
+    {
+        $taskModel = new \Modules\Board\Models\TaskModel();
+        $task = $taskModel->getTaskRowById($taskId);
+        if (!$task) {
+            return ['success' => false, 'message' => 'Task not found'];
+        }
+
+        if ($decision === 'approved') {
+            // Görev onaylandı: Sayacı sıfırla, görevi tamamla, sıradaki görevi tetikle
+            $taskModel->resetQaRevisionCount($taskId);
+            $taskModel->updateTaskStatus($taskId, 'completed');
+            $taskModel->logTaskActivity($taskId, $userId, 'approved', "QA Approved: {$feedback}");
+
+            // Sıradaki AI görevini tetikle
+            self::dispatchNextAiTaskIfAvailable((int)$task->project_id, $taskId);
+
+            return [
+                'success' => true,
+                'status'  => 'completed',
+                'action'  => 'approved',
+                'message' => 'Task approved and completed successfully'
+            ];
+        }
+
+        // Karar 'rejected' ise sayacı kontrol et (Circuit Breaker)
+        $currentCount = $taskModel->incrementQaRevisionCount($taskId);
+
+        if ($currentCount > 3) {
+            // Maksimum revizyon limiti aşıldı! Sonsuz döngüyü kır:
+            // Durumu 'in_review' / 'under_review' olarak kilitle ve insan müdahalesine devret
+            $taskModel->updateTaskStatus($taskId, 'in_review');
+            $circuitBreakerMsg = "🚨 [CIRCUIT BREAKER TRIGGERED] Maximum QA revision limit (3/3) exceeded. Locked in review for human intervention. Last QA feedback: {$feedback}";
+            $taskModel->logTaskActivity($taskId, $userId, 'circuit_breaker', $circuitBreakerMsg);
+
+            return [
+                'success'         => true,
+                'status'          => 'in_review',
+                'action'          => 'circuit_breaker_locked',
+                'revision_count'  => $currentCount,
+                'message'         => 'Maximum revision limit reached. Task locked for human review.'
+            ];
+        }
+
+        // Limit aşılmadı: Durumu modification_requested yap ve Dev Ajanına revizyon webhooku fırlat
+        $taskModel->updateTaskStatus($taskId, 'modification_requested');
+        $taskModel->logTaskActivity($taskId, $userId, 'rejected', "QA Rejected (#{$currentCount}/3): {$feedback}");
+
+        $revResult = self::triggerTaskRevisionWebhook($taskId, $feedback, [
+            'qa_revision_count' => $currentCount,
+            'max_revisions'     => 3
+        ]);
+
+        return [
+            'success'         => true,
+            'status'          => 'modification_requested',
+            'action'          => 'revision_dispatched',
+            'revision_count'  => $currentCount,
+            'webhook_result'  => $revResult,
+            'message'         => "Revision #{$currentCount}/3 requested and sent to Dev Agent."
+        ];
     }
 }

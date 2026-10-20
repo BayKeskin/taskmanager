@@ -604,10 +604,10 @@ class RestApiController extends BaseController
 
                         if ($decision === 'approved') {
                             $this->model->approveTaskSubmission((int)$task->id, (int)$currentUser->id, $feedback, $currentUser->name);
-                            \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$task->id);
+                            \Modules\Board\Services\TaskLifecycleService::handleQaReviewDecision((int)$task->id, 'approved', $feedback, (int)$currentUser->id, $currentUser->name);
                         } else {
                             $this->model->rejectTaskSubmission((int)$task->id, (int)$currentUser->id, $feedback, $currentUser->name);
-                            \Modules\Board\Services\TaskLifecycleService::triggerTaskRevisionWebhook((int)$task->id, $feedback ?: 'Revision requested');
+                            \Modules\Board\Services\TaskLifecycleService::handleQaReviewDecision((int)$task->id, 'rejected', $feedback ?: 'Revision requested', (int)$currentUser->id, $currentUser->name);
                         }
 
                         $updated = $this->model->resolveTask($task->id);

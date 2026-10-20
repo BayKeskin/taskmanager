@@ -37,26 +37,34 @@ $canUseAiTasks = ($currentUser && $currentUser->role === 'admin') || ($currentUs
             <div class="cu-command-item" onclick="closeCommandPalette(); openProfileModal();" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
                 <span>⚙️</span> <span><?= __('app.palette_edit_profile') ?></span>
             </div>
-            <div class="cu-command-item" onclick="window.location.href='/taskmanager/api-docs';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:#7B68EE; transition:var(--transition);">
+            <?php if (\Core\ModuleLoader::isModuleActive('apitester')): ?>
+            <div class="cu-command-item" onclick="window.location.href='<?= baseUrl('api-docs') ?>';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:#7B68EE; transition:var(--transition);">
                 <span>⚡</span> <span><?= __('app.layout_api_guide') ?></span>
             </div>
+            <?php endif; ?>
             
             <div style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; padding:10px 10px 6px;"><?= __('app.palette_views_heading') ?></div>
-            <div class="cu-command-item" onclick="window.location.href='/taskmanager/tasks';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
+            <div class="cu-command-item" onclick="window.location.href='<?= baseUrl('tasks') ?>';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
                 <span>📋</span> <span><?= __('app.sidebar_list') ?></span>
             </div>
-            <div class="cu-command-item" onclick="window.location.href='/taskmanager/board';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
+            <div class="cu-command-item" onclick="window.location.href='<?= baseUrl('board') ?>';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
                 <span>📌</span> <span><?= __('app.sidebar_board') ?></span>
             </div>
-            <div class="cu-command-item" onclick="window.location.href='/taskmanager/calendar';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
+            <?php if (\Core\ModuleLoader::isModuleActive('calendar')): ?>
+            <div class="cu-command-item" onclick="window.location.href='<?= baseUrl('calendar') ?>';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
                 <span>📅</span> <span><?= __('app.sidebar_calendar') ?></span>
             </div>
-            <div class="cu-command-item" onclick="window.location.href='/taskmanager/docs';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
+            <?php endif; ?>
+            <?php if (\Core\ModuleLoader::isModuleActive('docs')): ?>
+            <div class="cu-command-item" onclick="window.location.href='<?= baseUrl('docs') ?>';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
                 <span>📄</span> <span><?= __('app.sidebar_docs') ?></span>
             </div>
-            <div class="cu-command-item" onclick="window.location.href='/taskmanager/reports';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
+            <?php endif; ?>
+            <?php if (\Core\ModuleLoader::isModuleActive('reports')): ?>
+            <div class="cu-command-item" onclick="window.location.href='<?= baseUrl('reports') ?>';" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text-primary); transition:var(--transition);">
                 <span>📊</span> <span><?= __('app.sidebar_reports') ?></span>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

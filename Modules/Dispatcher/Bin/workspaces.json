@@ -12,7 +12,7 @@
         "c:/wamp64/www/benimcarsim"
     ],
     "TKMDEV-04": [
-        "c:/wamp64/www/benimcarsim-depo"
+        "c:/wamp64/www/carsimpark"
     ],
     "NKLYCM": [
         "d:/MobilProjeler/nakliyecim"
@@ -25,5 +25,8 @@
     ],
     "ASKERLIK": [
         "C:\\wamp64\\www\\askerlik"
+    ],
+    "PRJTEST": [
+        "C:\\wamp64\\www\\Anket"
     ]
 }

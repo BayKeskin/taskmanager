@@ -29,6 +29,24 @@ if (empty($_SESSION['user'])) {
     exit;
 }
 
+// Modül bazlı sayfa eşleştirmesi ve aktiflik kontrolü
+$pageModuleMap = [
+    'calendar'       => 'calendar',
+    'billing-report' => 'billing',
+    'reports'        => 'reports',
+    'docs'           => 'docs',
+    'chat'           => 'chat',
+    'api-test'       => 'apitester',
+    'api-docs'       => 'apitester',
+    'agent-rules'    => 'agent-rules',
+    'modules'        => 'docs'
+];
+
+if (isset($pageModuleMap[$page]) && !\Core\ModuleLoader::isModuleActive($pageModuleMap[$page])) {
+    require_once __DIR__ . '/Core/Views/module_disabled.php';
+    exit;
+}
+
 // Aktif modül yönlendirmesi
 switch ($page) {
     case 'calendar':

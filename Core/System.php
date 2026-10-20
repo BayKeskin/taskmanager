@@ -21,12 +21,12 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/DataLayer.php';
 require_once __DIR__ . '/Language.php';
 
-// 2. Modüllerin Yüklenmesi
-require_once __DIR__ . '/ModuleLoader.php';
-\Core\ModuleLoader::boot(dirname(__DIR__) . '/Modules');
-
 // 2. Global Veritabanı ve Temel Ayarlar
 $db = new Database();
+
+// 3. Modüllerin Yüklenmesi
+require_once __DIR__ . '/ModuleLoader.php';
+\Core\ModuleLoader::boot(dirname(__DIR__) . '/Modules');
 $settingsRow = $db->multi_record("settings", [], [], "", "id", "ASC", "1");
 $directory = $settingsRow[0]->directory ?? ($db->get_single("settings", "directory", "id", 1) ?? '');
 $siteURL   = $settingsRow[0]->siteurl ?? ($db->get_single("settings", "siteurl", "id", 1) ?? '');

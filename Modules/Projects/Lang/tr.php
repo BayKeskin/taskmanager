@@ -95,5 +95,16 @@ return array (
   'js_archive_confirm' => 'Bu projeyi geçmiş projelere taşımak istediğinize emin misiniz?',
   'js_restore_confirm' => 'Bu projeyi aktif projelere geri yüklemek istediğinize emin misiniz?',
   'js_action_failed' => 'İşlem başarısız',
-  'js_delete_confirm' => 'DİKKAT: Bu projeyi ve içindeki TÜM görevleri ve dökümanları kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz!'
+  'js_delete_confirm' => 'DİKKAT: Bu projeyi ve içindeki TÜM görevleri ve dökümanları kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz!',
+  'modal_dev_conv_id' => '🔵 Kodlama Ajanı Pencere ID (Dev Window ID)',
+  'modal_dev_conv_id_ph' => 'Örn: c4a28f41-b883-4a12-881b-530dd6093836',
+  'modal_dev_conv_id_hint' => 'Görevleri ilk kodlayacak ana geliştirici ajan sohbet penceresi kimliği.',
+  'modal_qa_conv_id' => '🟣 Test & QA Ajanı Pencere ID (QA Window ID)',
+  'modal_qa_conv_id_ph' => 'Örn: f8b19a22-1102-47e5-9c88-7201bc613891',
+  'modal_qa_conv_id_hint' => 'Görev teslim edildiğinde canlı tarayıcıda UI, Network, Console ve Audit testlerini yapacak bağımsız test ajanı penceresi kimliği.',
+  'modal_qa_instructions' => '🧪 Bu Projeye Özel Test Direktifleri & PowerShell Komutları',
+  'modal_qa_instructions_ph' => 'Örn:
+- http://localhost/taskmanager/board sayfasını aç, görev ekleme modalını test et.
+- Invoke-RestMethod ile API yanıt kodunu doğrula.',
+  'modal_qa_instructions_hint' => 'Test ajanına teslim edilen görevlerde bu talimatlar ve komutlar iletilir.'
 );

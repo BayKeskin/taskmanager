@@ -553,13 +553,16 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                                 <?= __('Settings::module_desc') ?>
                             </div>
                         <?php else: ?>
-                            <?php foreach ($availableModules as $mod): 
+                            <?php 
+                            $coreModuleSlugs = ['board', 'settings', 'storage', 'smoketest', 'team'];
+                            foreach ($availableModules as $mod): 
                                 $modSlug = htmlspecialchars($mod['slug'] ?? '');
                                 $modName = htmlspecialchars($mod['name'] ?? $modSlug);
                                 $modDesc = htmlspecialchars($mod['description'] ?? '');
                                 $modVer  = htmlspecialchars($mod['version'] ?? '1.0.0');
                                 $modAuthor = htmlspecialchars($mod['author'] ?? 'TaskManager Team');
-                                $modActive = !empty($mod['is_active']);
+                                $isCore = in_array($mod['slug'] ?? '', $coreModuleSlugs, true);
+                                $modActive = $isCore ? true : !empty($mod['is_active']);
                                 $modDeps = !empty($mod['dependencies']) ? implode(', ', $mod['dependencies']) : '—';
                             ?>
                             <div class="cu-module-item-card <?= $modActive ? 'is-active' : '' ?>">
@@ -575,6 +578,11 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                                         <span class="cu-module-slug">
                                             (<?= $modSlug ?>)
                                         </span>
+                                        <?php if ($isCore): ?>
+                                            <span class="cu-module-core-badge" title="<?= htmlspecialchars(__('Settings::settings_modules_core_cannot_disable'), ENT_QUOTES, 'UTF-8') ?>">
+                                                🔒 <?= __('Settings::settings_modules_core_badge') ?>
+                                            </span>
+                                        <?php endif; ?>
                                     </div>
                                     <p class="cu-module-desc">
                                         <?= $modDesc ?>
@@ -589,8 +597,8 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                                     <span id="badge-status-<?= $modSlug ?>" class="cu-module-status-badge <?= $modActive ? 'status-active' : 'status-passive' ?>">
                                         <?= $modActive ? __('Settings::settings_modules_active_badge') : __('Settings::settings_modules_passive_badge') ?>
                                     </span>
-                                    <label class="cu-toggle-switch" title="<?= __('Settings::settings_modules_col_status') ?>">
-                                        <input type="checkbox" id="toggle-mod-<?= $modSlug ?>" class="cu-mod-toggle-input" data-slug="<?= $modSlug ?>" <?= $modActive ? 'checked' : '' ?>>
+                                    <label class="cu-toggle-switch <?= $isCore ? 'cu-toggle-disabled' : '' ?>" title="<?= $isCore ? htmlspecialchars(__('Settings::settings_modules_core_cannot_disable'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(__('Settings::settings_modules_col_status'), ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="checkbox" id="toggle-mod-<?= $modSlug ?>" class="cu-mod-toggle-input" data-slug="<?= $modSlug ?>" <?= $modActive ? 'checked' : '' ?> <?= $isCore ? 'disabled' : '' ?>>
                                         <span class="cu-toggle-slider"></span>
                                     </label>
                                 </div>

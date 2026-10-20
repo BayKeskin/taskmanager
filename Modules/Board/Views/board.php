@@ -86,7 +86,7 @@ $listUrl = baseUrl('board?' . (!empty($boardQuery) ? $boardQuery . '&view=list' 
     </div>
 
     <div class="cu-filter-bar cu-filter-bar-flex">
-        <?php if ($canCreateTask && !$isClient): ?>
+        <?php if ($canCreateTask && !$isClient && \Core\ModuleLoader::isModuleActive('aiarchitect')): ?>
             <button type="button" class="cu-btn-sm cu-btn-ai-architect" id="btnOpenAiArchitectModal" title="<?= htmlspecialchars(__('AiArchitect::tooltip_ai_architect')) ?>">
                 <span>🪄</span> <span><?= __('AiArchitect::btn_ai_architect') ?></span>
             </button>
@@ -100,19 +100,23 @@ $listUrl = baseUrl('board?' . (!empty($boardQuery) ? $boardQuery . '&view=list' 
                 <span class="cu-caret-down-icon">▼</span>
             </button>
             <div id="kanbanToolsMenu" class="cu-tools-dropdown-menu">
+                <?php if (\Core\ModuleLoader::isModuleActive('billing')): ?>
                 <!-- PDF Hakediş Raporu -->
                 <button type="button" class="cu-tools-item" id="btnDownloadDeliveryPdf" data-project-id="<?= (int)($activeProjectId ?? 0) ?>">
                     <span class="cu-tool-icon">📄</span>
                     <span class="cu-flex-1"><?= __('Board::btn_pdf_report') ?></span>
                 </button>
+                <?php endif; ?>
 
+                <?php if (\Core\ModuleLoader::isModuleActive('aiarchitect')): ?>
                 <!-- AI Standup Özeti -->
                 <button type="button" class="cu-tools-item" id="btnOpenAiStandupModal">
                     <span class="cu-tool-icon">🤖</span>
                     <span class="cu-flex-1"><?= __('Board::btn_ai_standup') ?></span>
                 </button>
+                <?php endif; ?>
 
-                <?php if (!empty($activeProjectId)): ?>
+                <?php if (!empty($activeProjectId) && \Core\ModuleLoader::isModuleActive('excel-export')): ?>
                     <!-- Excel'e Aktar -->
                     <a href="<?= baseUrl('kanban/export-excel?project_id=' . (int)$activeProjectId) ?>" 
                        id="btnExportExcel" 
@@ -124,8 +128,11 @@ $listUrl = baseUrl('board?' . (!empty($boardQuery) ? $boardQuery . '&view=list' 
                 <?php endif; ?>
 
                 <?php if (!$isClient): ?>
-                    <div class="cu-dropdown-divider"></div>
+                    <?php if (\Core\ModuleLoader::isModuleActive('github-devops') || \Core\ModuleLoader::isModuleActive('live-deploy') || \Core\ModuleLoader::isModuleActive('mcp')): ?>
+                        <div class="cu-dropdown-divider"></div>
+                    <?php endif; ?>
 
+                    <?php if (\Core\ModuleLoader::isModuleActive('github-devops')): ?>
                     <!-- GitHub Ayarları -->
                     <button type="button" class="cu-tools-item" id="btnOpenGithubSettings">
                         <span class="cu-tool-icon">🐙</span>
@@ -139,18 +146,25 @@ $listUrl = baseUrl('board?' . (!empty($boardQuery) ? $boardQuery . '&view=list' 
                             <span class="cu-tool-icon">🔄</span>
                             <span class="cu-tool-text-bold"><?= __('Board::btn_sync_github') ?></span>
                         </button>
+                    <?php endif; ?>
+                    <?php endif; ?>
 
+                    <?php if (!empty($activeProjectId)): ?>
+                        <?php if (\Core\ModuleLoader::isModuleActive('live-deploy')): ?>
                         <!-- Canlı Dağıtım (Deploy Wizard) -->
                         <button type="button" id="btnOpenDeployWizard" class="cu-tools-item cu-tools-item-deploy" data-project-id="<?= (int)$activeProjectId ?>">
                             <span class="cu-tool-icon">🚀</span>
                             <span class="cu-tool-text-deploy"><?= __('Board::deploy_btn_wizard') ?></span>
                         </button>
+                        <?php endif; ?>
 
+                        <?php if (\Core\ModuleLoader::isModuleActive('mcp')): ?>
                         <!-- MCP Tools -->
                         <button type="button" id="btnOpenProjectMcp" class="cu-tools-item cu-tools-item-mcp" data-project-id="<?= (int)$activeProjectId ?>">
                             <span class="cu-tool-icon">🧩</span>
                             <span class="cu-tool-text-bold"><?= __('Board::mcp_btn_open') ?></span>
                         </button>
+                        <?php endif; ?>
                     <?php endif; ?>
 
                     <div class="cu-dropdown-divider"></div>

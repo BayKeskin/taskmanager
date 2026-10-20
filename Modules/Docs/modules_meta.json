@@ -1,0 +1,374 @@
+{
+  "AgentRules": {
+    "icon": "🛡️",
+    "capabilities": [
+      "Çalışma alanındaki tüm projelerin AGENTS.md ve .cursorrules kurallarını merkezi olarak senkronize eder.",
+      "Kural ihlallerini, eksik doktrinleri ve otonom ajan güvenlik yönergelerini denetler.",
+      "Çoklu proje ortamında kural bütünlüğünü ve standart mimari sınırları korur."
+    ],
+    "how_to_use": [
+      "Modules/AgentRules altındaki senkronizasyon scripti veya REST API üzerinden tetiklenir.",
+      "Yeni bir kural eklendiğinde tüm projelerin kök dizinindeki AGENTS.md dosyalarına otomatik yansıtılır."
+    ],
+    "tech_info": "Core\\EventManager ve CLI senkronizasyon servisleri üzerinden çalışır.",
+    "key_files": ["module.json", "init.php", "Services/AgentRulesService.php"]
+  },
+  "AiArchitect": {
+    "icon": "🧠",
+    "capabilities": [
+      "Kullanıcının tek cümlelik veya ham görev tanımlarını analiz eder.",
+      "Google Gemini Flash API üzerinden görevleri DoD (Definition of Done), kabul kriterleri ve teknik adımlarla zenginleştirir.",
+      "Görev karmaşıklığına göre efor ve öncelik tahminlemesi yapar."
+    ],
+    "how_to_use": [
+      "Kanban panosunda '+ Yeni Görev' penceresini açın.",
+      "Kısa bir başlık ve açıklama yazıp 'AI ile Detaylandır' (sihirli değnek) butonuna tıklayın.",
+      "Üretilen zengin görev planını inceleyip onaylayarak görevi oluşturun."
+    ],
+    "tech_info": "Google Gemini 1.5 Flash REST API ve Core\\BaseController yapısını kullanır.",
+    "key_files": ["Controllers/AiArchitectController.php", "Services/AiArchitectService.php", "Assets/js/aiarchitect.js"]
+  },
+  "ApiTester": {
+    "icon": "🧪",
+    "capabilities": [
+      "Postman veya harici bir araca gerek duymadan tüm TaskManager REST API uç noktalarını tarayıcıdan test eder.",
+      "GET, POST, PUT, DELETE metotlarını, JSON gövde formatlamasını ve HTTP durum kodlarını canlı gösterir.",
+      "Hazır şablonlar ve otomatik Bearer token enjeksiyonu sunar."
+    ],
+    "how_to_use": [
+      "Sol menüden 'API Test' veya 'api-test' rotasına gidin.",
+      "Test etmek istediğiniz uç noktayı ve HTTP metodunu seçip 'İsteği Gönder' butonuna basın.",
+      "Gelen durum kodu, başlıklar ve renkli JSON yanıt gövdesini inceleyin."
+    ],
+    "tech_info": "İstemci tarafında fetch API ve JSON syntax highlighter, sunucu tarafında ApiTesterController kullanır.",
+    "key_files": ["Controllers/ApiTesterController.php", "Views/api_test.php", "Views/api_docs.php", "Assets/js/api_tester.js"]
+  },
+  "Billing": {
+    "icon": "📑",
+    "capabilities": [
+      "Tamamlanan görevlerin harcanan efor saatlerini (hours_spent) hesaplar.",
+      "Proje bazlı saatlik ücret (hourly_rate) üzerinden müşteri hakediş ve maliyet raporu üretir.",
+      "Müşteri ve yönetici için resmi imza/kaşe alanlarına sahip yazdırılabilir (A4 PDF) teslim tutanağı sunar."
+    ],
+    "how_to_use": [
+      "Sol menüden veya Raporlar sekmesinden 'Hakediş Raporu' görünümünü açın.",
+      "Proje seçin veya URL'den '?rate=750' gibi dinamik saatlik ücret belirleyin.",
+      "'Yazdır / PDF İndir' butonuna basarak kurumsal teslim tutanağını dışa aktarın."
+    ],
+    "tech_info": "ReportModel ve BillingController üzerinden çalışır. @media print CSS optimizasyonuna sahiptir.",
+    "key_files": ["Controllers/BillingController.php", "Models/BillingModel.php", "Views/billing_report.php"]
+  },
+  "Board": {
+    "icon": "📋",
+    "capabilities": [
+      "TaskManager'ın kalbini oluşturan, görevlerin yaşam döngüsünü yöneten modern Kanban panosudur.",
+      "SortableJS destekli pürüzsüz kart ve sütun sürükle-bırak (Drag & Drop) desteği.",
+      "Anlık etiket, atanan kişi, öncelik filtrelemesi ve görev detay çekmecesi (Drawer)."
+    ],
+    "how_to_use": [
+      "Ana menüden 'Pano (Board)' görünümünü açın.",
+      "Kartları sütunlar arasında sürükleyip bırakarak durumlarını güncelleyin.",
+      "Bir karta tıklayarak detay çekmecesini açın, yorum ekleyin veya alt görevleri yönetin."
+    ],
+    "tech_info": "BoardController, TaskModel ve Sortable.js entegrasyonu ile tam modüler çalışır.",
+    "key_files": ["Controllers/BoardController.php", "Models/TaskModel.php", "Views/board.php", "Assets/js/board.js"]
+  },
+  "Calendar": {
+    "icon": "📅",
+    "capabilities": [
+      "Görev başlangıç, bitiş ve termin tarihlerini klasik takvim ve interaktif Gantt zaman çizelgesinde sunar.",
+      "Gantt çubuklarını gün hücrelerine sürükleyerek AJAX ile canlı termin tarihi güncelleme.",
+      "Gecikmiş (Overdue) görevlerin otomatik kırmızı görsel vurgulanması ve SLA takibi."
+    ],
+    "how_to_use": [
+      "Sol menüden 'Takvim' linkine tıklayın.",
+      "Üstteki sekmelerden 'Gantt Çizelgesi' veya 'Aylık Takvim' görünümleri arasında geçiş yapın.",
+      "Gantt üzerinde çubukları sürükleyerek görev tarihlerini zahmetsizce revize edin."
+    ],
+    "tech_info": "HTML5 Drag and Drop API, FullCalendar uyumluluğu ve TaskModel entegrasyonu.",
+    "key_files": ["Controllers/CalendarController.php", "Views/calendar.php", "Assets/js/calendar.js"]
+  },
+  "Chat": {
+    "icon": "💬",
+    "capabilities": [
+      "Ekip üyeleri ve proje paydaşları için dahili anlık mesajlaşma ve dosya paylaşım ortamı sağlar.",
+      "Proje bazlı genel ve özel sohbet kanalları.",
+      "Server-Sent Events (SSE) ile sayfa yenilenmeden anlık mesaj iletimi."
+    ],
+    "how_to_use": [
+      "Sol navigasyondan 'Sohbet' menüsüne tıklayın.",
+      "Sol listeden ilgili proje kanalını seçin.",
+      "Mesajınızı yazıp gönderin; ekli dosyaları veya kod bloklarını paylaşın."
+    ],
+    "tech_info": "ChatController, ChatModel ve sse-client.js ile gerçek zamanlı veri akışı sağlar.",
+    "key_files": ["Controllers/ChatController.php", "Models/ChatModel.php", "Views/chat.php", "Assets/js/chat.js"]
+  },
+  "Dispatcher": {
+    "icon": "⚡",
+    "capabilities": [
+      "Kuyruktaki görevleri otonom olarak algılayıp Antigravity AI Agent CLI motoruna fırlatan köprüdür.",
+      "Görev açıklamalarını, kabul kriterlerini ve guardrail kurallarını prompt şablonuna dönüştürür.",
+      "Geliştirici veya ajanın görev başlangıç/bitiş bildirimlerini yönetir."
+    ],
+    "how_to_use": [
+      "Bir görevin atananını 'Antigravity AI' olarak seçip durumunu 'To Do' veya 'In Progress' yapın.",
+      "Arka planda çalışan python dispatcher.py servisi görevi anında algılayıp kodlamayı başlatır."
+    ],
+    "tech_info": "Python tabanlı mikroservis (Bin/dispatcher.py), TaskLifecycleService ve Webhook köprüsü.",
+    "key_files": ["Services/DispatcherService.php", "Services/TaskLifecycleService.php", "Bin/dispatcher.py"]
+  },
+  "Docs": {
+    "icon": "📄",
+    "capabilities": [
+      "Proje teknik belgelerini, mimari şemalarını ve API sözlüklerini merkezi olarak yönetir.",
+      "Quill WYSIWYG zengin metin düzenleyici ve Markdown kaynak kod çift yönlü editörü.",
+      "Güvenli dosya eki depolama, sürükle-bırak yükleme ve Lightbox görsel önizleme."
+    ],
+    "how_to_use": [
+      "Sol menüden 'Dökümanlar' veya 'Modüller' rehberine tıklayın.",
+      "Sol listeden bir belge seçin veya '+ Yeni Döküman' butonu ile yeni belge oluşturun.",
+      "WYSIWYG modunda biçimlendirin veya 'Kaynak Kod' butonu ile Markdown olarak düzenleyin."
+    ],
+    "tech_info": "Quill 2.0.2 Snow, Marked.js, DocController ve DocModel üzerine kuruludur.",
+    "key_files": ["Controllers/DocController.php", "Models/DocModel.php", "Views/docs.php", "Views/modules_guide.php", "Assets/js/docs.js", "Assets/css/docs.css"]
+  },
+  "ErrorRadar": {
+    "icon": "📡",
+    "capabilities": [
+      "Sayfalardaki JavaScript konsol hatalarını, 404 statik varlıkları ve kırık çeviri anahtarlarını anında yakalar.",
+      "PHP/Xdebug hatalarını ve ağ çökmelerini algılar.",
+      "Otomatik hata parmak izi (fingerprint) üreterek aynı hatayı tekilleştirir ve doğrudan panoda [AUTO-BUG] görevi açar."
+    ],
+    "how_to_use": [
+      "Sistemde otomatik olarak arka planda çalışır; herhangi bir kurulum gerektirmez.",
+      "Bir sayfada JS veya ağ hatası meydana geldiğinde panonun ilk sütununda otomatik hata kartı oluşur."
+    ],
+    "tech_info": "İstemci tarafı error-radar.js sniffer ve ErrorRadarController otonom görev üretim hattı.",
+    "key_files": ["Controllers/ErrorRadarController.php", "Models/ErrorRadarModel.php", "Assets/js/error-radar.js"]
+  },
+  "ExcelExport": {
+    "icon": "📊",
+    "capabilities": [
+      "Kanban panosundaki görevleri tek tıkla Microsoft Excel ve CSV formatında dışa aktarır.",
+      "Türkçe ve özel karakterlerin bozulmasını önleyen UTF-8 BOM (Byte Order Mark) ve noktalı virgül ayracı desteği.",
+      "Görev kodu, başlık, durum, öncelik, harcanan efor ve tamamlanma yüzdesi kolonlarını eksiksiz içerir."
+    ],
+    "how_to_use": [
+      "Kanban panosu üst araç çubuğundaki 'Araçlar' menüsüne tıklayın.",
+      "'📊 Excel (.csv) İndir' butonunu seçin; dosya anında bilgisayarınıza indirilir."
+    ],
+    "tech_info": "BoardController::exportExcel metodu ve TaskModel::getTasksForExport sorgu motoru.",
+    "key_files": ["Services/ExcelExportService.php", "Controllers/ExcelExportController.php"]
+  },
+  "GithubDevops": {
+    "icon": "🐙",
+    "capabilities": [
+      "Ajanlar veya yazılımcılar görevi teslim ettiğinde kod değişikliklerini otomatik git commit ve git push ile GitHub'a aktarır.",
+      "Veritabanı şema değişiklikleri için .migrations/{task_code}_down.sql cerrahi geri alma (rollback) dosyası üretir.",
+      "Git diff analizi ile sadece değişen dosyaları takip eder."
+    ],
+    "how_to_use": [
+      "Ayarlar sayfasından GitHub Repository ve Personal Access Token alanlarını yapılandırın.",
+      "Görev 'In Review' veya 'Done' aşamasına alındığında otomatik push mekanizması devreye girer."
+    ],
+    "tech_info": "Git CLI subprocess çağrıları, Helper::autoCommitAndPushTask ve SQL diff motoru.",
+    "key_files": ["Services/GithubDevopsService.php", "Controllers/GithubDevopsController.php"]
+  },
+  "LiveDeploy": {
+    "icon": "🚀",
+    "capabilities": [
+      "cPanel, Plesk, CyberPanel veya standart FTP sunucularına tek tıkla canlıya alma (CI/CD) motorudur.",
+      "Git diff kullanarak yalnızca değişen/eklenen dosyaları 1-2 saniyede aktaran Akıllı Delta Senkronizasyon.",
+      "Canlı veritabanı göçlerini (.migrations) otomatik çalıştırma, HTTP sağlık kontrolü (200 OK) ve cerrahi geri alma (Rollback)."
+    ],
+    "how_to_use": [
+      "Kanban panosu üst barındaki '🚀 Canlı Dağıtım' butonuna tıklayın.",
+      "3 adımlı sihirbazda FTP ve veritabanı bilgilerini test edip 'Canlıya Dağıt' butonuna basın.",
+      "İşlem sonrası sağlık rozetini ve canlı yanıt süresini teyit edin."
+    ],
+    "tech_info": "DeltaSyncEngine, HostingManager ve ProjectAnalyzer sınıflarını barındıran tam entegre dağıtım motoru.",
+    "key_files": ["Services/DeltaSyncEngine.php", "Services/HostingManager.php", "Controllers/LiveDeployController.php", "Views/deploy_wizard.php"]
+  },
+  "Mailer": {
+    "icon": "✉️",
+    "capabilities": [
+      "Sistem bildirimleri, yeni görev atamaları ve şifre sıfırlama maillerini PHPMailer ile gönderir.",
+      "Modern, responsive HTML e-posta şablon motoru.",
+      "SMTP bağlantı testi ve hata günlüğü denetimi."
+    ],
+    "how_to_use": [
+      "Ayarlar sayfasındaki SMTP sekmesinden sunucu, port ve kimlik bilgilerini girin.",
+      "'SMTP Test Gönderimi' butonuna basarak gelen kutunuza test postasını düşürün."
+    ],
+    "tech_info": "PHPMailer kütüphanesi ve Core\\BaseController e-posta kuyruk yapısı.",
+    "key_files": ["Services/MailerService.php", "Controllers/MailerController.php"]
+  },
+  "Mcp": {
+    "icon": "🔌",
+    "capabilities": [
+      "Antigravity Yapay Zeka Ajanlarının kullanabileceği Model Context Protocol (MCP) sunucu kataloğunu yönetir.",
+      "GitHub, MySQL, SQLite, Brave Search gibi MCP araçlarını tek tıkla aktif etme.",
+      ".agents/mcp_config.json dosyasına dinamik konfigürasyon enjeksiyonu."
+    ],
+    "how_to_use": [
+      "Sol menüden 'MCP Sunucuları' sayfasına gidin.",
+      "İlgili MCP aracının yanındaki 'Aktif Et' butonuna basıp gerekli API token'larını girin."
+    ],
+    "tech_info": "McpController, McpModel ve .agents/mcp_config.json dosya senkronizasyonu.",
+    "key_files": ["Controllers/McpController.php", "Models/McpModel.php", "Views/mcp.php"]
+  },
+  "Projects": {
+    "icon": "📁",
+    "capabilities": [
+      "Farklı yazılım projelerini birbirinden tamamen izole eden çoklu çalışma alanı (Workspace) çekirdeğidir.",
+      "Her projenin bağımsız görevleri, dökümanları, repoları ve erişim yetkileri bulunur.",
+      "Proje bazlı saatlik ücret, GitHub bağlantısı ve canlı sunucu ayarları yönetimi."
+    ],
+    "how_to_use": [
+      "Sol menüden 'Projeler' sayfasına gidin.",
+      "'Yeni Proje Oluştur' butonu ile yeni çalışma alanınızı tanımlayın veya aktif projeler arasında geçiş yapın."
+    ],
+    "tech_info": "ProjectController ve ProjectModel üzerinden tüm sisteme proje bağlamı (active_project_id) sağlar.",
+    "key_files": ["Controllers/ProjectController.php", "Models/ProjectModel.php", "Views/projects.php"]
+  },
+  "Reports": {
+    "icon": "📈",
+    "capabilities": [
+      "Proje ilerleme oranlarını, tamamlanma hızlarını (Velocity) ve SLA ihlallerini Chart.js ile görselleştirir.",
+      "Geliştirici bazlı efor dağılımı ve haftalık/aylık performans analitiği.",
+      "Tarih aralığı ve proje filtrelemeli dinamik iş zekası panelleri."
+    ],
+    "how_to_use": [
+      "Sol menüden 'Raporlar' sayfasına gidin.",
+      "Proje ve tarih aralığı filtrelerini seçerek grafikleri dinamik olarak güncelleyin."
+    ],
+    "tech_info": "Chart.js grafik kütüphanesi, ReportController ve ReportModel sorgu optimizasyonları.",
+    "key_files": ["Controllers/ReportController.php", "Models/ReportModel.php", "Views/reports.php", "Assets/js/reports.js"]
+  },
+  "RestApi": {
+    "icon": "🌐",
+    "capabilities": [
+      "TaskManager'ın tüm yeteneklerini dış dünyaya ve mobil uygulamalara açan stateless RESTful API katmanıdır.",
+      "Bearer Token kimlik doğrulaması ve RFC 7807 uyumlu hata yanıtları.",
+      "Projeler, görevler, belgeler ve pinler için CRUD uç noktaları."
+    ],
+    "how_to_use": [
+      "HTTP Authorization başlığında 'Bearer {token}' göndererek istek yapın.",
+      "Örnek: GET /api/projects veya POST /api/tasks/{task_code}/submit"
+    ],
+    "tech_info": "Modules/RestApi/Controllers/ApiController.php ve merkezi rota yönlendiricisi.",
+    "key_files": ["Controllers/ApiController.php", "Routes/api.php"]
+  },
+  "Settings": {
+    "icon": "⚙️",
+    "capabilities": [
+      "Sistemin genel ayarlarını (Site URL, şirket başlığı, varsayılan tema) yönetir.",
+      "SMTP, Telegram, AI API anahtarları ve GitHub DevOps entegrasyon parametreleri.",
+      "Tri-lingual çoklu dil tercihleri (TR, EN, DE) ve oturum yönetimi."
+    ],
+    "how_to_use": [
+      "Sol menünün altındaki dişli çark simgesinden 'Ayarlar' sayfasına gidin.",
+      "Sekmeler arasında geçiş yaparak ilgili entegrasyon bilgilerini güncelleyin ve 'Kaydet'e basın."
+    ],
+    "tech_info": "SettingsController ve Database settings tablosu üzerinden dinamik konfigürasyon sağlar.",
+    "key_files": ["Controllers/SettingsController.php", "Models/SettingsModel.php", "Views/settings.php"]
+  },
+  "SmokeTest": {
+    "icon": "🩺",
+    "capabilities": [
+      "Veritabanı bağlantısı, yazma izinleri, API yanıtları ve dil sözlüklerini uçtan uca test eden otonom teşhis motorudur.",
+      "Sistem sağlığını tek bir komutla doğrular.",
+      "Dağıtım veya güncelleme sonrası regresyonları anında raporlar."
+    ],
+    "how_to_use": [
+      "Terminal üzerinden 'php tests/run_smoke.php' veya ilgili kontrolör rotası üzerinden tetikleyin.",
+      "Tüm denetim noktalarının yeşil [PASS] olduğunu teyit edin."
+    ],
+    "tech_info": "Core\\BaseController ve sistem sağlık denetleyicileri ile CLI/Web ortak çalışır.",
+    "key_files": ["Controllers/SmokeTestController.php", "Services/SmokeTestService.php"]
+  },
+  "SSE": {
+    "icon": "⚡",
+    "capabilities": [
+      "Sayfa yenilemeye gerek kalmadan pano hareketlerini ve bildirimleri tarayıcıya anında ileten Server-Sent Events motorudur.",
+      "Hafif, tek yönlü ve HTTP standartlarına tam uyumlu gerçek zamanlı veri akışı.",
+      "Ajan durum güncellemelerini ve yeni görevleri canlı olarak tüm kullanıcılara yansıtır."
+    ],
+    "how_to_use": [
+      "Sistem otomatik olarak arka planda sse-client.js ile kanala bağlanır.",
+      "Herhangi bir sekmede yapılan değişiklik diğer tüm sekmelerde anında canlı güncellenir."
+    ],
+    "tech_info": "live_events tablosu, SSEController event-stream çıktısı ve istemci EventSource API.",
+    "key_files": ["Controllers/SSEController.php", "Assets/js/sse-client.js"]
+  },
+  "Storage": {
+    "icon": "☁️",
+    "capabilities": [
+      "Görevlere ve belgelere yüklenen tüm dosya, resim ve ekleri güvenle depolar.",
+      "Zararlı PHP veya çalıştırılabilir scriptleri (.safe uzantısı ile) izole ederek çalıştırma engeli koyar.",
+      "MIME-type doğrulama, boyut sınırlandırması ve Lightbox görsel önizleme."
+    ],
+    "how_to_use": [
+      "Görev detayında veya Dökümanlar modülünde 'Dosya Yükle' alanına sürükleyip bırakın.",
+      "Yüklenen dosyalara tıklayarak indirin veya resimleri tam boyutta önizleyin."
+    ],
+    "tech_info": "StorageService, FileValidator ve Public/uploads güvenlik kuralları.",
+    "key_files": ["Services/StorageService.php", "Controllers/StorageController.php"]
+  },
+  "Team": {
+    "icon": "👥",
+    "capabilities": [
+      "Kullanıcı hesaplarını, şifreleri ve RBAC (Role-Based Access Control) yetki matrisini yönetir.",
+      "Admin, Project Manager, Developer, QA Tester ve Müşteri (Client) rol sınırlandırmaları.",
+      "Güvenli giriş, oturum takibi ve kullanıcı avatar yönetimi."
+    ],
+    "how_to_use": [
+      "Sol menüden 'Ekip' sayfasına gidin.",
+      "Yeni kullanıcı ekleyin, rollerini belirleyin veya mevcut kullanıcıların yetkilerini düzenleyin."
+    ],
+    "tech_info": "TeamController, UserModel ve oturum güvenlik katmanı ile tam entegre çalışır.",
+    "key_files": ["Controllers/TeamController.php", "Models/UserModel.php", "Views/team.php", "Views/login.php"]
+  },
+  "Telegram": {
+    "icon": "📱",
+    "capabilities": [
+      "Kritik sistem olaylarını ve otonom hata bildirimlerini Telegram gruplarına push mesaj olarak iletir.",
+      "Yeni görev atamalarında veya acil bug oluştuğunda anlık mobil uyarı sağlar.",
+      "Telegram Bot API ile webhook ve doğrudan mesaj gönderim desteği."
+    ],
+    "how_to_use": [
+      "Ayarlar sayfasından Bot Token ve Chat ID bilgilerini yapılandırın.",
+      "'Test Mesajı Gönder' butonuyla telefonunuza bildirimin ulaştığını doğrulayın."
+    ],
+    "tech_info": "TelegramService, cURL HTTP bot istekleri ve EventManager dinleyicileri.",
+    "key_files": ["Services/TelegramService.php", "Controllers/TelegramController.php"]
+  },
+  "VisualPins": {
+    "icon": "📍",
+    "capabilities": [
+      "Web sayfası üzerinde herhangi bir noktaya tıklayarak koordinatlı görsel hata pinleme (BugHerd alternatifi) sağlar.",
+      "Ekran koordinatları (X, Y), tarayıcı bilgisi ve ekran görüntüsü ile anında görsel hata kaydı oluşturur.",
+      "Doğrudan panoya bağlı pin yorumları ve durum takibi."
+    ],
+    "how_to_use": [
+      "Sayfanın sağ altındaki kırmızı iğne (Pin) butonuna tıklayın.",
+      "Hatalı olduğunu düşündüğünüz buton veya metin üzerine tıklayıp notunuzu yazarak kaydedin."
+    ],
+    "tech_info": "PinController, PinModel ve visual-pins.js istemci kütüphanesi.",
+    "key_files": ["Controllers/VisualPinsController.php", "Models/VisualPinsModel.php", "Assets/js/visual-pins.js"]
+  },
+  "Watchdog": {
+    "icon": "🐕",
+    "capabilities": [
+      "Görev sırasında takılan, 15 dakikadan uzun süre yanıtsız kalan veya çöken ajan görevlerini tespit eder.",
+      "Kilitlenen görevleri otomatik olarak 'Stalled' veya 'Retry' durumuna alarak kuyruğu kurtarır.",
+      "Kesintisiz 7/24 otonom çalışma garantisi sunar."
+    ],
+    "how_to_use": [
+      "Arka planda dispatcher servisi ile birlikte otonom olarak devrededir; manuel müdahale gerektirmez.",
+      "Gerektiğinde CLI üzerinden watchdog denetimi tetiklenebilir."
+    ],
+    "tech_info": "WatchdogService ve arka plan thread denetim döngüleri.",
+    "key_files": ["Services/WatchdogService.php", "Controllers/WatchdogController.php"]
+  }
+}

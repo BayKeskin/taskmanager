@@ -95,5 +95,16 @@ return array (
   'js_archive_confirm' => 'Are you sure you want to move this project to archived projects?',
   'js_restore_confirm' => 'Are you sure you want to restore this project to active projects?',
   'js_action_failed' => 'Action failed',
-  'js_delete_confirm' => 'CAUTION: Are you sure you want to permanently delete this project and ALL its tasks and documents? This cannot be undone!'
+  'js_delete_confirm' => 'CAUTION: Are you sure you want to permanently delete this project and ALL its tasks and documents? This cannot be undone!',
+  'modal_dev_conv_id' => '🔵 Developer Agent Window ID (Dev Window ID)',
+  'modal_dev_conv_id_ph' => 'e.g. c4a28f41-b883-4a12-881b-530dd6093836',
+  'modal_dev_conv_id_hint' => 'Conversation window ID for the primary developer agent executing tasks.',
+  'modal_qa_conv_id' => '🟣 QA & Tester Agent Window ID (QA Window ID)',
+  'modal_qa_conv_id_ph' => 'e.g. f8b19a22-1102-47e5-9c88-7201bc613891',
+  'modal_qa_conv_id_hint' => 'Autonomous QA inspector window ID responsible for live browser, UI, console, network, and audit verification.',
+  'modal_qa_instructions' => '🧪 Project-Specific QA Directives & PowerShell Test Commands',
+  'modal_qa_instructions_ph' => 'e.g.:
+- Open http://localhost/taskmanager/board and verify task drawer modal.
+- Verify API response via Invoke-RestMethod.',
+  'modal_qa_instructions_hint' => 'These instructions and commands will be sent to the QA agent upon task delivery.'
 );
