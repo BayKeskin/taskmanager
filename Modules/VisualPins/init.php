@@ -4,8 +4,8 @@ use Core\AssetManager;
 use Modules\VisualPins\Controllers\PinController;
 
 // 1. Modül Varlıklarını (JS/CSS) Kuyruğa Ekle
-AssetManager::enqueueJs('visual-pins', '/taskmanager/Modules/VisualPins/Assets/js/taskmanager-pin.js');
-AssetManager::enqueueCss('visual-pins', '/taskmanager/Modules/VisualPins/Assets/css/visual-pins.css');
+AssetManager::enqueueJs('visual-pins', '/Modules/VisualPins/Assets/js/taskmanager-pin.js');
+AssetManager::enqueueCss('visual-pins', '/Modules/VisualPins/Assets/css/visual-pins.css');
 
 AssetManager::localizeScript('visual-pins', 'PIN_I18N', [
     'placeholder_title' => __('VisualPins::js_placeholder_title'),

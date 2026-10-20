@@ -1,6 +1,8 @@
 /**
  * AiArchitect Module Client Interactions
  */
+const aiArchBaseUrl = (window.BASE_URL || '').replace(/\/+$/, '');
+
 window.AiArchitect = {
     async refineSpecification(projectId, instruction, images = [], codeFiles = []) {
         const formData = new FormData();
@@ -18,7 +20,7 @@ window.AiArchitect = {
             }
         }
 
-        const res = await fetch('/taskmanager/ajax?action=refine_task_specification', {
+        const res = await fetch(`${aiArchBaseUrl}/ajax?action=refine_task_specification`, {
             method: 'POST',
             body: formData
         });
@@ -70,7 +72,7 @@ function renderAiArchitectFiles() {
     if (!previewContainer) return;
     previewContainer.innerHTML = '';
 
-    const removeText = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.ai_arch_remove_file) ? window.AI_ARCHITECT_I18N.ai_arch_remove_file : 'Kaldır';
+    const removeText = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.ai_arch_remove_file) ? window.AI_ARCHITECT_I18N.ai_arch_remove_file : 'Remove';
 
     window.aiArchitectFiles.forEach((file, idx) => {
         const item = document.createElement('div');
@@ -135,7 +137,7 @@ function handleAiArchitectDrop(e) {
 async function runAiArchitect() {
     const instEl = document.getElementById('aiArchitectInstruction');
     const instruction = instEl ? instEl.value.trim() : '';
-    const promptReqText = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.empty_instruction) ? window.AI_ARCHITECT_I18N.empty_instruction : 'Lütfen ne yapmak istediğinize dair kısa bir açıklama girin.';
+    const promptReqText = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.empty_instruction) ? window.AI_ARCHITECT_I18N.empty_instruction : '...';
     if (!instruction) {
         if (typeof showToast === 'function') {
             showToast(promptReqText, 'warning');
@@ -151,10 +153,10 @@ async function runAiArchitect() {
 
     const btn = document.getElementById('btnRunAiArchitect');
     const btnText = document.getElementById('btnRunAiArchitectText');
-    const origText = btnText ? btnText.innerText : 'Şartname Üret';
+    const origText = btnText ? btnText.innerText : ((window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.refine_specification) ? window.AI_ARCHITECT_I18N.refine_specification : '...');
 
     if (btn) btn.disabled = true;
-    if (btnText) btnText.innerText = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.analyzing_btn) ? window.AI_ARCHITECT_I18N.analyzing_btn : 'Mimar analiz ediyor...';
+    if (btnText) btnText.innerText = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.analyzing_btn) ? window.AI_ARCHITECT_I18N.analyzing_btn : '...';
 
     const formData = new FormData();
     formData.append('project_id', projectId);
@@ -170,7 +172,7 @@ async function runAiArchitect() {
     });
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=refine_task_specification', {
+        const res = await fetch(`${aiArchBaseUrl}/ajax?action=refine_task_specification`, {
             method: 'POST',
             body: formData
         });
@@ -204,18 +206,18 @@ async function runAiArchitect() {
                 }
             }
 
-            const successMsg = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.spec_generated_success) ? window.AI_ARCHITECT_I18N.spec_generated_success : 'Teknik şartname üretildi!';
+            const successMsg = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.spec_generated_success) ? window.AI_ARCHITECT_I18N.spec_generated_success : 'Success';
             if (typeof showToast === 'function') {
                 showToast(successMsg, 'success');
             }
         } else {
-            const failMsg = d.message || ((window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.spec_generate_failed) ? window.AI_ARCHITECT_I18N.spec_generate_failed : 'Şartname üretilemedi.');
+            const failMsg = d.message || ((window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.spec_generate_failed) ? window.AI_ARCHITECT_I18N.spec_generate_failed : 'Failed');
             if (typeof showToast === 'function') {
                 showToast(failMsg, 'error');
             }
         }
     } catch(err) {
-        const connErr = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.conn_error_toast) ? window.AI_ARCHITECT_I18N.conn_error_toast : 'Bağlantı hatası';
+        const connErr = (window.AI_ARCHITECT_I18N && window.AI_ARCHITECT_I18N.conn_error_toast) ? window.AI_ARCHITECT_I18N.conn_error_toast : 'Connection error';
         if (typeof showToast === 'function') {
             showToast(connErr, 'error');
         }
@@ -375,7 +377,7 @@ async function runAiBriefDecomposition() {
             fd.append('brief_file', fileToUpload, fileToUpload.name);
         }
 
-        const res = await fetch('/taskmanager/ajax?action=decompose_brief_with_ai', { method: 'POST', body: fd });
+        const res = await fetch(`${aiArchBaseUrl}/ajax?action=decompose_brief_with_ai`, { method: 'POST', body: fd });
         
         if (!res.ok) {
             const errTxt = await res.text().catch(() => '');
@@ -649,7 +651,7 @@ async function submitAiArchitectTree() {
         fd.append('extracted_imgs_json', JSON.stringify(aiArchExtractedImgs));
         fd.append('original_doc_json', JSON.stringify(aiArchOriginalDoc));
 
-        const res = await fetch('/taskmanager/ajax?action=bulk_create_hierarchical_tasks', { method: 'POST', body: fd });
+        const res = await fetch(`${aiArchBaseUrl}/ajax?action=bulk_create_hierarchical_tasks`, { method: 'POST', body: fd });
         const data = await res.json();
 
         if (data.success) {

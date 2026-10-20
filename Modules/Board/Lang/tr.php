@@ -2,6 +2,7 @@
 return array (
   'module_name' => 'Kanban Panosu',
   'module_desc' => 'Görev akışı, Kanban sütunları ve sürükle-bırak organizasyon.',
+  'delete_task' => 'Görevi Sil',
   'kanban_board' => 'Kanban Panosu',
   'new_task' => 'Yeni Görev',
   'filter_project' => 'Projeye Göre Filtrele',

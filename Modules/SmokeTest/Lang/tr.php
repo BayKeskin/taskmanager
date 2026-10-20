@@ -36,6 +36,8 @@ return [
     'cat_modules'           => 'Aktif HMVC Modülleri (24/24)',
     'cat_languages'         => 'Çok Dilli Sözlükler (TR, EN, DE)',
     'cat_api'               => 'REST API & Uç Noktalar',
-    'btn_close'             => 'Kapat'
+    'btn_close'             => 'Kapat',
+    'parse_error'           => 'Test çıktısı çözümlenemedi.',
+    'error_prefix'          => 'Hata: '
 ];
 

@@ -2,6 +2,7 @@
 return array (
   'module_name' => 'Kanban Board',
   'module_desc' => 'Task workflow, Kanban columns, and drag-and-drop organization.',
+  'delete_task' => 'Delete Task',
   'kanban_board' => 'Kanban Board',
   'new_task' => 'New Task',
   'filter_project' => 'Filter by Project',

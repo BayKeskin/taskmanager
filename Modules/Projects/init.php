@@ -6,8 +6,8 @@ use Core\EventManager;
 use Core\AssetManager;
 
 // 1. Modül JS ve CSS Varlıklarını Kuyruğa Al
-AssetManager::enqueueCss('projects-styles', '/taskmanager/Modules/Projects/Assets/css/projects.css');
-AssetManager::enqueueJs('projects-js', '/taskmanager/Modules/Projects/Assets/js/projects.js');
+AssetManager::enqueueCss('projects-styles', '/Modules/Projects/Assets/css/projects.css');
+AssetManager::enqueueJs('projects-js', '/Modules/Projects/Assets/js/projects.js');
 
 AssetManager::localizeScript('projects-js', 'PROJECTS_I18N', [
     'project_created'        => __('Projects::js_project_created'),

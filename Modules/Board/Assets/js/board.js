@@ -1,3 +1,4 @@
+const boardBaseUrl = (window.BASE_URL || '').replace(/\/+$/, '');
 // Modules/Board/Assets/js/board.js
 
 // 3. GÖREV DETAY ÇEKMECESİ (SLIDE-OVER TASK DRAWER)
@@ -32,7 +33,7 @@ async function openTaskDrawer(taskId) {
     document.getElementById('drawerCommentsList').innerHTML = `<span style="font-size:12px; color:var(--text-muted);">${_bI18n.comments_loading || 'Loading comments...'}</span>`;
 
     try {
-        const response = await fetch(`/taskmanager/ajax?action=get_task_detail&id=${taskId}`);
+        const response = await fetch(`${boardBaseUrl}/ajax?action=get_task_detail&id=${taskId}`);
         const data = await response.json();
 
         if (!data.success) {
@@ -350,7 +351,7 @@ async function handleAddComment(e) {
     }
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=add_comment', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=add_comment', {
             method: 'POST',
             body: formData
         });
@@ -373,7 +374,7 @@ async function handleAddComment(e) {
 async function refreshDrawerCommentsOnly(taskId) {
     if (!taskId) return;
     try {
-        const response = await fetch(`/taskmanager/ajax?action=get_task_detail&id=${taskId}`);
+        const response = await fetch(`${boardBaseUrl}/ajax?action=get_task_detail&id=${taskId}`);
         const data = await response.json();
         if (data.success) {
             if (data.comments) {
@@ -444,7 +445,7 @@ async function handleDrop(e, targetStatus) {
     formData.append('status', targetStatus);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=update_task_status', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=update_task_status', {
             method: 'POST',
             body: formData
         });
@@ -482,7 +483,7 @@ async function executeWorkflowAction(taskId, action, extraData = {}) {
             formData.append(key, extraData[key]);
         }
 
-        const res = await fetch('/taskmanager/ajax?action=workflow_action', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=workflow_action', {
             method: 'POST',
             body: formData
         });
@@ -624,7 +625,7 @@ async function handleCreateTask(e) {
     }
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=create_task', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=create_task', {
             method: 'POST',
             body: formData
         });
@@ -874,7 +875,7 @@ async function toggleChecklistItem(itemId, isChecked) {
     formData.append('is_completed', newStatus);
 
     try {
-        await fetch('/taskmanager/ajax?action=toggle_checklist', {
+        await fetch(boardBaseUrl + '/ajax?action=toggle_checklist', {
             method: 'POST',
             body: formData
         });
@@ -897,7 +898,7 @@ async function handleAddChecklistItem(e) {
     formData.append('title', title);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=add_checklist_item', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=add_checklist_item', {
             method: 'POST',
             body: formData
         });
@@ -929,7 +930,7 @@ async function handleInlineTitleSave(el) {
     formData.append('value', newTitle);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=update_task_field', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=update_task_field', {
             method: 'POST',
             body: formData
         });
@@ -1011,7 +1012,7 @@ async function toggleSubtaskDone(subtaskId, isCompleted) {
         const formData = new FormData();
         formData.append('task_id', subtaskId);
         formData.append('status', isCompleted ? 'completed' : 'assigned');
-        const res = await fetch('/taskmanager/ajax?action=update_task_status', { method: 'POST', body: formData });
+        const res = await fetch(boardBaseUrl + '/ajax?action=update_task_status', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.success && currentDrawerTaskId) {
             openTaskDrawer(currentDrawerTaskId);
@@ -1035,7 +1036,7 @@ async function handleAddSubtask(e) {
     formData.append('title', title);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=create_subtask', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=create_subtask', {
             method: 'POST',
             body: formData
         });
@@ -1117,7 +1118,7 @@ async function loadNotifications() {
     if (!list) return;
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=get_notifications');
+        const res = await fetch(boardBaseUrl + '/ajax?action=get_notifications');
         const data = await res.json();
         const notifs = data.notifications || [];
 
@@ -1158,7 +1159,7 @@ async function markNotifRead(notifId) {
     const formData = new FormData();
     formData.append('notification_id', notifId);
     try {
-        await fetch('/taskmanager/ajax?action=mark_notification_read', {
+        await fetch(boardBaseUrl + '/ajax?action=mark_notification_read', {
             method: 'POST',
             body: formData
         });
@@ -1244,7 +1245,7 @@ async function logTrackedTime(taskId, minutes) {
     formData.append('minutes', minutes);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=track_time', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=track_time', {
             method: 'POST',
             body: formData
         });
@@ -1329,7 +1330,7 @@ async function handleAddDependency(e) {
     formData.append('type', depType);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=add_dependency', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=add_dependency', {
             method: 'POST',
             body: formData
         });
@@ -1352,7 +1353,7 @@ async function handleRemoveDependency(depId) {
     formData.append('dep_id', depId);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=remove_dependency', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=remove_dependency', {
             method: 'POST',
             body: formData
         });
@@ -1578,7 +1579,7 @@ async function handleQuickAddSubtask(parentTaskId) {
     formData.append('priority', 'normal');
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=create_subtask', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=create_subtask', {
             method: 'POST',
             body: formData
         });
@@ -1689,7 +1690,7 @@ async function saveTaskDescription() {
     formData.append('value', content);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=update_task_field', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=update_task_field', {
             method: 'POST',
             body: formData
         });
@@ -1736,7 +1737,7 @@ async function executeDeleteTask(taskId) {
     formData.append('task_id', taskId);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=delete_task', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=delete_task', {
             method: 'POST',
             body: formData
         });
@@ -1766,7 +1767,7 @@ async function deleteSubtask(subtaskId) {
     formData.append('task_id', subtaskId);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=delete_task', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=delete_task', {
             method: 'POST',
             body: formData
         });
@@ -1790,7 +1791,7 @@ async function handleDeleteChecklistItem(itemId) {
     formData.append('item_id', itemId);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=delete_checklist_item', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=delete_checklist_item', {
             method: 'POST',
             body: formData
         });
@@ -1999,7 +2000,7 @@ async function addAssigneeToDrawerTask(userId) {
     formData.append('user_id', userId);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=add_task_assignee', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=add_task_assignee', {
             method: 'POST',
             body: formData
         });
@@ -2033,7 +2034,7 @@ async function removeAssigneeFromDrawerTask(userId) {
     formData.append('user_id', userId);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=remove_task_assignee', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=remove_task_assignee', {
             method: 'POST',
             body: formData
         });
@@ -2232,7 +2233,7 @@ async function updateTaskTagsOnServer(taskId, newTagsStr) {
     formData.append('value', newTagsStr);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=update_task_field', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=update_task_field', {
             method: 'POST',
             body: formData
         });
@@ -2465,7 +2466,7 @@ async function uploadAttachmentFile(file) {
     showToast(_bI18n.file_uploading || 'Uploading file...', 'info');
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=upload_task_attachment', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=upload_task_attachment', {
             method: 'POST',
             body: formData
         });
@@ -2499,7 +2500,7 @@ async function deleteTaskAttachment(attId) {
     formData.append('attachment_id', attId);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=delete_task_attachment', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=delete_task_attachment', {
             method: 'POST',
             body: formData
         });
@@ -2780,7 +2781,7 @@ async function saveEditComment(commentId) {
     fd.append('comment', newText);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=update_comment', {
+        const res = await fetch(boardBaseUrl + '/ajax?action=update_comment', {
             method: 'POST',
             body: fd
         });
@@ -3008,7 +3009,7 @@ function clientApproveTask(taskId) {
     fd.append('action', 'task_workflow');
     fd.append('workflow_action', 'approve');
     fd.append('task_id', taskId);
-    fetch('/taskmanager/ajax/task_workflow', { method:'POST', body:fd })
+    fetch(boardBaseUrl + '/ajax/task_workflow', { method:'POST', body:fd })
         .then(r => r.json())
         .then(res => {
             if (res.success) {
@@ -3030,7 +3031,7 @@ function clientRequestChanges(taskId) {
     fd.append('workflow_action', 'request_changes');
     fd.append('task_id', taskId);
     fd.append('feedback', reason.trim());
-    fetch('/taskmanager/ajax/task_workflow', { method:'POST', body:fd })
+    fetch(boardBaseUrl + '/ajax/task_workflow', { method:'POST', body:fd })
         .then(r => r.json())
         .then(res => {
             if (res.success) {
@@ -3053,7 +3054,7 @@ function openAiStandupModal() {
     content.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);"><div style="font-size:32px; margin-bottom:12px;">🤖</div><strong>${i18n.analyzing || 'Analiz ediliyor...'}</strong></div>`;
 
     const projId = (window.BOARD_CONTEXT && window.BOARD_CONTEXT.projectId) ? window.BOARD_CONTEXT.projectId : '';
-    fetch('/taskmanager/ajax/get_daily_standup' + (projId ? '?project_id=' + projId : ''))
+    fetch(boardBaseUrl + '/ajax/get_daily_standup' + (projId ? '?project_id=' + projId : ''))
         .then(r => r.json())
         .then(res => {
             if (res.success) {
@@ -3113,7 +3114,7 @@ function sendStandupEmail() {
         fd.append('project_id', window.BOARD_CONTEXT.projectId);
     }
 
-    fetch('/taskmanager/ajax/send_standup_email', { method:'POST', body:fd })
+    fetch(boardBaseUrl + '/ajax/send_standup_email', { method:'POST', body:fd })
         .then(r => r.json())
         .then(res => {
             if (res.success) {

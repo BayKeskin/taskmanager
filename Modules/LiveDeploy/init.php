@@ -26,8 +26,8 @@ EventManager::addFilter('kanban.tools_menu', function(array $items, int $project
 });
 
 // 2. Modül Aktifken İlgili JS ve CSS Varlıklarını Kuyruğa Al
-AssetManager::enqueueJs('deploy-wizard', '/taskmanager/Modules/LiveDeploy/Assets/js/deploy-wizard.js');
-AssetManager::enqueueCss('deploy-wizard', '/taskmanager/Modules/LiveDeploy/Assets/css/deploy-wizard.css');
+AssetManager::enqueueJs('deploy-wizard', '/Modules/LiveDeploy/Assets/js/deploy-wizard.js');
+AssetManager::enqueueCss('deploy-wizard', '/Modules/LiveDeploy/Assets/css/deploy-wizard.css');
 
 AssetManager::localizeScript('deploy-wizard', 'DEPLOY_I18N', [
     'select_project_first'     => __('LiveDeploy::select_project_first'),

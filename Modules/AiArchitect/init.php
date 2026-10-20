@@ -3,8 +3,8 @@ use Core\EventManager;
 use Core\AssetManager;
 
 // 1. Modül JS ve CSS Varlıklarını Kuyruğa Al
-AssetManager::enqueueCss('aiarchitect-styles', '/taskmanager/Modules/AiArchitect/Assets/css/aiarchitect.css');
-AssetManager::enqueueJs('aiarchitect-js', '/taskmanager/Modules/AiArchitect/Assets/js/aiarchitect.js');
+AssetManager::enqueueCss('aiarchitect-styles', '/Modules/AiArchitect/Assets/css/aiarchitect.css');
+AssetManager::enqueueJs('aiarchitect-js', '/Modules/AiArchitect/Assets/js/aiarchitect.js');
 
 AssetManager::localizeScript('aiarchitect-js', 'AI_ARCHITECT_I18N', [
     'empty_brief_error'        => __('AiArchitect::empty_brief_error'),
@@ -35,6 +35,11 @@ AssetManager::localizeScript('aiarchitect-js', 'AI_ARCHITECT_I18N', [
     'new_subtask_default_desc' => __('AiArchitect::new_subtask_default_desc'),
     'no_module_to_save'        => __('AiArchitect::no_module_to_save'),
     'processing_btn'           => __('AiArchitect::processing_btn'),
+    'spec_generated_success'   => __('AiArchitect::spec_generated_success'),
+    'spec_generate_failed'     => __('AiArchitect::spec_generate_failed'),
+    'empty_instruction'        => __('AiArchitect::empty_instruction'),
+    'ai_arch_remove_file'      => __('AiArchitect::ai_arch_remove_file'),
+    'refine_specification'     => __('AiArchitect::refine_specification')
 ]);
 
 

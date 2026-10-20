@@ -36,6 +36,8 @@ return [
     'cat_modules'           => 'Aktive HMVC-Module (24/24)',
     'cat_languages'         => 'Mehrsprachige Wörterbücher (TR, EN, DE)',
     'cat_api'               => 'REST API & Endpunkte',
-    'btn_close'             => 'Schließen'
+    'btn_close'             => 'Schließen',
+    'parse_error'           => 'Testergebnisse konnten nicht analysiert werden.',
+    'error_prefix'          => 'Fehler: '
 ];
 

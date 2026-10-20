@@ -57,7 +57,7 @@ class ApiTesterModel extends BaseModel
                         'api_name' => 'TaskManager REST API',
                         'version' => '1.0.0',
                         'status' => 'online',
-                        'docs_url' => 'http://localhost/taskmanager/api-docs',
+                        'docs_url' => function_exists('baseUrl') ? baseUrl('api-docs') : '/api-docs',
                         'authenticated' => true,
                         'user' => [
                             'id' => 1,
@@ -753,7 +753,7 @@ class ApiTesterModel extends BaseModel
                 'desc' => __('ApiTester::sec3_wf4'),
                 'body' => [
                     'notes' => "1. What Was Done: Added all REST API endpoints with parameters and responses.\n2. Where to Test: /api-test\n3. How to Test: Select endpoint and click Send.\n4. Test Evidence: HTTP 200 OK received, HMVC audit passed.\n5. Audit Gate: audit_hmvc.php PASS",
-                    'attachment_url' => 'https://github.com/BayKeskin/taskmanager'
+                    'attachment_url' => 'https://github.com/example/repository'
                 ],
                 'tip' => __('ApiTester::endpoints_note'),
                 'expected_status' => 200,

@@ -36,6 +36,8 @@ return [
     'cat_modules'           => 'Active HMVC Modules (24/24)',
     'cat_languages'         => 'Multi-Language Dictionaries (TR, EN, DE)',
     'cat_api'               => 'REST API & Endpoints',
-    'btn_close'             => 'Close'
+    'btn_close'             => 'Close',
+    'parse_error'           => 'Could not parse test results.',
+    'error_prefix'          => 'Error: '
 ];
 

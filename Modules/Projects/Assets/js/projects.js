@@ -1,4 +1,5 @@
 // Modules/Projects/Assets/js/projects.js
+const projectsBaseUrl = (window.BASE_URL || '').replace(/\/+$/, '');
 
 async function handleCreateProject(e) {
     e.preventDefault();
@@ -7,7 +8,7 @@ async function handleCreateProject(e) {
     const prI18n = window.PROJECTS_I18N || {};
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=create_project', {
+        const res = await fetch(`${projectsBaseUrl}/ajax?action=create_project`, {
             method: 'POST',
             body: formData
         });
@@ -50,7 +51,7 @@ function openEditProjectModal(projOrId) {
     }
 
     if (projId) {
-        fetch('/taskmanager/ajax?action=get_project&id=' + projId)
+        fetch(projectsBaseUrl + '/ajax?action=get_project&id=' + projId)
             .then(res => res.json())
             .then(result => {
                 if (result.success && result.data) {
@@ -78,7 +79,7 @@ async function handleUpdateProject(e) {
     const prI18n = window.PROJECTS_I18N || {};
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=update_project', {
+        const res = await fetch(`${projectsBaseUrl}/ajax?action=update_project`, {
             method: 'POST',
             body: formData
         });
@@ -110,7 +111,7 @@ async function testCurrentProjectWebhook() {
         const formData = new FormData();
         formData.append('project_id', projId);
 
-        const res = await fetch('/taskmanager/ajax?action=test_project_webhook', {
+        const res = await fetch(`${projectsBaseUrl}/ajax?action=test_project_webhook`, {
             method: 'POST',
             body: formData
         });
@@ -142,7 +143,7 @@ async function syncCurrentProjectRules() {
             formData.append('agent_rules', rules);
         }
 
-        const res = await fetch('/taskmanager/ajax?action=sync_project_rules', {
+        const res = await fetch(`${projectsBaseUrl}/ajax?action=sync_project_rules`, {
             method: 'POST',
             body: formData
         });
@@ -191,7 +192,7 @@ async function refineProjectRules(isEdit) {
         if (titleInput?.value) formData.append('project_title', titleInput.value);
         if (projId) formData.append('project_id', projId);
 
-        const res = await fetch('/taskmanager/ajax?action=refine_project_rules', {
+        const res = await fetch(`${projectsBaseUrl}/ajax?action=refine_project_rules`, {
             method: 'POST',
             body: formData
         });
@@ -229,7 +230,7 @@ async function toggleProjectStatus(projectId, newStatus) {
     formData.append('status', newStatus);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=toggle_project_status', {
+        const res = await fetch(`${projectsBaseUrl}/ajax?action=toggle_project_status`, {
             method: 'POST',
             body: formData
         });
@@ -256,14 +257,14 @@ async function deleteProjectPermanently(projectId) {
     formData.append('project_id', projectId);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=delete_project', {
+        const res = await fetch(`${projectsBaseUrl}/ajax?action=delete_project`, {
             method: 'POST',
             body: formData
         });
         const data = await res.json();
         if (data.success) {
             showToast(data.message, 'success');
-            setTimeout(() => window.location.href = '/taskmanager/tasks', 700);
+            setTimeout(() => window.location.href = projectsBaseUrl + '/tasks', 700);
         } else {
             showToast(data.message || 'Proje silinemedi', 'error');
         }

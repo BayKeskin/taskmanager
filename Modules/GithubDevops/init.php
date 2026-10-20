@@ -7,8 +7,8 @@ use Core\EventManager;
 use Core\AssetManager;
 use Modules\GithubDevops\Services\GitService;
 
-AssetManager::enqueueCss('github-devops', '/taskmanager/Modules/GithubDevops/Assets/css/githubdevops.css');
-AssetManager::enqueueJs('github-devops', '/taskmanager/Modules/GithubDevops/Assets/js/github-devops.js');
+AssetManager::enqueueCss('github-devops', '/Modules/GithubDevops/Assets/css/githubdevops.css');
+AssetManager::enqueueJs('github-devops', '/Modules/GithubDevops/Assets/js/github-devops.js');
 AssetManager::localizeScript('github-devops', 'DEVOPS_I18N', [
     'err_input_required' => __('GithubDevops::err_input_required'),
     'err_general'        => __('GithubDevops::err_general'),

@@ -379,7 +379,8 @@ class TaskLifecycleService extends BaseModel
             }
 
             foreach ($attachmentRows as $row) {
-                $relPath = ltrim(str_replace(['\\', '/taskmanager/'], ['/', ''], (string)$row->file_path), '/');
+                $rawPath = str_replace('\\', '/', (string)$row->file_path);
+                $relPath = ltrim(preg_replace('#^/?(?:[a-zA-Z0-9_-]+/)?(Public/.*)$#i', '$1', $rawPath), '/');
                 $cleanAbsPath = str_replace('\\', '/', $baseDir . '/' . $relPath);
                 $fileUrl = $baseUrl . '/' . $relPath;
 
@@ -467,7 +468,8 @@ class TaskLifecycleService extends BaseModel
             }
 
             foreach ($attachmentRows as $row) {
-                $relPath = ltrim(str_replace(['\\', '/taskmanager/'], ['/', ''], (string)$row->file_path), '/');
+                $rawPath = str_replace('\\', '/', (string)$row->file_path);
+                $relPath = ltrim(preg_replace('#^/?(?:[a-zA-Z0-9_-]+/)?(Public/.*)$#i', '$1', $rawPath), '/');
                 $cleanAbsPath = str_replace('\\', '/', $baseDir . '/' . $relPath);
                 $fileUrl = $baseUrl . '/' . $relPath;
 

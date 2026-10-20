@@ -8,10 +8,10 @@ use Core\AssetManager;
 use Modules\Calendar\Controllers\CalendarController;
 
 // 1. Varlıkları (CSS / JS) Kuyruğa Al
-AssetManager::enqueueCss('calendar-gantt', '/taskmanager/Modules/Calendar/Assets/css/gantt.css');
-AssetManager::enqueueCss('calendar-styles', '/taskmanager/Modules/Calendar/Assets/css/calendar.css');
-AssetManager::enqueueJs('calendar-gantt-drag', '/taskmanager/Modules/Calendar/Assets/js/gantt-drag.js');
-AssetManager::enqueueJs('calendar-js', '/taskmanager/Modules/Calendar/Assets/js/calendar.js');
+AssetManager::enqueueCss('calendar-gantt', '/Modules/Calendar/Assets/css/gantt.css');
+AssetManager::enqueueCss('calendar-styles', '/Modules/Calendar/Assets/css/calendar.css');
+AssetManager::enqueueJs('calendar-gantt-drag', '/Modules/Calendar/Assets/js/gantt-drag.js');
+AssetManager::enqueueJs('calendar-js', '/Modules/Calendar/Assets/js/calendar.js');
 
 // 2. JavaScript Dil Dizgilerini Aktar
 AssetManager::localizeScript('calendar-js', 'CALENDAR_DATA', [

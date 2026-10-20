@@ -1,4 +1,5 @@
 // Modules/Mcp/Assets/js/mcp.js
+const mcpBaseUrl = (window.BASE_URL || '').replace(/\/+$/, '');
 window.MCP_CATALOG_DATA = [];
 window.ACTIVE_MCP_CATEGORY = 'all';
 
@@ -37,7 +38,7 @@ window.openProjectMcpModal = async function(projectId) {
     openModal('modalProjectMcp');
 
     try {
-        const res = await fetch(`/taskmanager/ajax?action=get_project_mcps&project_id=${projectId}`);
+        const res = await fetch(`${mcpBaseUrl}/ajax?action=get_project_mcps&project_id=${projectId}`);
         const data = await res.json();
 
         if (data.success) {
@@ -257,7 +258,7 @@ window.toggleProjectMcp = async function(catalogId, isChecked) {
         fd.append('mcp_catalog_id', catalogId);
         fd.append('is_enabled', isChecked ? '1' : '0');
 
-        const res = await fetch('/taskmanager/ajax?action=toggle_project_mcp', { method: 'POST', body: fd });
+        const res = await fetch(`${mcpBaseUrl}/ajax?action=toggle_project_mcp`, { method: 'POST', body: fd });
         const data = await res.json();
 
         if (data.success) {
@@ -408,7 +409,7 @@ window.handleMcpConfigSubmit = async function(e) {
         fd.append('is_enabled', '1'); // Ayar kaydedildiğinde otomatik aktif et
         fd.append('env_values', JSON.stringify(envValues));
 
-        const res = await fetch('/taskmanager/ajax?action=save_project_mcp', { method: 'POST', body: fd });
+        const res = await fetch(`${mcpBaseUrl}/ajax?action=save_project_mcp`, { method: 'POST', body: fd });
         const data = await res.json();
 
         if (data.success) {
@@ -447,7 +448,7 @@ window.triggerMcpSync = async function() {
     try {
         const fd = new FormData();
         fd.append('project_id', window.CURRENT_MCP_PROJECT_ID);
-        const res = await fetch('/taskmanager/ajax?action=sync_project_mcps', { method: 'POST', body: fd });
+        const res = await fetch(`${mcpBaseUrl}/ajax?action=sync_project_mcps`, { method: 'POST', body: fd });
         const data = await res.json();
 
         if (data.success) {

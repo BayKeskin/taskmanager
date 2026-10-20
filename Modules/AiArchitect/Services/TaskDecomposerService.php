@@ -36,7 +36,7 @@ class TaskDecomposerService
         if ($copied) {
             $result['original_doc'] = [
                 'file_name' => $origName,
-                'file_path' => '/taskmanager/Public/uploads/tasks/' . $safeOrigName,
+                'file_path' => (function_exists('baseUrl') ? baseUrl('/Public/uploads/tasks/') : '/Public/uploads/tasks/') . $safeOrigName,
                 'file_type' => $file['type'] ?? 'application/octet-stream',
                 'file_size' => (int)($file['size'] ?? (file_exists($origDestPath) ? filesize($origDestPath) : 0))
             ];
@@ -96,7 +96,7 @@ class TaskDecomposerService
                                 if (@file_put_contents($savedFullPath, $imgBuffer)) {
                                     $result['extracted_imgs'][] = [
                                         'file_name' => basename($entryName),
-                                        'file_path' => '/taskmanager/Public/uploads/tasks/' . $savedImgName,
+                                        'file_path' => (function_exists('baseUrl') ? baseUrl('/Public/uploads/tasks/') : '/Public/uploads/tasks/') . $savedImgName,
                                         'file_type' => 'image/' . ($imgExt === 'jpg' ? 'jpeg' : $imgExt),
                                         'file_size' => strlen($imgBuffer)
                                     ];

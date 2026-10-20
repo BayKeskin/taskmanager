@@ -6,8 +6,8 @@ use Core\EventManager;
 use Core\AssetManager;
 
 // 1. Modül JS ve CSS Varlıklarını Kuyruğa Al
-AssetManager::enqueueCss('mcp-styles', '/taskmanager/Modules/Mcp/Assets/css/mcp.css');
-AssetManager::enqueueJs('mcp-catalog', '/taskmanager/Modules/Mcp/Assets/js/mcp.js');
+AssetManager::enqueueCss('mcp-styles', '/Modules/Mcp/Assets/css/mcp.css');
+AssetManager::enqueueJs('mcp-catalog', '/Modules/Mcp/Assets/js/mcp.js');
 
 AssetManager::localizeScript('mcp-catalog', 'MCP_I18N', [
     'badge_required_env'      => \__('Mcp::mcp_badge_required_env'),

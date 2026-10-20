@@ -208,7 +208,7 @@ $listUrl = baseUrl('board?' . (!empty($boardQuery) ? $boardQuery . '&view=list' 
                         <?= __('Board::btn_move_archive') ?>
                     </button>
                 <?php endif; ?>
-                <a href="/taskmanager/board" class="cu-btn-clear-filter-link">
+                <a href="<?= baseUrl('board') ?>" class="cu-btn-clear-filter-link">
                     <?= __('Board::btn_clear_filter') ?>
                 </a>
             <?php endif; ?>

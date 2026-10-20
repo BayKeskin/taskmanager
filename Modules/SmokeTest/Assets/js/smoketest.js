@@ -21,21 +21,24 @@ window.TaskManagerSmokeTest = {
         const statusText = document.getElementById('smokeStatusText');
         const list = document.getElementById('smokeTestResultsList');
 
+        const i18n = window.SMOKE_I18N || {};
+        const smokeBaseUrl = (window.BASE_URL || '').replace(/\/+$/, '');
+
         if (bar) bar.style.width = '10%';
-        if (statusText) statusText.innerText = (window.SMOKE_I18N && window.SMOKE_I18N.running_tests) || 'Sistem sağlık taraması yürütülüyor...';
+        if (statusText) statusText.innerText = i18n.running_tests || '...';
         if (list) list.innerHTML = '';
 
         setTimeout(async () => {
             if (bar) bar.style.width = '45%';
             try {
-                const res = await fetch('/taskmanager/ajax?action=run_smoke_test');
+                const res = await fetch(`${smokeBaseUrl}/ajax?action=run_smoke_test`);
                 const data = await res.json();
 
                 if (bar) bar.style.width = '100%';
 
                 if (data && data.data && Array.isArray(data.data.results)) {
                     if (statusText) {
-                        statusText.innerText = data.message || `Test tamamlandı: ${data.data.passed}/${data.data.total} Başarılı!`;
+                        statusText.innerText = data.message || `${data.data.passed}/${data.data.total}`;
                     }
 
                     if (list) {
@@ -70,11 +73,11 @@ window.TaskManagerSmokeTest = {
                         });
                     }
                 } else {
-                    if (statusText) statusText.innerText = 'Test çıktısı çözümlenemedi.';
+                    if (statusText) statusText.innerText = i18n.parse_error || 'Error';
                 }
             } catch (err) {
                 if (bar) bar.style.width = '100%';
-                if (statusText) statusText.innerText = 'Hata: ' + err.message;
+                if (statusText) statusText.innerText = (i18n.error_prefix || 'Error: ') + err.message;
             }
         }, 300);
     }

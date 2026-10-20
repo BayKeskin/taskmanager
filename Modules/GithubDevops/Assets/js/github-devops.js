@@ -2,6 +2,8 @@
  * Modules/GithubDevops/Assets/js/github-devops.js
  * GitHub Entegrasyonu ve Cerrahi Rollback İstemci Mantığı
  */
+const ghBaseUrl = (window.BASE_URL || '').replace(/\/+$/, '');
+
 window.openGithubSettingsModal = async function() {
     if (typeof openModal === 'function') {
         openModal('modalGithubSettings');
@@ -9,7 +11,7 @@ window.openGithubSettingsModal = async function() {
     
     // Veritabanındaki güncel GitHub ayarlarını çek ve doldur
     try {
-        const res = await fetch('/taskmanager/ajax?action=get_settings');
+        const res = await fetch(`${ghBaseUrl}/ajax?action=get_settings`);
         const data = await res.json();
         if (data && data.success && data.data) {
             const userInput = document.getElementById('ghUsernameInput');
@@ -41,7 +43,7 @@ window.saveGithubSettings = async function() {
         const fd = new FormData();
         fd.append('github_username', username);
         fd.append('github_token', token);
-        const res = await fetch('/taskmanager/ajax?action=save_github_settings', { method: 'POST', body: fd });
+        const res = await fetch(`${ghBaseUrl}/ajax?action=save_github_settings`, { method: 'POST', body: fd });
         const data = await res.json();
         if (data.success) {
             if (typeof showToast === 'function') showToast(data.message, 'success');
@@ -65,7 +67,7 @@ window.syncProjectToGithub = async function(projectId) {
         if (typeof showToast === 'function') showToast(dI18n.syncing || '', 'info');
         const fd = new FormData();
         fd.append('project_id', projectId);
-        const res = await fetch('/taskmanager/ajax?action=sync_project_github', { method: 'POST', body: fd });
+        const res = await fetch(`${ghBaseUrl}/ajax?action=sync_project_github`, { method: 'POST', body: fd });
         const data = await res.json();
         if (data.success) {
             if (typeof showToast === 'function') {
@@ -100,7 +102,7 @@ window.rollbackTask = async function(taskId, mode = 'safe') {
         fd.append('task_id', taskId);
         fd.append('mode', mode);
 
-        const res = await fetch('/taskmanager/ajax?action=rollback_task', { method: 'POST', body: fd });
+        const res = await fetch(`${ghBaseUrl}/ajax?action=rollback_task`, { method: 'POST', body: fd });
         const data = await res.json();
 
         if (data.success) {

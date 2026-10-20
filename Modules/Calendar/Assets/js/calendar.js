@@ -71,7 +71,8 @@ function updateTaskDeadlineAjax(taskId, newDate) {
     fd.append('field', 'deadline');
     fd.append('value', newDate);
 
-    fetch('/taskmanager/ajax/update_task_field', {
+    const base = (window.BASE_URL || '').replace(/\/+$/, '');
+    fetch(`${base}/ajax/update_task_field`, {
         method: 'POST',
         body: fd
     })

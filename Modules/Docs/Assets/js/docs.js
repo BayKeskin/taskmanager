@@ -1,3 +1,5 @@
+const docsBaseUrl = (window.BASE_URL || '').replace(/\/+$/, '');
+
 function toggleDocsSidebar() {
     const sb = document.getElementById('cuDocsSidebar');
     if (sb) sb.classList.toggle('mobile-open');
@@ -132,7 +134,7 @@ function cycleDocIcon() {
 // 4. Belirli Dökümanı Seçme & Yükleme
 async function selectDoc(docId) {
     try {
-        const res = await fetch(`/taskmanager/ajax?action=get_doc&id=${docId}`);
+        const res = await fetch(`${docsBaseUrl}/ajax?action=get_doc&id=${docId}`);
         const data = await res.json();
         if (!data.success) {
             showToast(data.message || getDocI18n('docs_toast_load_err'), 'error');
@@ -209,7 +211,7 @@ async function saveActiveDoc() {
     }
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=save_doc', {
+        const res = await fetch(`${docsBaseUrl}/ajax?action=save_doc`, {
             method: 'POST',
             body: formData
         });
@@ -252,7 +254,7 @@ async function openNewDocPrompt() {
     }
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=create_doc', {
+        const res = await fetch(`${docsBaseUrl}/ajax?action=create_doc`, {
             method: 'POST',
             body: formData
         });
@@ -279,7 +281,7 @@ async function deleteActiveDoc() {
     formData.append('id', docId);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=delete_doc', {
+        const res = await fetch(`${docsBaseUrl}/ajax?action=delete_doc`, {
             method: 'POST',
             body: formData
         });
@@ -357,7 +359,7 @@ async function loadCurrentDocAttachments() {
     const docId = document.getElementById('activeDocId')?.value;
     if (!docId) return;
     try {
-        const res = await fetch(`/taskmanager/ajax?action=get_doc_attachments&doc_id=${docId}`);
+        const res = await fetch(`${docsBaseUrl}/ajax?action=get_doc_attachments&doc_id=${docId}`);
         const data = await res.json();
         if (data.success) {
             const list = data.attachments || (Array.isArray(data.data) ? data.data : (data.data?.attachments || []));
@@ -423,7 +425,7 @@ async function uploadDocFile(file) {
     showToast(getDocI18n('docs_toast_uploading'), 'info');
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=upload_doc_attachment', {
+        const res = await fetch(`${docsBaseUrl}/ajax?action=upload_doc_attachment`, {
             method: 'POST',
             body: formData
         });
@@ -449,7 +451,7 @@ async function deleteDocAttachment(attId) {
     formData.append('attachment_id', attId);
 
     try {
-        const res = await fetch('/taskmanager/ajax?action=delete_doc_attachment', {
+        const res = await fetch(`${docsBaseUrl}/ajax?action=delete_doc_attachment`, {
             method: 'POST',
             body: formData
         });

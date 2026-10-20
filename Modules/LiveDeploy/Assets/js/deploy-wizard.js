@@ -4,6 +4,7 @@
  */
 let currentDeployStep = 1;
 const deployI18n = window.DEPLOY_I18N || {};
+const deployBaseUrl = (window.BASE_URL || '').replace(/\/+$/, '');
 
 window.openDeployWizard = function(projectId) {
     if (!projectId) {
@@ -19,7 +20,7 @@ window.openDeployWizard = function(projectId) {
     showDeployStep(1);
     if (typeof openModal === 'function') openModal('modalDeployWizard');
 
-    fetch('/taskmanager/ajax?action=get_project&id=' + projectId)
+    fetch(deployBaseUrl + '/ajax?action=get_project&id=' + projectId)
         .then(r => r.json())
         .then(res => {
             if (res.success && res.data) {
@@ -137,7 +138,7 @@ window.testDeployPanelConnection = function() {
     fd.append('password', document.getElementById('deployFtpPass')?.value || '');
     fd.append('port', document.getElementById('deployFtpPort')?.value || '21');
 
-    fetch('/taskmanager/ajax?action=test_hosting_panel', { method: 'POST', body: fd })
+    fetch(deployBaseUrl + '/ajax?action=test_hosting_panel', { method: 'POST', body: fd })
         .then(r => r.json())
         .then(res => {
             if (statusSpan) {
@@ -166,7 +167,7 @@ window.loadDeployGitDiff = function(projectId) {
     const fd = new FormData();
     fd.append('project_id', projectId);
 
-    fetch('/taskmanager/ajax?action=delta_diff', { method: 'POST', body: fd })
+    fetch(deployBaseUrl + '/ajax?action=delta_diff', { method: 'POST', body: fd })
         .then(r => r.json())
         .then(res => {
             if (res.success && res.data) {
@@ -221,7 +222,7 @@ window.startLiveDeployment = function() {
     fd.append('live_domain', liveDomain);
     fd.append('details[live_domain]', liveDomain);
 
-    fetch('/taskmanager/ajax?action=record_deployment', { method: 'POST', body: fd })
+    fetch(deployBaseUrl + '/ajax?action=record_deployment', { method: 'POST', body: fd })
         .then(r => r.json())
         .then(res => {
             if (res.success) {
@@ -266,7 +267,7 @@ window.triggerLiveHealthcheck = function(liveUrl) {
     fd.append('live_url', liveUrl || document.getElementById('deployLiveDomain')?.value || '');
     fd.append('project_id', document.getElementById('deployWizardProjId')?.value || '');
 
-    fetch('/taskmanager/ajax?action=live_healthcheck', { method: 'POST', body: fd })
+    fetch(deployBaseUrl + '/ajax?action=live_healthcheck', { method: 'POST', body: fd })
         .then(r => r.json())
         .then(res => {
             if (res.success && res.data && res.data.result) {
@@ -316,7 +317,7 @@ window.executeDeployRollback = function() {
     const fd = new FormData();
     fd.append('project_id', pId);
 
-    fetch('/taskmanager/ajax?action=rollback_deployment', { method: 'POST', body: fd })
+    fetch(deployBaseUrl + '/ajax?action=rollback_deployment', { method: 'POST', body: fd })
         .then(r => r.json())
         .then(res => {
             if (res.success) {

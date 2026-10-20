@@ -24,7 +24,7 @@ class StorageService
                         'local' => [
                             'driver' => 'local',
                             'root'   => dirname(__DIR__, 3) . '/Public/uploads',
-                            'url'    => '/taskmanager/Public/uploads',
+                            'url'    => function_exists('baseUrl') ? baseUrl('/Public/uploads') : '/Public/uploads',
                         ]
                     ],
                     'max_size_bytes' => 20 * 1024 * 1024,

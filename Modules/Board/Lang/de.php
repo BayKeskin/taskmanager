@@ -2,6 +2,7 @@
 return array (
   'module_name' => 'Kanban-Board',
   'module_desc' => 'Aufgaben-Workflow, Kanban-Spalten und Drag-and-Drop-Organisation.',
+  'delete_task' => 'Aufgabe löschen',
   'kanban_board' => 'Kanban-Board',
   'new_task' => 'Neue Aufgabe',
   'filter_project' => 'Nach Projekt filtern',
