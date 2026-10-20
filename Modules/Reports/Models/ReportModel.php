@@ -2,46 +2,75 @@
 namespace Modules\Reports\Models;
 
 use Core\BaseModel;
-use TaskModel;
-use UserModel;
-use ProjectModel;
-
+ 
 class ReportModel extends BaseModel
 {
-    private ?TaskModel $taskModel = null;
-    private ?UserModel $userModel = null;
-    private ?ProjectModel $projectModel = null;
-
-    public function __construct()
-    {
-        parent::__construct();
-        if (class_exists('TaskModel')) {
-            $this->taskModel = new TaskModel($this->db);
-        }
-        if (class_exists('UserModel')) {
-            $this->userModel = new UserModel($this->db);
-        }
-        if (class_exists('ProjectModel')) {
-            $this->projectModel = new ProjectModel($this->db);
-        }
-    }
-
     /**
      * Raporlar ekranı için tüm metrikleri toplar
      */
     public function getAnalyticsSummary(): array
     {
         $today = date('Y-m-d');
-        $totalTasks = $this->taskModel ? $this->taskModel->countTasksByStatus(null) : 0;
-        $completedTasks = $this->taskModel ? $this->taskModel->countTasksByStatus('completed') : 0;
-        $inProgressTasks = $this->taskModel ? $this->taskModel->countTasksByStatus('in_progress') : 0;
-        $submittedTasks = $this->taskModel ? $this->taskModel->countTasksByStatus('submitted') : 0;
-        $modTasks = $this->taskModel ? $this->taskModel->countTasksByStatus('modification_requested') : 0;
+
+        // Görev durumu sayıları
+        $taskCounts = $this->query("
+            SELECT status, COUNT(*) as cnt 
+            FROM tasks 
+            WHERE parent_task_id IS NULL 
+            GROUP BY status
+        ");
+
+        $statusMap = [];
+        $totalTasks = 0;
+        foreach ($taskCounts as $row) {
+            $status = (string)($row->status ?? '');
+            $cnt = (int)($row->cnt ?? 0);
+            $statusMap[$status] = $cnt;
+            $totalTasks += $cnt;
+        }
+
+        $completedTasks = $statusMap['completed'] ?? 0;
+        $inProgressTasks = $statusMap['in_progress'] ?? 0;
+        $submittedTasks = $statusMap['submitted'] ?? 0;
+        $modTasks = $statusMap['modification_requested'] ?? 0;
 
         $completionRate = $totalTasks > 0 ? (int)round(($completedTasks / $totalTasks) * 100) : 0;
-        $overdueCount = $this->taskModel ? $this->taskModel->countOverdueTasks($today) : 0;
-        $teamStats = $this->userModel ? $this->userModel->getTeamPerformanceStats($today) : [];
-        $projectStats = $this->projectModel ? $this->projectModel->getProjectStats() : [];
+
+        // Geciken görev sayısı
+        $overdueRow = $this->queryOne("
+            SELECT COUNT(*) as cnt 
+            FROM tasks 
+            WHERE parent_task_id IS NULL 
+              AND status NOT IN ('completed', 'cancelled') 
+              AND deadline IS NOT NULL 
+              AND deadline < ?
+        ", [$today]);
+        $overdueCount = (int)($overdueRow->cnt ?? 0);
+
+        // Ekip performans ve iş yükü istatistikleri
+        $teamStats = $this->query("
+            SELECT u.id, u.name, u.title, u.avatar_color,
+                   COUNT(t.id) as total_assigned,
+                   SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) as total_completed,
+                   SUM(CASE WHEN t.status IN ('in_progress', 'assigned', 'submitted', 'modification_requested') THEN 1 ELSE 0 END) as total_active,
+                   SUM(CASE WHEN t.deadline < ? AND t.status NOT IN ('completed', 'cancelled') THEN 1 ELSE 0 END) as total_overdue
+            FROM users u
+            LEFT JOIN tasks t ON (u.id = t.assigned_to AND t.parent_task_id IS NULL)
+            WHERE u.status = 'active'
+            GROUP BY u.id, u.name, u.title, u.avatar_color
+            ORDER BY total_assigned DESC, u.name ASC
+        ", [$today]);
+
+        // Proje ilerleme istatistikleri
+        $projectStats = $this->query("
+            SELECT p.id, p.title, p.project_code, p.color,
+                   COUNT(t.id) as total_tasks,
+                   SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) as completed_tasks
+            FROM projects p
+            LEFT JOIN tasks t ON (t.project_id = p.id AND t.parent_task_id IS NULL)
+            GROUP BY p.id, p.title, p.project_code, p.color
+            ORDER BY p.id ASC
+        ");
 
         return [
             'totalTasks'       => $totalTasks,
