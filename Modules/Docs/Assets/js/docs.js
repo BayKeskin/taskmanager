@@ -243,13 +243,20 @@ async function openNewDocPrompt() {
     const title = window.prompt(getDocI18n('docs_create_prompt'), getDocI18n('docs_create_default'));
     if (!title) return;
 
-    const activeProjectEl = document.getElementById('activeDocProject');
-    const projId = activeProjectEl ? activeProjectEl.value : '';
+    const activeProjectEl = document.getElementById('activeDocProject') || 
+                            document.getElementById('activeFilterProjectId') || 
+                            document.getElementById('pageActiveProjectId');
+    let projId = activeProjectEl ? (activeProjectEl.value || '') : '';
+
+    if (!projId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        projId = urlParams.get('project_id') || '';
+    }
 
     const formData = new FormData();
     formData.append('title', title);
     formData.append('icon', '📄');
-    if (projId) {
+    if (projId && projId !== '0') {
         formData.append('project_id', projId);
     }
 
@@ -261,7 +268,19 @@ async function openNewDocPrompt() {
         const data = await res.json();
         if (data.success) {
             showToast(getDocI18n('docs_toast_created'), 'success');
-            window.location.reload();
+            let redirectUrl = `${docsBaseUrl}/docs`;
+            const params = new URLSearchParams();
+            if (projId && projId !== '0') {
+                params.set('project_id', projId);
+            }
+            if (data.doc_id) {
+                params.set('doc_id', data.doc_id);
+            }
+            const queryStr = params.toString();
+            if (queryStr) {
+                redirectUrl += '?' + queryStr;
+            }
+            window.location.href = redirectUrl;
         } else {
             showToast(data.message || getDocI18n('docs_toast_create_fail'), 'error');
         }

@@ -27,5 +27,7 @@ return [
     'sync_single_error'         => '[%s] projesinin çalışma dizini bulunamadı veya yazılamadı.',
     'confirm_sync_all'          => 'Tüm projelerin AGENTS.md dosyaları güncellenecektir. Onaylıyor musunuz?',
     'nav_menu_title'            => 'AGENTS.md Yönetimi',
-    'unauthorized'              => 'Bu işlem için yetkiniz bulunmamaktadır.'
+    'unauthorized'              => 'Bu işlem için yetkiniz bulunmamaktadır.',
+    'prompt_workspace_path'     => '[%s] projesi için çalışma alanı (workspace) dizin yolunu girin:',
+    'dir_created_note'          => 'Dizin otomatik oluşturuldu ve AGENTS.md dosyası yazıldı.'
 ];

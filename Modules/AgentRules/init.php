@@ -7,9 +7,10 @@ use Core\EventManager;
 AssetManager::enqueueCss('agent-rules-css', '/Modules/AgentRules/Assets/css/agent-rules.css');
 AssetManager::enqueueJs('agent-rules-js', '/Modules/AgentRules/Assets/js/agent-rules.js');
 AssetManager::localizeScript('agent-rules-js', 'agentRulesTranslations', [
-    'confirmSyncAll' => __('AgentRules::confirm_sync_all'),
-    'syncing'        => __('AgentRules::btn_sync_single'),
-    'statusSynced'   => __('AgentRules::status_synced')
+    'confirmSyncAll'      => __('AgentRules::confirm_sync_all'),
+    'syncing'             => __('AgentRules::btn_sync_single'),
+    'statusSynced'        => __('AgentRules::status_synced'),
+    'promptWorkspacePath' => __('AgentRules::prompt_workspace_path')
 ]);
 
 // 3. Proje Eklendiğinde veya Düzenlendiğinde Otomatik AGENTS.md Senkronizasyonu

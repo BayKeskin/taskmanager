@@ -84,12 +84,14 @@ class AgentRulesController extends BaseController
         header('Content-Type: application/json; charset=utf-8');
 
         $projectId = (int)($_POST['project_id'] ?? 0);
+        $workspacePath = trim((string)($_POST['workspace_path'] ?? ''));
+
         if ($projectId <= 0) {
             echo json_encode(['success' => false, 'message' => __('AgentRules::sync_single_error', ['%s' => '#0'])]);
             exit;
         }
 
-        $result = $this->executeSyncForProject($projectId);
+        $result = $this->executeSyncForProject($projectId, !empty($workspacePath) ? $workspacePath : null);
         echo json_encode($result);
         exit;
     }
@@ -131,7 +133,7 @@ class AgentRulesController extends BaseController
     /**
      * Tekil proje için senkronizasyonu yürüten yardımcı metot
      */
-    public function executeSyncForProject(int $projectId): array
+    public function executeSyncForProject(int $projectId, ?string $workspacePathOverride = null): array
     {
         $prj = $this->model->getProjectById($projectId);
         if (!$prj) {
@@ -139,6 +141,11 @@ class AgentRulesController extends BaseController
                 'success' => false,
                 'message' => sprintf(__('AgentRules::sync_single_error'), (string)$projectId)
             ];
+        }
+
+        if (!empty($workspacePathOverride)) {
+            $prj->workspace_path = $workspacePathOverride;
+            $this->model->updateWorkspacePath($projectId, $workspacePathOverride);
         }
 
         $globalRules = $this->model->getGlobalRules();
@@ -155,7 +162,21 @@ class AgentRulesController extends BaseController
         $title = (string)$prj->title;
         $rules = trim((string)($prj->agent_rules ?? ''));
 
-        if (empty($wsPath) || !is_dir($wsPath)) {
+        if (empty($wsPath)) {
+            return [
+                'success'      => false,
+                'project_code' => $projectCode,
+                'error'        => 'workspace_path_not_found',
+                'message'      => sprintf(__('AgentRules::sync_single_error'), $projectCode)
+            ];
+        }
+
+        // Eğer dizin mevcut değilse oluşturmayı dene
+        if (!is_dir($wsPath)) {
+            @mkdir($wsPath, 0777, true);
+        }
+
+        if (!is_dir($wsPath)) {
             return [
                 'success'      => false,
                 'project_code' => $projectCode,

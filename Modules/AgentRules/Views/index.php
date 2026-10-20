@@ -91,16 +91,14 @@ include dirname(__DIR__, 2) . '/../Core/Views/header.php';
                                         </div>
                                     </td>
                                     <td class="text-right">
-                                        <?php if ($p['has_dir']): ?>
-                                            <?php if ($p['has_file']): ?>
-                                                <button type="button" class="btn-agent-sync btn-sync-single" data-project-id="<?= $p['id'] ?>">
-                                                    <?= __('AgentRules::btn_sync_single') ?>
-                                                </button>
-                                            <?php else: ?>
-                                                <button type="button" class="btn-agent-create btn-sync-single" data-project-id="<?= $p['id'] ?>">
-                                                    <?= __('AgentRules::btn_create_agents') ?>
-                                                </button>
-                                            <?php endif; ?>
+                                        <?php if ($p['has_file']): ?>
+                                            <button type="button" class="btn-agent-sync btn-sync-single" data-project-id="<?= $p['id'] ?>" data-project-code="<?= htmlspecialchars($p['project_code']) ?>" data-has-dir="<?= $p['has_dir'] ? '1' : '0' ?>" data-workspace-path="<?= htmlspecialchars($p['workspace_path']) ?>">
+                                                <?= __('AgentRules::btn_sync_single') ?>
+                                            </button>
+                                        <?php else: ?>
+                                            <button type="button" class="btn-agent-create btn-sync-single" data-project-id="<?= $p['id'] ?>" data-project-code="<?= htmlspecialchars($p['project_code']) ?>" data-has-dir="<?= $p['has_dir'] ? '1' : '0' ?>" data-workspace-path="<?= htmlspecialchars($p['workspace_path']) ?>">
+                                                <?= __('AgentRules::btn_create_agents') ?>
+                                            </button>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

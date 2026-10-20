@@ -233,6 +233,7 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
 
         <?php else: ?>
             <div class="cu-docs-no-docs-box">
+                <input type="hidden" id="activeFilterProjectId" value="<?= (int)($activeProjectId ?? 0) ?>">
                 <div class="cu-docs-no-docs-icon">📄</div>
                 <div class="cu-docs-no-docs-title"><?= __('Docs::docs_no_docs_title') ?></div>
                 <div class="cu-docs-no-docs-desc"><?= __('Docs::docs_no_docs_desc') ?></div>
@@ -243,5 +244,6 @@ include dirname(__DIR__, 3) . '/Core/Views/header.php';
         <?php endif; ?>
     </div>
 </div>
+<input type="hidden" id="pageActiveProjectId" value="<?= (int)($activeProjectId ?? 0) ?>">
 
 <?php include dirname(__DIR__, 3) . '/Core/Views/footer.php'; ?>

@@ -27,5 +27,7 @@ return [
     'sync_single_error'         => 'Arbeitsbereich für [%s] wurde nicht gefunden oder ist schreibgeschützt.',
     'confirm_sync_all'          => 'Dadurch wird die Datei AGENTS.md für alle Arbeitsbereiche neu geschrieben. Fortfahren?',
     'nav_menu_title'            => 'AGENTS.md Verwaltung',
-    'unauthorized'              => 'Sie sind nicht berechtigt, diese Aktion auszuführen.'
+    'unauthorized'              => 'Sie sind nicht berechtigt, diese Aktion auszuführen.',
+    'prompt_workspace_path'     => 'Geben Sie den Arbeitsbereichspfad für das Projekt [%s] ein:',
+    'dir_created_note'          => 'Verzeichnis wurde automatisch erstellt und AGENTS.md wurde geschrieben.'
 ];

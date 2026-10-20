@@ -27,5 +27,7 @@ return [
     'sync_single_error'         => 'Workspace path for [%s] was not found or not writable.',
     'confirm_sync_all'          => 'This will rewrite AGENTS.md for all configured workspaces. Proceed?',
     'nav_menu_title'            => 'AGENTS.md Management',
-    'unauthorized'              => 'You are not authorized to perform this action.'
+    'unauthorized'              => 'You are not authorized to perform this action.',
+    'prompt_workspace_path'     => 'Enter workspace directory path for project [%s]:',
+    'dir_created_note'          => 'Directory was automatically created and AGENTS.md was written.'
 ];

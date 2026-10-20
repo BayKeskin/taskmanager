@@ -82,4 +82,13 @@ MARKDOWN;
         ", [$id]);
         return !empty($rows) ? (object)$rows[0] : null;
     }
+
+    /**
+     * Projenin çalışma dizini yolunu günceller.
+     */
+    public function updateWorkspacePath(int $id, string $workspacePath): bool
+    {
+        $this->query("UPDATE projects SET workspace_path = ? WHERE id = ?", [$workspacePath, $id]);
+        return true;
+    }
 }

@@ -73,12 +73,33 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-sync-single').forEach(function (button) {
         button.addEventListener('click', async function () {
             const projectId = this.getAttribute('data-project-id');
+            const projectCode = this.getAttribute('data-project-code') || '';
+            let hasDir = this.getAttribute('data-has-dir') === '1';
+            let wsPath = this.getAttribute('data-workspace-path') || '';
             const row = this.closest('tr');
+
+            // Eğer çalışma alanı tanımlı değilse kullanıcıya sor
+            if (!wsPath) {
+                const promptTemplate = (window.agentRulesTranslations && window.agentRulesTranslations.promptWorkspacePath)
+                    ? window.agentRulesTranslations.promptWorkspacePath
+                    : 'Enter workspace path for project [%s]:';
+                const promptMsg = promptTemplate.replace('%s', projectCode || ('#' + projectId));
+                const defaultSuggestion = 'c:/wamp64/www/' + (projectCode ? projectCode.toLowerCase() : 'project_' + projectId);
+                const inputWs = window.prompt(promptMsg, defaultSuggestion);
+                if (!inputWs) {
+                    return;
+                }
+                wsPath = inputWs.trim();
+            }
+
             this.disabled = true;
 
             try {
                 const formData = new FormData();
                 formData.append('project_id', projectId);
+                if (wsPath) {
+                    formData.append('workspace_path', wsPath);
+                }
 
                 const response = await fetch(getBaseUrl() + '/ajax?action=sync_project_rules', {
                     method: 'POST',
@@ -97,6 +118,17 @@ document.addEventListener('DOMContentLoaded', function () {
                         badgeCell.innerHTML = '<span class="badge-tag badge-success">' + 
                             ((window.agentRulesTranslations && window.agentRulesTranslations.statusSynced) ? window.agentRulesTranslations.statusSynced : 'Synced') + 
                             '</span>';
+                    }
+                    // Butonu senkronize et butonuna dönüştür
+                    button.className = 'btn-agent-sync btn-sync-single';
+                    button.textContent = (window.agentRulesTranslations && window.agentRulesTranslations.syncing) ? window.agentRulesTranslations.syncing : '🔄 Senkronize Et';
+                    button.setAttribute('data-has-dir', '1');
+                    button.setAttribute('data-workspace-path', wsPath);
+
+                    // Workspace sütununu güncelle
+                    const wsCell = row.querySelector('td:nth-child(2)');
+                    if (wsCell) {
+                        wsCell.innerHTML = '<span class="text-code-pill">' + wsPath + '</span>';
                     }
                 } else {
                     alert(data.message || 'Error');
