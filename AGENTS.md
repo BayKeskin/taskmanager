@@ -29,20 +29,13 @@ Always reply in the **user's/task's language** (e.g., Turkish) using this exact 
 <!-- PROJECT_RULES_START -->
 ## 6. PROJECT-SPECIFIC RULES: [01] Task Manager
 
-1. **Strict HMVC Isolation (`Modules/{ModuleName}/`):**
-   - Every module must be 100% self-contained with its own `module.json`, `init.php`, `Controllers/`, `Models/`, `Views/`, `Lang/{tr,en,de}.php`, and `Assets/{css,js}/`.
-   - **Rule 1 (View Isolation):** Views (`Views/**/*.php`) CANNOT call Models (`new ...Model`, `Model::`) or Database (`$db`, `$this->db`, SQL) directly. Data must come from the Controller.
-   - **Rule 2 (Controller/Service SQL Ban):** Controllers, Services, and `init.php` CANNOT execute SQL or DB methods (`$this->db->`, `exec_query`, `row_query`, `query`, `prepare`, `SELECT`, `INSERT`, `UPDATE`, `DELETE`). All DB logic MUST be inside `Models/*Model.php` extending `Core\BaseModel`.
-2. **100% Tri-Lingual i18n (TR, EN, DE) & Zero Hardcoded Strings:**
-   - **Rule 3 (No Hardcoded Text):** Never write hardcoded Turkish/English strings in Controllers (`$this->respond(...)`), Models, Views, or JS files. Every string must exist in `Modules/{ModuleName}/Lang/{tr,en,de}.php` with identical keys, called via `__('ModuleName::key')` in PHP and `AssetManager::localizeScript()` in JS.
-3. **Zero Inline CSS/JS & Modal Isolation:**
-   - **Rule 4 (No Inline Code):** Views/PHP files CANNOT contain `<style>`, `<script>`, inline `style="..."`, or `onclick="..."` attributes. All CSS/JS must be in `Modules/{ModuleName}/Assets/{css,js}/` and loaded via `AssetManager`. Modals must be separate files in `Views/modals/`.
-4. **NO Hardcoded `/taskmanager/` Base Paths:**
-   - **Rule 5 (Dynamic Base URL/Path):** Hardcoding `/taskmanager/` in any PHP, View, or JS file (URLs, fetch, redirects, asset paths) is STRICTLY FORBIDDEN! Always use dynamic base URL helpers (`BASE_URL`, `SITE_URL`, `window.APP_CONFIG.baseUrl`, or relative routing) so the system works in any root or subfolder.
-5. **Mandatory Gatekeeper Audit (`taskmanager-audit/audit.php`):**
-   - Before completing any work on a module, you MUST run: `php taskmanager-audit/audit.php <ModuleName>` (or `ALL`).
-   - Do NOT create or modify files inside `taskmanager-audit/`. If the script outputs `[FAIL]`, fix every reported line until you get `0 Violations / [PASS]`.
-6. **Docs & Credentials:**
-   - Query project docs via REST API (`GET /api/projects/01/docs` with `Bearer tm_admin_talha_keskin_token_2026`).
-   - Test Login: `iletisimtktalha@gmail.com` / `145236`
+### [01] Task Manager Project Rules
+- **Strict MVC Architecture:** Direct SQL execution or calling `$db` inside any View (`View/**/*.php`) or UI Component (`Components/**/*.php`) is strictly forbidden. All data queries must reside in dedicated `Model` classes, and request coordination must remain within `Controller` classes.
+- **Universal Tri-Lingual Standard (i18n):** All UI texts, error/success messages, and system notifications must be managed via `languages/{lang}/app.php` dictionaries across all 3 languages (TR, EN, DE) and `Config/ajax_translations.php`. Hardcoded single-language strings are strictly prohibited.
+- **QA Doctrine:** "The User Is Not a QA Tester". Every button, modal, form input, state transition, and AJAX call must be autonomously verified in the live environment using headless browser, curl, and CLI scripts before task completion.
+- **Task Delivery Protocol:** Tasks must be delivered via `Helper::submitTaskDirectly()` following the 4-stage Definition of Done (DoD) format (What Was Done, Where to Test, How to Test, Autonomous Test Evidence).
+- **Documentation Access via REST API:** Project documentation must NOT be stored as loose markdown files in the root directory. AI Agents can query all project documentation via `GET http://localhost/taskmanager/api/projects/{code}/docs` and fetch full document contents using `GET http://localhost/taskmanager/api/docs/{id}` with header `Authorization: Bearer <api_token>`.
+- **Taskmanager access user
+email iletisimtktalha@gmail.com
+password 145236
 <!-- PROJECT_RULES_END -->

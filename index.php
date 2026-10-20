@@ -58,6 +58,9 @@ switch ($page) {
     case 'api-docs':
         require_once __DIR__ . '/Modules/ApiTester/Views/api_docs.php';
         break;
+    case 'agent-rules':
+        (new \Modules\AgentRules\Controllers\AgentRulesController())->index();
+        break;
     case 'board':
     default:
         require_once __DIR__ . '/Modules/Board/Views/board.php';

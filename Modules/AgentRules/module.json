@@ -1,0 +1,8 @@
+{
+    "name": "AGENTS.md Rule Synchronizer",
+    "slug": "agent-rules",
+    "description": "Centralized AGENTS.md rule synchronization across all workspace projects.",
+    "version": "1.0.0",
+    "author": "TaskManager Architecture Team",
+    "active": true
+}

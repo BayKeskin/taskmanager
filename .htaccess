@@ -26,6 +26,7 @@ DirectoryIndex index.php View/index/board.php
     RewriteRule ^docs/?$                index.php?page=docs [L,NC,QSA]
     RewriteRule ^chat/?$                index.php?page=chat [L,NC,QSA]
     RewriteRule ^settings/?$            index.php?page=settings [L,NC,QSA]
+    RewriteRule ^agent-rules/?$         index.php?page=agent-rules [L,NC,QSA]
     RewriteRule ^ajax/?$                Modules/Board/Controllers/AjaxController.php [L,NC,QSA]
     RewriteRule ^ajax/(.*)$             Modules/Board/Controllers/AjaxController.php?action=$1 [L,NC,QSA]
     RewriteRule ^events/?$              Modules/SSE/Services/sse.php [L,NC,QSA]

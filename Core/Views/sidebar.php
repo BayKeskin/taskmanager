@@ -156,6 +156,12 @@ if ($relPath === '/tasks') {
                             <span><?= __('app.sidebar_settings') ?></span>
                         </div>
                     </a>
+                    <a href="<?= baseUrl('agent-rules') ?>" class="cu-nav-item <?= ($relPath === '/agent-rules') ? 'active' : '' ?>">
+                        <div class="cu-nav-item-left">
+                            <span>🛡️</span>
+                            <span><?= __('AgentRules::nav_menu_title') ?></span>
+                        </div>
+                    </a>
                 <?php endif; ?>
 
                 <?php if ($currentUser->role !== 'client'): ?>
