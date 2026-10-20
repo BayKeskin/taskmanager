@@ -1,0 +1,90 @@
+<?php
+// Moodle API URL ve token
+$token = 'YOUR_MOODLE_API_TOKEN';
+$domainname = 'https://YOUR_MOODLE_SITE_URL';
+$functionname_course = 'core_course_create_courses';
+$functionname_section = 'core_course_update_courses';
+
+// Kurs bilgileri
+$courses = [
+    [
+        'fullname' => 'Yeni Kurs Adı', // Kursun tam adı
+        'shortname' => 'yeni_kurs',    // Kursun kısa adı
+        'categoryid' => 1,             // Kursun ait olacağı kategori ID'si
+        'visible' => 1,                // Kursun görünürlüğü (1: görünür, 0: gizli)
+        'summary' => 'Bu yeni bir kurs özetidir.', // Kurs özeti
+        'format' => 'topics',          // Kurs formatı (topics, weeks, social, v.b.)
+        'numsections' => 3,            // Kursun bölüm sayısı
+    ]
+];
+
+// Kurs oluşturma isteği
+$params_course = [
+    'courses' => $courses
+];
+
+$request_course = $domainname . '/webservice/rest/server.php' . '?wstoken=' . $token . '&wsfunction=' . $functionname_course . '&moodlewsrestformat=json';
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $request_course);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params_course));
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$response_course = curl_exec($ch);
+curl_close($ch);
+
+$response_course = json_decode($response_course, true);
+
+if (isset($response_course[0]['id'])) {
+    $courseid = $response_course[0]['id'];
+    echo "Kurs başarıyla oluşturuldu. Kurs ID: " . $courseid . "\n";
+
+    // Kurs bölümlerini güncelleme
+    $sections = [
+        [
+            'courseid' => $courseid,
+            'section' => 1,
+            'summary' => 'Bu birinci bölümün özetidir.',
+            'visible' => 1
+        ],
+        [
+            'courseid' => $courseid,
+            'section' => 2,
+            'summary' => 'Bu ikinci bölümün özetidir.',
+            'visible' => 1
+        ],
+        [
+            'courseid' => $courseid,
+            'section' => 3,
+            'summary' => 'Bu üçüncü bölümün özetidir.',
+            'visible' => 1
+        ]
+    ];
+
+    $params_section = [
+        'courseid' => $courseid,
+        'sections' => $sections
+    ];
+
+    $request_section = $domainname . '/webservice/rest/server.php' . '?wstoken=' . $token . '&wsfunction=' . $functionname_section . '&moodlewsrestformat=json';
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $request_section);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params_section));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response_section = curl_exec($ch);
+    curl_close($ch);
+
+    $response_section = json_decode($response_section, true);
+
+    if (isset($response_section['warnings']) && empty($response_section['warnings'])) {
+        echo "Kurs bölümleri başarıyla oluşturuldu.\n";
+    } else {
+        echo "Kurs bölümleri oluşturulurken bir hata oluştu.\n";
+        print_r($response_section);
+    }
+} else {
+    echo "Kurs oluşturulurken bir hata oluştu.\n";
+    print_r($response_course);
+}
