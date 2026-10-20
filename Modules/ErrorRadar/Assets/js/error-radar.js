@@ -175,19 +175,21 @@
             }
         }
 
-        if (hasPhpError) {
-            // Yanıt geçerli bir JSON ise ve bir görev detayı / API veri paketi içeriyorsa (örn: task description içinde geçen hata metni)
-            // bu bir PHP çökmesi değil, veri içeriğidir. Sadece gerçek sunucu çökmelerini (HTML/xdebug tablo/plain-text hata) raporla.
-            try {
-                var trimmed = responseText.trim();
-                if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-                    var parsed = JSON.parse(trimmed);
-                    if (parsed && (parsed.task || parsed.tasks || parsed.task_id || parsed.fingerprint || (parsed.success !== undefined && parsed.data && parsed.data.task_code))) {
-                        return;
-                    }
-                }
-            } catch (e) {}
+        // 1. Eğer istek görev detaylarını veya kart HTML çıktısını çekiyorsa, içinde bug raporu metni geçmesi doğaldır, yoksay
+        if (endpoint.indexOf('get_task_detail') !== -1 || endpoint.indexOf('get_task_card_html') !== -1) {
+            return;
+        }
 
+        // 2. Eğer yanıt geçerli ve ayrıştırılabilir bir JSON ise, bu bir sunucu çökmesi/xdebug tablosu değil, normal bir API yanıtıdır
+        var trimmed = responseText.trim();
+        if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+            try {
+                JSON.parse(trimmed);
+                return;
+            } catch (e) {}
+        }
+
+        if (hasPhpError) {
             var snippet = responseText;
             var cleanText = snippet.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
             sendReport({
