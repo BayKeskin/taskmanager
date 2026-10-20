@@ -412,8 +412,6 @@ class TaskLifecycleService extends BaseModel
                 $desc .= $attachmentsMd;
             }
 
-            $desc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen development and autonomous verification are 100% complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . \Modules\Dispatcher\Services\DispatcherService::getAgentSubmitCommandBlock($task->task_code);
-
             $payloadData = array_merge([
                 'task_id'       => (int)$task->id,
                 'task_code'     => $task->task_code,
@@ -501,7 +499,6 @@ class TaskLifecycleService extends BaseModel
             if (!empty($attachmentsMd)) {
                 $revDesc .= $attachmentsMd;
             }
-            $revDesc .= "\n\n---\n⚡ **AUTONOMOUS COMPLETION INSTRUCTION (FAST HTTP API - DO NOT SEARCH FOR TASKMANAGER FILES):**\nWhen revision fixes and autonomous verification are complete, to prevent the system from deadlocking and allow the queue to immediately proceed to the next pending task, you MUST deliver the task directly via HTTP API by running this command in your shell:\n" . \Modules\Dispatcher\Services\DispatcherService::getAgentSubmitCommandBlock($task->task_code);
 
             $payloadData = array_merge([
                 'task_id'         => (int)$task->id,

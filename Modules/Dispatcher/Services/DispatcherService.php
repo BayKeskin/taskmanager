@@ -318,9 +318,8 @@ class DispatcherService
             $deadline     = $data['deadline'] ?? '-';
             $triggeredBy  = $data['triggered_by'] ?? 'User';
 
-            $bannerText = $isResumed
-                ? "🔄 **Interrupted Task Resumed! Returning to the pending task where you left off!**\n\n📌 **Status:** Previous priority/revision task was completed. This task is now un-suspended and running autonomously.\n\n"
-                : "🚀 **TaskManager Task Marked as 'In Progress'!**\n\n";
+            $bannerText = "🚨 **[MANDATORY TASK INTERRUPT — STOP ALL PREVIOUS TOPICS!]**\n"
+                . "> **DIRECTIVE:** Drop any previous conversation in this window immediately. Your ONLY active objective now is to execute and deliver task **{$taskCode}** below:\n\n";
 
             $messageText = "{$bannerText}"
                 . "📌 **Project:** [{$projectCode}] {$projectTitle}\n"
@@ -352,7 +351,9 @@ class DispatcherService
             $revReason = $data['revision_reason'] ?? '*(No reason specified)*';
             $desc = !empty($data['description']) ? trim((string)$data['description']) : '';
 
-            $messageText = "⚠️ **TaskManager Revision Request!**\n\n"
+            $messageText = "🚨 **[MANDATORY TASK INTERRUPT — STOP ALL PREVIOUS TOPICS!]**\n"
+                . "> **DIRECTIVE:** Drop any previous conversation in this window immediately. Your ONLY active objective now is to execute and deliver task **{$taskCode}** below:\n\n"
+                . "⚠️ **TaskManager Revision Request!**\n\n"
                 . "📌 **Project:** [{$projectCode}] {$projectTitle}\n"
                 . "📋 **Task Code:** {$taskCode}\n"
                 . "🏷️ **Title:** {$taskTitle}\n\n"

@@ -422,15 +422,19 @@ def process_webhook_async(payload, header_conv_id):
 
     if event in ('task.started', 'task.in_progress', 'task.revision_requested', 'task.modification_requested'):
         is_rev = event in ('task.revision_requested', 'task.modification_requested')
+        interrupt_header = (
+            f"🚨 **[MANDATORY TASK INTERRUPT — STOP ALL PREVIOUS TOPICS!]**\n"
+            f"> **DIRECTIVE:** Drop any previous conversation in this window immediately. Your ONLY active objective now is to execute and deliver task **{task_code}** below:\n\n"
+        )
         if is_rev:
             title_header = f"⚠️ [REVISION] {task_code}: {task_title}"
-            banner = f"⚠️ **[{project_code}] REVISION TASK MOVED TO IN PROGRESS!**\n🔴 **Requested Changes:** {data.get('revision_reason', 'Revision requested.')}\n\n"
+            banner = f"{interrupt_header}⚠️ **[{project_code}] REVISION TASK MOVED TO IN PROGRESS!**\n🔴 **Requested Changes:** {data.get('revision_reason', 'Revision requested.')}\n\n"
         elif is_resumed:
             title_header = f"🔄 [RESUMED] {task_code}: {task_title}"
-            banner = f"🔄 **[SESSION HANDOFF / RESUME DIRECTIVE]**\nThis task is currently IN PROGRESS and awaiting completion.\n\n"
+            banner = f"{interrupt_header}🔄 **[SESSION HANDOFF / RESUME DIRECTIVE]**\nThis task is currently IN PROGRESS and awaiting completion.\n\n"
         else:
             title_header = f"🚀 [IN PROGRESS] {task_code}: {task_title}"
-            banner = f"🚀 **TaskManager Task Marked as 'In Progress'!**\n\n"
+            banner = f"{interrupt_header}🚀 **TaskManager Task Marked as 'In Progress'!**\n\n"
 
         desc = data.get('description', '').strip() or '*(No description provided)*'
         desc = re.sub(r'---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$', '', desc, flags=re.DOTALL).strip()
