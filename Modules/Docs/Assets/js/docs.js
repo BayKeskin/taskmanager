@@ -656,5 +656,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Modüller Rehberi Akordeon Açma/Kapama
+    document.addEventListener('click', (e) => {
+        const accHeader = e.target.closest('.cu-accordion-header');
+        if (accHeader) {
+            const item = accHeader.closest('.cu-accordion-item');
+            if (item) {
+                item.classList.toggle('open');
+            }
+        }
+    });
+
+    // Modüller Arama Filtresi
+    const moduleSearchInput = document.getElementById('moduleSearchInput');
+    if (moduleSearchInput) {
+        moduleSearchInput.addEventListener('input', function() {
+            const query = (this.value || '').toLowerCase().trim();
+            const items = document.querySelectorAll('.cu-accordion-item');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (!query || text.includes(query)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+
     loadCurrentDocAttachments();
 });

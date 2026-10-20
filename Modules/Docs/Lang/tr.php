@@ -95,4 +95,17 @@ return array (
   'start_typing_document' => 'Buraya döküman içeriğinizi yazmaya başlayın...',
   'view_client_docs' => 'Proje Dökümanları',
   'view_docs' => 'Dökümanlar (Docs)',
+  'modules_guide_title' => 'Modüller & Mimari Rehberi',
+  'modules_guide_desc' => 'TaskManager platformundaki tüm HMVC modülleri, mimarileri ve nasıl kullanılacakları hakkında kapsamlı rehber.',
+  'modules_guide_badge_active' => 'Aktif Modül',
+  'modules_guide_badge_inactive' => 'Devre Dışı',
+  'modules_search_ph' => 'Modül adı, yetenek veya dosya ara...',
+  'modules_all_count' => 'Toplam Modül',
+  'modules_active_count' => 'Aktif Modül',
+  'modules_total_label' => 'Sistem Bileşenleri',
+  'modules_capabilities' => 'Temel Yetenekler & Ne İşe Yarar?',
+  'modules_how_to_use' => 'Nasıl Kullanılır?',
+  'modules_tech_details' => 'Mimari ve Teknik Bilgiler',
+  'modules_key_files' => 'Önemli Dosyalar & Sınıflar',
+  'modules_nav_menu_title' => 'Modüller'
 );

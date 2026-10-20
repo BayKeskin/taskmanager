@@ -825,3 +825,275 @@
         margin: 16px 14px 20px !important;
     }
 }
+
+/* Modüller & Mimari Rehberi Akordeon Stilleri */
+.cu-modules-guide-container {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+.cu-modules-header-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-sm);
+}
+.cu-modules-header-left h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 0 0 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-modules-header-left p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+.cu-modules-stats {
+    display: flex;
+    gap: 12px;
+}
+.cu-modules-stat-badge {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    text-align: center;
+}
+.cu-modules-stat-badge strong {
+    display: block;
+    font-size: 16px;
+    color: var(--brand-primary);
+}
+.cu-modules-stat-badge span {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.cu-modules-search-bar {
+    margin-bottom: 20px;
+}
+.cu-modules-search-input {
+    width: 100%;
+    height: 42px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0 16px;
+    font-size: 13.5px;
+    color: var(--text-white);
+    outline: none;
+    transition: var(--transition);
+}
+.cu-modules-search-input:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 2px rgba(123, 104, 238, 0.2);
+}
+.cu-accordion-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.cu-accordion-item:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+.cu-accordion-header {
+    width: 100%;
+    padding: 16px 20px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+    user-select: none;
+}
+.cu-accordion-header:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+.cu-accordion-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+.cu-accordion-icon {
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(123, 104, 238, 0.12);
+    border: 1px solid rgba(123, 104, 238, 0.25);
+    flex-shrink: 0;
+}
+.cu-accordion-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-white);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cu-accordion-desc {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.cu-accordion-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.cu-status-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.cu-status-pill.active {
+    background: rgba(0, 184, 148, 0.15);
+    color: #00b894;
+    border: 1px solid rgba(0, 184, 148, 0.3);
+}
+.cu-status-pill.inactive {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+}
+.cu-accordion-toggle-icon {
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: transform 0.25s ease;
+}
+.cu-accordion-item.open .cu-accordion-toggle-icon {
+    transform: rotate(180deg);
+}
+.cu-accordion-body {
+    display: none;
+    padding: 20px;
+    border-top: 1px solid var(--border-subtle);
+    background: rgba(0, 0, 0, 0.15);
+}
+.cu-accordion-item.open .cu-accordion-body {
+    display: block;
+}
+.cu-guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.cu-guide-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+}
+.cu-guide-card h4 {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.cu-guide-card ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+.cu-guide-card li {
+    margin-bottom: 4px;
+}
+.cu-guide-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+.cu-file-tag {
+    font-family: monospace;
+    font-size: 11.5px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+}
+
+/* Header & Module Details typography/layout helpers */
+.cu-view-icon-lg {
+    font-size: 20px;
+}
+.cu-view-title-main {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-white);
+}
+.cu-btn-docs-back {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-white);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+.cu-stat-active-val {
+    color: #00b894;
+}
+.cu-dir-badge {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+.cu-ver-badge {
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.cu-guide-card-footer {
+    margin-bottom: 0;
+}
+.cu-guide-tech-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin: 0 0 10px 0;
+}
+.cu-guide-files-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}

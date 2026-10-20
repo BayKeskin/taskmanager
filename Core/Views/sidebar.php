@@ -63,6 +63,9 @@ if ($relPath === '/tasks') {
 } elseif ($relPath === '/api-docs') {
     $activeViewIcon = '⚡';
     $activeViewTitle = __('app.sidebar_api_docs');
+} elseif ($relPath === '/modules') {
+    $activeViewIcon = '🧩';
+    $activeViewTitle = __('Docs::modules_nav_menu_title');
 }
 
 // unreadDmCount is provided by LayoutController
@@ -171,6 +174,13 @@ if ($relPath === '/tasks') {
                             <span><?= __('app.sidebar_api_docs') ?></span>
                         </div>
                         <span class="cu-nav-badge" style="background:rgba(123,104,238,0.25); color:#7B68EE; font-size:10px; font-weight:700;">v1.0</span>
+                    </a>
+                    <a href="<?= baseUrl('modules') ?>" class="cu-nav-item <?= ($relPath === '/modules') ? 'active' : '' ?>">
+                        <div class="cu-nav-item-left">
+                            <span>🧩</span>
+                            <span><?= __('Docs::modules_nav_menu_title') ?></span>
+                        </div>
+                        <span class="cu-nav-badge" style="background:rgba(0,184,148,0.2); color:#00b894; font-size:10px; font-weight:700;">HMVC</span>
                     </a>
                 <?php endif; ?>
             </div>

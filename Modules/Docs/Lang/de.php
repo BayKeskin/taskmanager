@@ -95,4 +95,17 @@ return array (
   'start_typing_document' => 'Beginnen Sie hier mit der Eingabe Ihres Dokumentinhalts...',
   'view_client_docs' => 'Projektdokumente',
   'view_docs' => 'Dokumente (Docs)',
+  'modules_guide_title' => 'Module & Architekturhandbuch',
+  'modules_guide_desc' => 'Umfassender Leitfaden zu allen HMVC-Modulen, Architekturen und Verwendungsinformationen in der TaskManager-Plattform.',
+  'modules_guide_badge_active' => 'Aktives Modul',
+  'modules_guide_badge_inactive' => 'Deaktiviert',
+  'modules_search_ph' => 'Modulname, Funktion oder Datei suchen...',
+  'modules_all_count' => 'Module Gesamt',
+  'modules_active_count' => 'Aktive Module',
+  'modules_total_label' => 'Systemkomponenten',
+  'modules_capabilities' => 'Hauptfunktionen & Zweck',
+  'modules_how_to_use' => 'Wie benutzt man es?',
+  'modules_tech_details' => 'Architektur & Technische Daten',
+  'modules_key_files' => 'Wichtige Dateien & Klassen',
+  'modules_nav_menu_title' => 'Module'
 );

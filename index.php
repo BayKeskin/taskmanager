@@ -61,6 +61,9 @@ switch ($page) {
     case 'agent-rules':
         (new \Modules\AgentRules\Controllers\AgentRulesController())->index();
         break;
+    case 'modules':
+        require_once __DIR__ . '/Modules/Docs/Views/modules_guide.php';
+        break;
     case 'board':
     default:
         require_once __DIR__ . '/Modules/Board/Views/board.php';

@@ -56,4 +56,17 @@ class DocController extends BaseController
             'firstDoc'        => $firstDoc
         ];
     }
+
+    /**
+     * Tüm HMVC Modüllerini ve Kullanım Rehberini Hazırlar
+     */
+    public function modulesGuide(): array
+    {
+        $allModules = \Core\ModuleLoader::getAllAvailableModules();
+        ksort($allModules);
+
+        return [
+            'modules' => $allModules
+        ];
+    }
 }
