@@ -130,6 +130,10 @@
             var target = event.target || event.srcElement;
             if (target && (target.tagName === 'LINK' || target.tagName === 'SCRIPT' || target.tagName === 'IMG')) {
                 var assetSrc = target.src || target.href || '';
+                // Boş veya geçerli bir dosya uzantısı/yolu olmayan (örneğin sayfanın kendi URL'si) img hatalarını yoksay
+                if (target.tagName === 'IMG' && (!assetSrc || assetSrc === window.location.href || assetSrc.startsWith('data:'))) {
+                    return;
+                }
                 if (assetSrc) {
                     sendReport({
                         type: 'static_asset',

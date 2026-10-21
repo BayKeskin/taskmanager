@@ -345,7 +345,7 @@
             </a>
             <button type="button" onclick="closeImageLightbox(null)" style="background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:18px; cursor:pointer; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);">✕</button>
         </div>
-        <img id="lightboxImage" src="" alt="<?= htmlspecialchars(__('tasks.preview', 'Önizleme')) ?>" style="max-width:100%; max-height:82vh; border-radius:10px; box-shadow:0 20px 60px rgba(0,0,0,0.9); object-fit:contain; cursor:zoom-out;">
+        <img id="lightboxImage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="<?= htmlspecialchars(__('tasks.preview', 'Önizleme')) ?>" style="max-width:100%; max-height:82vh; border-radius:10px; box-shadow:0 20px 60px rgba(0,0,0,0.9); object-fit:contain; cursor:zoom-out;">
         <div id="lightboxCaption" style="margin-top:12px; color:#fff; font-size:13px; font-weight:600; text-align:center; text-shadow:0 2px 4px rgba(0,0,0,0.8);"></div>
     </div>
 </div>
