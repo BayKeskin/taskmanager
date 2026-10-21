@@ -26,16 +26,13 @@ Always reply in the **user's/task's language** (e.g., Turkish) using this exact 
 - **Surgical Rollback:** For every DB schema/data change (`CREATE`, `ALTER`, `INSERT`, `UPDATE`, `DELETE`), generate the exact reverse SQL in `.migrations/{task_code}_down.sql` using safe `IF EXISTS` clauses.
 
 ## 6. ANTI-LOOP COMPACTION RULE (CONTEXT COMPACTION MEMORY RESUME)
-- **Zero Redundant Introductions:** Antigravity IDE uzun süren otonom oturumlarda bellek dolduğunda otomatik "Context Compaction" gerçekleştirir. Compaction sonrasında uyanıldığında geçmişteki ilk kurulum, selamlama veya ID sorma mesajlarına (örneğin: *"Sen TaskManager Coderisin, bana id ver..."*) ASLA TEKRAR YANIT VERİLMEYECEKTİR.
-- **Immediate Task Execution:** Bellek sıkıştırmasından sonra uyanıldığı anda, önceki selamlama/tanıtım mesajları tamamen göz ardı edilmeli ve DOĞRUDAN enjekte edilen en son aktif göreve (`task_code`) odaklanılarak kesintisiz işe devam edilmelidir.
+- **Zero Redundant Introductions:** The Antigravity IDE automatically performs “Context Compaction” when memory becomes full during prolonged autonomous sessions. Upon waking up after compaction, the system will NEVER RESPOND AGAIN to previous initial setup, greeting, or ID request messages (e.g., *“You are TaskManager Coder, give me your ID...”*).
+- **Immediate Task Execution:** Upon waking from memory compaction, previous greeting/introduction messages must be completely ignored, and work must continue seamlessly by focusing DIRECTLY on the most recently injected active task (`task_code`).
 
 ---
 
 <!-- PROJECT_RULES_START -->
-## 7. PROJECT-SPECIFIC AGENT RULES
-
-> ### 📌 MANDATORY PROJECT-SPECIFIC CONSTRAINTS:
-> The following project-specific technical rules, styling constraints, and workflow directives must be strictly observed for project [01] Task Manager:
+## PROJECT-SPECIFIC RULES: [01] Task Manager
 
 PROJECT-SPECIFIC RULES: [01] Task Manager
 

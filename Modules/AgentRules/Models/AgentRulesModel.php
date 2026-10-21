@@ -137,4 +137,13 @@ MARKDOWN;
         $this->query("UPDATE projects SET workspace_path = ? WHERE id = ?", [$workspacePath, $id]);
         return true;
     }
+
+    /**
+     * Projenin agent_rules alanını günceller.
+     */
+    public function updateAgentRules(int $id, string $rules): bool
+    {
+        $this->query("UPDATE projects SET agent_rules = ? WHERE id = ?", [$rules, $id]);
+        return true;
+    }
 }
