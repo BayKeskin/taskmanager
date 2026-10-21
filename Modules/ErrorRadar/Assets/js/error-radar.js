@@ -134,6 +134,14 @@
                 if (target.tagName === 'IMG' && (!assetSrc || assetSrc === window.location.href || assetSrc.startsWith('data:'))) {
                     return;
                 }
+                // Kullanıcı açıklamaları, kod blokları veya taslak şablon etiketleri (örn: {{ ... }} veya {% ... %}) içeren sahte istekleri yoksay
+                if (assetSrc.indexOf('%7B%7B') !== -1 || assetSrc.indexOf('{{') !== -1 || assetSrc.indexOf('{%') !== -1) {
+                    return;
+                }
+                // Görev açıklaması veya kart açıklaması içindeki kullanıcı girdilerinden kaynaklanan img hatalarını yoksay
+                if (target.closest && target.closest('#drawerDescription, .cu-drawer-desc, .cu-comment-content, .cu-board-card, [data-task-id]')) {
+                    return;
+                }
                 if (assetSrc) {
                     sendReport({
                         type: 'static_asset',
@@ -342,10 +350,13 @@
             var walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT, null, false);
             var node;
             while ((node = walker.nextNode())) {
-                // Kod blokları veya script/style içeriklerini atla
+                // Kod blokları, script/style ve mevcut görev kartları/başlıklarını atla (kendi kendini besleyen döngüyü engelle)
                 if (node.parentElement) {
                     var parentTag = node.parentElement.tagName;
                     if (parentTag === 'SCRIPT' || parentTag === 'STYLE' || parentTag === 'CODE' || parentTag === 'PRE') {
+                        continue;
+                    }
+                    if (node.parentElement.closest('.cu-board-card, .cu-task-title, .cu-drawer-title, .cu-drawer-desc, [data-task-id]')) {
                         continue;
                     }
                 }

@@ -61,7 +61,15 @@ async function openTaskDrawer(taskId) {
         document.getElementById('drawerTaskTitle').innerText = task.title;
         const descEl = document.getElementById('drawerDescription');
         if (descEl) {
-            descEl.innerHTML = window.cleanMojibake(task.description) || `<p style="color:var(--text-muted); font-style:italic;">${_bI18n.desc_empty_hint || 'Click to edit description...'}</p>`;
+            let descHtml = window.cleanMojibake(task.description);
+            if (descHtml) {
+                // Görev açıklamasında kod/örnek olarak verilen çiğ Blade/Mustache etiketlerini (örn: {{ asset(...) }})
+                // tarayıcının yanlışlıkla gerçek bir <img> src olarak çalıştırmasını ve 404 hatası üretmesini engellemek için kod blokları dışında koru
+                descHtml = descHtml.replace(/<img\s+[^>]*src\s*=\s*["']\{\{[^"']*\}\}["'][^>]*>/gi, function(match) {
+                    return '<code>' + escapeHtml(match) + '</code>';
+                });
+            }
+            descEl.innerHTML = descHtml || `<p style="color:var(--text-muted); font-style:italic;">${_bI18n.desc_empty_hint || 'Click to edit description...'}</p>`;
         }
         const descStatus = document.getElementById('drawerDescSaveStatus');
         if (descStatus) descStatus.innerText = _bI18n.click_to_edit || 'Click to edit';

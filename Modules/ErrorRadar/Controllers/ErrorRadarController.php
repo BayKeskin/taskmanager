@@ -75,6 +75,22 @@ class ErrorRadarController extends BaseController
             ];
         }
 
+        // Kullanıcı açıklamalarında örnek kod olarak geçen şablon etiketleri (örn: {{ ... }}, %7B%7B) sahte statik asset hatalarını yoksay
+        if ($errorType === 'static_asset' && (
+            str_contains($endpoint, '{{') ||
+            str_contains($endpoint, '%7B%7B') ||
+            str_contains($endpoint, '{%') ||
+            str_contains($errorMessage, '{{') ||
+            str_contains($errorMessage, '%7B%7B')
+        )) {
+            return [
+                'success'     => true,
+                'ignored'     => true,
+                'status_code' => 200,
+                'message'     => __('ErrorRadar::duplicate_error_ignored')
+            ];
+        }
+
         // Kırık dil anahtarı (broken_i18n) yanlış pozitif koruması (örn: PDO::prepare, SmokeTest::run gibi PHP kodları)
         if ($errorType === 'broken_i18n') {
             $validModules = [
@@ -96,6 +112,28 @@ class ErrorRadarController extends BaseController
                         'ignored'     => true,
                         'status_code' => 200,
                         'message'     => __('ErrorRadar::duplicate_error_ignored')
+                    ];
+                }
+
+                // Dil dosyalarını kontrol et: Eğer bu anahtar zaten tr/en/de dillerinde tanımlıysa sahte pozitif olarak yoksay!
+                $baseDir = dirname(__DIR__, 3);
+                $isActuallyDefined = false;
+                foreach (['tr', 'en', 'de'] as $loc) {
+                    $langFile = $baseDir . "/Modules/{$modPart}/Lang/{$loc}.php";
+                    if (file_exists($langFile)) {
+                        $translations = @include $langFile;
+                        if (is_array($translations) && isset($translations[$keyPart])) {
+                            $isActuallyDefined = true;
+                            break;
+                        }
+                    }
+                }
+                if ($isActuallyDefined) {
+                    return [
+                        'success'     => true,
+                        'ignored'     => true,
+                        'status_code' => 200,
+                        'message'     => 'i18n key is already defined and translated.'
                     ];
                 }
             }
