@@ -75,6 +75,32 @@ class ErrorRadarController extends BaseController
             ];
         }
 
+        // Kırık dil anahtarı (broken_i18n) yanlış pozitif koruması (örn: PDO::prepare, SmokeTest::run gibi PHP kodları)
+        if ($errorType === 'broken_i18n') {
+            $validModules = [
+                'AgentRules', 'AiArchitect', 'ApiTester', 'Billing', 'Board',
+                'Calendar', 'Chat', 'Dispatcher', 'Docs', 'ErrorRadar',
+                'ExcelExport', 'GithubDevops', 'LiveDeploy', 'Mailer', 'Mcp',
+                'Projects', 'Reports', 'RestApi', 'SSE', 'Settings',
+                'SmokeTest', 'Storage', 'Team', 'Telegram', 'VisualPins', 'Watchdog'
+            ];
+            $ignoredMethods = ['prepare', 'query', 'execute', 'connect', 'fetch', 'fetchAll', 'run', 'exec'];
+
+            if (preg_match('/([A-Za-z0-9]+)::([A-Za-z0-9_]+)/', $fileLine ?: $errorMessage, $matches)) {
+                $modPart = $matches[1];
+                $keyPart = $matches[2];
+
+                if (!in_array($modPart, $validModules, true) || in_array($keyPart, $ignoredMethods, true)) {
+                    return [
+                        'success'     => true,
+                        'ignored'     => true,
+                        'status_code' => 200,
+                        'message'     => __('ErrorRadar::duplicate_error_ignored')
+                    ];
+                }
+            }
+        }
+
         // TaskManager sistem paneli veya dahili endpoint kontrolü:
         // Eğer URL, endpoint veya dosya konumu TaskManager sistemine aitse,
         // proje kodunu zorunlu olarak ana TaskManager projesi ('01') yap.
