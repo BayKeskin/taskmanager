@@ -367,7 +367,26 @@ class DispatcherService
             $submissionNotes = !empty($data['submission_notes']) ? trim((string)$data['submission_notes']) : '*(No submission notes provided)*';
             $apiCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
             $apiBaseUrl = rtrim($apiCfg['base_url'], '/');
-            $apiToken = $apiCfg['api_token'];
+            $apiToken = !empty($apiCfg['api_token']) ? $apiCfg['api_token'] : 'tm_admin_talha_keskin_token_2026';
+
+            $taskDesc = !empty($data['description']) ? trim((string)$data['description']) : '*(No description provided)*';
+            $taskDescClean = preg_replace('/---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$/s', '', $taskDesc);
+            $taskDescClean = trim($taskDescClean) ?: '*(No description provided)*';
+
+            $attachments = $data['attachments'] ?? [];
+            $attachmentsMd = '';
+            if (!empty($attachments) && is_array($attachments)) {
+                $attachmentsMd = "\n- **Task Attachments & Designs:**\n";
+                foreach ($attachments as $att) {
+                    $fname = $att['file_name'] ?? basename($att['file_path'] ?? 'attachment');
+                    $absP = str_replace('\\', '/', $att['abs_path'] ?? ($att['file_path'] ?? ''));
+                    $furi = $att['file_uri'] ?? ('file:///' . ltrim($absP, '/'));
+                    $ftype = strtolower($att['file_type'] ?? '');
+                    $isImg = str_starts_with($ftype, 'image/') || (bool)preg_match('/\.(png|jpe?g|webp|gif|svg)$/i', $fname);
+                    $icon = $isImg ? '🖼️' : '📄';
+                    $attachmentsMd .= "  - {$icon} [{$fname}]({$furi})\n";
+                }
+            }
 
             $qaModel = new \Modules\AgentRules\Models\AgentRulesModel();
             $qaGlobal = $qaModel->getQaGlobalInstructions();
@@ -386,10 +405,13 @@ class DispatcherService
                 . "### 📋 DELIVERED TASK CONTEXT:\n"
                 . "- **Project:** [{$projectCode}] {$projectTitle} (`{$project->workspace_path}`)\n"
                 . "- **Task Code:** `{$taskCode}` | **Title:** {$taskTitle}\n"
+                . "- **Original Task Requirements:**\n{$taskDescClean}\n"
+                . "{$attachmentsMd}"
                 . "- **Developer Submission Notes:**\n{$submissionNotes}\n\n"
                 . "### 🔍 MANDATORY STEP-BY-STEP TESTING PROTOCOL:\n"
                 . "1. **LIVE BROWSER TEST (UI & USABILITY):**\n"
                 . "   - Open the relevant module URL using your browser subagent.\n"
+                . "   - **System Login (if required):** URL: {$apiBaseUrl} | Email: iletisimtktalha@gmail.com | Pass: 145236\n"
                 . "   - Inspect visually: Verify responsiveness, CSS layouts, padding/margins, text visibility, and button clickability.\n"
                 . "2. **NETWORK & CONSOLE AUDIT (ZERO TOLERANCE):**\n"
                 . "   - Check Developer Console: Must contain **0 JS errors** and **0 404 assets**.\n"

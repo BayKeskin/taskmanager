@@ -372,6 +372,16 @@ def process_webhook_async(payload, header_conv_id):
     is_watchdog_check = bool(data.get('watchdog_check', False))
     api_base_url = (payload.get('api_base_url') or 'http://localhost/taskmanager').rstrip('/')
     api_token = str(payload.get('api_token') or '').strip()
+    if not api_token:
+        try:
+            token_php = "require_once 'Core/System.php'; \$cfg = \\Modules\\RestApi\\Services\\RestApiService::getDynamicApiConfig(); echo \$cfg['api_token'] ?? '';"
+            tok_res = run_silent(['php', '-r', token_php], cwd=APP_ROOT, capture_output=True, text=True, timeout=3)
+            if tok_res.returncode == 0 and tok_res.stdout.strip():
+                api_token = tok_res.stdout.strip()
+        except Exception:
+            pass
+    if not api_token:
+        api_token = 'tm_admin_talha_keskin_token_2026'
 
     # 1. GÖREV TESLİM EDİLDİĞİNDE VEYA GERİ ALINDIĞINDA:
     if event == 'task.requeued':
@@ -535,6 +545,24 @@ def process_webhook_async(payload, header_conv_id):
         submission_notes = data.get('submission_notes', '').strip() or '*(No submission notes provided)*'
         title_header = f"🔍 [QA AUDIT REQUIRED] {task_code}: {task_title}"
 
+        task_desc = (data.get('description') or '').strip()
+        task_desc_clean = re.sub(r'---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$', '', task_desc, flags=re.DOTALL).strip()
+        if not task_desc_clean:
+            task_desc_clean = '*(No description provided)*'
+
+        attachments = data.get('attachments', [])
+        attachments_md = ""
+        if attachments:
+            attachments_md = "\n- **Task Attachments & Designs:**\n"
+            for att in attachments:
+                fname = att.get('file_name') or os.path.basename(att.get('file_path', 'attachment'))
+                abs_p = (att.get('abs_path') or att.get('file_path', '')).replace('\\', '/')
+                furi = att.get('file_uri') or f"file:///{abs_p.lstrip('/')}"
+                ftype = att.get('file_type', '').lower()
+                is_img = ftype.startswith('image/') or any(fname.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'])
+                icon = "🖼️" if is_img else "📄"
+                attachments_md += f"  - {icon} [{fname}]({furi})\n"
+
         custom_qa_section = ""
         if qa_test_instructions:
             custom_qa_section += f"\n\n### 🛠️ PROJECT-SPECIFIC QA TEST INSTRUCTIONS:\n{qa_test_instructions}\n"
@@ -547,10 +575,13 @@ def process_webhook_async(payload, header_conv_id):
             f"### 📋 DELIVERED TASK CONTEXT:\n"
             f"- **Project:** [{project_code}] {project_title} (`{project_dir}`)\n"
             f"- **Task Code:** `{task_code}` | **Title:** {task_title}\n"
+            f"- **Original Task Requirements:**\n{task_desc_clean}\n"
+            f"{attachments_md}"
             f"- **Developer Submission Notes:**\n{submission_notes}\n\n"
             f"### 🔍 MANDATORY STEP-BY-STEP TESTING PROTOCOL:\n"
             f"1. **LIVE BROWSER TEST (UI & USABILITY):**\n"
             f"   - Open the relevant module URL using your browser subagent.\n"
+            f"   - **System Login (if required):** URL: {api_base_url} | Email: iletisimtktalha@gmail.com | Pass: 145236\n"
             f"   - Inspect visually: Verify responsiveness, CSS layouts, padding/margins, text visibility, and button clickability.\n"
             f"2. **NETWORK & CONSOLE AUDIT (ZERO TOLERANCE):**\n"
             f"   - Check Developer Console: Must contain **0 JS errors** and **0 404 assets**.\n"

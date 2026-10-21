@@ -224,10 +224,38 @@ class TaskLifecycleService extends BaseModel
             ]);
 
             // 5. Dispatcher'daki aktif görev kilidini temizlemek ve QA / sıradaki görevi tetiklemek için webhook gönder
+            $attachmentRows = $taskModel->getTaskAttachments($taskId);
+            $baseDir = dirname(__DIR__, 3);
+            $apiCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
+            $baseUrl = rtrim($apiCfg['base_url'], '/');
+
+            $attachments = [];
+            foreach ($attachmentRows as $row) {
+                $rawPath = str_replace('\\', '/', (string)$row->file_path);
+                $relPath = ltrim(preg_replace('#^/?(?:[a-zA-Z0-9_-]+/)?(Public/.*)$#i', '$1', $rawPath), '/');
+                $cleanAbsPath = str_replace('\\', '/', $baseDir . '/' . $relPath);
+                $fileUrl = $baseUrl . '/' . $relPath;
+                $fUri = 'file:///' . ltrim($cleanAbsPath, '/');
+
+                $attachments[] = [
+                    'id'        => (int)$row->id,
+                    'file_name' => $row->file_name,
+                    'file_type' => $row->file_type,
+                    'file_size' => (int)$row->file_size,
+                    'file_path' => $row->file_path,
+                    'abs_path'  => $cleanAbsPath,
+                    'file_uri'  => $fUri,
+                    'url'       => $fileUrl,
+                    'exists'    => file_exists($cleanAbsPath),
+                ];
+            }
+
             \Modules\RestApi\Services\WebhookService::triggerProjectWebhook($projectId, 'task.submitted', [
                 'task_id'          => $taskId,
                 'task_code'        => $task->task_code,
                 'title'            => $task->title,
+                'description'      => (string)($task->description ?? ''),
+                'attachments'      => $attachments,
                 'project_id'       => $projectId,
                 'submission_notes' => $notes
             ]);
