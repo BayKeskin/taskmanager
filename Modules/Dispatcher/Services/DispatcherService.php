@@ -16,11 +16,11 @@ class DispatcherService
     }
 
     /**
-     * Dispatcher Port 4000 aktif mi kontrol eder
+     * Dispatcher Port 4005 aktif mi kontrol eder
      */
     public function isRunning(): bool
     {
-        $fp = @fsockopen('127.0.0.1', 4000, $errno, $errstr, 0.15);
+        $fp = @fsockopen('127.0.0.1', 4005, $errno, $errstr, 0.15);
         if ($fp) {
             fclose($fp);
             return true;

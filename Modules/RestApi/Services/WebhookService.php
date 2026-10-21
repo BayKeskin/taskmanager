@@ -21,7 +21,7 @@ class WebhookService extends BaseModel
             return ['sent' => false, 'error' => 'Project not found'];
         }
 
-        $targetUrl = !empty($project->webhook_url) ? trim($project->webhook_url) : 'http://localhost:4000/webhook';
+        $targetUrl = !empty($project->webhook_url) ? trim($project->webhook_url) : 'http://localhost:4005/webhook';
 
         $apiCfg = RestApiService::getDynamicApiConfig();
 
@@ -64,7 +64,7 @@ class WebhookService extends BaseModel
             $headers[] = 'X-TaskManager-Signature: sha256=' . $signature;
         }
 
-        if (str_contains($targetUrl, '4000') || str_contains($targetUrl, 'localhost') || empty($targetUrl)) {
+        if (str_contains($targetUrl, '4005') || str_contains($targetUrl, '4000') || str_contains($targetUrl, 'localhost') || empty($targetUrl)) {
             if (class_exists('Modules\\Dispatcher\\Services\\DispatcherService')) {
                 $disp = new \Modules\Dispatcher\Services\DispatcherService();
                 $disp->ensureRunning();
@@ -89,7 +89,7 @@ class WebhookService extends BaseModel
         $sent = ($httpCode >= 200 && $httpCode < 300);
         $effectiveConvId = $project->agent_conversation_id;
 
-        if (!$sent && (str_contains($targetUrl, 'localhost:4000') || str_contains($targetUrl, '127.0.0.1:4000') || empty($targetUrl))) {
+        if (!$sent && (str_contains($targetUrl, 'localhost') || str_contains($targetUrl, '127.0.0.1') || empty($targetUrl))) {
             $dispService = new \Modules\Dispatcher\Services\DispatcherService();
             $directResult = $dispService->dispatchDirect($project, $event, $data);
             if (!empty($directResult['sent'])) {

@@ -98,7 +98,7 @@ logger = Logger(LOG_FILE)
 sys.stdout = logger
 sys.stderr = logger
 
-PORT = 4000
+PORT = 4005
 AGENTAPI_EXE = r"c:\Users\DELL\AppData\Local\Programs\Antigravity IDE\resources\app\extensions\antigravity\bin\language_server_windows_x64.exe"
 ANTIGRAVITY_CONV_DIR = r"C:\Users\DELL\.gemini\antigravity-ide\conversations"
 
