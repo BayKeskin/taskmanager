@@ -3210,7 +3210,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Modal Arkaplanına Tıklayınca Kapatma (Overlay Click)
     document.querySelectorAll('.cu-modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', function(e) {
-            if (e.target === overlay && typeof closeModal === 'function') {
+            const isSafe = (typeof window.isSafeBackdropClick === 'function')
+                ? window.isSafeBackdropClick(e, overlay)
+                : (e.target === overlay);
+            if (isSafe && typeof closeModal === 'function') {
                 closeModal(overlay.id);
             }
         });
