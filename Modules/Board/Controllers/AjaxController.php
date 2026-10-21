@@ -118,7 +118,7 @@ switch ($action) {
                 </span>
             </div>
 
-            <div class="cu-board-card-title">
+            <div class="cu-board-card-title" contenteditable="true" spellcheck="false" title="<?= htmlspecialchars(__('Board::click_to_edit')) ?>">
                 <?= htmlspecialchars($task->title) ?>
             </div>
 
@@ -182,7 +182,7 @@ switch ($action) {
                     <span class="cu-badge-project cu-project-badge-color cu-project-badge-spacing" data-color="<?= htmlspecialchars($task->project_color ?? '#7B68EE') ?>">
                         <?= htmlspecialchars($task->project_title ?? __('Board::drawer_project_fallback')) ?>
                     </span>
-                    <?= htmlspecialchars($task->title) ?>
+                    <span class="cu-task-title-text" contenteditable="true" spellcheck="false" title="<?= htmlspecialchars(__('Board::click_to_edit')) ?>"><?= htmlspecialchars($task->title) ?></span>
                     <?php if ($isAiTask): ?>
                         <span class="cu-ai-pill-badge">
                             🤖 AI

@@ -321,7 +321,7 @@ $listUrl = baseUrl('board?' . (!empty($boardQuery) ? $boardQuery . '&view=list' 
                                         <span class="cu-badge-project cu-project-badge-color" data-color="<?= htmlspecialchars($t->project_color ?? '#7B68EE') ?>">
                                             <?= htmlspecialchars($t->project_title ?? __('Board::drawer_project_fallback')) ?>
                                         </span>
-                                        <?= htmlspecialchars($t->title) ?>
+                                        <span class="cu-task-title-text" contenteditable="true" spellcheck="false" title="<?= htmlspecialchars(__('Board::click_to_edit')) ?>"><?= htmlspecialchars($t->title) ?></span>
                                         
                                         <?php if ($hasSubtasks): ?>
                                             <span class="cu-nav-badge cu-list-badge-subtasks">
@@ -470,7 +470,7 @@ $listUrl = baseUrl('board?' . (!empty($boardQuery) ? $boardQuery . '&view=list' 
                             </span>
                         </div>
 
-                        <div class="cu-board-card-title">
+                        <div class="cu-board-card-title" contenteditable="true" spellcheck="false" title="<?= htmlspecialchars(__('Board::click_to_edit')) ?>">
                             <?= htmlspecialchars($task->title) ?>
                         </div>
 
