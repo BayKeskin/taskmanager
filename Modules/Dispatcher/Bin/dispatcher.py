@@ -573,6 +573,11 @@ def process_webhook_async(payload, header_conv_id):
         message_text = (
             f"🚨 **[MANDATORY QA VERIFICATION DIRECTIVE — NO CODE MODIFICATION ALLOWED!]**\n"
             f"> **ROLE:** You are the Lead QA & Autonomous Testing Inspector. You CANNOT write feature code. Your ONLY objective is to rigorously test, verify, and audit task **{task_code}** delivered by the Developer Agent.\n\n"
+            f"🚨 **STRICT ANTI-RUBBERSTAMPING PROTOCOL:**\n"
+            f"> NEVER trust the Developer's submission notes. What the developer wrote or claims to have done is IRRELEVANT.\n"
+            f"> Your sole responsibility is the USER'S ORIGINAL REQUIREMENT.\n"
+            f"> You MUST autonomously execute the exact end-to-end user scenario in the browser (e.g., clicking the button, submitting the form, logging in).\n"
+            f"> If the requested feature does not work 100% as the user requested, you are STRICTLY FORBIDDEN to approve. REJECT the task immediately with OPTION B!\n\n"
             f"### 📋 DELIVERED TASK CONTEXT:\n"
             f"- **Project:** [{project_code}] {project_title} (`{project_dir}`)\n"
             f"- **Task Code:** `{task_code}` | **Title:** {task_title}\n"

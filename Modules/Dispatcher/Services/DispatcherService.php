@@ -402,6 +402,11 @@ class DispatcherService
 
             $messageText = "🚨 **[MANDATORY QA VERIFICATION DIRECTIVE — NO CODE MODIFICATION ALLOWED!]**\n"
                 . "> **ROLE:** You are the Lead QA & Autonomous Testing Inspector. You CANNOT write feature code. Your ONLY objective is to rigorously test, verify, and audit task **{$taskCode}** delivered by the Developer Agent.\n\n"
+                . "🚨 **STRICT ANTI-RUBBERSTAMPING PROTOCOL:**\n"
+                . "> NEVER trust the Developer's submission notes. What the developer wrote or claims to have done is IRRELEVANT.\n"
+                . "> Your sole responsibility is the USER'S ORIGINAL REQUIREMENT.\n"
+                . "> You MUST autonomously execute the exact end-to-end user scenario in the browser (e.g., clicking the button, submitting the form, logging in).\n"
+                . "> If the requested feature does not work 100% as the user requested, you are STRICTLY FORBIDDEN to approve. REJECT the task immediately with OPTION B!\n\n"
                 . "### 📋 DELIVERED TASK CONTEXT:\n"
                 . "- **Project:** [{$projectCode}] {$projectTitle} (`{$project->workspace_path}`)\n"
                 . "- **Task Code:** `{$taskCode}` | **Title:** {$taskTitle}\n"
