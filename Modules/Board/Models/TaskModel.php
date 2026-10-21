@@ -1002,6 +1002,18 @@ class TaskModel extends BaseModel
     {
         return $this->logActivity($taskId, $userId, $actionType, null, null, $comment);
     }
+
+    /**
+     * Projede QA incelemesi bekleyen (submitted veya under_review) görev olup olmadığını kontrol eder
+     */
+    public function hasPendingQaReviewTasks(int $projectId): bool
+    {
+        $rows = $this->query(
+            "SELECT id FROM tasks WHERE project_id = ? AND status IN ('submitted', 'under_review') LIMIT 1",
+            [$projectId]
+        );
+        return !empty($rows);
+    }
 }
 
 

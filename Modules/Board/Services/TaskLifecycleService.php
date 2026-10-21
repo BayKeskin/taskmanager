@@ -281,6 +281,19 @@ class TaskLifecycleService extends BaseModel
         $taskModel = new \Modules\Board\Models\TaskModel();
 
         try {
+            // Çift ajanlı (Dev + QA) projelerde, QA incelemesi bekleyen (submitted / under_review)
+            // bir görev varsa, QA onaylamadan (completed olmadan) yeni görev çekilemez!
+            $projectModel = new \Modules\Projects\Models\ProjectModel();
+            $project = $projectModel->getProjectById($projectId);
+            if ($project && !empty(trim($project->qa_conversation_id ?? ''))) {
+                if ($taskModel->hasPendingQaReviewTasks($projectId)) {
+                    return [
+                        'status'  => 'waiting_for_qa_approval',
+                        'message' => 'Waiting for QA specialist review decision before starting next task'
+                    ];
+                }
+            }
+
             $currentInProgress = $taskModel->getInProgressAiTask($projectId);
 
             if ($currentInProgress && (int)$currentInProgress->id !== $justFinishedTaskId) {

@@ -550,7 +550,7 @@ class RestApiController extends BaseController
                             'task_code' => $task->task_code, 'title' => $task->title, 'old_status' => $task->status, 'new_status' => $newStatus
                         ]);
 
-                        if ($newStatus === 'submitted' || $newStatus === 'completed') {
+                        if ($newStatus === 'completed') {
                             \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$task->id);
                         }
 
