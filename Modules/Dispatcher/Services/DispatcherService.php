@@ -362,6 +362,63 @@ class DispatcherService
                 . "{$projectRulesBlock}\n\n"
                 . "⚡ **AUTONOMOUS COMPLETION INSTRUCTION:**\n"
                 . self::getAgentSubmitCommandBlock($taskCode);
+        } elseif ($event === 'task.submitted') {
+            $titleHeader = "🔍 [QA AUDIT REQUIRED] {$taskCode}: {$taskTitle}";
+            $submissionNotes = !empty($data['submission_notes']) ? trim((string)$data['submission_notes']) : '*(No submission notes provided)*';
+            $apiCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
+            $apiBaseUrl = rtrim($apiCfg['base_url'], '/');
+            $apiToken = $apiCfg['api_token'];
+
+            $qaModel = new \Modules\AgentRules\Models\AgentRulesModel();
+            $qaGlobal = $qaModel->getQaGlobalInstructions();
+            $qaProjectInstructions = trim((string)($project->qa_test_instructions ?? ''));
+
+            $customQaSection = "";
+            if (!empty($qaProjectInstructions)) {
+                $customQaSection .= "\n\n### 🛠️ PROJECT-SPECIFIC QA TEST INSTRUCTIONS:\n{$qaProjectInstructions}\n";
+            }
+            if (!empty($qaGlobal)) {
+                $customQaSection .= "\n\n### 🌐 GLOBAL QA TEST PROTOCOL:\n{$qaGlobal}\n";
+            }
+
+            $messageText = "🚨 **[MANDATORY QA VERIFICATION DIRECTIVE — NO CODE MODIFICATION ALLOWED!]**\n"
+                . "> **ROLE:** You are the Lead QA & Autonomous Testing Inspector. You CANNOT write feature code. Your ONLY objective is to rigorously test, verify, and audit task **{$taskCode}** delivered by the Developer Agent.\n\n"
+                . "### 📋 DELIVERED TASK CONTEXT:\n"
+                . "- **Project:** [{$projectCode}] {$projectTitle} (`{$project->workspace_path}`)\n"
+                . "- **Task Code:** `{$taskCode}` | **Title:** {$taskTitle}\n"
+                . "- **Developer Submission Notes:**\n{$submissionNotes}\n\n"
+                . "### 🔍 MANDATORY STEP-BY-STEP TESTING PROTOCOL:\n"
+                . "1. **LIVE BROWSER TEST (UI & USABILITY):**\n"
+                . "   - Open the relevant module URL using your browser subagent.\n"
+                . "   - Inspect visually: Verify responsiveness, CSS layouts, padding/margins, text visibility, and button clickability.\n"
+                . "2. **NETWORK & CONSOLE AUDIT (ZERO TOLERANCE):**\n"
+                . "   - Check Developer Console: Must contain **0 JS errors** and **0 404 assets**.\n"
+                . "   - Check Network Response: Inspect payload body. Even if HTTP 200, ensure NO `xdebug-error`, `Fatal error`, `PDOException`, `Warning`, or `Notice`.\n"
+                . "3. **MANDATORY GATEKEEPER CLI AUDIT:**\n"
+                . "   - Execute in terminal: `php taskmanager-audit/audit.php ALL` (or specific module)\n"
+                . "   - Ensure it returns `0 Violations / [PASS]`.\n"
+                . "4. **TRI-LINGUAL (TR, EN, DE) & SECURITY CHECK:**\n"
+                . "   - Test `?lang=tr`, `?lang=en`, and `?lang=de`. Verify no raw untranslated strings exist.\n"
+                . "   - Verify basic input security and permissions.\n"
+                . "{$customQaSection}\n"
+                . "---\n\n"
+                . "### ⚖️ FINAL VERDICT COMMANDS (CHOOSE EXACTLY ONE):\n\n"
+                . "**OPTION A — IF ALL TESTS PASS WITHOUT ANY FLAW (APPROVE & CLOSE):**\n"
+                . "Execute in PowerShell:\n"
+                . "```powershell\n"
+                . "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \$OutputEncoding = [System.Text.Encoding]::UTF8;\n"
+                . "\$headers = @{{ 'Authorization' = 'Bearer {$apiToken}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
+                . "\$body = @{{ action = 'review'; decision = 'approved'; feedback = 'All live browser UI, Console, Network, and Audit tests passed with zero defects.' }} | ConvertTo-Json -Compress\n"
+                . "Invoke-RestMethod -Uri '{$apiBaseUrl}/api/tasks/{$taskCode}/workflow' -Method Post -Headers \$headers -Body ([System.Text.Encoding]::UTF8.GetBytes(\$body))\n"
+                . "```\n\n"
+                . "**OPTION B — IF ANY BUG, CSS GLITCH, JS ERROR OR AUDIT FAIL IS FOUND (REJECT & REQUEST REVISION):**\n"
+                . "Execute in PowerShell (Clearly document the defect with reproduction steps):\n"
+                . "```powershell\n"
+                . "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \$OutputEncoding = [System.Text.Encoding]::UTF8;\n"
+                . "\$headers = @{{ 'Authorization' = 'Bearer {$apiToken}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
+                . "\$body = @{{ action = 'review'; decision = 'rejected'; feedback = '[QA DEFECT REPORT]\n1. Visual/CSS Bug: ...\n2. Console/Network Bug: ...\n3. Audit Failure: ...\nPlease fix and re-submit.' }} | ConvertTo-Json -Compress\n"
+                . "Invoke-RestMethod -Uri '{$apiBaseUrl}/api/tasks/{$taskCode}/workflow' -Method Post -Headers \$headers -Body ([System.Text.Encoding]::UTF8.GetBytes(\$body))\n"
+                . "```";
         } else {
             $titleHeader = "ℹ️ Task Update: {$event}";
             $messageText = "ℹ️ **TaskManager Event: {$event}**\n\n"
@@ -400,11 +457,21 @@ class DispatcherService
 
         $workspacePath = $project->workspace_path ?? '';
         $projectCode   = $project->project_code ?? '';
-        $discoveredCid = $this->discoverLatestConversation($workspacePath, $projectCode);
-        $targetCid     = trim($discoveredCid ?: ($project->agent_conversation_id ?? ''));
 
-        if (!empty($discoveredCid) && $discoveredCid !== trim((string)($project->agent_conversation_id ?? ''))) {
-            $this->model->updateAgentConversationId((int)$project->id, $discoveredCid);
+        if ($event === 'task.submitted') {
+            $targetCid = trim($project->qa_conversation_id ?? '');
+            if (empty($targetCid)) {
+                // QA ajanı tanımlı değilse tek ajan modu
+                return ['sent' => false, 'single_agent' => true];
+            }
+        } else {
+            $devCid = trim($project->dev_conversation_id ?? ($project->agent_conversation_id ?? ''));
+            $discoveredCid = $this->discoverLatestConversation($workspacePath, $projectCode);
+            $targetCid     = $devCid ?: trim($discoveredCid ?? '');
+
+            if (!empty($discoveredCid) && empty($devCid)) {
+                $this->model->updateAgentConversationId((int)$project->id, $discoveredCid);
+            }
         }
 
         [$titleHeader, $messageText] = self::formatAgentMessage($event, $project, $data);

@@ -459,7 +459,13 @@ switch ($action) {
                     'user_name'      => $currentUser->name
                 ]);
 
-                \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
+                \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.submitted', [
+                    'task_id'          => $taskId,
+                    'task_code'        => $task->task_code,
+                    'title'            => $task->title,
+                    'project_id'       => (int)$task->project_id,
+                    'submission_notes' => $notes
+                ]);
 
                 jsonResponse(true, __('Board::task_submitted_success'), [
                     'attachment_url' => $attachmentUrl
@@ -731,7 +737,19 @@ switch ($action) {
                     \Modules\Board\Services\TaskLifecycleService::triggerTaskStartedWebhook($taskId, $oldStatus, ['triggered_by' => $currentUser->name]);
                 }
             }
-        } elseif ($newStatus === 'submitted' || $newStatus === 'completed') {
+        } elseif ($newStatus === 'submitted') {
+            if ($isCurrentTaskAi) {
+                \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.submitted', [
+                    'task_id'          => $taskId,
+                    'task_code'        => $task->task_code,
+                    'title'            => $task->title,
+                    'project_id'       => (int)$task->project_id,
+                    'submission_notes' => 'Moved to submitted via Board'
+                ]);
+            } else {
+                \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
+            }
+        } elseif ($newStatus === 'completed') {
             \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
         } elseif ($oldStatus === 'in_progress' && $newStatus === 'assigned' && $isCurrentTaskAi) {
             \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.requeued', [

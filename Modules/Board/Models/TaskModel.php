@@ -994,6 +994,14 @@ class TaskModel extends BaseModel
     {
         $this->db->exec_query("UPDATE tasks SET qa_revision_count = 0, updated_at = NOW() WHERE id = ?", [$taskId]);
     }
+
+    /**
+     * QA / İş akışı aktivitelerini loglar
+     */
+    public function logTaskActivity(int $taskId, int $userId, string $actionType, string $comment): bool
+    {
+        return $this->logActivity($taskId, $userId, $actionType, null, null, $comment);
+    }
 }
 
 

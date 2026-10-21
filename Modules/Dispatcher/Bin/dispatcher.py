@@ -345,6 +345,24 @@ def process_webhook_async(payload, header_conv_id):
     qa_test_instructions = (payload.get('qa_test_instructions') or '').strip()
     qa_global_instructions = (payload.get('qa_global_instructions') or '').strip()
 
+    # DB FALLBACK: Eğer qa_conv_id veya dev_conv_id payload içinde boş gelmişse veritabanından çek
+    if (not qa_conv_id or not dev_conv_id) and (project_id or project_code):
+        try:
+            where_clause = f"id = {int(project_id)}" if project_id else f"project_code = '{project_code}'"
+            db_php = f"require_once 'Core/System.php'; \$db = new Database(); \$stmt = \$db->connect->query('SELECT dev_conversation_id, qa_conversation_id, qa_test_instructions, agent_conversation_id FROM projects WHERE {where_clause} LIMIT 1'); echo json_encode(\$stmt->fetch(PDO::FETCH_ASSOC));"
+            res = run_silent(['php', '-r', db_php], cwd=APP_ROOT, capture_output=True, text=True, timeout=5)
+            if res.returncode == 0 and res.stdout:
+                db_proj = json.loads(res.stdout)
+                if db_proj:
+                    if not qa_conv_id and db_proj.get('qa_conversation_id'):
+                        qa_conv_id = str(db_proj['qa_conversation_id']).strip()
+                    if not dev_conv_id:
+                        dev_conv_id = str(db_proj.get('dev_conversation_id') or db_proj.get('agent_conversation_id') or '').strip() or None
+                    if not qa_test_instructions and db_proj.get('qa_test_instructions'):
+                        qa_test_instructions = str(db_proj['qa_test_instructions']).strip()
+        except Exception:
+            pass
+
     data = payload.get('data', {})
     if not isinstance(data, dict):
         data = {}
