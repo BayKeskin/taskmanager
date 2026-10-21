@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const btnSaveQaGlobal = document.getElementById('btnSaveQaGlobal');
-    const qaGlobalRulesInput = document.getElementById('qaGlobalRulesInput');
+    const qaGlobalRulesInput = document.getElementById('qaGlobalInstructionsInput') || document.getElementById('qaGlobalRulesInput');
     if (btnSaveQaGlobal && qaGlobalRulesInput) {
         btnSaveQaGlobal.addEventListener('click', async function () {
             const content = qaGlobalRulesInput.value.trim();
