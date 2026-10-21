@@ -479,6 +479,7 @@ def process_webhook_async(payload, header_conv_id):
         is_rev = event in ('task.revision_requested', 'task.modification_requested')
         interrupt_header = (
             f"🚨 **[MANDATORY TASK INTERRUPT — STOP ALL PREVIOUS TOPICS!]**\n"
+            f"🚨 **[EXECUTE IMMEDIATELY - DO NOT RE-ANSWER PREVIOUS CHAT MESSAGES OR INTRODUCTIONS]**\n"
             f"> **DIRECTIVE:** Drop any previous conversation in this window immediately. Your ONLY active objective now is to execute and deliver task **{task_code}** below:\n\n"
         )
         if is_rev:

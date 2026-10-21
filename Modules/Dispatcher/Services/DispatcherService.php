@@ -319,6 +319,7 @@ class DispatcherService
             $triggeredBy  = $data['triggered_by'] ?? 'User';
 
             $bannerText = "🚨 **[MANDATORY TASK INTERRUPT — STOP ALL PREVIOUS TOPICS!]**\n"
+                . "🚨 **[EXECUTE IMMEDIATELY - DO NOT RE-ANSWER PREVIOUS CHAT MESSAGES OR INTRODUCTIONS]**\n"
                 . "> **DIRECTIVE:** Drop any previous conversation in this window immediately. Your ONLY active objective now is to execute and deliver task **{$taskCode}** below:\n\n";
 
             $messageText = "{$bannerText}"
@@ -352,6 +353,7 @@ class DispatcherService
             $desc = !empty($data['description']) ? trim((string)$data['description']) : '';
 
             $messageText = "🚨 **[MANDATORY TASK INTERRUPT — STOP ALL PREVIOUS TOPICS!]**\n"
+                . "🚨 **[EXECUTE IMMEDIATELY - DO NOT RE-ANSWER PREVIOUS CHAT MESSAGES OR INTRODUCTIONS]**\n"
                 . "> **DIRECTIVE:** Drop any previous conversation in this window immediately. Your ONLY active objective now is to execute and deliver task **{$taskCode}** below:\n\n"
                 . "⚠️ **TaskManager Revision Request!**\n\n"
                 . "📌 **Project:** [{$projectCode}] {$projectTitle}\n"

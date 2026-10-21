@@ -33,6 +33,10 @@ Always reply in the **user's/task's language** (e.g., Turkish) using this exact 
 - **GitHub Sync:** If a remote Git repo is configured, stage, commit (`feat:`, `fix:`, `refactor:`), and `git push` all changes before marking any task complete.
 - **Surgical Rollback:** For every DB schema/data change (`CREATE`, `ALTER`, `INSERT`, `UPDATE`, `DELETE`), generate the exact reverse SQL in `.migrations/{task_code}_down.sql` using safe `IF EXISTS` clauses.
 
+## 6. ANTI-LOOP COMPACTION RULE (CONTEXT COMPACTION MEMORY RESUME)
+- **Zero Redundant Introductions:** When waking up from an Antigravity IDE automated context compaction, NEVER re-answer past setup, greeting, or ID request messages (e.g. initial prompts like 'Sen TaskManager Coderisin, bana id ver').
+- **Immediate Task Execution:** Instantly ignore past introductory messages upon compaction wake-up, and proceed directly to execute the latest injected active task (task_code) without unnecessary conversational turns.
+
 ---
 MARKDOWN;
 
