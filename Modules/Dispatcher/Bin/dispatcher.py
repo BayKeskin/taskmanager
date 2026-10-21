@@ -451,13 +451,14 @@ def process_webhook_async(payload, header_conv_id):
             prev_cid = prev_state.get('conv_id')
             elapsed = time.time() - prev_state.get('dispatched_at', 0)
 
-            if prev_cid and prev_cid == target_conv_id and elapsed < 180:
+            # Aynı pencerede çalışılıyorsa ve henüz 20 dakika (1200 sn) geçmemişse ASLA araya girme!
+            if prev_cid and prev_cid == target_conv_id and elapsed < 1200:
                 return
             elif prev_cid and target_conv_id and prev_cid != target_conv_id:
                 print(f"🔄 [HESAP/SOHBET DEĞİŞİMİ] {task_code} -> Yeni Pencere: {target_conv_id}")
                 is_resumed = True
-            elif elapsed >= 180:
-                print(f"⏰ [HATIRLATMA] {task_code} görevi {int(elapsed)} saniyedir teslim edilmedi, tekrar hatırlatılıyor...")
+            elif elapsed >= 1200:
+                print(f"⏰ [STALE KURTARMA] {task_code} görevi {int(elapsed)} saniyedir (20+ dk) hareketsiz kaldı, kurtarma uyarısı gönderiliyor...")
                 is_resumed = True
 
     print(f"\n=======================================================")
