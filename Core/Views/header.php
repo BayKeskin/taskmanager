@@ -31,6 +31,7 @@ $siteURL = siteUrl();
             document.documentElement.setAttribute('data-theme', theme);
         })();
         window.BASE_URL = '<?= addslashes(baseUrl()) ?>';
+        window.TASKMANAGER_CORE_PROJECT_ID = '01';
         window.CURRENT_USER_ID = <?= (int)($_SESSION['user']->id ?? 0) ?>;
         window.CURRENT_USER_ROLE = '<?= addslashes($_SESSION['user']->role ?? 'user') ?>';
         window.CURRENT_LANG = '<?= addslashes(Language::current()) ?>';

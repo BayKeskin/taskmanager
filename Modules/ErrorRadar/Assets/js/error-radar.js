@@ -28,7 +28,45 @@
         return m ? m[1] : '';
     }
 
-    function getProjectId() {
+    function isTaskManagerContext(endpoint) {
+        if (window.TASKMANAGER_CORE_PROJECT_ID) {
+            return true;
+        }
+        var loc = window.location;
+        var pathname = loc.pathname || '';
+        var baseUrl = getBaseUrl();
+        if (baseUrl && pathname.indexOf(baseUrl) === 0) {
+            return true;
+        }
+        if (endpoint) {
+            if (endpoint.indexOf('/ajax') !== -1 || endpoint.indexOf('/api/') !== -1 || endpoint.indexOf('error-radar') !== -1) {
+                return true;
+            }
+            if (baseUrl && endpoint.indexOf(baseUrl) !== -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function getProjectId(endpoint) {
+        // 1. Script etiketi üzerinden özel proje tanımlanmışsa (harici entegrasyonlar için)
+        var currentScript = document.currentScript || document.querySelector('script[src*="error-radar.js"]');
+        if (currentScript && currentScript.getAttribute('data-project')) {
+            return currentScript.getAttribute('data-project');
+        }
+
+        // 2. TaskManager'ın kendi paneli/içeriği veya iç endpoint'i ise doğrudan ana proje '01'
+        if (isTaskManagerContext(endpoint)) {
+            return window.TASKMANAGER_CORE_PROJECT_ID || '01';
+        }
+
+        // 3. Harici sitede window.CURRENT_PROJECT_ID tanımlıysa
+        if (window.CURRENT_PROJECT_ID) {
+            return window.CURRENT_PROJECT_ID;
+        }
+
+        // 4. Harici sitede URL query parametresi varsa
         try {
             var params = new URLSearchParams(window.location.search);
             if (params.has('project_id')) {
@@ -36,9 +74,6 @@
             }
         } catch (e) {}
 
-        if (window.CURRENT_PROJECT_ID) {
-            return window.CURRENT_PROJECT_ID;
-        }
         return '01';
     }
 
@@ -54,7 +89,7 @@
         reportedSet.add(key);
 
         payload.url = window.location.href;
-        payload.project_id = getProjectId();
+        payload.project_id = getProjectId(payload.endpoint);
         payload.timestamp = new Date().toISOString();
 
         queue.push(payload);

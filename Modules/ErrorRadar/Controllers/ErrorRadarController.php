@@ -75,6 +75,41 @@ class ErrorRadarController extends BaseController
             ];
         }
 
+        // TaskManager sistem paneli veya dahili endpoint kontrolü:
+        // Eğer URL, endpoint veya dosya konumu TaskManager sistemine aitse,
+        // proje kodunu zorunlu olarak ana TaskManager projesi ('01') yap.
+        $currentBaseUrl = function_exists('baseUrl') ? baseUrl() : '';
+        $isTaskManagerSystem = false;
+
+        if (!empty($currentBaseUrl) && (
+            ($url !== '' && str_contains($url, $currentBaseUrl)) ||
+            ($endpoint !== '' && str_contains($endpoint, $currentBaseUrl))
+        )) {
+            $isTaskManagerSystem = true;
+        }
+
+        if (
+            str_contains($url, '/Modules/') ||
+            str_contains($url, '/Core/') ||
+            str_contains($url, 'taskmanager') ||
+            str_contains($endpoint, '/ajax') ||
+            str_contains($endpoint, '/api/') ||
+            str_contains($endpoint, '/Modules/') ||
+            str_contains($endpoint, '/Core/') ||
+            str_contains($endpoint, 'taskmanager') ||
+            str_contains($fileLine, 'Modules/') ||
+            str_contains($fileLine, 'Core/') ||
+            str_contains($fileLine, 'Public/')
+        ) {
+            $isTaskManagerSystem = true;
+        }
+
+        // Eğer harici bir kaynaktan data_project veya harici origin belirtilmediyse ve sistem içindeyse '01'e sabitle
+        $isExplicitExternal = !empty($payload['data_project']) || !empty($payload['is_external']);
+        if ($isTaskManagerSystem && !$isExplicitExternal) {
+            $projectIdent = '01';
+        }
+
         $project = $this->radarModel->findProject($projectIdent);
         if (!$project) {
             return [
