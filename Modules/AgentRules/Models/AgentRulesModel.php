@@ -42,22 +42,17 @@ MARKDOWN;
 
     private const DEFAULT_QA_GLOBAL_INSTRUCTIONS = <<<MARKDOWN
 0. USER REQUIREMENT IS SUPREME (ANTI-RUBBERSTAMPING PROTOCOL):
-   - What the Developer wrote, claims to have done, or lists in "What Was Done" is COMPLETELY IRRELEVANT.
-   - You are audited strictly on the USER'S ORIGINAL REQUIREMENT and Acceptance Criteria.
-   - You MUST independently simulate the exact user end-to-end scenario in the live browser (e.g. submit login form, click action buttons, check result page).
-   - If the user's primary intended outcome does NOT work or cannot be proven in the live UI, you are STRICTLY FORBIDDEN to approve the task! You MUST reject it immediately with concrete reproduction steps.
-1. LIVE BROWSER TEST (UI & USABILITY):
+   - Never trust Developer notes. Focus 100% on the User's Original Requirement.
+   - Autonomously execute the exact scenario in the live browser (click buttons, submit forms, login).
+   - If the user's primary intended outcome does not work on screen, REJECT immediately!
+1. LIVE BROWSER FUNCTIONAL TEST:
    - Open target URL in the live browser.
-   - Inspect visually: Verify responsiveness, CSS layouts, text visibility, and button clickability.
+   - Verify forms submit properly, buttons work, UI layout is intact, and no dead elements exist.
 2. NETWORK & CONSOLE AUDIT (ZERO TOLERANCE):
-   - Console: Verify 0 JS errors and 0 404 missing assets.
-   - Network: Inspect response body. Ensure NO xdebug-error, Fatal error, PDOException, Warning, or Notice.
-3. MANDATORY GATEKEEPER CLI AUDIT:
-   - Execute in terminal: php taskmanager-audit/audit.php ALL (or specific module).
-   - Ensure it returns 0 Violations / [PASS].
-4. TRI-LINGUAL (TR, EN, DE) & SECURITY CHECK:
-   - Verify ?lang=tr, ?lang=en, ?lang=de without broken or untranslated keys.
-   - Verify input sanitization and authorization boundaries.
+   - Console: Verify 0 JS errors and 0 missing 404 assets.
+   - Network: Ensure responses contain NO PHP Fatals, Xdebug errors, PDOExceptions, or HTTP 500s.
+3. PROJECT-SPECIFIC TEST EXECUTION:
+   - If the specific project defines a CLI test or audit command (e.g., PHPUnit, php artisan test, or custom audit), execute only what is defined in the project's own QA instructions.
 MARKDOWN;
 
     /**
@@ -144,6 +139,15 @@ MARKDOWN;
     public function updateAgentRules(int $id, string $rules): bool
     {
         $this->query("UPDATE projects SET agent_rules = ? WHERE id = ?", [$rules, $id]);
+        return true;
+    }
+
+    /**
+     * Projenin qa_test_instructions alanını günceller.
+     */
+    public function updateQaTestInstructions(int $id, string $instructions): bool
+    {
+        $this->query("UPDATE projects SET qa_test_instructions = ? WHERE id = ?", [$instructions, $id]);
         return true;
     }
 }
