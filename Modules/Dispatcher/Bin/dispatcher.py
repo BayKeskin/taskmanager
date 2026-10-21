@@ -400,7 +400,7 @@ def process_webhook_async(payload, header_conv_id):
     if event == 'task.submitted':
         target_conv_id = qa_conv_id
     else:
-        target_conv_id = dev_conv_id or incoming_conv_id or discovered_cid
+        target_conv_id = dev_conv_id or discovered_cid
 
     if target_conv_id:
         target_conv_id = str(target_conv_id).strip()
@@ -435,7 +435,8 @@ def process_webhook_async(payload, header_conv_id):
     print(f"\n=======================================================")
     print(f"🔔 [GÖREV TETİKLENİYOR] -> Olay: {event} | Proje: [{project_code}] {project_title} | Görev: {task_code}")
 
-    if discovered_cid:
+    # Kullanıcı elle ID girmemişse ve otomatik bulunduysa veritabanına yaz
+    if discovered_cid and not dev_conv_id and event != 'task.submitted':
         sync_conversation_id_to_db(project_code, discovered_cid)
 
     task_title = data.get('title', '').replace('🔄 [RESUMING TASK] ', '').replace('⚠️ [REVISION REQUEST] ', '')
