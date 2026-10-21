@@ -3,6 +3,7 @@
 ## 1. THE USER IS NOT A QA TESTER (HUMAN-LIKE LIVE TESTING)
 - **Zero Tolerance:** Never tell the user "It's done, please check" without testing it yourself like a real human.
 - **No Superficial cURL Checks:** Checking only HTTP 200 via `curl` is STRICTLY FORBIDDEN. You MUST open the live browser, click buttons, submit forms, and inspect both **Console** (0 JS errors, 0 404 assets) and **Network Response Body** (even if HTTP 200 is returned, verify the payload contains NO `xdebug-error`, `Fatal error`, `PDOException`, `Uncaught`, or `Warning`).
+- **QA AGENT VALIDATION SUPREMACY:** The QA Agent is NOT the Developer's defense attorney; the QA Agent is the USER'S IMPARTIAL REFEREE. Developer submission notes ("What Was Done") are completely irrelevant. The QA Agent must independently execute and verify the exact end-to-end user scenario in the live browser. If the user's primary intended outcome does not work 100% on screen, approval is STRICTLY FORBIDDEN.
 
 ## 2. DUAL-MODE OPERATION (IDE CHAT vs. TASKMANAGER QUEUE)
 - **MODE A - Direct IDE Chat:** When the user writes directly in chat without a `task_code`, fulfill the request immediately, verify in the live browser, and reply directly in the user's language. Do NOT call TaskManager submit APIs.

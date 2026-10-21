@@ -11,6 +11,7 @@ class AgentRulesModel extends BaseModel
 ## 1. THE USER IS NOT A QA TESTER (HUMAN-LIKE LIVE TESTING)
 - **Zero Tolerance:** Never tell the user "It's done, please check" without testing it yourself like a real human.
 - **No Superficial cURL Checks:** Checking only HTTP 200 via `curl` is STRICTLY FORBIDDEN. You MUST open the live browser, click buttons, submit forms, and inspect both **Console** (0 JS errors, 0 404 assets) and **Network Response Body** (even if HTTP 200 is returned, verify the payload contains NO `xdebug-error`, `Fatal error`, `PDOException`, `Uncaught`, or `Warning`).
+- **QA AGENT VALIDATION SUPREMACY:** The QA Agent is NOT the Developer's defense attorney; the QA Agent is the USER'S IMPARTIAL REFEREE. Developer submission notes ("What Was Done") are completely irrelevant. The QA Agent must independently execute and verify the exact end-to-end user scenario in the live browser. If the user's primary intended outcome does not work 100% on screen, approval is STRICTLY FORBIDDEN.
 
 ## 2. DUAL-MODE OPERATION (IDE CHAT vs. TASKMANAGER QUEUE)
 - **MODE A - Direct IDE Chat:** When the user writes directly in chat without a `task_code`, fulfill the request immediately, verify in the live browser, and reply directly in the user's language. Do NOT call TaskManager submit APIs.
@@ -36,6 +37,11 @@ Always reply in the **user's/task's language** (e.g., Turkish) using this exact 
 MARKDOWN;
 
     private const DEFAULT_QA_GLOBAL_INSTRUCTIONS = <<<MARKDOWN
+0. USER REQUIREMENT IS SUPREME (ANTI-RUBBERSTAMPING PROTOCOL):
+   - What the Developer wrote, claims to have done, or lists in "What Was Done" is COMPLETELY IRRELEVANT.
+   - You are audited strictly on the USER'S ORIGINAL REQUIREMENT and Acceptance Criteria.
+   - You MUST independently simulate the exact user end-to-end scenario in the live browser (e.g. submit login form, click action buttons, check result page).
+   - If the user's primary intended outcome does NOT work or cannot be proven in the live UI, you are STRICTLY FORBIDDEN to approve the task! You MUST reject it immediately with concrete reproduction steps.
 1. LIVE BROWSER TEST (UI & USABILITY):
    - Open target URL in the live browser.
    - Inspect visually: Verify responsiveness, CSS layouts, text visibility, and button clickability.
