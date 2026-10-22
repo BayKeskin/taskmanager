@@ -282,7 +282,53 @@ def get_project_primary_dir(project_code, workspace_path=""):
                 return p
     return APP_ROOT
 
-def discover_latest_conversation(project_code, project_title="", workspace_path=""):
+def get_conversation_role(cid):
+    """
+    Sohbetin ilk kullanıcı mesajını inceleyerek rolünü tespit eder:
+    - 'danışman' / 'advisor' içeriyorsa -> 'advisor' (asla görev verilmez!)
+    - 'qa' / 'test' içeriyorsa -> 'qa'
+    - 'coder' / 'kod' / 'developer' içeriyorsa -> 'dev'
+    - Belirtilmemişse -> None
+    """
+    if not cid:
+        return None
+    cid = str(cid).strip()
+    transcript_file = os.path.join(
+        os.environ.get('USERPROFILE', r'C:\Users\DELL'),
+        r'.gemini\antigravity-ide\brain',
+        cid,
+        '.system_generated',
+        'logs',
+        'transcript.jsonl'
+    )
+    if not os.path.exists(transcript_file):
+        return None
+
+    try:
+        with open(transcript_file, 'r', encoding='utf-8', errors='replace') as f:
+            for _ in range(15):
+                line = f.readline()
+                if not line:
+                    break
+                if '"source":"USER_EXPLICIT"' in line:
+                    data = json.loads(line)
+                    raw_content = str(data.get('content', '')).lower()
+                    clean_content = raw_content.split('<additional_metadata>')[0].replace('<user_request>', '').replace('</user_request>', '').strip()
+
+                    # 1. Danışman koruması (en yüksek öncelik)
+                    if any(w in clean_content for w in ['danışman', 'danisman', 'advisor', 'consultant']):
+                        return 'advisor'
+                    # 2. QA kontrolü
+                    if any(w in clean_content for w in ['qa', 'test uzmanı', 'test uzmani', 'tester', 'test']):
+                        return 'qa'
+                    # 3. Coder kontrolü
+                    if any(w in clean_content for w in ['coder', 'koder', 'developer', 'geliştirici', 'gelistirici', 'kod']):
+                        return 'dev'
+    except Exception:
+        pass
+    return None
+
+def discover_latest_conversation(project_code, project_title="", workspace_path="", target_role="dev"):
     workspaces_map = load_workspaces_map()
     target_paths = []
     if workspace_path:
@@ -299,6 +345,8 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
     db_files = glob.glob(os.path.join(ANTIGRAVITY_CONV_DIR, '*.db'))
     db_files.sort(key=os.path.getmtime, reverse=True)
 
+    matched_candidates = []
+
     for db_path in db_files:
         cid = os.path.splitext(os.path.basename(db_path))[0]
         try:
@@ -313,9 +361,42 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
                     pattern = rf"(?:^|[^\w\-\.]){re.escape(target)}(?:[/?#\"\'\s,\x00-\x1f\\]|$)"
                     if re.search(pattern, decoded_text):
                         addr, tok = find_active_ls_for_conversation(cid)
-                        return cid, f"file:///{target}", addr, tok
+                        matched_candidates.append({
+                            'cid': cid,
+                            'uri': f"file:///{target}",
+                            'addr': addr,
+                            'tok': tok,
+                            'mtime': os.path.getmtime(db_path)
+                        })
+                        break
         except Exception:
             continue
+
+    if not matched_candidates:
+        return None, None, None, None
+
+    # 1. Aşama: Tam rol eşleşmesi ara (örn: ilk mesaja 'coder' ya da 'qa' yazılmış pencereler)
+    for cand in matched_candidates:
+        cid = cand['cid']
+        detected_role = get_conversation_role(cid)
+        if detected_role == 'advisor':
+            continue
+        if detected_role == target_role:
+            print(f"🎯 [ROL EŞLEŞMESİ BULUNDU] {project_code} -> CID: {cid} | Rol: {target_role.upper()}")
+            return cand['cid'], cand['uri'], cand['addr'], cand['tok']
+
+    # 2. Aşama: Eğer açık role atanmış pencere yoksa, Danışman ve zıt rol OLMAYAN en güncel pencereyi seç
+    opposite_role = 'qa' if target_role == 'dev' else 'dev'
+    for cand in matched_candidates:
+        cid = cand['cid']
+        detected_role = get_conversation_role(cid)
+        if detected_role == 'advisor':
+            continue
+        if detected_role != opposite_role:
+            print(f"⚡ [GENEL/NÖTR PENCERE SEÇİLDİ] {project_code} -> CID: {cid} (Hedef Rol: {target_role.upper()})")
+            return cand['cid'], cand['uri'], cand['addr'], cand['tok']
+
+    return None, None, None, None
 
 def is_conversation_alive(cid):
     """
@@ -627,14 +708,15 @@ def process_webhook_async(payload, header_conv_id):
     agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
     project_dir = get_project_primary_dir(project_code, workspace_path)
 
-    discovered_cid, matched_uri, disc_addr, disc_tok = discover_latest_conversation(project_code, project_title, workspace_path)
+    current_role = 'qa' if event == 'task.submitted' else 'dev'
+    primary_conv_id = qa_conv_id if event == 'task.submitted' else dev_conv_id
+
+    discovered_cid, matched_uri, disc_addr, disc_tok = discover_latest_conversation(project_code, project_title, workspace_path, target_role=current_role)
     if discovered_cid:
         discovered_cid = str(discovered_cid).strip()
 
     ls_address = disc_addr
     csrf_token = disc_tok
-
-    current_role = 'qa' if event == 'task.submitted' else 'dev'
     primary_conv_id = qa_conv_id if event == 'task.submitted' else dev_conv_id
 
     # 1. ÖLÜ ID TEMİZLİĞİ VE CANLI SOHBET SEÇİMİ
@@ -744,15 +826,20 @@ def process_webhook_async(payload, header_conv_id):
             f"🚨 **[EXECUTE IMMEDIATELY - DO NOT RE-ANSWER PREVIOUS CHAT MESSAGES OR INTRODUCTIONS]**\n"
             f"> **DIRECTIVE:** Drop any previous conversation in this window immediately. Your ONLY active objective now is to execute and deliver task **{task_code}** below:\n\n"
         )
+        role_manifesto = (
+            f"🛡️ **[ACTIVE AGENT ROLE ASSIGNMENT: LEAD DEVELOPER / CODER]**\n"
+            f"> **YOUR IDENTITY & MISSION:** You are the exclusive Full-Stack Developer for project `[{project_code}] {project_title}`.\n"
+            f"> **RESPONSIBILITY:** Write clean, production-ready code, follow the project doctrine, verify changes locally, and submit via the official REST API.\n\n"
+        )
         if is_rev:
             title_header = f"⚠️ [REVISION] {task_code}: {task_title}"
-            banner = f"{interrupt_header}⚠️ **[{project_code}] REVISION TASK MOVED TO IN PROGRESS!**\n🔴 **Requested Changes:** {data.get('revision_reason', 'Revision requested.')}\n\n"
+            banner = f"{interrupt_header}{role_manifesto}⚠️ **[{project_code}] REVISION TASK MOVED TO IN PROGRESS!**\n🔴 **Requested Changes:** {data.get('revision_reason', 'Revision requested.')}\n\n"
         elif is_resumed:
             title_header = f"🔄 [RESUMED] {task_code}: {task_title}"
-            banner = f"{interrupt_header}🔄 **[SESSION HANDOFF / RESUME DIRECTIVE]**\nThis task is currently IN PROGRESS and awaiting completion.\n\n"
+            banner = f"{interrupt_header}{role_manifesto}🔄 **[SESSION HANDOFF / RESUME DIRECTIVE]**\nThis task is currently IN PROGRESS and awaiting completion.\n\n"
         else:
             title_header = f"🚀 [IN PROGRESS] {task_code}: {task_title}"
-            banner = f"{interrupt_header}🚀 **TaskManager Task Marked as 'In Progress'!**\n\n"
+            banner = f"{interrupt_header}{role_manifesto}🚀 **TaskManager Task Marked as 'In Progress'!**\n\n"
 
         desc = data.get('description', '').strip() or '*(No description provided)*'
         desc = re.sub(r'---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$', '', desc, flags=re.DOTALL).strip()
