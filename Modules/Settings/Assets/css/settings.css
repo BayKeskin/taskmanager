@@ -574,3 +574,94 @@
     display: inline-block;
     margin-top: 16px;
 }
+
+/* AI Accounts Vault Styles */
+.cu-settings-card-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+.cu-quota-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 140px;
+}
+.cu-quota-bar-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.cu-quota-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.cu-quota-bar-fill.fill-green {
+    background: linear-gradient(90deg, #00b894, #55efc4);
+}
+.cu-quota-bar-fill.fill-yellow {
+    background: linear-gradient(90deg, #fdcb6e, #f39c12);
+}
+.cu-quota-bar-fill.fill-red {
+    background: linear-gradient(90deg, #e74c3c, #ff7675);
+}
+.cu-quota-pct-label {
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 36px;
+    text-align: right;
+}
+.cu-badge-active-tag {
+    background: rgba(0, 184, 148, 0.2);
+    color: #00b894;
+    border: 1px solid rgba(0, 184, 148, 0.4);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 11px;
+}
+.cu-settings-table-responsive {
+    overflow-x: auto;
+    margin-top: 14px;
+}
+.cu-settings-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.cu-settings-table th {
+    text-align: left;
+    padding: 10px 14px;
+    color: var(--text-muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 12px;
+}
+.cu-settings-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: middle;
+}
+.cu-settings-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+}
+.cu-text-right {
+    text-align: right;
+}
+.cu-text-center {
+    text-align: center;
+}
+.cu-py-20 {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+.cu-flex-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+

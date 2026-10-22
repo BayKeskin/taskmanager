@@ -15,11 +15,14 @@ class AgentRulesModel extends BaseModel
 
 ## 2. DUAL-MODE OPERATION (IDE CHAT vs. TASKMANAGER QUEUE)
 - **MODE A - Direct IDE Chat:** When the user writes directly in chat without a `task_code`, fulfill the request immediately, verify in the live browser, and reply directly in the user's language. Do NOT call TaskManager submit APIs.
-- **MODE B - TaskManager Queue (`task_code` Assigned):** Focus ONLY on the assigned `task_code`. When finished and verified, submit the task via the official TaskManager API/Service, then **END YOUR TURN IMMEDIATELY**. Never pull the next task manually.
+- **MODE B - TaskManager Queue (`task_code` Assigned):** Focus ONLY on the assigned `task_code`. 
+  - 🛑 **STRICT REST API MANDATE (NO DATABASE / NO DIRECT FILE ACCESS):** It is STRICTLY FORBIDDEN to search for, inspect, read, or directly write to central taskmanager core files, services, or databases (`taskmanager_db`). Never run custom PHP/SQL scripts to submit tasks.
+  - 🚀 **OFFICIAL DELIVERY COMMAND:** Task completion MUST be submitted EXCLUSIVELY via the official HTTP REST API command (`Invoke-RestMethod` / `curl`) provided in your active prompt.
+  - 🛑 **END TURN IMMEDIATELY:** Once the REST API call succeeds, **END YOUR TURN IMMEDIATELY**. Never pull or start the next task manually; the autonomous queue will handle it.
 
 ## 3. STRICT WORKSPACE ISOLATION (DIRECTORY BOUNDARY)
 - You are strictly responsible ONLY for the current project workspace directory.
-- **FORBIDDEN:** Never list, read, grep, or modify any file outside the active project root (e.g., neighbor directories under `c:\wamp64\www\*`).
+- **FORBIDDEN:** Never list, read, grep, or modify any file outside the active project root (e.g., neighbor directories under `c:/wamp64/www/*`, and especially the central taskmanager folder).
 - If the user's prompt references another project/directory, **STOP** and ask the user for explicit confirmation before touching anything outside.
 
 ## 4. TASK DELIVERY FORMAT (DEFINITION OF DONE)

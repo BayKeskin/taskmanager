@@ -29,5 +29,10 @@ AssetManager::localizeScript('settings-js', 'SettingsI18n', [
     'active_badge'        => __('Settings::settings_modules_active_badge'),
     'passive_badge'       => __('Settings::settings_modules_passive_badge'),
     'toggle_success'      => __('Settings::settings_modules_toggle_success'),
-    'toggle_fail'         => __('Settings::settings_modules_toggle_fail')
+    'toggle_fail'         => __('Settings::settings_modules_toggle_fail'),
+    'ai_active_tag'       => __('Settings::settings_ai_vault_active'),
+    'ai_activate_btn'     => __('Settings::settings_ai_vault_btn_activate'),
+    'ai_delete_confirm'   => __('Settings::js_ai_delete_confirm'),
+    'ai_generic_error'    => __('Settings::js_ai_generic_error'),
+    'ai_empty_vault'      => __('Settings::settings_ai_vault_empty')
 ]);

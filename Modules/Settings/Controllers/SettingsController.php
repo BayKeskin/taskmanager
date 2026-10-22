@@ -8,10 +8,13 @@ class SettingsController extends BaseController
 {
     private SettingsModel $settingsModel;
 
+    private \Modules\Settings\Models\AiAccountsModel $aiAccountsModel;
+
     public function __construct()
     {
         parent::__construct();
         $this->settingsModel = new SettingsModel();
+        $this->aiAccountsModel = new \Modules\Settings\Models\AiAccountsModel();
     }
 
     /**
@@ -24,12 +27,14 @@ class SettingsController extends BaseController
 
         $settings = $isAuthorized ? $this->settingsModel->getSettings() : (object)[];
         $modules  = $isAuthorized ? \Core\ModuleLoader::getAllAvailableModules() : [];
+        $aiAccounts = $isAuthorized ? $this->aiAccountsModel->getAllAccounts() : [];
 
         return [
             'currentUser'      => $currentUser,
             'isAuthorized'     => $isAuthorized,
             's'                => $settings,
-            'availableModules' => $modules
+            'availableModules' => $modules,
+            'aiAccounts'       => $aiAccounts
         ];
     }
 }

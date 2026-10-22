@@ -93,6 +93,9 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
             <button type="button" data-tab="tab-ai" class="cu-settings-tab-btn">
                 <span>🤖</span> <span><?= __('Settings::settings_tab_ai') ?></span>
             </button>
+            <button type="button" data-tab="tab-ai-accounts" class="cu-settings-tab-btn">
+                <span>🔐</span> <span><?= __('Settings::settings_tab_ai_accounts') ?></span>
+            </button>
             <button type="button" data-tab="tab-webhooks" class="cu-settings-tab-btn">
                 <span>🔔</span> <span><?= __('Settings::settings_tab_webhooks') ?></span>
             </button>
@@ -273,6 +276,95 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                             <?= __('Settings::settings_ai_prompt_prefix') ?>
                         </label>
                         <textarea name="ai_system_prompt_prefix" rows="3" class="cu-form-control cu-settings-textarea-monospace"><?= htmlspecialchars($aiSystemPromptPrefix) ?></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- YENİ SEKME: AI HESAP HAVUZU (MULTI-ACCOUNT VAULT) -->
+            <div id="tab-ai-accounts" class="cu-settings-tab-pane">
+                <div class="cu-settings-section-card">
+                    <div class="cu-settings-card-header cu-settings-card-header-flex">
+                        <div class="cu-settings-card-header-left">
+                            <span class="cu-settings-card-icon">🔐</span>
+                            <div>
+                                <h3 class="cu-settings-card-title"><?= __('Settings::settings_ai_vault_title') ?></h3>
+                                <p class="cu-settings-card-sub"><?= __('Settings::settings_ai_vault_desc') ?></p>
+                            </div>
+                        </div>
+                        <div class="cu-settings-card-header-actions">
+                            <button type="button" id="btnSyncAiAccounts" class="cu-btn cu-btn-secondary cu-btn-sm">
+                                <span>🔄</span> <?= __('Settings::settings_ai_vault_btn_sync') ?>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="aiAccountsTableWrap" class="cu-settings-table-responsive">
+                        <table class="cu-settings-table">
+                            <thead>
+                                <tr>
+                                    <th><?= __('Settings::settings_ai_vault_col_account') ?></th>
+                                    <th><?= __('Settings::settings_ai_vault_col_gemini') ?></th>
+                                    <th><?= __('Settings::settings_ai_vault_col_status') ?></th>
+                                    <th><?= __('Settings::settings_ai_vault_col_reset') ?></th>
+                                    <th class="cu-text-right"><?= __('Settings::settings_ai_vault_col_actions') ?></th>
+                                </tr>
+                            </thead>
+                            <tbody id="aiAccountsTableBody">
+                                <?php if (!empty($settingsData['aiAccounts'])): ?>
+                                    <?php foreach ($settingsData['aiAccounts'] as $acc): ?>
+                                        <?php 
+                                            $pct = (int)($acc['gemini_quota_pct'] ?? 0);
+                                            $statusClass = $pct >= 50 ? 'cu-badge-success' : ($pct > 0 ? 'cu-badge-warning' : 'cu-badge-danger');
+                                            $isActive = !empty($acc['is_active']);
+                                        ?>
+                                        <tr data-id="<?= (int)$acc['id'] ?>" data-email="<?= htmlspecialchars($acc['email']) ?>">
+                                            <td>
+                                                <div class="cu-flex-col">
+                                                    <span class="cu-font-bold"><?= htmlspecialchars($acc['name'] ?: $acc['email']) ?></span>
+                                                    <span class="cu-text-muted cu-text-xs"><?= htmlspecialchars($acc['email']) ?></span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="cu-quota-bar-wrap">
+                                                    <div class="cu-quota-bar-track">
+                                                        <div class="cu-quota-bar-fill <?= $pct >= 50 ? 'fill-green' : ($pct > 0 ? 'fill-yellow' : 'fill-red') ?>" data-quota-pct="<?= $pct ?>"></div>
+                                                    </div>
+                                                    <span class="cu-quota-pct-label">%<?= $pct ?></span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="cu-badge <?= $statusClass ?>">
+                                                    <?= htmlspecialchars($acc['status']) ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="cu-text-xs cu-text-muted"><?= htmlspecialchars($acc['reset_time'] ?: 'N/A') ?></span>
+                                            </td>
+                                            <td class="cu-text-right">
+                                                <?php if ($isActive): ?>
+                                                    <span class="cu-badge cu-badge-active-tag">
+                                                        ⭐ <?= __('Settings::settings_ai_vault_active') ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <button type="button" class="cu-btn-xs cu-btn-primary btn-activate-ai-account" data-email="<?= htmlspecialchars($acc['email']) ?>">
+                                                        <?= __('Settings::settings_ai_vault_btn_activate') ?>
+                                                    </button>
+                                                <?php endif; ?>
+                                                <button type="button" class="cu-btn-xs cu-btn-danger btn-delete-ai-account" data-id="<?= (int)$acc['id'] ?>">
+                                                    🗑️
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr id="rowAiAccountsEmpty">
+                                        <td colspan="5" class="cu-text-center cu-text-muted cu-py-20">
+                                            <?= __('Settings::settings_ai_vault_empty') ?>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

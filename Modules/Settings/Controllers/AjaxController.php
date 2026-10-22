@@ -7,11 +7,13 @@ use Modules\Settings\Models\SettingsModel;
 class AjaxController extends BaseController
 {
     private SettingsModel $settingsModel;
+    private \Modules\Settings\Models\AiAccountsModel $aiAccountsModel;
 
     public function __construct()
     {
         parent::__construct();
         $this->settingsModel = new SettingsModel();
+        $this->aiAccountsModel = new \Modules\Settings\Models\AiAccountsModel();
     }
 
     private function respond(bool $success, string $message = '', array $data = []): void
@@ -21,6 +23,125 @@ class AjaxController extends BaseController
             $payload['data'] = $data;
         }
         $this->json($payload);
+    }
+
+    public function getAiAccounts(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, __('Settings::ajax_unauthorized_admin'));
+            return;
+        }
+        $accounts = $this->aiAccountsModel->getAllAccounts();
+        $this->respond(true, '', ['accounts' => $accounts]);
+    }
+
+    public function syncLocalVaultAccounts(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, __('Settings::ajax_unauthorized_admin'));
+            return;
+        }
+
+        // Python account_manager üzerinden canlı kotaları çek ve veritabanına aktar
+        $pythonPath = 'C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
+        if (!file_exists($pythonPath)) {
+            $pythonPath = 'python';
+        }
+        $scriptPath = dirname(__DIR__, 2) . '/Dispatcher/Bin/account_manager.py';
+
+        $output = [];
+        $returnVar = 0;
+        $cmd = "\"$pythonPath\" -c \"import json, sys; sys.path.append(r'" . dirname(__DIR__, 2) . "/Dispatcher/Bin'); from account_manager import AccountManager; mgr = AccountManager(); print(json.dumps(mgr.inspect_accounts_health(target_model_family='gemini-3.8')))\"";
+        
+        exec($cmd, $output, $returnVar);
+        $rawJson = implode('', $output);
+        $accountsData = json_decode($rawJson, true);
+
+        if (!is_array($accountsData)) {
+            $this->respond(false, __('Settings::ai_account_sync_failed'));
+            return;
+        }
+
+        $importedCount = 0;
+        foreach ($accountsData as $acc) {
+            $email = $acc['email'] ?? '';
+            if (!$email) continue;
+
+            $creds = $acc['creds'] ?? [];
+            $this->aiAccountsModel->upsertAccount([
+                'email'             => $email,
+                'name'              => $creds['name'] ?? explode('@', $email)[0],
+                'refresh_token'     => $creds['refresh_token'] ?? '',
+                'access_token'      => $creds['access_token'] ?? '',
+                'expiry_timestamp'  => $creds['expiry_timestamp'] ?? 0,
+                'gemini_quota_pct'  => (int)($acc['target_model_pct'] ?? 100),
+                'claude_quota_pct'  => (int)($acc['claude_quota_pct'] ?? 100),
+                'status'            => $acc['status'] ?? 'HEALTHY',
+                'reset_time'        => $acc['reset_time'] ?? null
+            ]);
+            $importedCount++;
+        }
+
+        $this->respond(true, str_replace(':count', (string)$importedCount, __('Settings::ai_account_sync_success')), [
+            'accounts' => $this->aiAccountsModel->getAllAccounts()
+        ]);
+    }
+
+    public function activateAiAccount(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, __('Settings::ajax_unauthorized_admin'));
+            return;
+        }
+        $email = trim($_POST['email'] ?? '');
+        if (!$email) {
+            $this->respond(false, __('Settings::ai_account_email_required'));
+            return;
+        }
+
+        $this->aiAccountsModel->setActiveAccount($email);
+
+        // Python üzerinden Antigravity'ye de anında bildir
+        $pythonPath = 'C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
+        if (!file_exists($pythonPath)) {
+            $pythonPath = 'python';
+        }
+        $acc = $this->aiAccountsModel->getAccountByEmail($email);
+        if ($acc) {
+            $payloadJson = escapeshellarg(json_encode([
+                'email' => $email,
+                'creds' => [
+                    'access_token' => $acc['access_token'],
+                    'refresh_token' => $acc['refresh_token'],
+                    'expiry_timestamp' => $acc['expiry_timestamp'],
+                    'name' => $acc['name']
+                ]
+            ]));
+            $cmd = "\"$pythonPath\" -c \"import json, sys; sys.path.append(r'" . dirname(__DIR__, 2) . "/Dispatcher/Bin'); from account_manager import AccountManager; mgr = AccountManager(); mgr.switch_active_account(json.loads($payloadJson))\"";
+            @exec($cmd);
+        }
+
+        $this->respond(true, __('Settings::ai_account_activated_success'), [
+            'accounts' => $this->aiAccountsModel->getAllAccounts()
+        ]);
+    }
+
+    public function deleteAiAccount(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, __('Settings::ajax_unauthorized_admin'));
+            return;
+        }
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $this->respond(false, __('Settings::ai_account_invalid_id'));
+            return;
+        }
+
+        $this->aiAccountsModel->deleteAccount($id);
+        $this->respond(true, __('Settings::ai_account_deleted_success'), [
+            'accounts' => $this->aiAccountsModel->getAllAccounts()
+        ]);
     }
 
     public function saveSettings(): void

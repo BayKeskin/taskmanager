@@ -300,14 +300,174 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 6. URL tab parametresi desteği (?tab=modules vb.)
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get('tab');
-    if (tabParam) {
-        const tabPaneId = 'tab-' + tabParam;
-        const targetBtn = document.querySelector(`.cu-settings-tab-btn[data-tab="${tabPaneId}"]`);
-        if (targetBtn) {
-            targetBtn.click();
+    // 7. AI Accounts Vault handlers
+    const btnSyncAi = document.getElementById('btnSyncAiAccounts');
+    if (btnSyncAi) {
+        btnSyncAi.addEventListener('click', async () => {
+            btnSyncAi.disabled = true;
+            const originalText = btnSyncAi.innerHTML;
+            btnSyncAi.innerHTML = '<span>⏳</span> ' + (window.SettingsI18n?.test_testing || '');
+
+            try {
+                const res = await fetch(`${settingsBaseUrl}/ajax?action=sync_local_vault_accounts`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                btnSyncAi.disabled = false;
+                btnSyncAi.innerHTML = originalText;
+
+                if (data.success) {
+                    if (typeof showToast === 'function') {
+                        showToast(data.message, 'success');
+                    } else {
+                        alert(data.message);
+                    }
+                    renderAiAccountsTable(data.accounts || []);
+                } else {
+                    const errMsg = data.message || window.SettingsI18n?.ai_generic_error || '';
+                    if (typeof showToast === 'function') {
+                        showToast(errMsg, 'error');
+                    } else {
+                        alert(errMsg);
+                    }
+                }
+            } catch (err) {
+                btnSyncAi.disabled = false;
+                btnSyncAi.innerHTML = originalText;
+                alert((window.SettingsI18n?.server_error || '') + err.message);
+            }
+        });
+    }
+
+    // AI Accounts tablosu içindeki dinamik butonlar (Aktif Yap / Sil)
+    const tableBody = document.getElementById('aiAccountsTableBody');
+    if (tableBody) {
+        tableBody.addEventListener('click', async (e) => {
+            const btnActivate = e.target.closest('.btn-activate-ai-account');
+            if (btnActivate) {
+                const email = btnActivate.getAttribute('data-email');
+                if (!email) return;
+                btnActivate.disabled = true;
+                try {
+                    const fd = new FormData();
+                    fd.append('email', email);
+                    const res = await fetch(`${settingsBaseUrl}/ajax?action=activate_ai_account`, {
+                        method: 'POST',
+                        body: fd
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        if (typeof showToast === 'function') {
+                            showToast(data.message, 'success');
+                        }
+                        renderAiAccountsTable(data.accounts || []);
+                    } else {
+                        alert(data.message || window.SettingsI18n?.ai_generic_error || '');
+                        btnActivate.disabled = false;
+                    }
+                } catch (err) {
+                    alert((window.SettingsI18n?.server_error || '') + err.message);
+                    btnActivate.disabled = false;
+                }
+                return;
+            }
+
+            const btnDelete = e.target.closest('.btn-delete-ai-account');
+            if (btnDelete) {
+                const id = btnDelete.getAttribute('data-id');
+                if (!id) return;
+                const confirmMsg = window.SettingsI18n?.ai_delete_confirm || '';
+                if (!confirm(confirmMsg)) return;
+                btnDelete.disabled = true;
+                try {
+                    const fd = new FormData();
+                    fd.append('id', id);
+                    const res = await fetch(`${settingsBaseUrl}/ajax?action=delete_ai_account`, {
+                        method: 'POST',
+                        body: fd
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        if (typeof showToast === 'function') {
+                            showToast(data.message, 'success');
+                        }
+                        renderAiAccountsTable(data.accounts || []);
+                    } else {
+                        alert(data.message || window.SettingsI18n?.ai_generic_error || '');
+                        btnDelete.disabled = false;
+                    }
+                } catch (err) {
+                    alert((window.SettingsI18n?.server_error || '') + err.message);
+                    btnDelete.disabled = false;
+                }
+                return;
+            }
+        });
+    }
+
+    function initQuotaBars() {
+        document.querySelectorAll('.cu-quota-bar-fill[data-quota-pct]').forEach(el => {
+            const pct = el.getAttribute('data-quota-pct');
+            el.style.width = pct + '%';
+        });
+    }
+    initQuotaBars();
+
+    function renderAiAccountsTable(accounts) {
+        if (!tableBody) return;
+        const i18n = window.SettingsI18n || {};
+        if (!accounts || accounts.length === 0) {
+            tableBody.innerHTML = `
+                <tr id="rowAiAccountsEmpty">
+                    <td colspan="5" class="cu-text-center cu-text-muted cu-py-20">
+                        ${i18n.ai_empty_vault || ''}
+                    </td>
+                </tr>`;
+            return;
         }
+
+        let html = '';
+        accounts.forEach(acc => {
+            const pct = parseInt(acc.gemini_quota_pct || 0, 10);
+            const statusClass = pct >= 50 ? 'cu-badge-success' : (pct > 0 ? 'cu-badge-warning' : 'cu-badge-danger');
+            const fillClass = pct >= 50 ? 'fill-green' : (pct > 0 ? 'fill-yellow' : 'fill-red');
+            const isActive = parseInt(acc.is_active || 0, 10) === 1;
+
+            html += `
+                <tr data-id="${acc.id}" data-email="${acc.email}">
+                    <td>
+                        <div class="cu-flex-col">
+                            <span class="cu-font-bold">${acc.name || acc.email}</span>
+                            <span class="cu-text-muted cu-text-xs">${acc.email}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cu-quota-bar-wrap">
+                            <div class="cu-quota-bar-track">
+                                <div class="cu-quota-bar-fill ${fillClass}" data-quota-pct="${pct}"></div>
+                            </div>
+                            <span class="cu-quota-pct-label">%${pct}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="cu-badge ${statusClass}">
+                            ${acc.status || 'HEALTHY'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="cu-text-xs cu-text-muted">${acc.reset_time || 'N/A'}</span>
+                    </td>
+                    <td class="cu-text-right">
+                        ${isActive ? 
+                            `<span class="cu-badge cu-badge-active-tag">⭐ ${i18n.ai_active_tag || ''}</span>` : 
+                            `<button type="button" class="cu-btn-xs cu-btn-primary btn-activate-ai-account" data-email="${acc.email}">${i18n.ai_activate_btn || ''}</button>`
+                        }
+                        <button type="button" class="cu-btn-xs cu-btn-danger btn-delete-ai-account" data-id="${acc.id}">🗑️</button>
+                    </td>
+                </tr>`;
+        });
+        tableBody.innerHTML = html;
+        initQuotaBars();
     }
 });
+
