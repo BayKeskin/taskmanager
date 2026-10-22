@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 alert(pollData.message);
                             }
                             renderAiAccountsTable(pollData.accounts || []);
-                        } else if (!pollData.success && pollData.message !== 'waiting') {
+                        } else if (!pollData.success && pollData.status !== 'pending' && pollData.message) {
                             clearInterval(pollInterval);
                             btnAddAi.disabled = false;
                             btnAddAi.innerHTML = originalHtml;
