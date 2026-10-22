@@ -1155,9 +1155,20 @@ def run_server():
 
     server_address = ('', PORT)
     httpd = http.server.HTTPServer(server_address, WebhookHandler)
+
+    # Start In-Flight Zero-Drop Proxy Server on port 4006
+    try:
+        from proxy_server import run_proxy_server
+        proxy_thread = threading.Thread(target=run_proxy_server, kwargs={"port": 4006}, daemon=True)
+        proxy_thread.start()
+        print("🛡️ [PROXY AKTİF] Zero-Drop In-Flight Proxy Servisi Port 4006 üzerinde başlatıldı.")
+    except Exception as e_proxy:
+        print(f"⚠️ [PROXY UYARISI] Proxy başlatılamadı: {e_proxy}")
+
     print("=======================================================")
     print("🤖 Antigravity Multi-Agent Dispatcher (Port 4005)")
     print(f"📡 Dinleme Adresi : http://localhost:{PORT}/webhook")
+    print("🛡️ Zero-Drop Proxy: http://localhost:4006")
     print(f"📁 Log Dosyası    : {LOG_FILE}")
     print(f"💾 Oturum Hafızası: {LAST_SESSIONS_FILE}")
     print("=======================================================")
