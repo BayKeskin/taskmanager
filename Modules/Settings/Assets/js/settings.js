@@ -308,36 +308,66 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalHtml = btnAddAi.innerHTML;
             btnAddAi.innerHTML = '<span>⏳</span> ' + (window.SettingsI18n?.test_testing || '');
 
-            if (typeof showToast === 'function' && window.SettingsI18n?.ai_oauth_init) {
-                showToast(window.SettingsI18n.ai_oauth_init, 'info');
-            }
-
             try {
+                // 1. Yetkilendirme linkini al ve arka plan dinleyicisini başlat
                 const res = await fetch(`${settingsBaseUrl}/ajax?action=start_ai_account_oauth`, {
                     method: 'POST'
                 });
                 const data = await res.json();
-                btnAddAi.disabled = false;
-                btnAddAi.innerHTML = originalHtml;
 
-                if (data.success) {
-                    if (typeof showToast === 'function') {
-                        showToast(data.message, 'success');
-                    } else {
-                        alert(data.message);
-                    }
-                    renderAiAccountsTable(data.accounts || []);
-                } else {
-                    const errMsg = data.message || window.SettingsI18n?.ai_generic_error || '';
-                    if (data.auth_url) {
-                        window.open(data.auth_url, '_blank');
-                    }
-                    if (typeof showToast === 'function') {
-                        showToast(errMsg, 'error');
-                    } else {
-                        alert(errMsg);
-                    }
+                if (!data.success || !data.auth_url) {
+                    btnAddAi.disabled = false;
+                    btnAddAi.innerHTML = originalHtml;
+                    alert(data.message || window.SettingsI18n?.ai_generic_error || '');
+                    return;
                 }
+
+                // 2. Google OAuth penceresini aç
+                const authWindow = window.open(data.auth_url, '_blank', 'width=600,height=700');
+                if (typeof showToast === 'function') {
+                    showToast(window.SettingsI18n?.ai_oauth_init || 'Google login window opened...', 'info');
+                }
+
+                // 3. Arka planda polling ile sonucun tamamlanmasını dinle (max 3 dakika)
+                let pollAttempts = 0;
+                const maxPollAttempts = 90; // 90 x 2s = 180s
+                const pollInterval = setInterval(async () => {
+                    pollAttempts++;
+                    try {
+                        const pollRes = await fetch(`${settingsBaseUrl}/ajax?action=poll_oauth_result`, {
+                            method: 'POST'
+                        });
+                        const pollData = await pollRes.json();
+
+                        if (pollData.success && pollData.status === 'success') {
+                            clearInterval(pollInterval);
+                            btnAddAi.disabled = false;
+                            btnAddAi.innerHTML = originalHtml;
+                            if (authWindow && !authWindow.closed) {
+                                authWindow.close();
+                            }
+                            if (typeof showToast === 'function') {
+                                showToast(pollData.message, 'success');
+                            } else {
+                                alert(pollData.message);
+                            }
+                            renderAiAccountsTable(pollData.accounts || []);
+                        } else if (!pollData.success && pollData.message !== 'waiting') {
+                            clearInterval(pollInterval);
+                            btnAddAi.disabled = false;
+                            btnAddAi.innerHTML = originalHtml;
+                            alert(pollData.message);
+                        } else if (pollAttempts >= maxPollAttempts) {
+                            clearInterval(pollInterval);
+                            btnAddAi.disabled = false;
+                            btnAddAi.innerHTML = originalHtml;
+                            alert(window.SettingsI18n?.ai_oauth_timeout || 'Timeout: Login not completed.');
+                        }
+                    } catch (pollErr) {
+                        // Sessiz devam et
+                    }
+                }, 2000);
+
             } catch (err) {
                 btnAddAi.disabled = false;
                 btnAddAi.innerHTML = originalHtml;

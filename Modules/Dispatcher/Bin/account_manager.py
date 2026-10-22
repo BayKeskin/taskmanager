@@ -451,8 +451,18 @@ class AccountManager:
 
         server.server_close()
 
+        # Save result to oauth_result.json for non-blocking asynchronous polling
+        result_file = os.path.join(CURRENT_DIR, "oauth_result.json")
+        try:
+            with open(result_file, "w", encoding="utf-8") as f:
+                json.dump(auth_result, f)
+        except Exception as e_res:
+            print(f"[!] Could not write oauth_result.json: {e_res}")
+
         if auth_result["status"] == "pending":
             return {"status": "timeout", "error": "Zaman aşımı: Kullanıcı girişi tamamlamadı.", "auth_url": auth_url}
+
+        return auth_result
 
 
 if __name__ == "__main__":

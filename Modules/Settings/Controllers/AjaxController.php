@@ -144,7 +144,7 @@ class AjaxController extends BaseController
         ]);
     }
 
-    public function startAiAccountOAuth(): void
+    public function getOAuthAuthUrl(): void
     {
         if ($this->user->role !== 'admin') {
             $this->respond(false, __('Settings::ajax_unauthorized_admin'));
@@ -156,23 +156,63 @@ class AjaxController extends BaseController
             $pythonPath = 'python';
         }
 
-        // Execute OAuth loopback flow
-        $cmd = "\"$pythonPath\" -c \"import json, sys; sys.path.append(r'" . dirname(__DIR__, 2) . "/Dispatcher/Bin'); from account_manager import AccountManager; mgr = AccountManager(); print(json.dumps(mgr.start_oauth_flow(timeout_secs=90)))\"";
+        // 1. Python loopback sunucusunu arka planda asenkron olarak ayağa kaldır
+        $scriptPath = dirname(__DIR__, 2) . '/Dispatcher/Bin/account_manager.py';
+        $cmd = "\"$pythonPath\" -c \"import json, sys; sys.path.append(r'" . dirname(__DIR__, 2) . "/Dispatcher/Bin'); from account_manager import AccountManager; mgr = AccountManager(); mgr.start_oauth_flow(timeout_secs=180)\"";
+        
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            pclose(popen("start /B " . $cmd, "r"));
+        } else {
+            exec($cmd . " > /dev/null 2>&1 &");
+        }
 
-        $output = [];
-        $returnVar = 0;
-        exec($cmd, $output, $returnVar);
+        // 2. Client için Google OAuth yetkilendirme linkini üret
+        $clientId = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com";
+        $redirectUri = "http://127.0.0.1:19876/callback";
+        $scopes = [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/cclog",
+            "https://www.googleapis.com/auth/experimentsandconfigs"
+        ];
+        $authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
+            'client_id'     => $clientId,
+            'redirect_uri'  => $redirectUri,
+            'response_type' => 'code',
+            'scope'         => implode(' ', $scopes),
+            'access_type'   => 'offline',
+            'prompt'        => 'consent'
+        ]);
 
-        $rawJson = implode('', $output);
-        $result = json_decode($rawJson, true);
+        $this->respond(true, __('Settings::ai_account_oauth_init_success'), [
+            'auth_url' => $authUrl
+        ]);
+    }
 
-        if (!$result || ($result['status'] ?? '') !== 'success') {
-            $err = $result['error'] ?? __('Settings::ai_account_oauth_timeout');
-            $this->respond(false, str_replace(':error', (string)$err, __('Settings::ai_account_oauth_error')), [
-                'auth_url' => $result['auth_url'] ?? null
-            ]);
+    public function pollOAuthResult(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, __('Settings::ajax_unauthorized_admin'));
             return;
         }
+
+        $resultFile = dirname(__DIR__, 2) . '/Dispatcher/Bin/oauth_result.json';
+        if (!file_exists($resultFile)) {
+            $this->respond(false, '', ['status' => 'pending']);
+            return;
+        }
+
+        $rawJson = @file_get_contents($resultFile);
+        $result = json_decode($rawJson, true);
+        if (!$result || ($result['status'] ?? '') !== 'success') {
+            @unlink($resultFile);
+            $err = $result['error'] ?? __('Settings::ai_account_oauth_timeout');
+            $this->respond(false, str_replace(':error', (string)$err, __('Settings::ai_account_oauth_error')));
+            return;
+        }
+
+        @unlink($resultFile);
 
         $tokens = $result['tokens'] ?? [];
         $userInfo = $result['user_info'] ?? [];
@@ -183,7 +223,11 @@ class AjaxController extends BaseController
             return;
         }
 
-        // Query initial quota via Python
+        // Başlangıç kotasını sorgula
+        $pythonPath = 'C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
+        if (!file_exists($pythonPath)) {
+            $pythonPath = 'python';
+        }
         $quotaCmd = "\"$pythonPath\" -c \"import json, sys; sys.path.append(r'" . dirname(__DIR__, 2) . "/Dispatcher/Bin'); from account_manager import query_user_quota; print(json.dumps(query_user_quota('" . addslashes($tokens['access_token']) . "')))\"";
         $quotaOutput = [];
         exec($quotaCmd, $quotaOutput);
@@ -222,8 +266,14 @@ class AjaxController extends BaseController
         ]);
 
         $this->respond(true, str_replace(':email', $email, __('Settings::ai_account_oauth_success')), [
+            'status'   => 'success',
             'accounts' => $this->aiAccountsModel->getAllAccounts()
         ]);
+    }
+
+    public function startAiAccountOAuth(): void
+    {
+        $this->getOAuthAuthUrl();
     }
 
     public function saveSettings(): void
