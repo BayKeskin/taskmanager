@@ -115,7 +115,11 @@ class AjaxRouter
             'get_chat_conversations'   => ['Modules\Chat\Controllers\AjaxController', 'getConversations'],
             'get_daily_standup'        => ['Modules\Reports\Controllers\AjaxController', 'getDailyStandup'],
             'send_standup_email'       => ['Modules\Reports\Controllers\AjaxController', 'sendStandupEmail'],
-            'refine_task_specification'=> ['Modules\AiArchitect\Controllers\AiArchitectController', 'refineSpecification'],
+            'start_ai_account_oauth'   => ['Modules\Settings\Controllers\AjaxController', 'startAiAccountOAuth'],
+            'start_ai_account_o_auth'  => ['Modules\Settings\Controllers\AjaxController', 'startAiAccountOAuth'],
+            'sync_local_vault_accounts'=> ['Modules\Settings\Controllers\AjaxController', 'syncLocalVaultAccounts'],
+            'activate_ai_account'      => ['Modules\Settings\Controllers\AjaxController', 'activateAiAccount'],
+            'delete_ai_account'        => ['Modules\Settings\Controllers\AjaxController', 'deleteAiAccount'],
         ];
 
         foreach ($aliases as $act => $target) {

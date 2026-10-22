@@ -664,11 +664,69 @@
     flex-direction: column;
     gap: 2px;
 }
+.cu-settings-card-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.cu-settings-card-header-actions .cu-btn {
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
 .cu-actions-cell {
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
+}
+.btn-activate-ai-account {
+    background: rgba(123, 104, 238, 0.12);
+    color: #9d8df1;
+    border: 1px solid rgba(123, 104, 238, 0.3);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+.btn-activate-ai-account:hover {
+    background: var(--brand-primary, #7b68ee);
+    color: #ffffff;
+    border-color: var(--brand-primary, #7b68ee);
+    box-shadow: 0 2px 8px rgba(123, 104, 238, 0.35);
+}
+.btn-delete-ai-account {
+    background: rgba(235, 87, 87, 0.1);
+    color: #eb5757;
+    border: 1px solid rgba(235, 87, 87, 0.25);
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+.btn-delete-ai-account:hover {
+    background: #eb5757;
+    color: #ffffff;
+    border-color: #eb5757;
+    box-shadow: 0 2px 8px rgba(235, 87, 87, 0.35);
 }
 .cu-btn-danger {
     background: rgba(235, 87, 87, 0.15);
