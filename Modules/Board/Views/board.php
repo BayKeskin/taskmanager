@@ -146,6 +146,12 @@ $listUrl = baseUrl('board?' . (!empty($boardQuery) ? $boardQuery . '&view=list' 
                             <span class="cu-tool-icon">🔄</span>
                             <span class="cu-tool-text-bold"><?= __('Board::btn_sync_github') ?></span>
                         </button>
+
+                        <!-- Sürüm Geçmişi (Time Machine) -->
+                        <button type="button" class="cu-tools-item cu-tools-item-timemachine" id="btnOpenProjectTimeline" data-project-id="<?= (int)$activeProjectId ?>">
+                            <span class="cu-tool-icon">🕒</span>
+                            <span class="cu-tool-text-bold"><?= __('Board::btn_time_machine') ?></span>
+                        </button>
                     <?php endif; ?>
                     <?php endif; ?>
 

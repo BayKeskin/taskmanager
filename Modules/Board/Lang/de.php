@@ -416,6 +416,7 @@ return array (
   'kanban_export_excel' => 'Excel Exportieren',
   'btn_connect_github' => 'GitHub Verbinden',
   'btn_sync_github' => 'GitHub Synchronisieren',
+  'btn_time_machine' => '🕒 Versionsverlauf (Time Machine)',
   'deploy_btn_wizard' => 'Live Bereitstellen',
   'mcp_btn_open' => 'MCP Integration',
   'client_approve_btn' => 'Genehmigen',

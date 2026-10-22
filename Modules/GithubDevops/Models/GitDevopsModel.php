@@ -20,7 +20,7 @@ class GitDevopsModel extends BaseModel
      */
     public function logRollbackAction(int $taskId, string $mode, string $commitHash, int $userId): int
     {
-        $sql = "INSERT INTO task_activities (task_id, user_id, action_type, description, created_at) 
+        $sql = "INSERT INTO task_activities (task_id, user_id, action_type, comment, created_at) 
                 VALUES (?, ?, 'rollback', ?, NOW())";
         $desc = "Git rollback executed. Mode: {$mode}, Commit: {$commitHash}";
         return $this->execute($sql, [$taskId, $userId, $desc]);
@@ -184,5 +184,21 @@ class GitDevopsModel extends BaseModel
             INSERT INTO task_activities (task_id, user_id, action_type, comment, created_at)
             VALUES (?, ?, ?, ?, NOW())
         ", [$taskId, $userId, $actionType, $comment]);
+    }
+
+    /**
+     * Görev kodu ile görevi getirir (Örn: TSK-1293 veya 01-105)
+     */
+    public function getTaskByCode(string $taskCode): ?object
+    {
+        return $this->first("SELECT * FROM tasks WHERE task_code = ? LIMIT 1", [$taskCode]) ?: null;
+    }
+
+    /**
+     * Kullanıcıyı ID ile getirir
+     */
+    public function getUserById(int $userId): ?object
+    {
+        return $this->first("SELECT id, name, email, avatar_color FROM users WHERE id = ? LIMIT 1", [$userId]) ?: null;
     }
 }

@@ -606,4 +606,254 @@ class GitService
 
         return $files;
     }
+
+    /**
+     * Projeye ait Git commit geçmişini ve zenginleştirilmiş zaman tüneli verilerini döndürür.
+     */
+    public static function getProjectTimeline(int $projectId, int $limit = 30): array
+    {
+        $model = self::getModel();
+        $project = $model->getProjectById($projectId);
+        if (!$project) {
+            return [
+                'success' => false,
+                'error'   => __('GithubDevops::err_project_not_found')
+            ];
+        }
+
+        $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
+        if (empty($ws) || !is_dir($ws) || !is_dir($ws . '/.git')) {
+            return [
+                'success' => false,
+                'error'   => __('GithubDevops::err_workspace_not_found')
+            ];
+        }
+
+        $escapedWs = escapeshellarg($ws);
+        $limit = max(1, min(100, $limit));
+
+        // Format: %H@@@%h@@@%an@@@%ae@@@%ad@@@%s
+        $cmd = "git -C {$escapedWs} log -n {$limit} --pretty=format:\"%H@@@%h@@@%an@@@%ae@@@%ad@@@%s\" --date=iso 2>nul";
+        $logOutput = @shell_exec($cmd);
+
+        if (empty($logOutput)) {
+            return [
+                'success'   => true,
+                'timeline'  => [],
+                'is_clean'  => true,
+                'current_branch' => self::detectActiveBranch($ws)
+            ];
+        }
+
+        $lines = explode("\n", trim($logOutput));
+        $timeline = [];
+        $isFirst = true;
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+
+            $parts = explode('@@@', $line, 6);
+            if (count($parts) < 6) continue;
+
+            [$fullHash, $shortHash, $authorName, $authorEmail, $dateStr, $subject] = $parts;
+
+            // Commit mesajından görev kodunu yakala (Örn: TSK-1293, 01-105, TASK-12 vb.)
+            $taskCode = null;
+            $matchedTask = null;
+            if (preg_match('/\b([A-Za-z0-9]+-\d+)\b/', $subject, $m)) {
+                $taskCode = strtoupper($m[1]);
+                $matchedTask = $model->getTaskByCode($taskCode);
+            }
+
+            // Değişen dosya sayısını hesapla
+            $changedFilesCount = 0;
+            $diffTreeCmd = "git -C {$escapedWs} diff-tree --no-commit-id --name-only -r " . escapeshellarg($fullHash) . " 2>nul";
+            $filesOutput = trim((string)@shell_exec($diffTreeCmd));
+            if (!empty($filesOutput)) {
+                $changedFilesCount = count(array_filter(explode("\n", $filesOutput)));
+            }
+
+            // Görevi yapan veya atanan kullanıcı bilgisi
+            $assignedUser = null;
+            if ($matchedTask && !empty($matchedTask->assigned_to)) {
+                $u = $model->getUserById((int)$matchedTask->assigned_to);
+                if ($u) {
+                    $assignedUser = [
+                        'name'   => $u->name,
+                        'email'  => $u->email,
+                        'avatar' => $u->avatar_color ?? null
+                    ];
+                }
+            }
+
+            $timeline[] = [
+                'commit_hash'         => $fullHash,
+                'short_hash'          => $shortHash,
+                'author_name'         => $authorName,
+                'author_email'        => $authorEmail,
+                'committed_at'        => $dateStr,
+                'subject'             => $subject,
+                'is_current'          => $isFirst,
+                'task_code'           => $taskCode,
+                'task_title'          => $matchedTask ? $matchedTask->title : null,
+                'task_id'             => $matchedTask ? (int)$matchedTask->id : null,
+                'assigned_user'       => $assignedUser,
+                'changed_files_count' => $changedFilesCount
+            ];
+
+            $isFirst = false;
+        }
+
+        // Git repo temiz mi kontrol et
+        $statusCheck = trim((string)@shell_exec("git -C {$escapedWs} status --porcelain 2>nul"));
+        $isClean = empty($statusCheck);
+
+        return [
+            'success'        => true,
+            'timeline'       => $timeline,
+            'is_clean'       => $isClean,
+            'current_branch' => self::detectActiveBranch($ws),
+            'project_title'  => $project->title
+        ];
+    }
+
+    /**
+     * Projeyi güvenli bir şekilde hedef commit'e geri döndürür.
+     * Öncesinde yedek branch/tag açar, varsa aradaki .migrations/*_down.sql dosyalarını çalıştırır.
+     */
+    public static function rollbackToCommit(int $projectId, string $targetCommitHash, int $userId): array
+    {
+        $model = self::getModel();
+        $project = $model->getProjectById($projectId);
+        if (!$project) {
+            return [
+                'success' => false,
+                'error'   => __('GithubDevops::err_project_not_found')
+            ];
+        }
+
+        $ws = rtrim(str_replace('\\', '/', trim((string)($project->workspace_path ?? ''))), '/');
+        if (empty($ws) || !is_dir($ws) || !is_dir($ws . '/.git')) {
+            return [
+                'success' => false,
+                'error'   => __('GithubDevops::err_workspace_not_found')
+            ];
+        }
+
+        $escapedWs = escapeshellarg($ws);
+        $targetHashClean = trim($targetCommitHash);
+
+        if (empty($targetHashClean) || !preg_match('/^[a-f0-9]{7,40}$/i', $targetHashClean)) {
+            return [
+                'success' => false,
+                'error'   => __('GithubDevops::err_no_commit_hash')
+            ];
+        }
+
+        // 1. Hedef commit'in varlığını doğrula
+        $commitExists = trim((string)@shell_exec("git -C {$escapedWs} cat-file -t " . escapeshellarg($targetHashClean) . " 2>nul"));
+        if ($commitExists !== 'commit') {
+            return [
+                'success' => false,
+                'error'   => __('GithubDevops::err_no_commit_hash')
+            ];
+        }
+
+        // 2. Güvenlik Ağı (Safety Net): Geri almadan önce mevcut HEAD durumunu yedek branch'e al
+        $timestamp = date('Ymd_His');
+        $backupBranch = "backup_before_rollback_{$timestamp}";
+        @shell_exec("git -C {$escapedWs} branch " . escapeshellarg($backupBranch) . " HEAD 2>nul");
+
+        // 3. Aradaki ters SQL (.migrations/{task_code}_down.sql) scriptlerini tespit et ve çalıştır
+        $dbRolledBackCount = 0;
+        $revListCmd = "git -C {$escapedWs} rev-list " . escapeshellarg($targetHashClean) . "..HEAD 2>nul";
+        $revOutput = trim((string)@shell_exec($revListCmd));
+
+        if (!empty($revOutput)) {
+            $hashesToRevert = array_filter(explode("\n", $revOutput));
+            foreach ($hashesToRevert as $revHash) {
+                $revHash = trim($revHash);
+                if (empty($revHash)) continue;
+
+                // Commit mesajından görev kodunu yakala
+                $msgCmd = "git -C {$escapedWs} log -1 --pretty=format:%s " . escapeshellarg($revHash) . " 2>nul";
+                $cMsg = trim((string)@shell_exec($msgCmd));
+
+                if (preg_match('/\b([A-Za-z0-9]+-\d+)\b/', $cMsg, $m)) {
+                    $tc = strtoupper($m[1]);
+                    $downSqlPath = $ws . '/.migrations/' . $tc . '_down.sql';
+                    if (file_exists($downSqlPath)) {
+                        $sqlContent = file_get_contents($downSqlPath);
+                        if (!empty($sqlContent)) {
+                            $stmts = array_filter(array_map('trim', explode(';', $sqlContent)));
+                            foreach ($stmts as $stmt) {
+                                $cleanStmt = trim(preg_replace('/^--.*$/m', '', $stmt));
+                                if ($cleanStmt !== '') {
+                                    try {
+                                        $model->executeRaw($cleanStmt);
+                                        $dbRolledBackCount++;
+                                    } catch (\Throwable $e) {
+                                        error_log("Time machine reverse SQL error ({$tc}): " . $e->getMessage());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Hedef commit durumunu çalışma dizinine uygula
+        // git revert --no-commit target..HEAD veya temiz checkout
+        $revertCmd = "git -C {$escapedWs} revert --no-commit " . escapeshellarg($targetHashClean) . "..HEAD 2>&1";
+        $revertOutput = (string)@shell_exec($revertCmd);
+
+        $statusCheck = (string)@shell_exec("git -C {$escapedWs} status --porcelain 2>&1");
+        $hasConflict = preg_match('/^(UU|AA|DD|DU|UD)\s/m', $statusCheck) || stripos($revertOutput, 'conflict') !== false;
+
+        if ($hasConflict) {
+            // Çakışma durumunda hedef commit'in tam dosya ağacını checkout edip temizleyelim
+            @shell_exec("git -C {$escapedWs} revert --abort 2>nul");
+            @shell_exec("git -C {$escapedWs} checkout " . escapeshellarg($targetHashClean) . " -- . 2>nul");
+        }
+
+        // Commit oluştur: Geri alma işlemi
+        $shortTarget = substr($targetHashClean, 0, 7);
+        $revertCommitMsg = "TimeMachine: Rollback project to commit {$shortTarget} (Backup: {$backupBranch})";
+        @shell_exec("git -C {$escapedWs} add -A 2>&1");
+        @shell_exec("git -C {$escapedWs} commit -m " . escapeshellarg($revertCommitMsg) . " 2>&1");
+
+        // Remote push
+        $branch = self::detectActiveBranch($ws);
+        $creds = $model->getGithubCredentials();
+        if (!empty($creds['username']) && !empty($creds['token'])) {
+            $authHeader = base64_encode("{$creds['username']}:{$creds['token']}");
+            @shell_exec("git -C {$escapedWs} -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1");
+        } else {
+            @shell_exec("git -C {$escapedWs} push origin {$branch} 2>&1");
+        }
+
+        // Log aktivitesi
+        $logComment = str_replace(
+            ['{hash}', '{backup}'],
+            [$shortTarget, $backupBranch],
+            __('GithubDevops::activity_project_timeline_reverted')
+        );
+        $model->logRollbackAction((int)$projectId, 'time_machine', $shortTarget, $userId);
+
+        $successMsg = str_replace(
+            ['{hash}', '{backup}'],
+            [$shortTarget, $backupBranch],
+            __('GithubDevops::msg_timeline_rollback_success')
+        );
+
+        return [
+            'success'           => true,
+            'target_commit'     => $shortTarget,
+            'backup_branch'     => $backupBranch,
+            'db_queries_rolled' => $dbRolledBackCount,
+            'message'           => $successMsg
+        ];
+    }
 }

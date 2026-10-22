@@ -78,4 +78,51 @@ class AjaxController extends BaseController
             $this->respond(false, $res['error'] ?? __('GithubDevops::err_rollback_failed'), $res);
         }
     }
+
+    /**
+     * Projeye ait zaman tüneli & commit geçmişini çeker
+     */
+    public function getProjectTimeline(): void
+    {
+        $projectId = (int)($_GET['project_id'] ?? ($_POST['project_id'] ?? 0));
+        if ($projectId <= 0) {
+            $this->respond(false, __('GithubDevops::err_invalid_project_id'));
+            return;
+        }
+
+        $res = GitService::getProjectTimeline($projectId);
+        if (!empty($res['success'])) {
+            $this->respond(true, '', $res);
+        } else {
+            $this->respond(false, $res['error'] ?? __('GithubDevops::err_timeline_fetch_failed'), $res);
+        }
+    }
+
+    /**
+     * Projeyi seçilen commit sürümüne geri alır
+     */
+    public function revertToVersion(): void
+    {
+        $projectId  = (int)($_POST['project_id'] ?? 0);
+        $commitHash = trim($_POST['commit_hash'] ?? '');
+
+        if ($projectId <= 0) {
+            $this->respond(false, __('GithubDevops::err_invalid_project_id'));
+            return;
+        }
+
+        if (empty($commitHash)) {
+            $this->respond(false, __('GithubDevops::err_no_commit_hash'));
+            return;
+        }
+
+        $userId = (int)($_SESSION['user']->id ?? 1);
+        $res = GitService::rollbackToCommit($projectId, $commitHash, $userId);
+
+        if (!empty($res['success'])) {
+            $this->respond(true, $res['message'] ?? '', $res);
+        } else {
+            $this->respond(false, $res['error'] ?? __('GithubDevops::err_rollback_failed'), $res);
+        }
+    }
 }

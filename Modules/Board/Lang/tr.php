@@ -420,6 +420,7 @@ return array (
   'kanban_export_excel' => 'Excel Dışa Aktar',
   'btn_connect_github' => 'GitHub Bağla',
   'btn_sync_github' => 'GitHub Senkronizasyonu',
+  'btn_time_machine' => '🕒 Sürüm Geçmişi (Time Machine)',
   'deploy_btn_wizard' => 'Canlıya Al (Deploy)',
   'mcp_btn_open' => 'MCP Entegrasyonu',
   'modal_ai_architect_badge' => 'Yapay Zeka Mimarisi',

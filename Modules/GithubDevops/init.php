@@ -21,6 +21,14 @@ AssetManager::localizeScript('github-devops', 'DEVOPS_I18N', [
     'rollback_running'   => __('GithubDevops::rollback_running'),
     'rollback_success'   => __('GithubDevops::rollback_success'),
     'rollback_failed'    => __('GithubDevops::rollback_failed'),
+    'current_live_version' => __('GithubDevops::current_live_version'),
+    'btn_revert_to_this' => __('GithubDevops::btn_revert_to_this'),
+    'revert_confirm_text' => __('GithubDevops::revert_confirm_text'),
+    'reverting_in_progress' => __('GithubDevops::reverting_in_progress'),
+    'timeline_empty'     => __('GithubDevops::timeline_empty'),
+    'timeline_changed_files' => __('GithubDevops::timeline_changed_files'),
+    'author_unknown'     => __('GithubDevops::author_unknown'),
+    'robot_coder'        => __('GithubDevops::robot_coder'),
 ]);
 
 // 2. Görev teslim edildiğinde otomatik Git Commit & Push kancası
