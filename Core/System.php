@@ -9,7 +9,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',
-        'domain'   => $_SERVER['HTTP_HOST'] ?? 'localhost',
         'secure'   => $isSecure,
         'httponly' => true,
         'samesite' => $isSecure ? 'None' : 'Lax'
