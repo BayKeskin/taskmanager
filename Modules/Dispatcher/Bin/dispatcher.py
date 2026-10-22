@@ -17,6 +17,11 @@ import time
 import urllib.parse
 import threading
 
+try:
+    from account_manager import AccountManager
+except ImportError:
+    AccountManager = None
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 APP_ROOT = os.path.abspath(os.path.join(BASE_DIR, '..', '..', '..'))
 if not os.path.exists(os.path.join(APP_ROOT, 'Core', 'System.php')):
@@ -1003,9 +1008,43 @@ def process_webhook_async(payload, header_conv_id):
         if result.returncode != 0:
             err_msg = ((result.stdout or '') + ' ' + (result.stderr or '')).strip()
             print(f"⚠️ [- GÖNDERİM BAŞARISIZ] Hata: '{err_msg}'. Otomatik kurtarma devreye giriyor...")
+
+            # ÖZEL DURUM: KOTA AŞIMI / RESOURCE EXHAUSTED TESPİTİ
+            is_quota_err = any(q_word in err_msg.lower() for q_word in ["resourceexhausted", "quota", "rate limit", "429"])
+            if is_quota_err and AccountManager:
+                print(f"🚨 [KOTA AŞIMI TESPİT EDİLDİ] Aktif hesap kotası tükendi! Yerli AccountManager devreye giriyor...")
+                try:
+                    acct_mgr = AccountManager()
+                    best_next = acct_mgr.find_best_next_account(target_model="gemini-3.8")
+                    if best_next and best_next.get("target_model_pct", 0) > 0:
+                        next_email = best_next["email"]
+                        next_pct = best_next["target_model_pct"]
+                        print(f"🔄 [OTOMATİK HESAP GEÇİŞİ] Yeni sağlıklı hesaba geçiliyor: {next_email} (Gemini 3.8: %{next_pct})...")
+                        acct_mgr.switch_active_account(best_next)
+                        
+                        # Oturum güncellendi, yeni ortam değişkenlerini tazele
+                        fresh_addr, fresh_token = get_antigravity_ls_env(force_refresh=True)
+                        if fresh_addr:
+                            env["ANTIGRAVITY_LS_ADDRESS"] = fresh_addr
+                        if fresh_token:
+                            env["ANTIGRAVITY_CSRF_TOKEN"] = fresh_token
+
+                        # Ajanı bilgilendir ve görevi tekrar gönder
+                        resume_notice = (
+                            f"\n\n🛡️ **[SİSTEM BİLGİLENDİRMESİ — OTURUM KOTASI GÜNCELLENDİ]**\n"
+                            f"> Aktif oturum kotası tükendiği için sistem otomatik olarak **{next_email}** (%{next_pct} limit) hesabına geçiş yaptı.\n"
+                            f"> Lütfen göreve kaldığın yerden kesintisiz olarak devam et!\n"
+                        )
+                        retry_cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", target_conv_id, message_text + resume_notice]
+                        result = run_silent(retry_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=15)
+                        if result.returncode == 0:
+                            print(f"✅ [KOTA KURTARMA BAŞARILI] Yeni hesap üzerinden görev başarıyla fırlatıldı!")
+                except Exception as ex_quota:
+                    print(f"❌ [KOTA GEÇİŞİ HATASI] {ex_quota}")
             
             # 1. Adım: O workspace için son saniyelerde açılmış yeni bir pencere var mı tekrar tara
-            re_cid, re_uri, re_addr, re_tok = discover_latest_conversation(project_code, project_title, workspace_path)
+            if result.returncode != 0:
+                re_cid, re_uri, re_addr, re_tok = discover_latest_conversation(project_code, project_title, workspace_path)
             if re_cid and re_cid != target_conv_id:
                 print(f"🔄 [- YENİ PENCERE YAKALANDI] {target_conv_id} yerine {re_cid} deneniyor...")
                 if re_addr:
