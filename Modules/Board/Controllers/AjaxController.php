@@ -799,10 +799,11 @@ switch ($action) {
             }
         } elseif ($newStatus === 'completed') {
             \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
-        } elseif ($oldStatus === 'in_progress' && $newStatus === 'assigned' && $isCurrentTaskAi) {
+        } elseif ($oldStatus === 'in_progress' && in_array($newStatus, ['assigned', 'backlog', 'paused', 'blocked']) && $isCurrentTaskAi) {
             \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.requeued', [
                 'task_id'    => $taskId,
                 'task_code'  => $task->task_code,
+                'title'      => $task->title,
                 'project_id' => (int)$task->project_id
             ]);
         }

@@ -368,6 +368,7 @@ def process_webhook_async(payload, header_conv_id):
         data = {}
 
     task_code = str(data.get('task_code', '')).strip()
+    task_title = str(data.get('title', '')).strip()
     task_id = data.get('task_id')
     is_watchdog_check = bool(data.get('watchdog_check', False))
     api_base_url = (payload.get('api_base_url') or 'http://localhost/taskmanager').rstrip('/')
@@ -383,10 +384,41 @@ def process_webhook_async(payload, header_conv_id):
     if not api_token:
         api_token = 'tm_admin_talha_keskin_token_2026'
 
+    workspace_path = payload.get('workspace_path') or data.get('workspace_path', '')
+    agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
+    project_dir = get_project_primary_dir(project_code, workspace_path)
+
     # 1. GÖREV TESLİM EDİLDİĞİNDE VEYA GERİ ALINDIĞINDA:
     if event == 'task.requeued':
         with state_lock:
-            project_active_state.pop(project_code, None)
+            prev_info = project_active_state.pop(project_code, None)
+
+        # Ajan penceresine anında durdurma ve görevin geri çekildiği talimatını ilet
+        target_conv = dev_conv_id or (prev_info.get('conv_id') if prev_info else None)
+        if target_conv and os.path.exists(AGENTAPI_EXE):
+            ls_addr, csrf_tok = find_active_ls_for_conversation(target_conv)
+            if not ls_addr:
+                ls_addr, csrf_tok = get_antigravity_ls_env()
+
+            stop_msg = (
+                f"🛑 **[GÖREV İPTAL EDİLDİ / GERİ ÇEKİLDİ — ÇALIŞMAYI DERHAL DURDURUN]**\n\n"
+                f"Görev: **{task_code}** ({task_title})\n"
+                f"Kullanıcı görevi 'In Progress' sütunundan geri çekti veya iptal etti.\n"
+                f"Lütfen mevcut dosya değişikliklerini durdurun, terminal işlemlerini sonlandırın ve yeni bir görev atanana kadar BEKLEMEDE (IDLE) kalın."
+            )
+            env = os.environ.copy()
+            if ls_addr:
+                env["ANTIGRAVITY_LS_ADDRESS"] = ls_addr
+            if csrf_tok:
+                env["ANTIGRAVITY_CSRF_TOKEN"] = csrf_tok
+            stop_cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title=[DURDUR] {task_code}", target_conv, stop_msg]
+            try:
+                run_silent(stop_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=10)
+                print(f"🛑 [GÖREV GERİ ALINDI] [{project_code}] {task_code} -> Ajan ({target_conv}) durduruldu ve kilit silindi.")
+            except Exception as e:
+                print(f"⚠️ [DURDURMA BİLDİRİMİ HATASI] {e}")
+        else:
+            print(f"🛑 [GÖREV GERİ ALINDI] [{project_code}] {task_code} -> Kilit silindi.")
         return
 
     # Eğer task.submitted geldiyse:
