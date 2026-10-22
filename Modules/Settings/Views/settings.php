@@ -313,6 +313,7 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                                 <?php if (!empty($settingsData['aiAccounts'])): ?>
                                     <?php foreach ($settingsData['aiAccounts'] as $acc): ?>
                                         <?php 
+                                            $acc = (array)$acc;
                                             $pct = (int)($acc['gemini_quota_pct'] ?? 0);
                                             $statusClass = $pct >= 50 ? 'cu-badge-success' : ($pct > 0 ? 'cu-badge-warning' : 'cu-badge-danger');
                                             $isActive = !empty($acc['is_active']);
