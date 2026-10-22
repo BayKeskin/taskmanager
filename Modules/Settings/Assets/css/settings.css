@@ -664,4 +664,26 @@
     flex-direction: column;
     gap: 2px;
 }
+.cu-actions-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+.cu-btn-danger {
+    background: rgba(235, 87, 87, 0.15);
+    color: #eb5757;
+    border: 1px solid rgba(235, 87, 87, 0.3);
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+.cu-btn-danger:hover {
+    background: #eb5757;
+    color: #ffffff;
+}
+
 

@@ -301,6 +301,51 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 7. AI Accounts Vault handlers
+    const btnAddAi = document.getElementById('btnAddNewAiAccount');
+    if (btnAddAi) {
+        btnAddAi.addEventListener('click', async () => {
+            btnAddAi.disabled = true;
+            const originalHtml = btnAddAi.innerHTML;
+            btnAddAi.innerHTML = '<span>⏳</span> ' + (window.SettingsI18n?.test_testing || '');
+
+            if (typeof showToast === 'function' && window.SettingsI18n?.ai_oauth_init) {
+                showToast(window.SettingsI18n.ai_oauth_init, 'info');
+            }
+
+            try {
+                const res = await fetch(`${settingsBaseUrl}/ajax?action=start_ai_account_oauth`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                btnAddAi.disabled = false;
+                btnAddAi.innerHTML = originalHtml;
+
+                if (data.success) {
+                    if (typeof showToast === 'function') {
+                        showToast(data.message, 'success');
+                    } else {
+                        alert(data.message);
+                    }
+                    renderAiAccountsTable(data.accounts || []);
+                } else {
+                    const errMsg = data.message || window.SettingsI18n?.ai_generic_error || '';
+                    if (data.auth_url) {
+                        window.open(data.auth_url, '_blank');
+                    }
+                    if (typeof showToast === 'function') {
+                        showToast(errMsg, 'error');
+                    } else {
+                        alert(errMsg);
+                    }
+                }
+            } catch (err) {
+                btnAddAi.disabled = false;
+                btnAddAi.innerHTML = originalHtml;
+                alert((window.SettingsI18n?.server_error || '') + err.message);
+            }
+        });
+    }
+
     const btnSyncAi = document.getElementById('btnSyncAiAccounts');
     if (btnSyncAi) {
         btnSyncAi.addEventListener('click', async () => {
@@ -457,12 +502,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>
                         <span class="cu-text-xs cu-text-muted">${acc.reset_time || 'N/A'}</span>
                     </td>
-                    <td class="cu-text-right">
+                    <td class="cu-text-right cu-actions-cell">
                         ${isActive ? 
-                            `<span class="cu-badge cu-badge-active-tag">⭐ ${i18n.ai_active_tag || ''}</span>` : 
+                            `<span class="cu-badge cu-badge-active-tag">${i18n.ai_active_tag || ''}</span>` : 
                             `<button type="button" class="cu-btn-xs cu-btn-primary btn-activate-ai-account" data-email="${acc.email}">${i18n.ai_activate_btn || ''}</button>`
                         }
-                        <button type="button" class="cu-btn-xs cu-btn-danger btn-delete-ai-account" data-id="${acc.id}">🗑️</button>
+                        <button type="button" class="cu-btn-xs cu-btn-danger btn-delete-ai-account" data-id="${acc.id}">✕</button>
                     </td>
                 </tr>`;
         });

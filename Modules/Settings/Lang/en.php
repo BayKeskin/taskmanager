@@ -131,7 +131,7 @@ return array (
   'js_server_error' => 'Server connection error: ',
   'js_module_toggle_err' => 'Module toggle error: ',
   'settings_tab_ai_accounts' => 'AI Accounts Vault',
-  'settings_ai_vault_title' => '🔐 Antigravity & LLM Multi-Account Vault',
+  'settings_ai_vault_title' => 'Antigravity & LLM Multi-Account Vault',
   'settings_ai_vault_desc' => 'Add and manage all your Google accounts. When an active account exhausts its Gemini 3.8 quota, Dispatcher automatically fails over to the next 100% healthy account.',
   'settings_ai_vault_btn_sync' => '🔄 Import Local Accounts & Scan Quotas',
   'settings_ai_vault_btn_add' => '➕ Add New Google Account',
@@ -149,6 +149,10 @@ return array (
   'ai_account_activated_success' => '✅ Active session account switched and Language Server refreshed successfully!',
   'ai_account_invalid_id' => 'Invalid account ID.',
   'ai_account_deleted_success' => '✅ Account successfully deleted from the vault.',
+  'ai_account_oauth_init_success' => 'Opening Google Sign-In page, please grant authorization in the browser...',
+  'ai_account_oauth_timeout' => 'Timeout: Google sign-in was not completed in time.',
+  'ai_account_oauth_error' => 'An error occurred while adding Google account: :error',
+  'ai_account_oauth_success' => '✅ New Google account (:email) successfully added to the vault!',
   'js_ai_delete_confirm' => 'Are you sure you want to delete this account from the vault?',
   'js_ai_generic_error' => 'An error occurred during operation.'
 );

@@ -144,6 +144,88 @@ class AjaxController extends BaseController
         ]);
     }
 
+    public function startAiAccountOAuth(): void
+    {
+        if ($this->user->role !== 'admin') {
+            $this->respond(false, __('Settings::ajax_unauthorized_admin'));
+            return;
+        }
+
+        $pythonPath = 'C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
+        if (!file_exists($pythonPath)) {
+            $pythonPath = 'python';
+        }
+
+        // Execute OAuth loopback flow
+        $cmd = "\"$pythonPath\" -c \"import json, sys; sys.path.append(r'" . dirname(__DIR__, 2) . "/Dispatcher/Bin'); from account_manager import AccountManager; mgr = AccountManager(); print(json.dumps(mgr.start_oauth_flow(timeout_secs=90)))\"";
+
+        $output = [];
+        $returnVar = 0;
+        exec($cmd, $output, $returnVar);
+
+        $rawJson = implode('', $output);
+        $result = json_decode($rawJson, true);
+
+        if (!$result || ($result['status'] ?? '') !== 'success') {
+            $err = $result['error'] ?? __('Settings::ai_account_oauth_timeout');
+            $this->respond(false, str_replace(':error', (string)$err, __('Settings::ai_account_oauth_error')), [
+                'auth_url' => $result['auth_url'] ?? null
+            ]);
+            return;
+        }
+
+        $tokens = $result['tokens'] ?? [];
+        $userInfo = $result['user_info'] ?? [];
+        $email = $userInfo['email'] ?? '';
+
+        if (!$email || empty($tokens['refresh_token'])) {
+            $this->respond(false, str_replace(':error', 'Missing refresh token or email', __('Settings::ai_account_oauth_error')));
+            return;
+        }
+
+        // Query initial quota via Python
+        $quotaCmd = "\"$pythonPath\" -c \"import json, sys; sys.path.append(r'" . dirname(__DIR__, 2) . "/Dispatcher/Bin'); from account_manager import query_user_quota; print(json.dumps(query_user_quota('" . addslashes($tokens['access_token']) . "')))\"";
+        $quotaOutput = [];
+        exec($quotaCmd, $quotaOutput);
+        $quotaJson = json_decode(implode('', $quotaOutput), true);
+
+        $geminiPct = 100;
+        $claudePct = 100;
+        $status = 'HEALTHY';
+        $resetTime = null;
+
+        if (is_array($quotaJson) && !empty($quotaJson['buckets'])) {
+            foreach ($quotaJson['buckets'] as $bucket) {
+                $mid = strtolower($bucket['modelId'] ?? '');
+                $pct = (int)round((float)($bucket['remainingFraction'] ?? 1.0) * 100);
+                if (str_contains($mid, 'gemini-3.8') || str_contains($mid, 'gemini-3-flash') || str_contains($mid, 'flash')) {
+                    $geminiPct = $pct;
+                    $resetTime = $bucket['resetTime'] ?? null;
+                }
+                if (str_contains($mid, 'claude')) {
+                    $claudePct = $pct;
+                }
+            }
+            $status = $geminiPct >= 50 ? 'HEALTHY' : ($geminiPct > 0 ? 'LOW' : 'EXHAUSTED');
+        }
+
+        $this->aiAccountsModel->upsertAccount([
+            'email'             => $email,
+            'name'              => $userInfo['name'] ?? explode('@', $email)[0],
+            'refresh_token'     => $tokens['refresh_token'],
+            'access_token'      => $tokens['access_token'] ?? '',
+            'expiry_timestamp'  => time() + ($tokens['expires_in'] ?? 3600),
+            'gemini_quota_pct'  => $geminiPct,
+            'claude_quota_pct'  => $claudePct,
+            'status'            => $status,
+            'reset_time'        => $resetTime
+        ]);
+
+        $this->respond(true, str_replace(':email', $email, __('Settings::ai_account_oauth_success')), [
+            'accounts' => $this->aiAccountsModel->getAllAccounts()
+        ]);
+    }
+
     public function saveSettings(): void
     {
         if ($this->user->role !== 'admin') {

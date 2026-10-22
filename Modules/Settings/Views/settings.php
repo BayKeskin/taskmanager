@@ -292,6 +292,9 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                             </div>
                         </div>
                         <div class="cu-settings-card-header-actions">
+                            <button type="button" id="btnAddNewAiAccount" class="cu-btn cu-btn-primary cu-btn-sm">
+                                <span>➕</span> <?= __('Settings::settings_ai_vault_btn_add') ?>
+                            </button>
                             <button type="button" id="btnSyncAiAccounts" class="cu-btn cu-btn-secondary cu-btn-sm">
                                 <span>🔄</span> <?= __('Settings::settings_ai_vault_btn_sync') ?>
                             </button>
@@ -341,18 +344,18 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                                             <td>
                                                 <span class="cu-text-xs cu-text-muted"><?= htmlspecialchars($acc['reset_time'] ?: 'N/A') ?></span>
                                             </td>
-                                            <td class="cu-text-right">
+                                            <td class="cu-text-right cu-actions-cell">
                                                 <?php if ($isActive): ?>
                                                     <span class="cu-badge cu-badge-active-tag">
-                                                        ⭐ <?= __('Settings::settings_ai_vault_active') ?>
+                                                        <?= __('Settings::settings_ai_vault_active') ?>
                                                     </span>
                                                 <?php else: ?>
                                                     <button type="button" class="cu-btn-xs cu-btn-primary btn-activate-ai-account" data-email="<?= htmlspecialchars($acc['email']) ?>">
                                                         <?= __('Settings::settings_ai_vault_btn_activate') ?>
                                                     </button>
                                                 <?php endif; ?>
-                                                <button type="button" class="cu-btn-xs cu-btn-danger btn-delete-ai-account" data-id="<?= (int)$acc['id'] ?>">
-                                                    🗑️
+                                                <button type="button" class="cu-btn-xs cu-btn-danger btn-delete-ai-account" data-id="<?= (int)$acc['id'] ?>" title="<?= __('Settings::settings_ai_vault_col_actions') ?>">
+                                                    ✕
                                                 </button>
                                             </td>
                                         </tr>

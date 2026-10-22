@@ -131,7 +131,7 @@ return array (
   'js_server_error' => 'Serververbindungsfehler: ',
   'js_module_toggle_err' => 'Modul-Toggle-Fehler: ',
   'settings_tab_ai_accounts' => 'KI-Kontenpool (Vault)',
-  'settings_ai_vault_title' => '🔐 Antigravity & LLM Multi-Account-Vault',
+  'settings_ai_vault_title' => 'Antigravity & LLM Multi-Account-Vault',
   'settings_ai_vault_desc' => 'Fügen Sie alle Ihre Google-Konten hinzu. Wenn das Gemini 3.8-Kontingent erschöpft ist, wechselt Dispatcher automatisch zum nächsten 100%-Konto.',
   'settings_ai_vault_btn_sync' => '🔄 Lokale Konten importieren & scannen',
   'settings_ai_vault_btn_add' => '➕ Neues Google-Konto hinzufügen',
@@ -149,6 +149,10 @@ return array (
   'ai_account_activated_success' => '✅ Aktives Sitzungskonto erfolgreich gewechselt und Language Server aktualisiert!',
   'ai_account_invalid_id' => 'Ungültige Konto-ID.',
   'ai_account_deleted_success' => '✅ Konto erfolgreich aus dem Tresor gelöscht.',
+  'ai_account_oauth_init_success' => 'Google-Anmeldeseite wird geöffnet, bitte bestätigen Sie die Berechtigung im Browser...',
+  'ai_account_oauth_timeout' => 'Zeitüberschreitung: Die Google-Anmeldung wurde nicht rechtzeitig abgeschlossen.',
+  'ai_account_oauth_error' => 'Fehler beim Hinzufügen des Google-Kontos: :error',
+  'ai_account_oauth_success' => '✅ Neues Google-Konto (:email) erfolgreich zum Tresor hinzugefügt!',
   'js_ai_delete_confirm' => 'Möchten Sie dieses Konto wirklich aus dem Tresor löschen?',
   'js_ai_generic_error' => 'Während des Vorgangs ist ein Fehler aufgetreten.'
 );

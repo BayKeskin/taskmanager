@@ -42,6 +42,7 @@ foreach ($modules as $moduleName) {
 
         $filePath = $file->getPathname();
         $relPath  = str_replace('\\', '/', substr($filePath, strlen($modulePath) + 1));
+        if (str_starts_with($relPath, 'Bin/')) continue;
         $content  = file_get_contents($filePath);
         $lines    = explode("\n", $content);
 

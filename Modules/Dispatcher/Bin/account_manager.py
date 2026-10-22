@@ -323,6 +323,138 @@ class AccountManager:
             print(f"[!] LS discovery error: {e}")
         return endpoints
 
+    def exchange_oauth_code(self, code: str, redirect_uri: str) -> dict:
+        """Exchanges Google authorization code for access and refresh tokens"""
+        url = "https://oauth2.googleapis.com/token"
+        body = urllib.parse.urlencode({
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri
+        }).encode("utf-8")
+        req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/x-www-form-urlencoded"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    def fetch_user_info(self, access_token: str) -> dict:
+        """Fetches Google profile email and name"""
+        url = "https://www.googleapis.com/oauth2/v2/userinfo"
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {access_token}"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    def start_oauth_flow(self, timeout_secs: int = 120) -> dict:
+        """
+        Starts a local temporary HTTP loopback server, prints auth URL (or opens browser),
+        captures Google OAuth tokens, and returns account payload.
+        """
+        import http.server
+        import socketserver
+        import threading
+
+        port = 19876
+        redirect_uri = f"http://127.0.0.1:{port}/callback"
+        scopes = [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/cclog",
+            "https://www.googleapis.com/auth/experimentsandconfigs"
+        ]
+        auth_params = {
+            "client_id": CLIENT_ID,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": " ".join(scopes),
+            "access_type": "offline",
+            "prompt": "consent"
+        }
+        auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(auth_params)
+
+        auth_result = {"status": "pending", "tokens": None, "user_info": None, "error": None}
+
+        class OAuthCallbackHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                if not self.path.startswith("/callback"):
+                    self.send_response(404)
+                    self.end_headers()
+                    return
+
+                parsed = urllib.parse.urlparse(self.path)
+                params = urllib.parse.parse_qs(parsed.query)
+                code = params.get("code", [None])[0]
+                error = params.get("error", [None])[0]
+
+                if error:
+                    auth_result["status"] = "error"
+                    auth_result["error"] = error
+                    self.send_response(400)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write("<h1>❌ Yetkilendirme Başarısız</h1><p>Giriş reddedildi veya hata oluştu.</p>".encode("utf-8"))
+                    return
+
+                if code:
+                    try:
+                        tokens = mgr_ref.exchange_oauth_code(code, redirect_uri)
+                        user_info = mgr_ref.fetch_user_info(tokens.get("access_token", ""))
+                        auth_result["status"] = "success"
+                        auth_result["tokens"] = tokens
+                        auth_result["user_info"] = user_info
+
+                        self.send_response(200)
+                        self.send_header("Content-Type", "text/html; charset=utf-8")
+                        self.end_headers()
+                        success_html = f"""
+                        <html><head><meta charset="utf-8"><title>Giriş Başarılı</title>
+                        <style>body {{ font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #0f172a; color: #fff; margin:0; }}
+                        .card {{ background: #1e293b; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
+                        h2 {{ color: #10b981; }} p {{ color: #94a3b8; font-size: 14px; }}</style></head>
+                        <body><div class="card">
+                        <h2>✅ Hesap Başarıyla Eklendi!</h2>
+                        <p><strong>{user_info.get('email')}</strong> TaskManager havuzuna aktarıldı.</p>
+                        <p>Bu sekmeyi kapatabilir ve TaskManager paneline dönebilirsiniz.</p>
+                        </div></body></html>
+                        """
+                        self.wfile.write(success_html.encode("utf-8"))
+                    except Exception as ex:
+                        auth_result["status"] = "error"
+                        auth_result["error"] = str(ex)
+                        self.send_response(500)
+                        self.send_header("Content-Type", "text/html; charset=utf-8")
+                        self.end_headers()
+                        self.wfile.write(f"<h1>Hata</h1><p>{ex}</p>".encode("utf-8"))
+
+            def log_message(self, format, *args):
+                pass
+
+        mgr_ref = self
+        try:
+            server = socketserver.TCPServer(("127.0.0.1", port), OAuthCallbackHandler)
+            server.timeout = 1.0
+        except Exception as e:
+            return {"status": "error", "error": f"Port {port} açılamadı: {e}", "auth_url": auth_url}
+
+        # Try to open default browser
+        try:
+            import webbrowser
+            webbrowser.open(auth_url)
+        except Exception:
+            pass
+
+        start_time = time.time()
+        while time.time() - start_time < timeout_secs:
+            server.handle_request()
+            if auth_result["status"] != "pending":
+                break
+
+        server.server_close()
+
+        if auth_result["status"] == "pending":
+            return {"status": "timeout", "error": "Zaman aşımı: Kullanıcı girişi tamamlamadı.", "auth_url": auth_url}
+
+
 if __name__ == "__main__":
     mgr = AccountManager()
     print("--- LIVE ACCOUNT HEALTH & QUOTA RANKING (TARGET: GEMINI 3.8 / FLASH) ---")
@@ -333,3 +465,4 @@ if __name__ == "__main__":
     best = mgr.find_best_next_account(target_model="gemini-3.8")
     if best:
         print(f"\n[+] Recommended next healthy account: {best['email']} (%{best['target_model_pct']})")
+

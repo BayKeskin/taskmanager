@@ -131,7 +131,7 @@ return array (
   'js_server_error' => 'Sunucu bağlantı hatası: ',
   'js_module_toggle_err' => 'Modül toggle hatası: ',
   'settings_tab_ai_accounts' => 'AI Hesap Havuzu (Multi-Account Vault)',
-  'settings_ai_vault_title' => '🔐 Antigravity & LLM Hesap Havuzu (Yerli ve Milli Switchboard)',
+  'settings_ai_vault_title' => 'Antigravity & LLM Hesap Havuzu (Yerli Switchboard)',
   'settings_ai_vault_desc' => 'Tüm Google hesaplarınızı buraya ekleyin. Bir hesabın Gemini 3.8 kotası bittiğinde Dispatcher otomatik olarak %100 limitli diğer hesaba kesintisiz geçer.',
   'settings_ai_vault_btn_sync' => '🔄 Yerel Hesapları İçe Aktar & Kotayı Tara',
   'settings_ai_vault_btn_add' => '➕ Yeni Google Hesabı Ekle',
@@ -149,6 +149,10 @@ return array (
   'ai_account_activated_success' => '✅ Aktif oturum hesabı başarıyla değiştirildi ve Language Server güncellendi!',
   'ai_account_invalid_id' => 'Geçersiz hesap kimliği.',
   'ai_account_deleted_success' => '✅ Hesap başarıyla havuzdan silindi.',
+  'ai_account_oauth_init_success' => 'Google oturum açma sayfası açılıyor, lütfen açılan tarayıcıda izni onaylayın...',
+  'ai_account_oauth_timeout' => 'Zaman aşımı: Google oturumu belirlenen sürede tamamlanamadı.',
+  'ai_account_oauth_error' => 'Google hesabı eklenirken bir hata oluştu: :error',
+  'ai_account_oauth_success' => '✅ Yeni Google hesabı (:email) başarıyla havuza eklendi!',
   'js_ai_delete_confirm' => 'Bu hesabı havuzdan silmek istediğinize emin misiniz?',
   'js_ai_generic_error' => 'İşlem sırasında bir hata oluştu.'
 );

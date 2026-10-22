@@ -34,5 +34,6 @@ AssetManager::localizeScript('settings-js', 'SettingsI18n', [
     'ai_activate_btn'     => __('Settings::settings_ai_vault_btn_activate'),
     'ai_delete_confirm'   => __('Settings::js_ai_delete_confirm'),
     'ai_generic_error'    => __('Settings::js_ai_generic_error'),
-    'ai_empty_vault'      => __('Settings::settings_ai_vault_empty')
+    'ai_empty_vault'      => __('Settings::settings_ai_vault_empty'),
+    'ai_oauth_init'       => __('Settings::ai_account_oauth_init_success')
 ]);
