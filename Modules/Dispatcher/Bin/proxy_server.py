@@ -156,7 +156,66 @@ class InFlightProxyHandler(http.server.BaseHTTPRequestHandler):
                 pass
 
     def _handle_http_request(self):
-        """Intercepts, buffers, forwards, and replays HTTP requests on 429"""
+        """Intercepts, buffers, forwards, and replays HTTP requests on 429, plus handles /callback for OAuth"""
+        # 1. GOOGLE OAUTH CALLBACK ENTEGRASYONU
+        if self.path.startswith("/callback"):
+            parsed = urllib.parse.urlparse(self.path)
+            params = urllib.parse.parse_qs(parsed.query)
+            code = params.get("code", [None])[0]
+            error = params.get("error", [None])[0]
+
+            result_file = os.path.join(CURRENT_DIR, "oauth_result.json")
+            if error:
+                with open(result_file, "w", encoding="utf-8") as f:
+                    json.dump({"status": "error", "error": error}, f)
+                self.send_response(400)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                self.wfile.write("<h1>❌ Giriş Başarısız</h1><p>Yetkilendirme iptal edildi.</p>".encode("utf-8"))
+                return
+
+            if code and AccountManager:
+                try:
+                    mgr = AccountManager()
+                    redirect_uri = f"http://127.0.0.1:{PROXY_PORT}/callback"
+                    tokens = mgr.exchange_oauth_code(code, redirect_uri)
+                    user_info = mgr.fetch_user_info(tokens.get("access_token", ""))
+                    
+                    with open(result_file, "w", encoding="utf-8") as f:
+                        json.dump({
+                            "status": "success",
+                            "tokens": tokens,
+                            "user_info": user_info
+                        }, f)
+
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.end_headers()
+                    email = user_info.get("email", "")
+                    success_html = f"""
+                    <!DOCTYPE html><html><head><meta charset="utf-8"><title>Giriş Başarılı</title>
+                    <style>body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #0f172a; color: #fff; margin:0; }}
+                    .card {{ background: #1e293b; padding: 40px; border-radius: 14px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); max-width: 440px; }}
+                    h2 {{ color: #10b981; margin-top: 0; }} p {{ color: #94a3b8; font-size: 14px; line-height: 1.5; }}
+                    .email {{ color: #60a5fa; font-weight: 700; font-size: 16px; margin: 10px 0; }}</style></head>
+                    <body><div class="card">
+                    <h2>✅ Hesap Başarıyla Eklendi!</h2>
+                    <div class="email">{email}</div>
+                    <p>Google hesabı TaskManager havuzuna aktarıldı.<br>Bu pencereyi kapatabilirsiniz.</p>
+                    <script>setTimeout(function(){{ window.close(); }}, 2000);</script>
+                    </div></body></html>
+                    """
+                    self.wfile.write(success_html.encode("utf-8"))
+                    return
+                except Exception as ex:
+                    with open(result_file, "w", encoding="utf-8") as f:
+                        json.dump({"status": "error", "error": str(ex)}, f)
+                    self.send_response(500)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(f"<h1>Hata</h1><p>{ex}</p>".encode("utf-8"))
+                    return
+
         content_length = int(self.headers.get("Content-Length", 0))
         req_body = self.rfile.read(content_length) if content_length > 0 else b""
 

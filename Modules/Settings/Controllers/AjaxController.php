@@ -156,19 +156,9 @@ class AjaxController extends BaseController
             $pythonPath = 'python';
         }
 
-        // 1. Python loopback sunucusunu arka planda asenkron olarak ayağa kaldır
-        $scriptPath = dirname(__DIR__, 2) . '/Dispatcher/Bin/account_manager.py';
-        $cmd = "\"$pythonPath\" -c \"import json, sys; sys.path.append(r'" . dirname(__DIR__, 2) . "/Dispatcher/Bin'); from account_manager import AccountManager; mgr = AccountManager(); mgr.start_oauth_flow(timeout_secs=180)\"";
-        
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            pclose(popen("start /B " . $cmd, "r"));
-        } else {
-            exec($cmd . " > /dev/null 2>&1 &");
-        }
-
-        // 2. Client için Google OAuth yetkilendirme linkini üret
+        // 1. Client için doğrudan çalışan Proxy (Port 4006) üzerinden Google OAuth yetkilendirme linkini üret
         $clientId = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com";
-        $redirectUri = "http://127.0.0.1:19876/callback";
+        $redirectUri = "http://127.0.0.1:4006/callback";
         $scopes = [
             "https://www.googleapis.com/auth/cloud-platform",
             "https://www.googleapis.com/auth/userinfo.email",
