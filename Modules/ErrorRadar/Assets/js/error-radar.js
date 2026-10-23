@@ -28,7 +28,45 @@
         return m ? m[1] : '';
     }
 
-    function getProjectId() {
+    function isTaskManagerContext(endpoint) {
+        if (window.TASKMANAGER_CORE_PROJECT_ID) {
+            return true;
+        }
+        var loc = window.location;
+        var pathname = loc.pathname || '';
+        var baseUrl = getBaseUrl();
+        if (baseUrl && pathname.indexOf(baseUrl) === 0) {
+            return true;
+        }
+        if (endpoint) {
+            if (endpoint.indexOf('/ajax') !== -1 || endpoint.indexOf('/api/') !== -1 || endpoint.indexOf('error-radar') !== -1) {
+                return true;
+            }
+            if (baseUrl && endpoint.indexOf(baseUrl) !== -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function getProjectId(endpoint) {
+        // 1. Script etiketi üzerinden özel proje tanımlanmışsa (harici entegrasyonlar için)
+        var currentScript = document.currentScript || document.querySelector('script[src*="error-radar.js"]');
+        if (currentScript && currentScript.getAttribute('data-project')) {
+            return currentScript.getAttribute('data-project');
+        }
+
+        // 2. TaskManager'ın kendi paneli/içeriği veya iç endpoint'i ise doğrudan ana proje '01'
+        if (isTaskManagerContext(endpoint)) {
+            return window.TASKMANAGER_CORE_PROJECT_ID || '01';
+        }
+
+        // 3. Harici sitede window.CURRENT_PROJECT_ID tanımlıysa
+        if (window.CURRENT_PROJECT_ID) {
+            return window.CURRENT_PROJECT_ID;
+        }
+
+        // 4. Harici sitede URL query parametresi varsa
         try {
             var params = new URLSearchParams(window.location.search);
             if (params.has('project_id')) {
@@ -36,9 +74,6 @@
             }
         } catch (e) {}
 
-        if (window.CURRENT_PROJECT_ID) {
-            return window.CURRENT_PROJECT_ID;
-        }
         return '01';
     }
 
@@ -54,7 +89,7 @@
         reportedSet.add(key);
 
         payload.url = window.location.href;
-        payload.project_id = getProjectId();
+        payload.project_id = getProjectId(payload.endpoint);
         payload.timestamp = new Date().toISOString();
 
         queue.push(payload);
@@ -95,6 +130,18 @@
             var target = event.target || event.srcElement;
             if (target && (target.tagName === 'LINK' || target.tagName === 'SCRIPT' || target.tagName === 'IMG')) {
                 var assetSrc = target.src || target.href || '';
+                // Boş veya geçerli bir dosya uzantısı/yolu olmayan (örneğin sayfanın kendi URL'si) img hatalarını yoksay
+                if (target.tagName === 'IMG' && (!assetSrc || assetSrc === window.location.href || assetSrc.startsWith('data:'))) {
+                    return;
+                }
+                // Kullanıcı açıklamaları, kod blokları veya taslak şablon etiketleri (örn: {{ ... }} veya {% ... %}) içeren sahte istekleri yoksay
+                if (assetSrc.indexOf('%7B%7B') !== -1 || assetSrc.indexOf('{{') !== -1 || assetSrc.indexOf('{%') !== -1) {
+                    return;
+                }
+                // Görev açıklaması veya kart açıklaması içindeki kullanıcı girdilerinden kaynaklanan img hatalarını yoksay
+                if (target.closest && target.closest('#drawerDescription, .cu-drawer-desc, .cu-comment-content, .cu-board-card, [data-task-id]')) {
+                    return;
+                }
                 if (assetSrc) {
                     sendReport({
                         type: 'static_asset',
@@ -280,6 +327,21 @@
     // 4. Broken Translation (i18n) Key Sniffer
     var I18N_REGEX = /\b([A-Z][a-zA-Z0-9]+)::([a-z0-9_]+)\b/g;
 
+    // Yalnızca TaskManager'ın resmi HMVC modülleri çeviri anahtarı içerebilir
+    var VALID_MODULE_NAMES = new Set([
+        'AgentRules', 'AiArchitect', 'ApiTester', 'Billing', 'Board',
+        'Calendar', 'Chat', 'Dispatcher', 'Docs', 'ErrorRadar',
+        'ExcelExport', 'GithubDevops', 'LiveDeploy', 'Mailer', 'Mcp',
+        'Projects', 'Reports', 'RestApi', 'SSE', 'Settings',
+        'SmokeTest', 'Storage', 'Team', 'Telegram', 'VisualPins', 'Watchdog'
+    ]);
+
+    var IGNORED_I18N_METHODS = new Set([
+        'prepare', 'query', 'execute', 'connect', 'fetch', 'fetchAll',
+        'run', 'exec', 'call', 'init', 'getInstance', 'boot', 'listen',
+        'dispatch', 'bind', 'commit', 'rollback', 'beginTransaction'
+    ]);
+
     function scanVisibleI18nKeys(rootNode) {
         try {
             var target = rootNode || document.body;
@@ -288,12 +350,32 @@
             var walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT, null, false);
             var node;
             while ((node = walker.nextNode())) {
+                // Kod blokları, script/style ve mevcut görev kartları/başlıklarını atla (kendi kendini besleyen döngüyü engelle)
+                if (node.parentElement) {
+                    var parentTag = node.parentElement.tagName;
+                    if (parentTag === 'SCRIPT' || parentTag === 'STYLE' || parentTag === 'CODE' || parentTag === 'PRE') {
+                        continue;
+                    }
+                    if (node.parentElement.closest('.cu-board-card, .cu-task-title, .cu-drawer-title, .cu-drawer-desc, [data-task-id]')) {
+                        continue;
+                    }
+                }
+
                 var text = node.nodeValue;
                 if (!text || text.indexOf('::') === -1) continue;
 
                 var matches;
+                I18N_REGEX.lastIndex = 0;
                 while ((matches = I18N_REGEX.exec(text)) !== null) {
+                    var modName = matches[1];
+                    var keyName = matches[2];
                     var fullKey = matches[0];
+
+                    // Modül adı kayıtlı bir HMVC modülü değilse veya yaygın kod metoduysa (örn: PDO::prepare) yoksay
+                    if (!VALID_MODULE_NAMES.has(modName) || IGNORED_I18N_METHODS.has(keyName)) {
+                        continue;
+                    }
+
                     if (fullKey && fullKey.length > 5) {
                         sendReport({
                             type: 'broken_i18n',
