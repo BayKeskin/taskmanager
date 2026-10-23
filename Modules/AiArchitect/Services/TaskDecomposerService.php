@@ -171,32 +171,29 @@ class TaskDecomposerService
         $projTitle = $project->title ?? 'Project';
         $projCode  = $project->project_code ?? 'PRJ';
         $projDesc  = $project->description ?? '';
-        $projRules = $project->agent_rules ?? '';
+        $projRules = trim($project->agent_rules ?? '');
         $imgCount  = count($docInfo['extracted_imgs'] ?? []);
-
-        // Eğer proje kuralları boşsa veya TaskManager projesiyse katı HMVC mimari kuralını enjekte et
-        $enforcedStackRule = "TECHNICAL STACK & ARCHITECTURAL MANDATES FOR THIS PROJECT:\n";
-        if (!empty($projRules)) {
-            $enforcedStackRule .= $projRules . "\n\n";
-        }
-        if ((int)$projectId === 1 || stripos($projTitle, 'Task Manager') !== false || stripos($projRules, 'HMVC') !== false) {
-            $enforcedStackRule .= "CRITICAL PROJECT CONSTRAINTS: This is a Custom Vanilla PHP 8.2+ HMVC Application (Core\\BaseModel, Core\\BaseController, Modules/{Module}/). IT IS NOT LARAVEL OR SYMFONY! NEVER suggest composer packages like `laravel/socialite` or framework utilities. All controllers must reside in `Modules/{Module}/Controllers/`, models in `Modules/{Module}/Models/`, views in `Modules/{Module}/Views/`, and translations in `Modules/{Module}/Lang/{tr,en,de}.php`. Use native PHP cURL or standard PHP features.\n";
-        }
 
         $systemPrompt = "You are a Senior Technical Project Architect and Software Engineering Lead.
 Your task is to analyze the user's project brief, contract specifications, or uploaded document and decompose it into modular Parent Tasks (Functional Epics/Modules) and concrete, single-purpose Subtasks.
 
+CRITICAL PROJECT ARCHITECTURE & AGENT_RULES MANDATE:
+You are provided with the target project's official `PROJECT RULES & TECH STACK (agent_rules)` from the database.
+1. You MUST strictly obey every single architectural rule, framework constraint, directory structure, and coding standard stated in `PROJECT RULES & TECH STACK`!
+2. If the project rules specify Custom HMVC (`Modules/{ModuleName}/...`), write all implementation steps, file paths, Controllers, Models, Views, and `Lang/{tr,en,de}.php` strictly for that HMVC structure and include the mandatory `php taskmanager-audit/audit.php` verification step!
+3. If the project rules specify CodeIgniter 4, WordPress, Flutter, or Vanilla PHP, write all tasks strictly according to that exact stack!
+4. STRICTLY FORBIDDEN: NEVER suggest, assume, or introduce Laravel, Artisan, Blade, Composer packages, or any external framework that contradicts the project's `agent_rules`!
+
 CRITICAL ARCHITECTURAL RULES:
-1. STRICT STACK COMPLIANCE: Adhere strictly to the project's technical stack defined in the prompt. If the project is a Custom PHP HMVC app, NEVER recommend Laravel, Symfony, or external packages that belong to other frameworks!
-2. NEVER output mere titles with empty or generic descriptions! For EVERY Parent Task ('description') and EVERY Subtask ('description'), you MUST provide a detailed, actionable breakdown containing:
+1. NEVER output mere titles with empty or generic descriptions! For EVERY Parent Task ('description') and EVERY Subtask ('description'), you MUST provide a detailed, actionable breakdown containing:
    - Purpose & Functional Scope
    - Step-by-Step Implementation Guide (referencing specific target files, methods, database changes)
    - Acceptance & Test Criteria / Definition of Done
-3. Break features into distinct functional modules.
-4. Subtask category MUST be one of: 'coding', 'design', 'seo', 'marketing', 'legal', 'content'. NEVER assign the 'ai' tag!
-5. 'execution_mode': If automated software infrastructure, mark as 'auto'; if gated, mark as 'gated'.
-6. MULTILINGUAL OUTPUT MANDATE: Match the user input language completely.
-7. Return ONLY valid JSON matching this schema:
+2. Break features into distinct functional modules.
+3. Subtask category MUST be one of: 'coding', 'design', 'seo', 'marketing', 'legal', 'content'. NEVER assign the 'ai' tag!
+4. 'execution_mode': If automated software infrastructure, mark as 'auto'; if gated, mark as 'gated'.
+5. MULTILINGUAL OUTPUT MANDATE: Match the user input language completely.
+6. Return ONLY valid JSON matching this schema:
 {
   \"epics\": [
     {
@@ -219,30 +216,57 @@ CRITICAL ARCHITECTURAL RULES:
 
         $userPrompt = "Target Project: [{$projCode}] {$projTitle}\n"
             . ($projDesc ? "Project Overview: {$projDesc}\n" : "")
-            . "{$enforcedStackRule}"
-            . ($imgCount > 0 ? "Note: {$imgCount} reference screenshots/diagrams were extracted.\n" : "")
+            . "\n=== MANDATORY PROJECT ARCHITECTURE & AGENT RULES ===\n"
+            . (!empty($projRules) ? $projRules : "Follow clean modular software design matching the project codebase.") . "\n"
+            . "====================================================\n\n"
+            . ($imgCount > 0 ? "Note: {$imgCount} reference screenshots/diagrams were attached. Carefully inspect them.\n" : "")
             . "\nUser Brief & Document Content:\n" . mb_substr($combinedBrief, 0, 18000) . "\n\n"
-            . "Please analyze the requirements according to the project's exact technical stack and generate the JSON task tree:";
+            . "Please analyze the requirements strictly obeying the project's mandatory architecture rules and generate the JSON task tree:";
 
         $apiKey = trim($settings->gemini_api_key ?? '');
         if (!empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
-            $candidateModels = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3-flash-preview'];
-            $configuredModel = $settings->default_ai_model ?? '';
-            if (!empty($configuredModel) && !in_array($configuredModel, $candidateModels, true)) {
-                array_unshift($candidateModels, $configuredModel);
+            $candidateModels = [];
+            $configuredModel = trim($settings->default_ai_model ?? '');
+            if (!empty($configuredModel)) {
+                $candidateModels[] = $configuredModel;
+            }
+            foreach (['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'] as $stdModel) {
+                if (!in_array($stdModel, $candidateModels, true)) {
+                    $candidateModels[] = $stdModel;
+                }
             }
 
-            foreach ($candidateModels as $tryModel) {
-                if (str_contains($tryModel, '1.5') || str_contains($tryModel, '2.5')) {
-                    continue;
+            // Çıkarılan görselleri Gemini için inlineData parts dizisine dönüştür
+            $imageParts = [];
+            if (!empty($docInfo['extracted_imgs']) && is_array($docInfo['extracted_imgs'])) {
+                $docUploadDir = dirname(__DIR__, 3);
+                foreach ($docInfo['extracted_imgs'] as $imgItem) {
+                    $relPath = $imgItem['file_path'] ?? '';
+                    $cleanRel = preg_replace('#^https?://[^/]+#i', '', $relPath);
+                    $fullImgPath = $docUploadDir . '/' . ltrim($cleanRel, '/\\');
+                    if (file_exists($fullImgPath) && is_readable($fullImgPath)) {
+                        $rawBytes = @file_get_contents($fullImgPath);
+                        if (!empty($rawBytes) && strlen($rawBytes) <= 4 * 1024 * 1024) {
+                            $mime = $imgItem['file_type'] ?? 'image/jpeg';
+                            $imageParts[] = [
+                                'inlineData' => [
+                                    'mimeType' => $mime,
+                                    'data'     => base64_encode($rawBytes)
+                                ]
+                            ];
+                        }
+                    }
                 }
-                
-                // Transient 503 veya 429 kota durumlarında model başına 2 deneme hakkı
+            }
+
+            $userParts = array_merge([['text' => $userPrompt]], $imageParts);
+
+            foreach ($candidateModels as $tryModel) {
                 for ($attempt = 1; $attempt <= 2; $attempt++) {
                     $url = "https://generativelanguage.googleapis.com/v1beta/models/{$tryModel}:generateContent?key=" . urlencode($apiKey);
                     $payload = [
                         'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
-                        'contents'          => [['role' => 'user', 'parts' => [['text' => $userPrompt]]]],
+                        'contents'          => [['role' => 'user', 'parts' => $userParts]],
                         'generationConfig'  => [
                             'temperature'      => 0.2,
                             'maxOutputTokens'  => 8192,
@@ -268,8 +292,16 @@ CRITICAL ARCHITECTURAL RULES:
                     if ($httpCode === 200 && $response) {
                         $jsonRes = json_decode($response, true);
                         $text = $jsonRes['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                        if ($text) {
-                            $parsed = json_decode($text, true);
+                        if (!empty($text)) {
+                            // Başındaki / sonundaki ```json ve ``` bloklarını temizle
+                            $cleaned = trim(preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($text)));
+                            $parsed = json_decode($cleaned, true);
+
+                            // Eğer doğrudan decode edilemezse ilk { ile son } arasını ayıkla
+                            if ((empty($parsed) || !is_array($parsed)) && preg_match('/\{.*\}/s', $cleaned, $m)) {
+                                $parsed = json_decode($m[0], true);
+                            }
+
                             if (!empty($parsed['epics']) && is_array($parsed['epics'])) {
                                 return [
                                     'success'        => true,
@@ -284,11 +316,11 @@ CRITICAL ARCHITECTURAL RULES:
 
                     // 503 Service Unavailable veya 429 Too Many Requests durumunda kısa bekleme ve retry/fallback
                     if ($httpCode === 503 || $httpCode === 429) {
-                        usleep(1200000); // 1.2 sn bekle
+                        usleep(1000000); // 1.0 sn bekle
                         continue;
                     }
 
-                    // Model bulunamadıysa (404) hemen sonraki modele geç
+                    // Model bulunamadıysa (404) sonraki modele geç
                     if ($httpCode === 404) {
                         break;
                     }

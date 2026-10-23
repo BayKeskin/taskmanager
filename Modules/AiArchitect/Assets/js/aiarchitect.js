@@ -149,7 +149,17 @@ async function runAiArchitect() {
     }
 
     const projSelect = document.getElementById('modalNewTaskProjectSelect') || document.querySelector('#modalNewTask select[name="project_id"]');
-    const projectId = projSelect ? projSelect.value : 1;
+    let projectId = projSelect ? projSelect.value : null;
+    if (!projectId) {
+        if (typeof window.ACTIVE_PROJECT_ID !== 'undefined' && window.ACTIVE_PROJECT_ID) {
+            projectId = window.ACTIVE_PROJECT_ID;
+        } else if (window.BOARD_CONTEXT && window.BOARD_CONTEXT.projectId) {
+            projectId = window.BOARD_CONTEXT.projectId;
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            projectId = urlParams.get('project_id') || 1;
+        }
+    }
 
     const btn = document.getElementById('btnRunAiArchitect');
     const btnText = document.getElementById('btnRunAiArchitectText');
@@ -361,7 +371,17 @@ async function runAiBriefDecomposition() {
     const input = document.getElementById('aiArchBriefInput');
     const brief = input ? input.value.trim() : '';
     const projSelect = document.getElementById('aiArchProjDropdown') || document.getElementById('aiArchProjectSelect');
-    const projId = projSelect ? projSelect.value : 1;
+    let projId = projSelect ? projSelect.value : null;
+    if (!projId) {
+        if (typeof window.ACTIVE_PROJECT_ID !== 'undefined' && window.ACTIVE_PROJECT_ID) {
+            projId = window.ACTIVE_PROJECT_ID;
+        } else if (window.BOARD_CONTEXT && window.BOARD_CONTEXT.projectId) {
+            projId = window.BOARD_CONTEXT.projectId;
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            projId = urlParams.get('project_id') || 1;
+        }
+    }
 
     const fileInput = document.getElementById('aiArchFileInput');
     const fileToUpload = selectedAiArchFile || (fileInput && fileInput.files && fileInput.files[0]) || null;

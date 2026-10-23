@@ -30,7 +30,24 @@ class AiArchitectModel extends BaseModel
     public function getProjectDetails(int $projectId): ?object
     {
         $rows = $this->query("SELECT id, project_code, title, description, agent_rules, workspace_path FROM projects WHERE id = ? LIMIT 1", [$projectId]);
-        return !empty($rows) ? (object)$rows[0] : null;
+        if (empty($rows)) {
+            return null;
+        }
+        $project = (object)$rows[0];
+
+        // Eğer projenin agent_rules alanı boşsa, workspace_path içindeki AGENTS.md dosyasını kontrol et
+        if (empty(trim($project->agent_rules ?? '')) && !empty($project->workspace_path)) {
+            $wsPath = rtrim(str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $project->workspace_path), DIRECTORY_SEPARATOR);
+            $agentsMdPath = $wsPath . DIRECTORY_SEPARATOR . 'AGENTS.md';
+            if (file_exists($agentsMdPath) && is_readable($agentsMdPath)) {
+                $fileContent = @file_get_contents($agentsMdPath);
+                if (!empty($fileContent)) {
+                    $project->agent_rules = $fileContent;
+                }
+            }
+        }
+
+        return $project;
     }
 
     /**

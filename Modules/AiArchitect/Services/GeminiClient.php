@@ -28,22 +28,17 @@ class GeminiClient
         $projTitle = $projectRow->title ?? 'Project';
         $projCode  = $projectRow->project_code ?? 'PRJ';
         $projDesc  = $projectRow->description ?? '';
-        $projRules = $projectRow->agent_rules ?? '';
-
-        // Katı mimari sınırları enjekte et (asla Laravel veya farklı framework önermemeli)
-        $enforcedStackRule = "TECHNICAL STACK & ARCHITECTURAL MANDATES FOR THIS PROJECT:\n";
-        if (!empty($projRules)) {
-            $enforcedStackRule .= $projRules . "\n\n";
-        }
-        if ((int)$projectId === 1 || stripos($projTitle, 'Task Manager') !== false || stripos($projRules, 'HMVC') !== false) {
-            $enforcedStackRule .= "CRITICAL PROJECT CONSTRAINTS: This is a Custom Vanilla PHP 8.2+ HMVC Application (Core\\BaseModel, Core\\BaseController, Modules/{Module}/). IT IS NOT LARAVEL OR SYMFONY! NEVER suggest composer packages like `laravel/socialite` or framework utilities. All controllers must reside in `Modules/{Module}/Controllers/`, models in `Modules/{Module}/Models/`, views in `Modules/{Module}/Views/`, and translations in `Modules/{Module}/Lang/{tr,en,de}.php`. Use native PHP cURL or standard PHP features.\n";
-        }
+        $projRules = trim($projectRow->agent_rules ?? '');
 
         $systemPrompt = "You are a Principal Software Architect and elite AI Agent Prompt Engineer.
 Your mission is to examine the provided UI/UX mockup images (wireframes, designs, screenshots), source code files, and user notes, and transform them into an EXTREMELY DETAILED, PIXEL-PERFECT, DEEPLY ANALYZED TECHNICAL SPECIFICATION PROMPT for autonomous coding agents (like Antigravity, Cursor, or Claude Code).
 
-STRICT STACK COMPLIANCE:
-Adhere strictly to the project's technical stack defined in the prompt. If the project is a Custom PHP HMVC app, NEVER recommend Laravel, Symfony, or external packages that belong to other frameworks!
+CRITICAL PROJECT ARCHITECTURE & AGENT_RULES MANDATE:
+You are provided with the target project's official `PROJECT RULES & TECH STACK (agent_rules)` from the database.
+1. You MUST strictly obey every single architectural rule, framework constraint, directory structure, and coding standard stated in `PROJECT RULES & TECH STACK`!
+2. If the project rules specify Custom HMVC (`Modules/{ModuleName}/...`), write all implementation steps, file paths, Controllers, Models, Views, and `Lang/{tr,en,de}.php` strictly for that HMVC structure and include the mandatory `php taskmanager-audit/audit.php` verification step!
+3. If the project rules specify CodeIgniter 4, WordPress, Flutter, or Vanilla PHP, write all tasks strictly according to that exact stack!
+4. STRICTLY FORBIDDEN: NEVER suggest, assume, or introduce Laravel, Artisan, Blade, Composer packages, or any external framework that contradicts the project's `agent_rules`!
 
 CRITICAL VISUAL ANALYSIS DIRECTIVE (WHEN IMAGES ARE PROVIDED):
 You MUST visually analyze the image in extreme detail and explicitly describe every single section you see:
@@ -72,7 +67,9 @@ MANDATORY RULES:
         if ($projDesc) {
             $combinedUserPrompt .= "PROJECT OVERVIEW: {$projDesc}\n";
         }
-        $combinedUserPrompt .= "{$enforcedStackRule}\n";
+        $combinedUserPrompt .= "\n=== MANDATORY PROJECT ARCHITECTURE & AGENT RULES ===\n"
+            . (!empty($projRules) ? $projRules : "Follow clean modular software design matching the project codebase.") . "\n"
+            . "====================================================\n\n";
         $combinedUserPrompt .= "\n--- USER INSTRUCTION / REQUIREMENT ---\n{$userInstruction}\n";
 
         if (!empty($referenceFiles)) {
@@ -94,17 +91,18 @@ MANDATORY RULES:
         // 1. Google Gemini API Call
         $apiKey = trim($settings->gemini_api_key ?? '');
         if (!$skipLiveApi && !empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
-            $candidateModels = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3-flash-preview'];
-            $configuredModel = $settings->default_ai_model ?? '';
-            if (!empty($configuredModel) && !in_array($configuredModel, $candidateModels, true)) {
-                array_unshift($candidateModels, $configuredModel);
+            $candidateModels = [];
+            $configuredModel = trim($settings->default_ai_model ?? '');
+            if (!empty($configuredModel)) {
+                $candidateModels[] = $configuredModel;
+            }
+            foreach (['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'] as $stdModel) {
+                if (!in_array($stdModel, $candidateModels, true)) {
+                    $candidateModels[] = $stdModel;
+                }
             }
 
             foreach ($candidateModels as $tryModel) {
-                if (str_contains($tryModel, '1.5') || str_contains($tryModel, '2.5')) {
-                    continue;
-                }
-
                 for ($attempt = 1; $attempt <= 2; $attempt++) {
                     $url = "https://generativelanguage.googleapis.com/v1beta/models/{$tryModel}:generateContent?key=" . urlencode($apiKey);
 
@@ -168,7 +166,7 @@ MANDATORY RULES:
                     }
 
                     if ($httpCode === 503 || $httpCode === 429) {
-                        usleep(1200000); // 1.2 sn bekle
+                        usleep(1000000); // 1.0 sn bekle
                         continue;
                     }
 
