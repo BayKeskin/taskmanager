@@ -65,6 +65,10 @@ class AjaxRouter
 
         foreach ($modulesDirs as $moduleDir) {
             $moduleName = basename($moduleDir);
+            // Board modülü ana AJAX giriş noktasıdır (procedural dispatcher); HMVC sınıfı değildir.
+            if ($moduleName === 'Board') {
+                continue;
+            }
             $ajaxControllerFile = $moduleDir . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AjaxController.php';
 
             if (!file_exists($ajaxControllerFile)) {

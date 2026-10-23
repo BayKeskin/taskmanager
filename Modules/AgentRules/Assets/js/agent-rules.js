@@ -38,6 +38,65 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const btnSaveQaGlobal = document.getElementById('btnSaveQaGlobal');
+    const qaGlobalRulesInput = document.getElementById('qaGlobalInstructionsInput') || document.getElementById('qaGlobalRulesInput');
+    if (btnSaveQaGlobal && qaGlobalRulesInput) {
+        btnSaveQaGlobal.addEventListener('click', async function () {
+            const content = qaGlobalRulesInput.value.trim();
+            btnSaveQaGlobal.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('qa_global_rules', content);
+                formData.append('qa_global_instructions', content);
+
+                const response = await fetch(getBaseUrl() + '/ajax?action=save_qa_global_rules', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                } else {
+                    alert(data.message || 'Error');
+                }
+            } catch (err) {
+                alert('Connection error');
+            } finally {
+                btnSaveQaGlobal.disabled = false;
+            }
+        });
+    }
+
+    async function autoSaveCurrentInputs() {
+        try {
+            if (globalRulesInput) {
+                const gContent = globalRulesInput.value.trim();
+                const gForm = new FormData();
+                gForm.append('global_rules', gContent);
+                await fetch(getBaseUrl() + '/ajax?action=save_global_rules', {
+                    method: 'POST',
+                    body: gForm
+                });
+            }
+
+            const qaInput = document.getElementById('qaGlobalInstructionsInput') || qaGlobalRulesInput;
+            if (qaInput) {
+                const qaContent = qaInput.value.trim();
+                const qaForm = new FormData();
+                qaForm.append('qa_global_instructions', qaContent);
+                qaForm.append('qa_global_rules', qaContent);
+                await fetch(getBaseUrl() + '/ajax?action=save_qa_global_rules', {
+                    method: 'POST',
+                    body: qaForm
+                });
+            }
+        } catch (e) {
+            // Sessizce devam et
+        }
+    }
+
     if (btnSyncAll) {
         btnSyncAll.addEventListener('click', async function () {
             const confirmMsg = (window.agentRulesTranslations && window.agentRulesTranslations.confirmSyncAll) 
@@ -51,6 +110,9 @@ document.addEventListener('DOMContentLoaded', function () {
             btnSyncAll.disabled = true;
 
             try {
+                // Senkronizasyon öncesi ekrandaki kuralları otomatik kaydet
+                await autoSaveCurrentInputs();
+
                 const response = await fetch(getBaseUrl() + '/ajax?action=sync_all_projects', {
                     method: 'POST'
                 });
@@ -95,6 +157,9 @@ document.addEventListener('DOMContentLoaded', function () {
             this.disabled = true;
 
             try {
+                // Senkronizasyon öncesi ekrandaki kuralları otomatik kaydet
+                await autoSaveCurrentInputs();
+
                 const formData = new FormData();
                 formData.append('project_id', projectId);
                 if (wsPath) {

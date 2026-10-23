@@ -29,5 +29,10 @@ return [
     'nav_menu_title'            => 'AGENTS.md Management',
     'unauthorized'              => 'You are not authorized to perform this action.',
     'prompt_workspace_path'     => 'Enter workspace directory path for project [%s]:',
-    'dir_created_note'          => 'Directory was automatically created and AGENTS.md was written.'
+    'dir_created_note'          => 'Directory was automatically created and AGENTS.md was written.',
+    'qa_protocol_title'         => '🧪 Test & QA Agent Universal Testing Protocol (Global QA Directives)',
+    'qa_protocol_subtitle'      => 'Automated step-by-step browser, console, network and audit instructions sent to QA Agent upon task submission.',
+    'btn_save_qa_global'        => '💾 Save QA Protocol',
+    'qa_save_success'           => 'QA Agent universal test protocol successfully saved.',
+    'qa_save_error'             => 'Failed to save QA Agent universal test protocol.'
 ];

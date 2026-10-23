@@ -9,7 +9,7 @@
                     <p class="tm-modal-subtitle" id="tmProjectSubtitle"><?= __('GithubDevops::timeline_desc') ?></p>
                 </div>
             </div>
-            <button type="button" class="gh-close-btn" id="btnTmCloseTop" title="<?= htmlspecialchars(__('GithubDevops::btn_close')) ?>">&times;</button>
+            <button type="button" class="gh-close-btn" id="btnTmCloseTop" data-close-modal="modalProjectTimeline" title="<?= htmlspecialchars(__('GithubDevops::btn_close')) ?>">&times;</button>
         </div>
         <div class="cu-modal-body tm-timeline-modal-body">
             <!-- Yükleme / İskelet Durumu -->
@@ -30,7 +30,7 @@
             </div>
         </div>
         <div class="cu-modal-footer tm-timeline-modal-footer">
-            <button type="button" class="cu-btn-sm cu-btn-secondary" id="btnTmCloseBottom"><?= __('GithubDevops::btn_close') ?></button>
+            <button type="button" class="cu-btn-sm cu-btn-secondary" id="btnTmCloseBottom" data-close-modal="modalProjectTimeline"><?= __('GithubDevops::btn_close') ?></button>
         </div>
     </div>
 </div>

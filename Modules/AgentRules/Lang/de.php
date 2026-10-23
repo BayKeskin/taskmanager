@@ -29,5 +29,10 @@ return [
     'nav_menu_title'            => 'AGENTS.md Verwaltung',
     'unauthorized'              => 'Sie sind nicht berechtigt, diese Aktion auszuführen.',
     'prompt_workspace_path'     => 'Geben Sie den Arbeitsbereichspfad für das Projekt [%s] ein:',
-    'dir_created_note'          => 'Verzeichnis wurde automatisch erstellt und AGENTS.md wurde geschrieben.'
+    'dir_created_note'          => 'Verzeichnis wurde automatisch erstellt und AGENTS.md wurde geschrieben.',
+    'qa_protocol_title'         => '🧪 Test & QA Agent Universelles Testprotokoll (Globale QA-Direktiven)',
+    'qa_protocol_subtitle'      => 'Automatisierte Browser-, Konsolen-, Netzwerk- und Prüfanweisungen, die bei Aufgabenabgabe an den QA-Agenten gesendet werden.',
+    'btn_save_qa_global'        => '💾 QA-Protokoll speichern',
+    'qa_save_success'           => 'Universelles Testprotokoll des QA-Agenten erfolgreich gespeichert.',
+    'qa_save_error'             => 'Fehler beim Speichern des QA-Testprotokolls.'
 ];

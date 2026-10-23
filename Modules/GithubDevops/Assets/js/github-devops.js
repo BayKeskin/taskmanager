@@ -200,6 +200,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnTimelineTrigger = document.getElementById('btnOpenProjectTimeline');
     if (btnTimelineTrigger) {
         btnTimelineTrigger.addEventListener('click', function() {
+            const menu = document.getElementById('kanbanToolsMenu');
+            if (menu) menu.classList.remove('active');
             const pId = this.dataset.projectId || window.ACTIVE_PROJECT_ID || 0;
             window.openProjectTimelineModal(pId);
         });
@@ -238,8 +240,16 @@ window.openProjectTimelineModal = async function(projectId) {
 
         if (loadingEl) loadingEl.classList.add('cu-hide');
 
-        if (data && data.success && data.timeline && data.timeline.length > 0) {
-            renderProjectTimeline(data.timeline, pId);
+        const timeline = (data && data.timeline) || (data && data.data && data.data.timeline) || [];
+        const subtitleEl = document.getElementById('tmProjectSubtitle');
+        const projTitle = data.project_title || data.data?.project_title || '';
+        const curBranch = data.current_branch || data.data?.current_branch || '';
+        if (subtitleEl && (projTitle || curBranch)) {
+            subtitleEl.textContent = `${projTitle ? projTitle + ' • ' : ''}Branch: ${curBranch || 'main'}`;
+        }
+
+        if (data && data.success && timeline.length > 0) {
+            renderProjectTimeline(timeline, pId);
             if (listEl) listEl.classList.remove('cu-hide');
         } else {
             if (emptyEl) emptyEl.classList.remove('cu-hide');

@@ -45,8 +45,9 @@ class AgentRulesController extends BaseController
         }
 
         View::render('AgentRules::index', [
-            'globalRules'     => $globalRules,
-            'projectStatuses' => $projectStatuses
+            'globalRules'          => $globalRules,
+            'qaGlobalInstructions' => $this->model->getQaGlobalInstructions(),
+            'projectStatuses'      => $projectStatuses
         ]);
     }
 
@@ -72,6 +73,27 @@ class AgentRulesController extends BaseController
         echo json_encode([
             'success' => $res,
             'message' => $res ? __('AgentRules::save_success') : __('AgentRules::save_error')
+        ]);
+        exit;
+    }
+
+    /**
+     * Genel QA Test Protokolü Kaydetme AJAX Uç Noktası
+     */
+    public function saveQaGlobal(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => __('AgentRules::unauthorized')]);
+            exit;
+        }
+
+        $content = trim($_POST['qa_global_instructions'] ?? ($_POST['qa_global_rules'] ?? ''));
+        $res = $this->model->saveQaGlobalInstructions($content);
+        echo json_encode([
+            'success' => $res,
+            'message' => $res ? __('AgentRules::qa_save_success') : __('AgentRules::qa_save_error')
         ]);
         exit;
     }

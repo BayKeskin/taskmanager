@@ -35,6 +35,21 @@ Always reply in the **user's/task's language** (e.g., Turkish) using this exact 
 ---
 MARKDOWN;
 
+    private const DEFAULT_QA_GLOBAL_INSTRUCTIONS = <<<MARKDOWN
+0. USER REQUIREMENT IS SUPREME (ANTI-RUBBERSTAMPING PROTOCOL):
+   - Never trust Developer notes. Focus 100% on the User's Original Requirement.
+   - Autonomously execute the exact scenario in the live browser (click buttons, submit forms, login).
+   - If the user's primary intended outcome does not work on screen, REJECT immediately!
+1. LIVE BROWSER FUNCTIONAL TEST:
+   - Open target URL in the live browser.
+   - Verify forms submit properly, buttons work, UI layout is intact, and no dead elements exist.
+2. NETWORK & CONSOLE AUDIT (ZERO TOLERANCE):
+   - Console: Verify 0 JS errors and 0 missing 404 assets.
+   - Network: Ensure responses contain NO PHP Fatals, Xdebug errors, PDOExceptions, or HTTP 500s.
+3. PROJECT-SPECIFIC TEST EXECUTION:
+   - If the specific project defines a CLI test or audit command (e.g., PHPUnit, php artisan test, or custom audit), execute only what is defined in the project's own QA instructions.
+MARKDOWN;
+
     /**
      * Genel kural şablonunu settings tablosundan okur, yoksa varsayılanı döner.
      */
@@ -53,6 +68,27 @@ MARKDOWN;
     public function saveGlobalRules(string $content): bool
     {
         $this->query("UPDATE settings SET global_agent_rules = ? WHERE id = 1", [$content]);
+        return true;
+    }
+
+    /**
+     * Genel QA test protokolü şablonunu settings tablosundan okur.
+     */
+    public function getQaGlobalInstructions(): string
+    {
+        $rows = $this->query("SELECT qa_global_instructions FROM settings WHERE id = 1 LIMIT 1");
+        if (!empty($rows) && !empty($rows[0]->qa_global_instructions)) {
+            return (string)$rows[0]->qa_global_instructions;
+        }
+        return self::DEFAULT_QA_GLOBAL_INSTRUCTIONS;
+    }
+
+    /**
+     * Genel QA test protokolünü kaydeder.
+     */
+    public function saveQaGlobalInstructions(string $content): bool
+    {
+        $this->query("UPDATE settings SET qa_global_instructions = ? WHERE id = 1", [$content]);
         return true;
     }
 
@@ -89,6 +125,24 @@ MARKDOWN;
     public function updateWorkspacePath(int $id, string $workspacePath): bool
     {
         $this->query("UPDATE projects SET workspace_path = ? WHERE id = ?", [$workspacePath, $id]);
+        return true;
+    }
+
+    /**
+     * Projenin agent_rules alanını günceller.
+     */
+    public function updateAgentRules(int $id, string $rules): bool
+    {
+        $this->query("UPDATE projects SET agent_rules = ? WHERE id = ?", [$rules, $id]);
+        return true;
+    }
+
+    /**
+     * Projenin qa_test_instructions alanını günceller.
+     */
+    public function updateQaTestInstructions(int $id, string $instructions): bool
+    {
+        $this->query("UPDATE projects SET qa_test_instructions = ? WHERE id = ?", [$instructions, $id]);
         return true;
     }
 }
