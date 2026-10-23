@@ -58,27 +58,16 @@ class WatchdogService
                         }
                     }
 
-                    // Görevin son güncellenme zamanını kontrol et (20 dakikadır hiç kıpırdamamışsa kurtar)
-                    $updatedAt = !empty($primaryTask->updated_at) ? strtotime($primaryTask->updated_at) : 0;
-                    $staleSeconds = time() - $updatedAt;
+                    \Modules\Board\Services\TaskLifecycleService::triggerTaskStartedWebhook((int)$primaryTask->id, 'in_progress', [
+                        'resumed'          => true,
+                        'watchdog_check'   => true,
+                        'triggered_by'     => 'Watchdog'
+                    ]);
 
-                    if ($updatedAt > 0 && $staleSeconds >= 1200) { // 20 dakika (1200 sn)
-                        \Modules\Board\Services\TaskLifecycleService::triggerTaskStartedWebhook((int)$primaryTask->id, 'in_progress', [
-                            'resumed'        => true,
-                            'watchdog_check' => true,
-                            'triggered_by'   => 'Watchdog-StaleRecovery'
-                        ]);
-                        $results[$p->project_code] = [
-                            'status' => 'stale_resumed_after_20m',
-                            'active' => $primaryTask->task_code
-                        ];
-                    } else {
-                        // Ajan zaten aktif çalışıyor, asla araya girip interrupt atma!
-                        $results[$p->project_code] = [
-                            'status' => 'actively_working',
-                            'active' => $primaryTask->task_code
-                        ];
-                    }
+                    $results[$p->project_code] = [
+                        'status' => 'ensured_running',
+                        'active' => $primaryTask->task_code
+                    ];
                 } else {
                     $dispatched = \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable($pId);
                     if ($dispatched) {

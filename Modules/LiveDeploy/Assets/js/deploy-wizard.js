@@ -345,10 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalEl = document.getElementById('modalDeployWizard');
     if (modalEl) {
         modalEl.addEventListener('click', function(e) {
-            const isSafe = (typeof window.isSafeBackdropClick === 'function')
-                ? window.isSafeBackdropClick(e, this)
-                : (e.target === this);
-            if (isSafe && typeof closeModal === 'function') {
+            if (e.target === this && typeof closeModal === 'function') {
                 closeModal('modalDeployWizard');
             }
         });

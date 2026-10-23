@@ -133,4 +133,19 @@ class AjaxController extends BaseController
             'total_unread'  => $convData['total_unread']
         ]);
     }
+
+    public function getChatMessages(): void
+    {
+        $this->getMessages();
+    }
+
+    public function sendChatMessage(): void
+    {
+        $this->sendMessage();
+    }
+
+    public function getChatConversations(): void
+    {
+        $this->getConversations();
+    }
 }

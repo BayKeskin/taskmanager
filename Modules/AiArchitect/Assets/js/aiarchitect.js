@@ -178,11 +178,10 @@ async function runAiArchitect() {
         });
         const d = await res.json();
 
-        const specText = d.specification || (d.data && d.data.specification);
-        if (d.success && specText) {
+        if (d.success && d.data && d.data.specification) {
             const descArea = document.getElementById('modalNewTaskDescription');
             if (descArea) {
-                descArea.value = specText;
+                descArea.value = d.data.specification;
                 descArea.style.borderColor = 'var(--brand-primary)';
                 descArea.style.boxShadow = '0 0 0 3px rgba(123, 104, 238, 0.2)';
                 setTimeout(() => {
@@ -677,10 +676,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('modalAiArchitect');
     if (modal) {
         modal.addEventListener('click', function(e) {
-            const isSafe = (typeof window.isSafeBackdropClick === 'function')
-                ? window.isSafeBackdropClick(e, this)
-                : (e.target === this);
-            if (isSafe && typeof closeModal === 'function') {
+            if (e.target === this) {
                 closeModal('modalAiArchitect');
             }
         });

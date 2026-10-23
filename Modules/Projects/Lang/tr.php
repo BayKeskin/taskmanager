@@ -37,7 +37,7 @@ return array (
   'modal_refine_rules_hint' => 'Kendi dilinizde kısa bir not yazın (örn: "css kullanmak yasak, gutenberg projesi"), AI bunu ajanların tam uyacağı katı İngilizce kurallara dönüştürsün.',
   'rules_synced_success' => 'Proje kural dosyaları (AGENTS.md) başarıyla güncellendi!',
   'rules_sync_failed' => 'Proje kural dosyaları güncellenirken hata oluştu (Geçerli bir çalışma alanı yolu gereklidir).',
-  'modal_workspace_path_ph' => 'Örn: c:/wamp64/www/projem veya d:/MobilProjeler/app',
+  'modal_workspace_path_ph' => 'Örn: C:/Projects/projem veya D:/MobilProjeler/app',
   'modal_webhook_url_ph' => 'Varsayılan: http://localhost:4000/webhook',
   'modal_conv_id_ph' => 'auto veya boş bırakın (Otomatik aktif sohbeti bulur)',
   'modal_conv_id_hint' => 'Antigravity IDE açık pencereniz veya yeni sekmeniz çalışma alanına göre dinamik olarak yönetilir. Manuel ID gerekmez.',
@@ -95,16 +95,5 @@ return array (
   'js_archive_confirm' => 'Bu projeyi geçmiş projelere taşımak istediğinize emin misiniz?',
   'js_restore_confirm' => 'Bu projeyi aktif projelere geri yüklemek istediğinize emin misiniz?',
   'js_action_failed' => 'İşlem başarısız',
-  'js_delete_confirm' => 'DİKKAT: Bu projeyi ve içindeki TÜM görevleri ve dökümanları kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz!',
-  'modal_dev_conv_id' => '🔵 Kodlama Ajanı Pencere ID (Dev Window ID)',
-  'modal_dev_conv_id_ph' => 'Örn: c4a28f41-b883-4a12-881b-530dd6093836',
-  'modal_dev_conv_id_hint' => 'Görevleri ilk kodlayacak ana geliştirici ajan sohbet penceresi kimliği.',
-  'modal_qa_conv_id' => '🟣 Test & QA Ajanı Pencere ID (QA Window ID)',
-  'modal_qa_conv_id_ph' => 'Örn: f8b19a22-1102-47e5-9c88-7201bc613891',
-  'modal_qa_conv_id_hint' => 'Görev teslim edildiğinde canlı tarayıcıda UI, Network, Console ve Audit testlerini yapacak bağımsız test ajanı penceresi kimliği.',
-  'modal_qa_instructions' => '🧪 Bu Projeye Özel Test Direktifleri & PowerShell Komutları',
-  'modal_qa_instructions_ph' => 'Örn:
-- http://localhost/taskmanager/board sayfasını aç, görev ekleme modalını test et.
-- Invoke-RestMethod ile API yanıt kodunu doğrula.',
-  'modal_qa_instructions_hint' => 'Test ajanına teslim edilen görevlerde bu talimatlar ve komutlar iletilir.'
+  'js_delete_confirm' => 'DİKKAT: Bu projeyi ve içindeki TÜM görevleri ve dökümanları kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz!'
 );

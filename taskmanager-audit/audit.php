@@ -42,7 +42,6 @@ foreach ($modules as $moduleName) {
 
         $filePath = $file->getPathname();
         $relPath  = str_replace('\\', '/', substr($filePath, strlen($modulePath) + 1));
-        if (str_starts_with($relPath, 'Bin/')) continue;
         $content  = file_get_contents($filePath);
         $lines    = explode("\n", $content);
 
@@ -96,7 +95,13 @@ foreach ($modules as $moduleName) {
             }
 
             // KURAL 5: Sabit '/taskmanager/' URL veya dosya yolu kullanımı YASAKTIR!
-            if (preg_match('/[\'"`][^\'"`]*\/taskmanager(\/|[\'"`])/i', $line)) {$errors[] = "[KURAL 5 - Sabit '/taskmanager/' Yolu Yasağı] $relPath:$lineNo => Dinamik BASE_URL / rota kullanılmalı! ($trimmed)";
+            if (preg_match('/[\'"`][^\'"`]*\/taskmanager(\/|[\'"`])/i', $line)) {
+                $errors[] = "[KURAL 5 - Sabit '/taskmanager/' Yolu Yasağı] $relPath:$lineNo => Dinamik BASE_URL / rota kullanılmalı! ($trimmed)";
+            }
+
+            // KURAL 7 (TAŞINABİLİRLİK): Sabit kullanıcı/ortam yolları (C:/Users/DELL, wamp64 vb.) YASAKTIR!
+            if (preg_match('/([c-z]:[\\\\\/]users[\\\\\/]dell|[c-z]:[\\\\\/]wamp64[\\\\\/]www\b|C:[\\\\\/]Python3\d*)/i', $line)) {
+                $errors[] = "[KURAL 7 - Sabit Kullanıcı/Ortam Yolu Yasağı] $relPath:$lineNo => Sabit 'DELL', 'wamp64' veya mutlak Python yolu içeremez! Dinamik ortam değişkenleri (USERPROFILE, LOCALAPPDATA vb.) kullanılmalı: ($trimmed)";
             }
         }
     }
@@ -106,12 +111,40 @@ foreach ($modules as $moduleName) {
     echo "========================================\n";
 
     if (empty($errors)) {
-        echo "✅ [PASS] $moduleName modülü 5 kuralın tamamına %100 uyuyor (0 İhlal).\n";
+        echo "✅ [PASS] $moduleName modülü kuralların tamamına %100 uyuyor (0 İhlal).\n";
     } else {
         $totalErrors += count($errors);
         echo "❌ [FAIL] $moduleName içinde " . count($errors) . " ihlal bulundu:\n";
-        foreach ($errors as$err) {
+        foreach ($errors as $err) {
             echo "  - $err\n";
+        }
+    }
+}
+
+// =========================================================================
+// KURAL 6 (ÇEKİRDEK KORUMASI): Core/AjaxRouter.php Dokunulmazlık Denetimi
+// =========================================================================
+$ajaxRouterPath = dirname(__DIR__) . '/Core/AjaxRouter.php';
+if (file_exists($ajaxRouterPath)) {
+    $routerContent = file_get_contents($ajaxRouterPath);
+    $routerErrors = [];
+    
+    // Core/AjaxRouter içine $aliases dizisi veya manuel register/map satırı eklenmesi yasaktır!
+    if (preg_match('/\$aliases\s*=/i', $routerContent)) {
+        $routerErrors[] = "[KURAL 6 - Core/AjaxRouter İhlali] Core/AjaxRouter.php içine '\$aliases' dizisi eklenemez! Her modül kendi eylemini kendi AjaxController'ında tanımlamalıdır.";
+    }
+    if (preg_match('/autoDiscoveredMap\[[\'"][^\'"]+[\'"]\]\s*=/i', $routerContent)) {
+        $routerErrors[] = "[KURAL 6 - Core/AjaxRouter İhlali] Core/AjaxRouter.php içine manuel eylem eşlemesi eklenemez! Reflection otomatik keşfi kullanılmalıdır.";
+    }
+
+    if (!empty($routerErrors)) {
+        $totalErrors += count($routerErrors);
+        echo "\n========================================\n";
+        echo "🔍 ÇEKİRDEK DENETİMİ: Core/AjaxRouter.php\n";
+        echo "========================================\n";
+        echo "❌ [FAIL] Core/AjaxRouter.php içinde " . count($routerErrors) . " kural ihlali bulundu:\n";
+        foreach ($routerErrors as $rErr) {
+            echo "  - $rErr\n";
         }
     }
 }

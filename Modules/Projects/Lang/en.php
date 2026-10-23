@@ -37,7 +37,7 @@ return array (
   'modal_refine_rules_hint' => 'Write a brief note in your language (e.g., "no css, gutenberg project"), and AI will compile it into strict English agent rules.',
   'rules_synced_success' => 'Project rule files (AGENTS.md) successfully updated!',
   'rules_sync_failed' => 'Error updating project rule files (A valid workspace path is required).',
-  'modal_workspace_path_ph' => 'e.g. c:/wamp64/www/project or d:/MobileProjects/app',
+  'modal_workspace_path_ph' => 'e.g. C:/Projects/project or D:/MobileProjects/app',
   'modal_webhook_url_ph' => 'Default: http://localhost:4000/webhook',
   'modal_conv_id_ph' => 'auto or leave blank (Automatically finds active chat)',
   'modal_conv_id_hint' => 'Antigravity IDE active window or new tab is dynamically managed based on the workspace. No manual ID needed.',
@@ -95,16 +95,5 @@ return array (
   'js_archive_confirm' => 'Are you sure you want to move this project to archived projects?',
   'js_restore_confirm' => 'Are you sure you want to restore this project to active projects?',
   'js_action_failed' => 'Action failed',
-  'js_delete_confirm' => 'CAUTION: Are you sure you want to permanently delete this project and ALL its tasks and documents? This cannot be undone!',
-  'modal_dev_conv_id' => '🔵 Developer Agent Window ID (Dev Window ID)',
-  'modal_dev_conv_id_ph' => 'e.g. c4a28f41-b883-4a12-881b-530dd6093836',
-  'modal_dev_conv_id_hint' => 'Conversation window ID for the primary developer agent executing tasks.',
-  'modal_qa_conv_id' => '🟣 QA & Tester Agent Window ID (QA Window ID)',
-  'modal_qa_conv_id_ph' => 'e.g. f8b19a22-1102-47e5-9c88-7201bc613891',
-  'modal_qa_conv_id_hint' => 'Autonomous QA inspector window ID responsible for live browser, UI, console, network, and audit verification.',
-  'modal_qa_instructions' => '🧪 Project-Specific QA Directives & PowerShell Test Commands',
-  'modal_qa_instructions_ph' => 'e.g.:
-- Open http://localhost/taskmanager/board and verify task drawer modal.
-- Verify API response via Invoke-RestMethod.',
-  'modal_qa_instructions_hint' => 'These instructions and commands will be sent to the QA agent upon task delivery.'
+  'js_delete_confirm' => 'CAUTION: Are you sure you want to permanently delete this project and ALL its tasks and documents? This cannot be undone!'
 );

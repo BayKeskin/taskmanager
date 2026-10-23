@@ -447,4 +447,29 @@ class AjaxController extends BaseController
             $this->respond(false, $errMsg);
         }
     }
+
+    public function saveSystemSettings(): void
+    {
+        $this->saveSettings();
+    }
+
+    public function testTelegramConnection(): void
+    {
+        $this->testTelegram();
+    }
+
+    public function testSmtpConnection(): void
+    {
+        $this->testSmtp();
+    }
+
+    public function testSlackWebhook(): void
+    {
+        $this->testSlack();
+    }
+
+    public function testDiscordWebhook(): void
+    {
+        $this->testDiscord();
+    }
 }

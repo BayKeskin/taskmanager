@@ -242,18 +242,6 @@ function escapeHtml(text) {
 // ==========================================================================
 // 2. MODAL YÖNETİMİ
 // ==========================================================================
-let _modalMouseDownTarget = null;
-document.addEventListener('mousedown', function(e) {
-    _modalMouseDownTarget = e.target;
-}, true);
-
-window.isSafeBackdropClick = function(e, overlayEl) {
-    if (!overlayEl || !e) return false;
-    // Tıklama hedefi overlay olmalı VE fare basma başlangıcı da (mousedown) tam overlay üzerinde olmalı
-    // Böylece textarea/input içinden metin seçip fareyi dışarıda bırakan kullanıcının modalı KAPANMAZ!
-    return (e.target === overlayEl) && (_modalMouseDownTarget === overlayEl);
-};
-
 function openModal(id) {
     const modal = document.getElementById(id);
     if (!modal) return;

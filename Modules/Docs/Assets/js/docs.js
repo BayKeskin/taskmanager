@@ -48,6 +48,11 @@ function processToHtml(rawText) {
     html = html.replace(/<hr\s*\/?>/gi, '');
     html = html.replace(/<th\b([^>]*)>(.*?)<\/th>/gi, '<td$1><strong>$2</strong></td>');
     html = html.replace(/<\/?thead>/gi, '').replace(/<\/?tbody>/gi, '');
+    html = html.replace(/(<p>\s*(<br\s*\/?>|&nbsp;|\s)*<\/p>\s*){2,}/gi, '<p><br></p>');
+    html = html.replace(/(<p>\s*(<br\s*\/?>|&nbsp;|\s)*<\/p>\s*)+(?=<h[1-6])/gi, '');
+    html = html.replace(/(<\/h[1-6]>)\s*(<p>\s*(<br\s*\/?>|&nbsp;|\s)*<\/p>\s*)+/gi, '$1');
+    html = html.replace(/(<p>\s*(<br\s*\/?>|&nbsp;|\s)*<\/p>\s*)+(?=<pre|<table|<ul|<ol)/gi, '');
+    html = html.replace(/(<\/pre>|<\/table>|<\/ul>|<\/ol>)\s*(<p>\s*(<br\s*\/?>|&nbsp;|\s)*<\/p>\s*)+(?=<h[1-6])/gi, '$1');
     
     return html;
 }

@@ -37,7 +37,7 @@ return array (
   'modal_refine_rules_hint' => 'Schreiben Sie eine kurze Notiz in Ihrer Sprache (z. B. "kein CSS, Gutenberg-Projekt"), und die KI kompiliert sie in strenge englische Agentenregeln.',
   'rules_synced_success' => 'Projektregeldateien (AGENTS.md) erfolgreich aktualisiert!',
   'rules_sync_failed' => 'Fehler beim Aktualisieren der Projektregeldateien (Gültiger Workspace-Pfad erforderlich).',
-  'modal_workspace_path_ph' => 'z.B. c:/wamp64/www/projekt oder d:/MobileProjekte/app',
+  'modal_workspace_path_ph' => 'z.B. C:/Projects/projekt oder D:/MobileProjekte/app',
   'modal_webhook_url_ph' => 'Standard: http://localhost:4000/webhook',
   'modal_conv_id_ph' => 'auto oder leer lassen (Findet automatisch den aktiven Chat)',
   'modal_conv_id_hint' => 'Das aktive Antigravity IDE-Fenster oder ein neuer Tab wird basierend auf dem Arbeitsbereich dynamisch verwaltet. Keine manuelle ID erforderlich.',
@@ -95,16 +95,5 @@ return array (
   'js_archive_confirm' => 'Möchten Sie dieses Projekt wirklich in archivierte Projekte verschieben?',
   'js_restore_confirm' => 'Möchten Sie dieses Projekt wirklich in aktive Projekte wiederherstellen?',
   'js_action_failed' => 'Aktion fehlgeschlagen',
-  'js_delete_confirm' => 'ACHTUNG: Möchten Sie dieses Projekt und ALLE zugehörigen Aufgaben und Dokumente wirklich dauerhaft löschen? Dies kann nicht rückgängig gemacht werden!',
-  'modal_dev_conv_id' => '🔵 Entwickler-Agent Fenster-ID (Dev Window ID)',
-  'modal_dev_conv_id_ph' => 'z.B. c4a28f41-b883-4a12-881b-530dd6093836',
-  'modal_dev_conv_id_hint' => 'Konversationsfenster-ID des Hauptentwickler-Agenten für Aufgaben.',
-  'modal_qa_conv_id' => '🟣 QA- & Tester-Agent Fenster-ID (QA Window ID)',
-  'modal_qa_conv_id_ph' => 'z.B. f8b19a22-1102-47e5-9c88-7201bc613891',
-  'modal_qa_conv_id_hint' => 'Autonome QA-Inspektor-Fenster-ID für Live-Browser-, UI-, Konsolen-, Netzwerk- und Audit-Prüfungen.',
-  'modal_qa_instructions' => '🧪 Projektspezifische QA-Direktiven & PowerShell-Testbefehle',
-  'modal_qa_instructions_ph' => 'z.B.:
-- http://localhost/taskmanager/board öffnen und Aufgaben-Modal testen.
-- API-Antwort über Invoke-RestMethod prüfen.',
-  'modal_qa_instructions_hint' => 'Diese Anweisungen und Befehle werden bei Aufgabenabgabe an den QA-Agenten gesendet.'
+  'js_delete_confirm' => 'ACHTUNG: Möchten Sie dieses Projekt und ALLE zugehörigen Aufgaben und Dokumente wirklich dauerhaft löschen? Dies kann nicht rückgängig gemacht werden!'
 );

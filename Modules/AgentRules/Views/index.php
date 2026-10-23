@@ -20,7 +20,7 @@ include dirname(__DIR__, 2) . '/../Core/Views/header.php';
 
 <div class="cu-content-scroll">
     <div class="agent-rules-wrapper">
-        <div class="agent-rules-editors-grid">
+        <div class="agent-rules-grid">
             <!-- Sol: Genel Kurallar (Global Rules) Editörü -->
             <div class="agent-rules-card">
                 <div class="agent-rules-card-header">
@@ -37,33 +37,16 @@ include dirname(__DIR__, 2) . '/../Core/Views/header.php';
                 </div>
             </div>
 
-            <!-- Sağ: QA Test Ajanı Evrensel Test Protokolü Editörü -->
+            <!-- Sağ: Proje Listesi ve Senkronizasyon Durumu -->
             <div class="agent-rules-card">
                 <div class="agent-rules-card-header">
-                    <h2 class="agent-rules-card-title"><?= __('AgentRules::qa_protocol_title') ?></h2>
-                    <p class="agent-rules-card-subtitle"><?= __('AgentRules::qa_protocol_subtitle') ?></p>
+                    <h2 class="agent-rules-card-title"><?= __('AgentRules::projects_rules_title') ?></h2>
+                    <p class="agent-rules-card-subtitle"><?= __('AgentRules::projects_rules_subtitle') ?></p>
                 </div>
-                <div class="agent-rules-card-body">
-                    <textarea id="qaGlobalInstructionsInput" class="agent-rules-textarea" spellcheck="false"><?= htmlspecialchars($qaGlobalInstructions ?? '') ?></textarea>
-                </div>
-                <div class="agent-rules-card-footer">
-                    <button type="button" id="btnSaveQaGlobal" class="btn-agent-primary">
-                        <?= __('AgentRules::btn_save_qa_global') ?>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Alt: Proje Listesi ve Senkronizasyon Durumu (Tam Ekran Genişliği) -->
-        <div class="agent-rules-card agent-rules-table-card">
-            <div class="agent-rules-card-header">
-                <h2 class="agent-rules-card-title"><?= __('AgentRules::projects_rules_title') ?></h2>
-                <p class="agent-rules-card-subtitle"><?= __('AgentRules::projects_rules_subtitle') ?></p>
-            </div>
-            <div class="agent-rules-card-body table-container">
-                <table class="agent-rules-table">
-                    <thead>
-                        <tr>
+                <div class="agent-rules-card-body table-container">
+                    <table class="agent-rules-table">
+                        <thead>
+                            <tr>
                                 <th><?= __('AgentRules::col_project') ?></th>
                                 <th><?= __('AgentRules::col_workspace') ?></th>
                                 <th><?= __('AgentRules::col_custom_rules') ?></th>

@@ -125,4 +125,19 @@ class AjaxController extends BaseController
             $this->respond(false, $res['error'] ?? __('GithubDevops::err_rollback_failed'), $res);
         }
     }
+
+    public function saveGithubSettings(): void
+    {
+        $this->saveSettings();
+    }
+
+    public function syncProjectGithub(): void
+    {
+        $this->syncProject();
+    }
+
+    public function revertProjectVersion(): void
+    {
+        $this->revertToVersion();
+    }
 }

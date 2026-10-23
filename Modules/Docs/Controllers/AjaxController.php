@@ -185,4 +185,19 @@ class AjaxController extends BaseController
             'data'          => ['attachment_id' => $docAttId]
         ]);
     }
+
+    public function uploadDocAttachment(): void
+    {
+        $this->uploadAttachment();
+    }
+
+    public function getDocAttachments(): void
+    {
+        $this->getAttachments();
+    }
+
+    public function deleteDocAttachment(): void
+    {
+        $this->deleteAttachment();
+    }
 }

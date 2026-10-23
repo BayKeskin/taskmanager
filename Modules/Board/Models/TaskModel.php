@@ -819,7 +819,7 @@ class TaskModel extends BaseModel
             SELECT t.* FROM tasks t
             LEFT JOIN tasks p ON t.parent_task_id = p.id
             WHERE t.project_id = ? 
-              AND t.status IN ('in_progress', 'modification_requested')
+              AND t.status = 'in_progress'
               AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = t.id)
               AND (
                   (
@@ -966,67 +966,6 @@ class TaskModel extends BaseModel
             WHERE task_id = ? 
             ORDER BY id ASC
         ", [$taskId]);
-    }
-
-    /**
-     * QA Revizyon sayacını 1 artırır ve güncel sayıyı döner
-     */
-    public function incrementQaRevisionCount(int $taskId): int
-    {
-        $this->db->exec_query("UPDATE tasks SET qa_revision_count = COALESCE(qa_revision_count, 0) + 1, updated_at = NOW() WHERE id = ?", [$taskId]);
-        $rows = $this->query("SELECT qa_revision_count FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
-        return !empty($rows) ? (int)$rows[0]->qa_revision_count : 1;
-    }
-
-    /**
-     * Görevin mevcut QA Revizyon sayısını döner
-     */
-    public function getQaRevisionCount(int $taskId): int
-    {
-        $rows = $this->query("SELECT qa_revision_count FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
-        return !empty($rows) ? (int)($rows[0]->qa_revision_count ?? 0) : 0;
-    }
-
-    /**
-     * QA Revizyon sayacını sıfırlar
-     */
-    public function resetQaRevisionCount(int $taskId): void
-    {
-        $this->db->exec_query("UPDATE tasks SET qa_revision_count = 0, updated_at = NOW() WHERE id = ?", [$taskId]);
-    }
-
-    /**
-     * QA / İş akışı aktivitelerini loglar
-     */
-    public function logTaskActivity(int $taskId, int $userId, string $actionType, string $comment): bool
-    {
-        return $this->logActivity($taskId, $userId, $actionType, null, null, $comment);
-    }
-
-    /**
-     * Projede QA incelemesi bekleyen (submitted veya under_review) AI görev olup olmadığını kontrol eder.
-     * Güvenlik: 
-     * 1) Yalnızca AI etiketli görevleri dikkate alır (insan görevleri otonom kuyruğu tıkamaz).
-     * 2) 45 dakikadan uzun süredir QA'de bekleyen görevleri zaman aşımına uğramış sayar (QA ajanı kapalıysa kuyruk kilitlenmez).
-     */
-    public function hasPendingQaReviewTasks(int $projectId, int $timeoutMinutes = 45): bool
-    {
-        $sql = "
-            SELECT id FROM tasks 
-            WHERE project_id = ? 
-              AND status IN ('submitted', 'under_review')
-              AND (
-                  LOWER(tags) LIKE '%ai%' 
-                  OR LOWER(tags) LIKE '%otonom%' 
-                  OR LOWER(tags) LIKE '%agent%'
-                  OR LOWER(tags) LIKE '%yapay zeka%'
-                  OR LOWER(tags) LIKE '%antigravity%'
-              )
-              AND updated_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
-            LIMIT 1
-        ";
-        $rows = $this->query($sql, [$projectId, $timeoutMinutes]);
-        return !empty($rows);
     }
 }
 

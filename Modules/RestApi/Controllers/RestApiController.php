@@ -534,14 +534,6 @@ class RestApiController extends BaseController
                         \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.accepted', [
                             'task_code' => $task->task_code, 'title' => $task->title, 'status' => 'in_progress', 'user_id' => $currentUser->id
                         ]);
-                        \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, (int)$task->id, (int)$currentUser->id, [
-                            'task_id'    => (int)$task->id,
-                            'task_code'  => $task->task_code,
-                            'title'      => $task->title,
-                            'old_status' => $task->status,
-                            'new_status' => 'in_progress',
-                            'user_name'  => $currentUser->name ?: 'API'
-                        ]);
                         $this->apiResponse($this->model->formatTaskDetail($updated), __('RestApi::operation_successful'));
                     }
 
@@ -557,16 +549,8 @@ class RestApiController extends BaseController
                         \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.status_changed', [
                             'task_code' => $task->task_code, 'title' => $task->title, 'old_status' => $task->status, 'new_status' => $newStatus
                         ]);
-                        \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, (int)$task->id, (int)$currentUser->id, [
-                            'task_id'    => (int)$task->id,
-                            'task_code'  => $task->task_code,
-                            'title'      => $task->title,
-                            'old_status' => $task->status,
-                            'new_status' => $newStatus,
-                            'user_name'  => $currentUser->name ?: 'API'
-                        ]);
 
-                        if ($newStatus === 'completed') {
+                        if ($newStatus === 'submitted' || $newStatus === 'completed') {
                             \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$task->id);
                         }
 
@@ -582,14 +566,6 @@ class RestApiController extends BaseController
                         \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.modification_requested', [
                             'task_code' => $task->task_code, 'title' => $task->title, 'reason' => $reason
                         ]);
-                        \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, (int)$task->id, (int)$currentUser->id, [
-                            'task_id'    => (int)$task->id,
-                            'task_code'  => $task->task_code,
-                            'title'      => $task->title,
-                            'old_status' => $task->status,
-                            'new_status' => 'modification_requested',
-                            'user_name'  => $currentUser->name ?: 'API'
-                        ]);
                         $this->apiResponse($this->model->formatTaskDetail($updated), __('RestApi::operation_successful'));
                     }
 
@@ -598,14 +574,6 @@ class RestApiController extends BaseController
                         $updated = $this->model->resolveTask($task->id);
                         \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.modification_resolved', [
                             'task_code' => $task->task_code, 'title' => $task->title, 'status' => 'in_progress'
-                        ]);
-                        \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, (int)$task->id, (int)$currentUser->id, [
-                            'task_id'    => (int)$task->id,
-                            'task_code'  => $task->task_code,
-                            'title'      => $task->title,
-                            'old_status' => 'modification_requested',
-                            'new_status' => 'in_progress',
-                            'user_name'  => $currentUser->name ?: 'API'
                         ]);
                         $this->apiResponse($this->model->formatTaskDetail($updated), __('RestApi::operation_successful'));
                     }
@@ -636,30 +604,10 @@ class RestApiController extends BaseController
 
                         if ($decision === 'approved') {
                             $this->model->approveTaskSubmission((int)$task->id, (int)$currentUser->id, $feedback, $currentUser->name);
-                            \Modules\Board\Services\TaskLifecycleService::handleQaReviewDecision((int)$task->id, 'approved', $feedback, (int)$currentUser->id, $currentUser->name);
-
-                            // CANLI SSE YAYINI: QA Onayı ile Görevin 'completed' (Tamamlananlar) Sütununa Taşınması
-                            \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, (int)$task->id, (int)$currentUser->id, [
-                                'task_id'    => (int)$task->id,
-                                'task_code'  => $task->task_code,
-                                'title'      => $task->title,
-                                'old_status' => $task->status,
-                                'new_status' => 'completed',
-                                'user_name'  => $currentUser->name ?: 'QA Inspector'
-                            ]);
+                            \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$task->id);
                         } else {
                             $this->model->rejectTaskSubmission((int)$task->id, (int)$currentUser->id, $feedback, $currentUser->name);
-                            \Modules\Board\Services\TaskLifecycleService::handleQaReviewDecision((int)$task->id, 'rejected', $feedback ?: 'Revision requested', (int)$currentUser->id, $currentUser->name);
-
-                            // CANLI SSE YAYINI: QA Reddi ile Görevin 'modification_requested' Sütununa Taşınması
-                            \Modules\SSE\Services\SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, (int)$task->id, (int)$currentUser->id, [
-                                'task_id'    => (int)$task->id,
-                                'task_code'  => $task->task_code,
-                                'title'      => $task->title,
-                                'old_status' => $task->status,
-                                'new_status' => 'modification_requested',
-                                'user_name'  => $currentUser->name ?: 'QA Inspector'
-                            ]);
+                            \Modules\Board\Services\TaskLifecycleService::triggerTaskRevisionWebhook((int)$task->id, $feedback ?: 'Revision requested');
                         }
 
                         $updated = $this->model->resolveTask($task->id);

@@ -17,37 +17,30 @@
 }
 
 .agent-rules-wrapper {
-    padding: 24px 28px;
-    width: 100%;
-    box-sizing: border-box;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
-.agent-rules-editors-grid {
+.agent-rules-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 24px;
-    margin-bottom: 24px;
+    gap: 20px;
 }
 
-@media (min-width: 1100px) {
-    .agent-rules-editors-grid {
-        grid-template-columns: 1fr 1fr;
+@media (min-width: 1024px) {
+    .agent-rules-grid {
+        grid-template-columns: 460px 1fr;
     }
 }
 
 .agent-rules-card {
     background: var(--bg-surface);
-    border-radius: 10px;
+    border-radius: 8px;
     border: 1px solid var(--border-subtle);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-}
-
-.agent-rules-table-card {
-    width: 100%;
-    margin-top: 4px;
 }
 
 .agent-rules-card-header {
@@ -81,14 +74,13 @@
 
 .agent-rules-textarea {
     width: 100%;
-    min-height: 380px;
-    height: 380px;
-    padding: 14px;
+    min-height: 520px;
+    padding: 12px;
     border: 1px solid var(--border-subtle);
-    border-radius: 8px;
+    border-radius: 6px;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 13px;
-    line-height: 1.55;
+    font-size: 12.5px;
+    line-height: 1.5;
     color: var(--text-main);
     background-color: var(--bg-main);
     resize: vertical;
@@ -153,8 +145,8 @@
     color: var(--text-main);
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    padding: 6px 14px;
-    font-size: 12.5px;
+    padding: 5px 10px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
@@ -169,32 +161,27 @@
 .agent-rules-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
-    table-layout: auto;
+    font-size: 12.5px;
 }
 
 .agent-rules-table th {
     text-align: left;
-    padding: 14px 18px;
+    padding: 12px 14px;
     background: var(--bg-card);
     border-bottom: 1px solid var(--border-subtle);
     color: var(--text-muted);
     font-weight: 600;
-    font-size: 12px;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    white-space: nowrap;
 }
 
 .agent-rules-table td {
-    padding: 14px 18px;
+    padding: 12px 14px;
     border-bottom: 1px solid var(--border-subtle);
     color: var(--text-main);
     vertical-align: middle;
 }
 
-.agent-rules-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.03);
+.agent-rules-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .text-right {
@@ -202,7 +189,7 @@
 }
 
 .cell-last-sync {
-    font-size: 11.5px;
+    font-size: 11px;
     color: var(--text-muted);
     margin-top: 4px;
 }
@@ -210,10 +197,10 @@
 .badge-tag {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
+    gap: 5px;
+    padding: 3px 10px;
     border-radius: 9999px;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
     line-height: 1.3;
 }

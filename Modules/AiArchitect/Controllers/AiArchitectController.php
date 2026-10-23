@@ -93,10 +93,6 @@ class AiArchitectController extends BaseController
                 'success'       => true,
                 'message'       => __('AiArchitect::spec_generated_success'),
                 'specification' => $result['specification'],
-                'data'          => [
-                    'specification' => $result['specification'],
-                    'engine'        => $result['engine'] ?? 'ai'
-                ],
                 'engine'        => $result['engine'] ?? 'ai'
             ]);
         } else {

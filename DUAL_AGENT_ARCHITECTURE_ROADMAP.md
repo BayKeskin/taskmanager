@@ -149,15 +149,14 @@ Invoke-RestMethod -Uri "{api_base_url}/api/tasks/{task_id}/workflow" -Method POS
 
 İşlemleri yaparken bu dosyayı referans alacağız ve her adımı bitirdikçe işaretleyeceğiz:
 
-- [x] **Aşama 1:** Veritabanı tablolarının genişletilmesi (`qa_conversation_id`, `qa_test_instructions`, `qa_revision_count`) ve `.migrations/dual_agent_down.sql` hazırlanması. (TAMAMLANDI)
-- [x] **Aşama 2:** Panel arayüzünde Proje Düzenleme ve AgentRules ekranlarına Test Ajanı ID ve Özel Test Komutları alanlarının eklenmesi. (TAMAMLANDI)
-- [x] **Aşama 3:** `TaskLifecycleService.php` içine QA döngü yöneticisi ve 3 turluk sonsuz döngü kalkanının (Circuit Breaker) kodlanması. (TAMAMLANDI)
-- [x] **Aşama 4:** `dispatcher.py` motoruna `task.submitted` -> `QA Agent` ve `task.modification_requested` -> `Dev Agent` akıllı yönlendirmesinin eklenmesi. (TAMAMLANDI)
-- [x] **Aşama 5:** `RestApiController.php` review kancalarının QA ajanının PowerShell komutlarıyla tam uyumlu hale getirilmesi. (TAMAMLANDI)
-- [x] **Aşama 6:** Canlı tarayıcı arayüz testi ve bileşen doğrulamaları (Dev Modal, QA ID, Global QA Directives editörü, 0 JS hatası). (TAMAMLANDI)
-- [x] **Aşama 7:** `php taskmanager-audit/audit.php ALL` ile tüm 26 modülün %100 0 ihlal ile geçtiğinin onaylanması. (TAMAMLANDI)
+- [ ] **Aşama 1:** Veritabanı tablolarının genişletilmesi (`qa_conversation_id`, `qa_test_instructions`, `qa_revision_count`) ve `.migrations/dual_agent_down.sql` hazırlanması.
+- [ ] **Aşama 2:** Panel arayüzünde Proje Düzenleme ve AgentRules ekranlarına Test Ajanı ID ve Özel Test Komutları alanlarının eklenmesi.
+- [ ] **Aşama 3:** `TaskLifecycleService.php` içine QA döngü yöneticisi ve 3 turluk sonsuz döngü kalkanının (Circuit Breaker) kodlanması.
+- [ ] **Aşama 4:** `dispatcher.py` motoruna `task.submitted` -> `QA Agent` ve `task.modification_requested` -> `Dev Agent` akıllı yönlendirmesinin eklenmesi.
+- [ ] **Aşama 5:** `RestApiController.php` review kancalarının QA ajanının PowerShell komutlarıyla tam uyumlu hale getirilmesi.
+- [ ] **Aşama 6:** Canlı çift pencere testi: Kodlama ajanı görevi bitirip teslim edecek -> Test ajanı uyanıp tarayıcıda test edecek -> Hata bildirip revizyon döngüsünü tamamlayacak.
+- [ ] **Aşama 7:** `php taskmanager-audit/audit.php ALL` ile tüm modüllerin %100 0 ihlal ile geçtiğinin onaylanması.
 
 ---
 
-Bu plan doğrultusunda tüm mimari aşamalar başarıyla tamamlanmış ve 26 modülün tamamı denetimden 0 ihlal ile geçmiştir.
-
+Bu planı onaylıyorsanız, ilk adımdan (`Aşama 1 - Veritabanı & Rollback Scripti`) başlayarak hiç acele etmeden, adım adım ve test ederek hayata geçirebiliriz.

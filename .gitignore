@@ -15,10 +15,21 @@ dispatcher/*.log
 dispatcher/csrf_token.txt
 dispatcher/ls_address.txt
 dispatcher/ls_env.json
+Modules/Dispatcher/Bin/__pycache__/
+Modules/Dispatcher/Bin/*.log
+Modules/Dispatcher/Bin/csrf_token.txt
+Modules/Dispatcher/Bin/ls_address.txt
+Modules/Dispatcher/Bin/ls_env.json
+Modules/Dispatcher/Bin/last_sessions.json
 yeni/
 
-# Uploaded logs
+# Local SQLite & Uploads
+taskmanager.sqlite
 Public/uploads/webhook_logs.json
+Public/uploads/tasks/*
+!Public/uploads/tasks/.gitkeep
+Public/uploads/schema_snapshots/*
+!Public/uploads/schema_snapshots/.gitkeep
 *.log
 
 # OS & IDE Metadata

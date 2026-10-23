@@ -3,18 +3,14 @@
 ## 1. THE USER IS NOT A QA TESTER (HUMAN-LIKE LIVE TESTING)
 - **Zero Tolerance:** Never tell the user "It's done, please check" without testing it yourself like a real human.
 - **No Superficial cURL Checks:** Checking only HTTP 200 via `curl` is STRICTLY FORBIDDEN. You MUST open the live browser, click buttons, submit forms, and inspect both **Console** (0 JS errors, 0 404 assets) and **Network Response Body** (even if HTTP 200 is returned, verify the payload contains NO `xdebug-error`, `Fatal error`, `PDOException`, `Uncaught`, or `Warning`).
-- **QA AGENT VALIDATION SUPREMACY:** The QA Agent is NOT the Developer's defense attorney; the QA Agent is the USER'S IMPARTIAL REFEREE. Developer submission notes ("What Was Done") are completely irrelevant. The QA Agent must independently execute and verify the exact end-to-end user scenario in the live browser. If the user's primary intended outcome does not work 100% on screen, approval is STRICTLY FORBIDDEN.
 
 ## 2. DUAL-MODE OPERATION (IDE CHAT vs. TASKMANAGER QUEUE)
 - **MODE A - Direct IDE Chat:** When the user writes directly in chat without a `task_code`, fulfill the request immediately, verify in the live browser, and reply directly in the user's language. Do NOT call TaskManager submit APIs.
-- **MODE B - TaskManager Queue (`task_code` Assigned):** Focus ONLY on the assigned `task_code`. 
-  - 🛑 **STRICT REST API MANDATE (NO DATABASE / NO DIRECT FILE ACCESS):** It is STRICTLY FORBIDDEN to search for, inspect, read, or directly write to TaskManager core files (`c:/wamp64/www/taskmanager/*`), services, or databases (`taskmanager_db`). Never run custom PHP/SQL scripts to submit tasks.
-  - 🚀 **OFFICIAL DELIVERY COMMAND:** Task completion MUST be submitted EXCLUSIVELY via the official HTTP REST API command (`Invoke-RestMethod` / `curl`) provided in your active prompt.
-  - 🛑 **END TURN IMMEDIATELY:** Once the REST API call succeeds, **END YOUR TURN IMMEDIATELY**. Never pull or start the next task manually; the autonomous queue will handle it.
+- **MODE B - TaskManager Queue (`task_code` Assigned):** Focus ONLY on the assigned `task_code`. When finished and verified, submit the task via the official TaskManager API/Service, then **END YOUR TURN IMMEDIATELY**. Never pull the next task manually.
 
 ## 3. STRICT WORKSPACE ISOLATION (DIRECTORY BOUNDARY)
 - You are strictly responsible ONLY for the current project workspace directory.
-- **FORBIDDEN:** Never list, read, grep, or modify any file outside the active project root (e.g., neighbor directories under `c:/wamp64/www/*`, and especially `c:/wamp64/www/taskmanager/*`).
+- **FORBIDDEN:** Never list, read, grep, or modify any file outside the active project root (e.g., neighbor directories under `c:\wamp64\www\*`).
 - If the user's prompt references another project/directory, **STOP** and ask the user for explicit confirmation before touching anything outside.
 
 ## 4. TASK DELIVERY FORMAT (DEFINITION OF DONE)
@@ -28,14 +24,13 @@ Always reply in the **user's/task's language** (e.g., Turkish) using this exact 
 - **GitHub Sync:** If a remote Git repo is configured, stage, commit (`feat:`, `fix:`, `refactor:`), and `git push` all changes before marking any task complete.
 - **Surgical Rollback:** For every DB schema/data change (`CREATE`, `ALTER`, `INSERT`, `UPDATE`, `DELETE`), generate the exact reverse SQL in `.migrations/{task_code}_down.sql` using safe `IF EXISTS` clauses.
 
-## 6. ANTI-LOOP COMPACTION RULE (CONTEXT COMPACTION MEMORY RESUME)
-- **Zero Redundant Introductions:** When waking up from an Antigravity IDE automated context compaction, NEVER re-answer past setup, greeting, or ID request messages (e.g. initial prompts like 'Sen TaskManager Coderisin, bana id ver').
-- **Immediate Task Execution:** Instantly ignore past introductory messages upon compaction wake-up, and proceed directly to execute the latest injected active task (task_code) without unnecessary conversational turns.
-
 ---
 
 <!-- PROJECT_RULES_START -->
-## PROJECT-SPECIFIC RULES: [01] Task Manager
+## 7. PROJECT-SPECIFIC AGENT RULES
+
+> ### 📌 MANDATORY PROJECT-SPECIFIC CONSTRAINTS:
+> The following project-specific technical rules, styling constraints, and workflow directives must be strictly observed for project [01] Task Manager:
 
 PROJECT-SPECIFIC RULES: [01] Task Manager
 
@@ -49,10 +44,14 @@ PROJECT-SPECIFIC RULES: [01] Task Manager
    - **Rule 4 (No Inline Code):** Views/PHP files CANNOT contain `<style>`, `<script>`, inline `style="..."`, or `onclick="..."` attributes. All CSS/JS must be in `Modules/{ModuleName}/Assets/{css,js}/` and loaded via `AssetManager`. Modals must be separate files in `Views/modals/`.
 4. **NO Hardcoded `/taskmanager/` Base Paths:**
    - **Rule 5 (Dynamic Base URL/Path):** Hardcoding `/taskmanager/` in any PHP, View, or JS file (URLs, fetch, redirects, asset paths) is STRICTLY FORBIDDEN! Always use dynamic base URL helpers (`BASE_URL`, `SITE_URL`, `window.APP_CONFIG.baseUrl`, or relative routing) so the system works in any root or subfolder.
-5. **Mandatory Gatekeeper Audit (`taskmanager-audit/audit.php`):**
+5. **Zero Manual Routing in `Core/AjaxRouter.php` (Pure Reflection Discovery):**
+   - **Rule 6 (Core/AjaxRouter Immutability):** Never edit or add manual action arrays/aliases to `Core/AjaxRouter.php`! The core router uses Reflection to automatically discover all public methods in every `Modules/{ModuleName}/Controllers/AjaxController.php`. Define your AJAX action as a public method in your module's own AjaxController.
+6. **Zero Hardcoded Machine/User Paths (Portability):**
+   - **Rule 7 (Portability):** Never hardcode machine-specific or environment-specific paths (e.g. `C:/Users/DELL`, `wamp64`, `C:/Python...`). Always use dynamic environment variables (`%USERPROFILE%`, `%LOCALAPPDATA%`, `getenv('SystemDrive')`, `window.APP_CONFIG.projectRoot`) or relative paths so the project runs on any machine without modification.
+7. **Mandatory Gatekeeper Audit (`taskmanager-audit/audit.php`):**
    - Before completing any work on a module, you MUST run: `php taskmanager-audit/audit.php <ModuleName>` (or `ALL`).
    - Do NOT create or modify files inside `taskmanager-audit/`. If the script outputs `[FAIL]`, fix every reported line until you get `0 Violations / [PASS]`.
-6. **Docs & Credentials:**
+8. **Docs & Credentials:**
    - Query project docs via REST API (`GET /api/projects/01/docs` with `Bearer tm_admin_talha_keskin_token_2026`).
    - Test Login: `iletisimtktalha@gmail.com` / `145236`
 <!-- PROJECT_RULES_END -->

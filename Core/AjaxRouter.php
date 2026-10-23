@@ -1,6 +1,14 @@
 <?php
 namespace Core;
 
+/**
+ * TaskManager HMVC Modüler AJAX Yönlendiricisi (Zero-Touch / %100 Otomatik Keşif)
+ * 
+ * ⚠️ DİKKAT: BU DOSYAYA ASLA MANUEL EYLEM, LİSTE VEYA METOT EKLEMEYİN!
+ * Her modül kendi AJAX eylemlerini `Modules/{ModuleName}/Controllers/AjaxController.php`
+ * sınıfında public metot olarak tanımlar. Bu yönlendirici, aktif modülleri Reflection
+ * ile otomatik tarar ve eylemleri sıfır konfigürasyonla çalıştırır.
+ */
 class AjaxRouter
 {
     /**
@@ -11,7 +19,6 @@ class AjaxRouter
 
     /**
      * Gelen eylemi aktif modüllerin Controllers/AjaxController sınıflarında otomatik arar ve çalıştırır.
-     * Hiçbir manuel kod veya liste yazılmasına gerek YOKTUR (Tam Tak-Çalıştır / Zero-Touch).
      */
     public static function dispatch(string $action): bool
     {
@@ -51,7 +58,6 @@ class AjaxRouter
 
         $loadedModules = ModuleLoader::getLoadedModules();
         if (empty($loadedModules)) {
-            // ModuleLoader henüz tetiklenmediyse Modules klasörünü dinamik tara
             $modulesDirs = glob($baseDir . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR);
         } else {
             $modulesDirs = array_column($loadedModules, '_dir');
@@ -87,59 +93,13 @@ class AjaxRouter
 
                 // 1. camelCase metodu snake_case action'a çevir:
                 // Örn: createProject -> create_project
-                // Örn: syncProjectRules -> sync_project_rules
-                // Örn: testTelegram -> test_telegram (ve test_telegram_connection)
+                // Örn: getProjectTimeline -> get_project_timeline
                 $snakeAction = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $methodName));
 
                 self::$autoDiscoveredMap[$snakeAction] = [$className, $methodName];
-                self::$autoDiscoveredMap[$methodName]  = [$className, $methodName]; // Olası birebir camelCase çağrılar için
+                self::$autoDiscoveredMap[$methodName]  = [$className, $methodName]; // Olası camelCase çağrılar için
             }
         }
-
-        // 3. Geçmişten gelen özel veya alias adlandırmalar varsa (Geriye Dönük Uyumluluk):
-        $aliases = [
-            'test_telegram_connection' => ['Modules\Settings\Controllers\AjaxController', 'testTelegram'],
-            'test_smtp_connection'     => ['Modules\Settings\Controllers\AjaxController', 'testSmtp'],
-            'test_slack_webhook'       => ['Modules\Settings\Controllers\AjaxController', 'testSlack'],
-            'test_discord_webhook'     => ['Modules\Settings\Controllers\AjaxController', 'testDiscord'],
-            'save_system_settings'     => ['Modules\Settings\Controllers\AjaxController', 'saveSettings'],
-            'save_github_settings'     => ['Modules\GithubDevops\Controllers\AjaxController', 'saveSettings'],
-            'sync_project_github'      => ['Modules\GithubDevops\Controllers\AjaxController', 'syncProject'],
-            'get_project_timeline'     => ['Modules\GithubDevops\Controllers\AjaxController', 'getProjectTimeline'],
-            'revert_to_version'        => ['Modules\GithubDevops\Controllers\AjaxController', 'revertToVersion'],
-            'revert_project_version'   => ['Modules\GithubDevops\Controllers\AjaxController', 'revertToVersion'],
-            'bulk_create_hierarchical_tasks' => ['Modules\AiArchitect\Controllers\AjaxController', 'bulkCreateTasks'],
-            'decompose_brief_with_ai'  => ['Modules\AiArchitect\Controllers\AjaxController', 'decomposeBrief'],
-            'upload_doc_attachment'    => ['Modules\Docs\Controllers\AjaxController', 'uploadAttachment'],
-            'get_doc_attachments'      => ['Modules\Docs\Controllers\AjaxController', 'getAttachments'],
-            'delete_doc_attachment'    => ['Modules\Docs\Controllers\AjaxController', 'deleteAttachment'],
-            'get_chat_messages'        => ['Modules\Chat\Controllers\AjaxController', 'getMessages'],
-            'send_chat_message'        => ['Modules\Chat\Controllers\AjaxController', 'sendMessage'],
-            'get_chat_conversations'   => ['Modules\Chat\Controllers\AjaxController', 'getConversations'],
-            'get_daily_standup'        => ['Modules\Reports\Controllers\AjaxController', 'getDailyStandup'],
-            'send_standup_email'       => ['Modules\Reports\Controllers\AjaxController', 'sendStandupEmail'],
-            'start_ai_account_oauth'   => ['Modules\Settings\Controllers\AjaxController', 'startAiAccountOAuth'],
-            'start_ai_account_o_auth'  => ['Modules\Settings\Controllers\AjaxController', 'startAiAccountOAuth'],
-            'poll_oauth_result'        => ['Modules\Settings\Controllers\AjaxController', 'pollOAuthResult'],
-            'sync_local_vault_accounts'=> ['Modules\Settings\Controllers\AjaxController', 'syncLocalVaultAccounts'],
-            'activate_ai_account'      => ['Modules\Settings\Controllers\AjaxController', 'activateAiAccount'],
-            'delete_ai_account'        => ['Modules\Settings\Controllers\AjaxController', 'deleteAiAccount'],
-        ];
-
-        foreach ($aliases as $act => $target) {
-            self::$autoDiscoveredMap[$act] = $target;
-        }
-    }
-
-    /**
-     * Dışarıdan dinamik rota kaydetme (Gerektiğinde)
-     */
-    public static function register(string $action, string $controllerClass, string $method): void
-    {
-        if (self::$autoDiscoveredMap === null) {
-            self::discoverAllModuleActions();
-        }
-        self::$autoDiscoveredMap[$action] = [$controllerClass, $method];
     }
 
     /**

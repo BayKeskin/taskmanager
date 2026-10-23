@@ -21,29 +21,22 @@ class WebhookService extends BaseModel
             return ['sent' => false, 'error' => 'Project not found'];
         }
 
-        $targetUrl = !empty($project->webhook_url) ? trim($project->webhook_url) : 'http://localhost:4005/webhook';
+        $targetUrl = !empty($project->webhook_url) ? trim($project->webhook_url) : 'http://localhost:4000/webhook';
 
         $apiCfg = RestApiService::getDynamicApiConfig();
 
-        $qaModel = new \Modules\AgentRules\Models\AgentRulesModel();
-        $qaGlobal = $qaModel->getQaGlobalInstructions();
-
         $payload = [
-            'event'                  => $event,
-            'project_id'             => (int)$project->id,
-            'project_code'           => $project->project_code,
-            'project_title'          => $project->title,
-            'workspace_path'         => $project->workspace_path ?: null,
-            'agent_rules'            => $project->agent_rules ?: null,
-            'agent_conversation_id'  => $project->agent_conversation_id ?: null,
-            'dev_conversation_id'    => $project->dev_conversation_id ?: ($project->agent_conversation_id ?: null),
-            'qa_conversation_id'     => $project->qa_conversation_id ?: null,
-            'qa_test_instructions'   => $project->qa_test_instructions ?: null,
-            'qa_global_instructions' => $qaGlobal ?: null,
-            'api_base_url'           => $apiCfg['base_url'],
-            'api_token'              => $apiCfg['api_token'],
-            'timestamp'              => date('c'),
-            'data'                   => $data
+            'event'                 => $event,
+            'project_id'            => (int)$project->id,
+            'project_code'          => $project->project_code,
+            'project_title'         => $project->title,
+            'workspace_path'        => $project->workspace_path ?: null,
+            'agent_rules'           => $project->agent_rules ?: null,
+            'agent_conversation_id' => $project->agent_conversation_id ?: null,
+            'api_base_url'          => $apiCfg['base_url'],
+            'api_token'             => $apiCfg['api_token'],
+            'timestamp'             => date('c'),
+            'data'                  => $data
         ];
 
         $jsonPayload = json_encode($payload, JSON_UNESCAPED_UNICODE);
@@ -64,7 +57,7 @@ class WebhookService extends BaseModel
             $headers[] = 'X-TaskManager-Signature: sha256=' . $signature;
         }
 
-        if (str_contains($targetUrl, '4005') || str_contains($targetUrl, '4000') || str_contains($targetUrl, 'localhost') || empty($targetUrl)) {
+        if (str_contains($targetUrl, '4000') || str_contains($targetUrl, 'localhost') || empty($targetUrl)) {
             if (class_exists('Modules\\Dispatcher\\Services\\DispatcherService')) {
                 $disp = new \Modules\Dispatcher\Services\DispatcherService();
                 $disp->ensureRunning();
@@ -76,8 +69,8 @@ class WebhookService extends BaseModel
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
@@ -89,7 +82,7 @@ class WebhookService extends BaseModel
         $sent = ($httpCode >= 200 && $httpCode < 300);
         $effectiveConvId = $project->agent_conversation_id;
 
-        if (!$sent && (str_contains($targetUrl, 'localhost') || str_contains($targetUrl, '127.0.0.1') || empty($targetUrl))) {
+        if (!$sent && (str_contains($targetUrl, 'localhost:4000') || str_contains($targetUrl, '127.0.0.1:4000') || empty($targetUrl))) {
             $dispService = new \Modules\Dispatcher\Services\DispatcherService();
             $directResult = $dispService->dispatchDirect($project, $event, $data);
             if (!empty($directResult['sent'])) {

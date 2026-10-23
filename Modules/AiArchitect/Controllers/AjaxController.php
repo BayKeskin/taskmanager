@@ -218,4 +218,14 @@ class AjaxController extends BaseController
             'subtasks_count' => $createdSubtasksCount
         ]);
     }
+
+    public function bulkCreateHierarchicalTasks(): void
+    {
+        $this->bulkCreateTasks();
+    }
+
+    public function decomposeBriefWithAi(): void
+    {
+        $this->decomposeBrief();
+    }
 }

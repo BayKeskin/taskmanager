@@ -1,9 +1,7 @@
 r"""
-TaskManager -> Antigravity Central Multi-Agent Dispatcher (Environment - v5.0 Shift Handoff & Carry-Over Engine)
-Port: 4005 (TAMAMEN BAĞIMSIZ PARALEL ÇALIŞMA ORTAMI)
-- Port 4005 (Canlı sistem) ile asla çakışmaz.
-- Sabit kullanıcı yolları (C:\Users\DELL) ve eklenti bağımlılıkları tamamen kaldırılmış, os.path.expanduser / os.environ ile dinamikleştirilmiştir.
-- Vardiya Devir Teslim Hafızası (Shift Handoff) & Yarım İş Devri (Carry-over Brief) motoru içerir.
+TaskManager -> Antigravity Central Multi-Agent Dispatcher (v4.5 - 3 Ajanlı Rol Algılama: Coder / QA / Danışman)
+Hiçbir CMD/PowerShell penceresi açmadan arka planda %100 sessiz çalışır.
+Proxy veya yabancı eklenti içermez.
 """
 import http.server
 import json
@@ -24,19 +22,15 @@ if not os.path.exists(os.path.join(APP_ROOT, 'Core', 'System.php')):
     if os.path.exists(os.path.join(possible_root, 'Core', 'System.php')):
         APP_ROOT = possible_root
 
-# Spesifik Dosyalar ve Yapılandırmalar
-PORT = 4005
+PORT = 4000
 LOG_FILE = os.path.join(BASE_DIR, 'dispatcher.log')
-LAST_SESSIONS_FILE = os.path.join(BASE_DIR, 'last_sessions.json')
 WORKSPACES_CONFIG = os.path.join(BASE_DIR, 'workspaces.json')
 LS_ENV_FILE = os.path.join(BASE_DIR, 'ls_env.json')
 LS_ADDRESS_FILE = os.path.join(BASE_DIR, 'ls_address.txt')
 CSRF_TOKEN_FILE = os.path.join(BASE_DIR, 'csrf_token.txt')
 
-# DİNAMİK KULLANICI YOLLARI (Sabit DELL yolu yok)
 USER_HOME = os.path.expanduser('~')
 LOCAL_APP_DATA = os.environ.get('LOCALAPPDATA', os.path.join(USER_HOME, 'AppData', 'Local'))
-ROAMING_APP_DATA = os.environ.get('APPDATA', os.path.join(USER_HOME, 'AppData', 'Roaming'))
 
 AGENTAPI_EXE = os.path.join(
     LOCAL_APP_DATA,
@@ -50,8 +44,8 @@ AGENTAPI_EXE = os.path.join(
     'language_server_windows_x64.exe'
 )
 ANTIGRAVITY_CONV_DIR = os.path.join(USER_HOME, '.gemini', 'antigravity-ide', 'conversations')
+ANTIGRAVITY_BRAIN_DIR = os.path.join(USER_HOME, '.gemini', 'antigravity-ide', 'brain')
 
-# WINDOWS'TA SİYAH CMD EKRANI ÇIKMASINI ENGELLEYEN BAYRAK:
 NO_WINDOW_FLAG = subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
 
 project_active_state = {}
@@ -65,10 +59,22 @@ IGNORED_AGENT_EVENTS = {
 }
 
 def run_silent(cmd, **kwargs):
-    """Tüm alt süreçleri siyah CMD penceresi açmadan sessizce çalıştırır."""
     if sys.platform == 'win32':
         kwargs['creationflags'] = kwargs.get('creationflags', 0) | NO_WINDOW_FLAG
     return subprocess.run(cmd, **kwargs)
+
+def watchdog_loop():
+    print("🛡️ [WATCHDOG] Otonom Kurtarma ve Kuyruk Denetim Motoru Aktif (Sessiz Mod)!")
+    time.sleep(10)
+    app_root = APP_ROOT
+
+    while True:
+        try:
+            insp_cmd = ['php', '-r', "require 'Core/System.php'; \\Modules\\Watchdog\\Services\\WatchdogService::runInspection();"]
+            run_silent(insp_cmd, capture_output=True, text=True, cwd=app_root, timeout=10)
+        except Exception:
+            pass
+        time.sleep(20)
 
 class Logger:
     def __init__(self, filepath):
@@ -146,7 +152,6 @@ def verify_ls_env(addr, token=None):
     return False
 
 def get_all_ls_instances():
-    """Tüm açık Antigravity Language Server süreçlerini ve dinledikleri portları döndürür."""
     instances = []
     try:
         ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
@@ -182,7 +187,6 @@ def get_all_ls_instances():
     return instances
 
 def find_active_ls_for_conversation(cid):
-    """Belirli bir conversation ID'sini barındıran doğru LS örneğini ve portunu bulur."""
     if not cid:
         return None, None
     instances = get_all_ls_instances()
@@ -285,28 +289,20 @@ def get_project_primary_dir(project_code, workspace_path=""):
 def get_conversation_role(cid):
     """
     Sohbetin ilk kullanıcı mesajını inceleyerek rolünü tespit eder:
-    - 'danışman' / 'advisor' içeriyorsa -> 'advisor' (asla görev verilmez!)
-    - 'qa' / 'test' içeriyorsa -> 'qa'
-    - 'coder' / 'kod' / 'developer' içeriyorsa -> 'dev'
-    - Belirtilmemişse -> None
+    - 'danışman' / 'danisman' / 'advisor' -> 'advisor' (KESİNLİKLE GÖREV ATILMAZ!)
+    - 'coder' / 'koder' / 'developer' -> 'dev'
+    - 'qa' / 'tester' / 'test uzmanı' -> 'qa'
     """
     if not cid:
         return None
     cid = str(cid).strip()
-    transcript_file = os.path.join(
-        os.environ.get('USERPROFILE', r'C:\Users\DELL'),
-        r'.gemini\antigravity-ide\brain',
-        cid,
-        '.system_generated',
-        'logs',
-        'transcript.jsonl'
-    )
+    transcript_file = os.path.join(ANTIGRAVITY_BRAIN_DIR, cid, '.system_generated', 'logs', 'transcript.jsonl')
     if not os.path.exists(transcript_file):
         return None
 
     try:
         with open(transcript_file, 'r', encoding='utf-8', errors='replace') as f:
-            for _ in range(15):
+            for _ in range(20):
                 line = f.readline()
                 if not line:
                     break
@@ -315,15 +311,15 @@ def get_conversation_role(cid):
                     raw_content = str(data.get('content', '')).lower()
                     clean_content = raw_content.split('<additional_metadata>')[0].replace('<user_request>', '').replace('</user_request>', '').strip()
 
-                    # 1. Danışman koruması (en yüksek öncelik)
-                    if any(w in clean_content for w in ['danışman', 'danisman', 'advisor', 'consultant']):
+                    if 'mandatory task interrupt' in clean_content or 'mandatory qa verification' in clean_content:
+                        continue
+
+                    if re.search(r'\b(danışman|danisman|danışmanısın|danismanisin|advisor|consultant)\b', clean_content):
                         return 'advisor'
-                    # 2. QA kontrolü
-                    if any(w in clean_content for w in ['qa', 'test uzmanı', 'test uzmani', 'tester', 'test']):
-                        return 'qa'
-                    # 3. Coder kontrolü
-                    if any(w in clean_content for w in ['coder', 'koder', 'developer', 'geliştirici', 'gelistirici', 'kod']):
+                    if re.search(r'\b(coder|coderisin|koder|developer|geliştirici|gelistirici)\b', clean_content):
                         return 'dev'
+                    if re.search(r'\b(qa|tester|test uzmanı|test uzmani|test uzmanısın|test uzmanisin)\b', clean_content):
+                        return 'qa'
     except Exception:
         pass
     return None
@@ -347,7 +343,7 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
 
     matched_candidates = []
 
-    for db_path in db_files:
+    for db_path in db_files[:40]:
         cid = os.path.splitext(os.path.basename(db_path))[0]
         try:
             con = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
@@ -360,13 +356,17 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
                 for target in normalized_targets:
                     pattern = rf"(?:^|[^\w\-\.]){re.escape(target)}(?:[/?#\"\'\s,\x00-\x1f\\]|$)"
                     if re.search(pattern, decoded_text):
+                        role = get_conversation_role(cid)
+                        if role == 'advisor':
+                            continue
                         addr, tok = find_active_ls_for_conversation(cid)
                         matched_candidates.append({
                             'cid': cid,
                             'uri': f"file:///{target}",
                             'addr': addr,
                             'tok': tok,
-                            'mtime': os.path.getmtime(db_path)
+                            'role': role,
+                            'is_active_ls': bool(addr)
                         })
                         break
         except Exception:
@@ -375,236 +375,47 @@ def discover_latest_conversation(project_code, project_title="", workspace_path=
     if not matched_candidates:
         return None, None, None, None
 
-    # 1. Aşama: Tam rol eşleşmesi ara (örn: ilk mesaja 'coder' ya da 'qa' yazılmış pencereler)
     for cand in matched_candidates:
-        cid = cand['cid']
-        detected_role = get_conversation_role(cid)
-        if detected_role == 'advisor':
-            continue
-        if detected_role == target_role:
-            print(f"🎯 [ROL EŞLEŞMESİ BULUNDU] {project_code} -> CID: {cid} | Rol: {target_role.upper()}")
+        if cand['role'] == target_role and cand['is_active_ls']:
+            print(f"🎯 [AKTİF ROL EŞLEŞMESİ] Proje: {project_code} | Rol: {target_role.upper()} -> CID: {cand['cid']}")
             return cand['cid'], cand['uri'], cand['addr'], cand['tok']
 
-    # 2. Aşama: Eğer açık role atanmış pencere yoksa, Danışman ve zıt rol OLMAYAN en güncel pencereyi seç
-    opposite_role = 'qa' if target_role == 'dev' else 'dev'
     for cand in matched_candidates:
-        cid = cand['cid']
-        detected_role = get_conversation_role(cid)
-        if detected_role == 'advisor':
-            continue
-        if detected_role != opposite_role:
-            print(f"⚡ [GENEL/NÖTR PENCERE SEÇİLDİ] {project_code} -> CID: {cid} (Hedef Rol: {target_role.upper()})")
+        if cand['role'] == target_role:
+            print(f"🎯 [ROL EŞLEŞMESİ] Proje: {project_code} | Rol: {target_role.upper()} -> CID: {cand['cid']}")
             return cand['cid'], cand['uri'], cand['addr'], cand['tok']
 
+    print(f"⚠️ [ROL BULUNAMADI] Proje [{project_code}] için ilk mesajında '{target_role}' yazan açık bir pencere bulunamadı!")
     return None, None, None, None
 
-def is_conversation_alive(cid):
-    """
-    Belirli bir conversation ID'sinin hem diskte .db dosyasının olup olmadığını
-    hem de aktif bir Language Server sürecine bağlı olup olmadığını doğrular.
-    """
-    if not cid or not isinstance(cid, str):
-        return False, None, None
-    cid = cid.strip()
-    db_file = os.path.join(ANTIGRAVITY_CONV_DIR, f"{cid}.db")
-    if not os.path.exists(db_file):
-        return False, None, None
-    
-    addr, tok = find_active_ls_for_conversation(cid)
-    if addr:
-        return True, addr, tok
-    return False, None, None
-
 def sync_conversation_id_to_db(project_code, conv_id, role='dev'):
-    """
-    Hem dev_conversation_id hem agent_conversation_id (veya qa_conversation_id) sütunlarını senkronize günceller.
-    """
     try:
         conv_id = str(conv_id).strip()
         project_code = str(project_code).strip()
         root_dir = APP_ROOT
         if role == 'qa':
             update_sql = "UPDATE projects SET qa_conversation_id = :cid WHERE project_code = :pcode"
-            exec_params = "array(':cid' => '" + conv_id + "', ':pcode' => '" + project_code + "')"
+            exec_params = f"[':cid' => '{conv_id}', ':pcode' => '{project_code}']"
         else:
             update_sql = "UPDATE projects SET dev_conversation_id = :cid1, agent_conversation_id = :cid2 WHERE project_code = :pcode"
-            exec_params = "array(':cid1' => '" + conv_id + "', ':cid2' => '" + conv_id + "', ':pcode' => '" + project_code + "')"
+            exec_params = f"[':cid1' => '{conv_id}', ':cid2' => '{conv_id}', ':pcode' => '{project_code}']"
 
         php_code = (
             f"require_once 'Core/System.php'; "
             f"$db = new Database(); "
-            f"$stmt = $db->connect->prepare(\"{update_sql}\"); "
-            f"$stmt->execute({exec_params}); "
-            f"echo 'ROWS:' . $stmt->rowCount();"
+            f"$stmt = $db->connect->prepare('{update_sql}'); "
+            f"$stmt->execute({exec_params});"
         )
-        res = run_silent(['php', '-r', php_code], cwd=root_dir, capture_output=True, text=True, timeout=5)
-        out = (res.stdout or '').strip()
-        print(f"📝 [- DB SYNC ({role})] Proje: {project_code} -> CID: {conv_id} | DB Yanıt: {out}")
-    except Exception as e:
-        print(f"⚠️ DB sync hatası: {e}")
-
-
-# =========================================================================
-# 🧠 VARDİYA DEVİR TESLİM HAFIZASI & YARIM İŞ DEVRİ (SHIFT HANDOFF MOTORU)
-# =========================================================================
-
-def load_last_sessions():
-    """last_sessions.json dosyasından her projenin son kayıtlı conversation_id bilgisini yükler."""
-    if os.path.exists(LAST_SESSIONS_FILE):
-        try:
-            with open(LAST_SESSIONS_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                if isinstance(data, dict):
-                    return data
-        except Exception:
-            pass
-    return {}
-
-def save_last_session(project_code, conv_id, role='dev'):
-    """Projeye ait son aktif oturum bilgisini diske yazar."""
-    if not project_code or not conv_id:
-        return
-    sessions = load_last_sessions()
-    if project_code not in sessions:
-        sessions[project_code] = {}
-    sessions[project_code][role] = {
-        'conversation_id': conv_id,
-        'updated_at': int(time.time())
-    }
-    try:
-        with open(LAST_SESSIONS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(sessions, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"⚠️ last_sessions.json kaydedilemedi: {e}")
-
-def get_git_status_info(repo_dir):
-    """Repo klasöründe git status ve diff kontrolü yapar."""
-    if not os.path.isdir(repo_dir) or not os.path.exists(os.path.join(repo_dir, '.git')):
-        return False, "", ""
-    try:
-        st_res = run_silent(['git', 'status', '-s'], cwd=repo_dir, capture_output=True, text=True, timeout=5)
-        status_out = (st_res.stdout or '').strip()
-        is_dirty = bool(status_out)
-        
-        diff_out = ""
-        if is_dirty:
-            diff_res = run_silent(['git', 'diff', '--stat'], cwd=repo_dir, capture_output=True, text=True, timeout=5)
-            diff_out = (diff_res.stdout or '').strip()
-            
-        log_res = run_silent(['git', 'log', '-n', '3', '--stat', '--oneline'], cwd=repo_dir, capture_output=True, text=True, timeout=5)
-        log_out = (log_res.stdout or '').strip()
-
-        return is_dirty, status_out, diff_out, log_out
-    except Exception as e:
-        print(f"⚠️ Git inceleme hatası: {e}")
-        return False, "", "", ""
-
-def fetch_last_completed_tasks_from_db(project_id, project_code):
-    """Projede son tamamlanan 3 görevin başlık ve notlarını DB'den çeker."""
-    tasks = []
-    try:
-        where = f"t.project_id = {int(project_id)}" if project_id else f"p.project_code = '{project_code}'"
-        php_code = (
-            f"require_once 'Core/System.php'; "
-            f"$db = new Database(); "
-            f"$sql = \"SELECT t.task_code, t.title, ts.notes FROM tasks t "
-            f"LEFT JOIN projects p ON t.project_id = p.id "
-            f"LEFT JOIN task_submissions ts ON ts.task_id = t.id "
-            f"WHERE {where} AND t.status = 'completed' "
-            f"ORDER BY t.id DESC LIMIT 3\"; "
-            f"$rows = $db->connect->query($sql)->fetchAll(PDO::FETCH_ASSOC); "
-            f"echo json_encode($rows);"
-        )
-        res = run_silent(['php', '-r', php_code], cwd=APP_ROOT, capture_output=True, text=True, timeout=5)
-        if res.returncode == 0 and res.stdout.strip():
-            tasks = json.loads(res.stdout.strip())
-    except Exception as e:
-        print(f"⚠️ DB tamamlanan görev çekme hatası: {e}")
-    return tasks
-
-def build_shift_handoff_brief(project_id, project_code, project_dir, old_cid, new_cid):
-    """
-    Vardiya Değişimi veya Yarım İş Devri durumunu analiz edip nihai prompt'a eklenecek
-    özel markdown özet bloğunu oluşturur.
-    """
-    is_dirty, status_out, diff_out, log_out = get_git_status_info(project_dir)
-
-    handoff_block = (
-        f"\n\n=======================================================\n"
-        f"🚨 **[SESSION HANDOFF & SHIFT CHANGE NOTIFICATION]**\n"
-        f"> **Context Transition:** Agent account/session changed from `{old_cid}` to `{new_cid}`.\n"
-        f"> **Workspace Dir:** `{project_dir}`\n"
-    )
-
-    if is_dirty:
-        # DURUM B: Görev ortasında kredi bitti / yarım bırakıldı (Git kirli)
-        print(f"🔄 [- CARRY OVER] Yarım bırakılmış iş tespit edildi! (Git Status Dirty) -> {project_code}")
-        handoff_block += (
-            f"\n🔄 **[CARRY-OVER BRIEF — INTERRUPTED WORK DETECTED]**\n"
-            f"> [!CAUTION]\n"
-            f"> The previous agent session was interrupted mid-task (e.g. quota limit, session reset).\n"
-            f"> Uncommitted local changes detected in repository:\n\n"
-            f"**Git Status (`git status -s`):**\n"
-            f"```text\n{status_out}\n```\n\n"
-        )
-        if diff_out:
-            handoff_block += (
-                f"**Git Diff Summary (`git diff --stat`):**\n"
-                f"```text\n{diff_out}\n```\n\n"
-            )
-        handoff_block += (
-            f"> **MANDATORY DIRECTIVE FOR NEW AGENT:**\n"
-            f"> 1. Inspect the modified files above before starting.\n"
-            f"> 2. Reconcile unfinished work seamlessly without discarding user progress.\n"
-            f"> 3. Resume the task to complete autonomous implementation and live verification.\n"
-            f"=======================================================\n\n"
-        )
-    else:
-        # DURUM A: Görev bitmiş, temiz hesap değişimi (Git temiz)
-        print(f"🧠 [- SHIFT HANDOFF] Temiz vardiya devri tespit edildi! (Git Clean) -> {project_code}")
-        last_tasks = fetch_last_completed_tasks_from_db(project_id, project_code)
-        tasks_summary = ""
-        if last_tasks:
-            for t in last_tasks:
-                t_code = t.get('task_code', '')
-                t_title = t.get('title', '')
-                t_notes = (t.get('notes') or '').strip()
-                tasks_summary += f"- **[{t_code}] {t_title}**\n"
-                if t_notes:
-                    first_line = t_notes.split('\n')[0][:120]
-                    tasks_summary += f"  *Notes:* {first_line}...\n"
-        else:
-            tasks_summary = "- *(No recently completed tasks found in database)*\n"
-
-        handoff_block += (
-            f"\n🧠 **[RECENT PROJECT MEMORY & SHIFT HANDOFF BRIEF]**\n"
-            f"> [!NOTE]\n"
-            f"> Clean shift handoff. Repository is in a clean git state.\n"
-            f"> Here is the latest context and work recently accomplished in this project:\n\n"
-            f"**Recently Completed Tasks:**\n"
-            f"{tasks_summary}\n"
-        )
-        if log_out:
-            handoff_block += (
-                f"**Recent Commits (`git log -n 3 --stat`):**\n"
-                f"```text\n{log_out}\n```\n\n"
-            )
-        handoff_block += (
-            f"> **MANDATORY DIRECTIVE FOR NEW AGENT:**\n"
-            f"> Carry this context forward. Maintain code styling, architectural integrity, and conventions established in prior tasks.\n"
-            f"=======================================================\n\n"
-        )
-
-    return handoff_block
-
-# =========================================================================
+        run_silent(['php', '-r', php_code], cwd=root_dir, capture_output=True, timeout=5)
+    except Exception:
+        pass
 
 def process_webhook_async(payload, header_conv_id):
     event = payload.get('event', 'unknown')
     project_id = payload.get('project_id')
     project_code = str(payload.get('project_code', '')).strip()
     project_title = payload.get('project_title', '')
-    
+
     dev_conv_id = payload.get('dev_conversation_id') or payload.get('agent_conversation_id') or header_conv_id
     dev_conv_id = str(dev_conv_id).strip() if dev_conv_id else None
     qa_conv_id = payload.get('qa_conversation_id')
@@ -612,23 +423,6 @@ def process_webhook_async(payload, header_conv_id):
 
     qa_test_instructions = (payload.get('qa_test_instructions') or '').strip()
     qa_global_instructions = (payload.get('qa_global_instructions') or '').strip()
-
-    if (not qa_conv_id or not dev_conv_id) and (project_id or project_code):
-        try:
-            where_clause = f"id = {int(project_id)}" if project_id else f"project_code = '{project_code}'"
-            db_php = f"require_once 'Core/System.php'; \$db = new Database(); \$stmt = \$db->connect->query('SELECT dev_conversation_id, qa_conversation_id, qa_test_instructions, agent_conversation_id FROM projects WHERE {where_clause} LIMIT 1'); echo json_encode(\$stmt->fetch(PDO::FETCH_ASSOC));"
-            res = run_silent(['php', '-r', db_php], cwd=APP_ROOT, capture_output=True, text=True, timeout=5)
-            if res.returncode == 0 and res.stdout:
-                db_proj = json.loads(res.stdout)
-                if db_proj:
-                    if not qa_conv_id and db_proj.get('qa_conversation_id'):
-                        qa_conv_id = str(db_proj['qa_conversation_id']).strip()
-                    if not dev_conv_id:
-                        dev_conv_id = str(db_proj.get('dev_conversation_id') or db_proj.get('agent_conversation_id') or '').strip() or None
-                    if not qa_test_instructions and db_proj.get('qa_test_instructions'):
-                        qa_test_instructions = str(db_proj['qa_test_instructions']).strip()
-        except Exception:
-            pass
 
     data = payload.get('data', {})
     if not isinstance(data, dict):
@@ -641,14 +435,12 @@ def process_webhook_async(payload, header_conv_id):
     api_token = str(payload.get('api_token') or '').strip()
     if not api_token:
         try:
-            token_php = "require_once 'Core/System.php'; \$cfg = \\Modules\\RestApi\\Services\\RestApiService::getDynamicApiConfig(); echo \$cfg['api_token'] ?? '';"
+            token_php = "require_once 'Core/System.php'; $cfg = \\Modules\\RestApi\\Services\\RestApiService::getDynamicApiConfig(); echo $cfg['api_token'] ?? '';"
             tok_res = run_silent(['php', '-r', token_php], cwd=APP_ROOT, capture_output=True, text=True, timeout=3)
             if tok_res.returncode == 0 and tok_res.stdout.strip():
                 api_token = tok_res.stdout.strip()
         except Exception:
             pass
-    if not api_token:
-        api_token = 'tm_admin_talha_keskin_token_2026'
 
     workspace_path = payload.get('workspace_path') or data.get('workspace_path', '')
     agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
@@ -658,17 +450,17 @@ def process_webhook_async(payload, header_conv_id):
         with state_lock:
             prev_info = project_active_state.pop(project_code, None)
 
-        target_conv = dev_conv_id or (prev_info.get('conv_id') if prev_info else None)
-        if target_conv and os.path.exists(AGENTAPI_EXE):
+        disc_dev, _, d_addr, d_tok = discover_latest_conversation(project_code, project_title, workspace_path, target_role='dev')
+        target_conv = disc_dev or (prev_info.get('conv_id') if prev_info else None)
+        if target_conv and get_conversation_role(target_conv) != 'advisor':
             ls_addr, csrf_tok = find_active_ls_for_conversation(target_conv)
             if not ls_addr:
                 ls_addr, csrf_tok = get_antigravity_ls_env()
-
             stop_msg = (
                 f"🛑 **[GÖREV İPTAL EDİLDİ / GERİ ÇEKİLDİ — ÇALIŞMAYI DERHAL DURDURUN]**\n\n"
                 f"Görev: **{task_code}** ({task_title})\n"
-                f"Kullanıcı görevi 'In Progress' sütunundan geri çekti veya iptal etti.\n"
-                f"Lütfen mevcut dosya değişikliklerini durdurun, terminal işlemlerini sonlandırın ve yeni bir görev atanana kadar BEKLEMEDE (IDLE) kalın."
+                f"Kullanıcı görevi 'In Progress' sütunundan geri çekti.\n"
+                f"Lütfen mevcut işlemleri durdurun ve yeni görev atanana kadar BEKLEMEDE (IDLE) kalın."
             )
             env = os.environ.copy()
             if ls_addr:
@@ -676,95 +468,51 @@ def process_webhook_async(payload, header_conv_id):
             if csrf_tok:
                 env["ANTIGRAVITY_CSRF_TOKEN"] = csrf_tok
             stop_cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title=[DURDUR] {task_code}", target_conv, stop_msg]
-            try:
-                run_silent(stop_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=10)
-                print(f"🛑 [- GÖREV GERİ ALINDI] [{project_code}] {task_code} -> Ajan ({target_conv}) durduruldu ve kilit silindi.")
-            except Exception as e:
-                print(f"⚠️ [- DURDURMA BİLDİRİMİ HATASI] {e}")
-        else:
-            print(f"🛑 [- GÖREV GERİ ALINDI] [{project_code}] {task_code} -> Kilit silindi.")
+            run_silent(stop_cmd, env=env, cwd=project_dir, capture_output=True, text=True, timeout=10)
         return
+
+    if event in IGNORED_AGENT_EVENTS:
+        return
+
+    current_role = 'qa' if event == 'task.submitted' else 'dev'
+
+    discovered_cid, matched_uri, disc_addr, disc_tok = discover_latest_conversation(
+        project_code, project_title, workspace_path, target_role=current_role
+    )
 
     if event == 'task.submitted':
         with state_lock:
             project_active_state.pop(project_code, None)
 
-        if not qa_conv_id:
-            print(f"✅ [- GÖREV TESLİM EDİLDİ - TEK AJAN MODU] [{project_code}] {task_code} -> 4 sn bekleniyor...")
+        valid_qa_cid = discovered_cid
+        if not valid_qa_cid and qa_conv_id and get_conversation_role(qa_conv_id) == 'qa':
+            valid_qa_cid = qa_conv_id
+
+        if not valid_qa_cid:
+            print(f"✅ [GÖREV TESLİM EDİLDİ - QA PENCERESİ AÇIK DEĞİL] [{project_code}] {task_code} -> 4 sn sonra sıradaki göreve geçiliyor...")
             time.sleep(4)
             if project_id:
-                app_root = APP_ROOT
                 fin_id = int(task_id) if task_id else 'null'
                 next_cmd = ['php', '-r', f"require 'Core/System.php'; \\Modules\\Board\\Services\\TaskLifecycleService::dispatchNextAiTaskIfAvailable({int(project_id)}, {fin_id});"]
-                run_silent(next_cmd, capture_output=True, text=True, cwd=app_root, timeout=10)
+                run_silent(next_cmd, capture_output=True, text=True, cwd=APP_ROOT, timeout=10)
             return
-        else:
-            print(f"🔬 [- GÖREV TESLİM EDİLDİ - ÇİFT AJAN MODU] [{project_code}] {task_code} -> QA Ajanına ({qa_conv_id}) yönlendiriliyor...")
 
-    if event in IGNORED_AGENT_EVENTS:
-        return
-
-    workspace_path = payload.get('workspace_path') or data.get('workspace_path', '')
-    agent_rules = (payload.get('agent_rules') or data.get('agent_rules') or '').strip()
-    project_dir = get_project_primary_dir(project_code, workspace_path)
-
-    current_role = 'qa' if event == 'task.submitted' else 'dev'
-    primary_conv_id = qa_conv_id if event == 'task.submitted' else dev_conv_id
-
-    discovered_cid, matched_uri, disc_addr, disc_tok = discover_latest_conversation(project_code, project_title, workspace_path, target_role=current_role)
-    if discovered_cid:
-        discovered_cid = str(discovered_cid).strip()
-
+    target_conv_id = discovered_cid
     ls_address = disc_addr
     csrf_token = disc_tok
-    primary_conv_id = qa_conv_id if event == 'task.submitted' else dev_conv_id
 
-    # 1. ÖLÜ ID TEMİZLİĞİ VE CANLI SOHBET SEÇİMİ
-    target_conv_id = None
-    is_primary_alive = False
-    p_addr, p_tok = None, None
+    if not target_conv_id:
+        fallback_id = qa_conv_id if current_role == 'qa' else dev_conv_id
+        if fallback_id and get_conversation_role(fallback_id) == current_role:
+            target_conv_id = fallback_id
 
-    if primary_conv_id:
-        is_primary_alive, p_addr, p_tok = is_conversation_alive(primary_conv_id)
+    if not target_conv_id:
+        print(f"❌ [HEDEF PENCERE YOK] [{project_code}] '{current_role.upper()}' rolüne sahip açık bir pencere bulunamadı! Görev Danışman'a gitmemesi için durduruldu.")
+        return
 
-    # Diskteki .db dosyalarının mtime (son düzenleme) tarihlerini kıyasla
-    primary_mtime = 0
-    discovered_mtime = 0
-    if primary_conv_id:
-        p_db = os.path.join(ANTIGRAVITY_CONV_DIR, f"{primary_conv_id}.db")
-        if os.path.exists(p_db):
-            primary_mtime = os.path.getmtime(p_db)
-    if discovered_cid:
-        d_db = os.path.join(ANTIGRAVITY_CONV_DIR, f"{discovered_cid}.db")
-        if os.path.exists(d_db):
-            discovered_mtime = os.path.getmtime(d_db)
+    sync_conversation_id_to_db(project_code, target_conv_id, role=current_role)
 
-    # Eğer gelen ID ölü ise VEYA discovered_cid mevcut ve daha güncel bir sohbetse:
-    if not is_primary_alive and discovered_cid:
-        print(f"⚠️ [- ÖLÜ/GEÇERSİZ ID TESPİT EDİLDİ] Gelen ID: '{primary_conv_id}' aktif değil! Otomatik keşfedilen canlı sohbet kullanılıyor: {discovered_cid}")
-        target_conv_id = discovered_cid
-        ls_address, csrf_token = disc_addr, disc_tok
-        sync_conversation_id_to_db(project_code, discovered_cid, role=current_role)
-    elif discovered_cid and discovered_mtime > (primary_mtime + 5):
-        # Kullanıcı yeni bir sohbet açmış, eski sohbeti terk etmiş
-        print(f"🔄 [- DAHA GÜNCEL SOHBET TESPİT EDİLDİ] Eski ID: {primary_conv_id} (mtime: {primary_mtime}) -> Yeni Keşif: {discovered_cid} (mtime: {discovered_mtime})")
-        target_conv_id = discovered_cid
-        ls_address, csrf_token = disc_addr, disc_tok
-        sync_conversation_id_to_db(project_code, discovered_cid, role=current_role)
-    elif is_primary_alive:
-        target_conv_id = primary_conv_id
-        ls_address, csrf_token = p_addr, p_tok
-    elif discovered_cid:
-        target_conv_id = discovered_cid
-        ls_address, csrf_token = disc_addr, disc_tok
-        sync_conversation_id_to_db(project_code, discovered_cid, role=current_role)
-    else:
-        target_conv_id = primary_conv_id
-
-    if target_conv_id:
-        target_conv_id = str(target_conv_id).strip()
-
-    if not ls_address and target_conv_id:
+    if not ls_address:
         addr, tok = find_active_ls_for_conversation(target_conv_id)
         if addr:
             ls_address, csrf_token = addr, tok
@@ -774,45 +522,23 @@ def process_webhook_async(payload, header_conv_id):
 
     is_resumed = bool(data.get('resumed', False))
 
-    # =========================================================================
-    # VARDİYA DEĞİŞİMİ TESPİTİ VE ÖZET ENJEKSİYONU
-    # =========================================================================
-    shift_handoff_brief = ""
-    saved_sessions = load_last_sessions()
-    last_known_cid = saved_sessions.get(project_code, {}).get(current_role, {}).get('conversation_id')
-
-    if target_conv_id and last_known_cid and target_conv_id != last_known_cid:
-        print(f"🔄 [- VARDİYA DEĞİŞİMİ TESPİT EDİLDİ] [{project_code}] Eski: {last_known_cid} -> Yeni: {target_conv_id}")
-        shift_handoff_brief = build_shift_handoff_brief(project_id, project_code, project_dir, last_known_cid, target_conv_id)
-        is_resumed = True
-    elif target_conv_id:
-        # İlk kayıt ya da aynı session
-        save_last_session(project_code, target_conv_id, current_role)
-
-    # 2. ANTI-SPAM & HESAP/SOHBET DEĞİŞİM KONTROLÜ
     with state_lock:
         prev_state = project_active_state.get(project_code)
         if prev_state and prev_state.get('task_code') == task_code and event in ('task.started', 'task.in_progress'):
             prev_cid = prev_state.get('conv_id')
             elapsed = time.time() - prev_state.get('dispatched_at', 0)
 
-            if prev_cid and prev_cid == target_conv_id and elapsed < 1200:
-                print(f"⏳ [- ANTI-SPAM] {task_code} zaten son {int(elapsed)} sn içinde tetiklendi, atlanıyor.")
+            if prev_cid and prev_cid == target_conv_id and elapsed < 180:
                 return
             elif prev_cid and target_conv_id and prev_cid != target_conv_id:
-                print(f"🔄 [- HESAP DEĞİŞİMİ] {task_code} -> Yeni Pencere: {target_conv_id}")
                 is_resumed = True
-            elif elapsed >= 1200:
-                print(f"⏰ [- STALE KURTARMA] {task_code} 20+ dk hareketsiz kaldı, kurtarma uyarısı gönderiliyor...")
+            elif elapsed >= 180:
                 is_resumed = True
 
     print(f"\n=======================================================")
-    print(f"🔔 [DISPATCHER 4006] -> Olay: {event} | Proje: [{project_code}] {project_title} | Görev: {task_code}")
+    print(f"🔔 [GÖREV TETİKLENİYOR] -> Olay: {event} | Rol: {current_role.upper()} | Hedef CID: {target_conv_id} | Görev: {task_code}")
 
-    if discovered_cid and not dev_conv_id and event != 'task.submitted':
-        sync_conversation_id_to_db(project_code, discovered_cid)
-
-    task_title = data.get('title', '').replace('🔄 [RESUMING TASK] ', '').replace('⚠️ [REVISION REQUEST] ', '')
+    clean_title = task_title.replace('🔄 [RESUMING TASK] ', '').replace('⚠️ [REVISION REQUEST] ', '')
     priority = data.get('priority', 'normal')
 
     rules_block = ""
@@ -823,23 +549,17 @@ def process_webhook_async(payload, header_conv_id):
         is_rev = event in ('task.revision_requested', 'task.modification_requested')
         interrupt_header = (
             f"🚨 **[MANDATORY TASK INTERRUPT — STOP ALL PREVIOUS TOPICS!]**\n"
-            f"🚨 **[EXECUTE IMMEDIATELY - DO NOT RE-ANSWER PREVIOUS CHAT MESSAGES OR INTRODUCTIONS]**\n"
             f"> **DIRECTIVE:** Drop any previous conversation in this window immediately. Your ONLY active objective now is to execute and deliver task **{task_code}** below:\n\n"
         )
-        role_manifesto = (
-            f"🛡️ **[ACTIVE AGENT ROLE ASSIGNMENT: LEAD DEVELOPER / CODER]**\n"
-            f"> **YOUR IDENTITY & MISSION:** You are the exclusive Full-Stack Developer for project `[{project_code}] {project_title}`.\n"
-            f"> **RESPONSIBILITY:** Write clean, production-ready code, follow the project doctrine, verify changes locally, and submit via the official REST API.\n\n"
-        )
         if is_rev:
-            title_header = f"⚠️ [REVISION] {task_code}: {task_title}"
-            banner = f"{interrupt_header}{role_manifesto}⚠️ **[{project_code}] REVISION TASK MOVED TO IN PROGRESS!**\n🔴 **Requested Changes:** {data.get('revision_reason', 'Revision requested.')}\n\n"
+            title_header = f"⚠️ [REVISION] {task_code}: {clean_title}"
+            banner = f"{interrupt_header}⚠️ **[{project_code}] REVISION TASK MOVED TO IN PROGRESS!**\n🔴 **Requested Changes:** {data.get('revision_reason', 'Revision requested.')}\n\n"
         elif is_resumed:
-            title_header = f"🔄 [RESUMED] {task_code}: {task_title}"
-            banner = f"{interrupt_header}{role_manifesto}🔄 **[SESSION HANDOFF / RESUME DIRECTIVE]**\nThis task is currently IN PROGRESS and awaiting completion.\n\n"
+            title_header = f"🔄 [RESUMED] {task_code}: {clean_title}"
+            banner = f"{interrupt_header}🔄 **[SESSION HANDOFF / RESUME DIRECTIVE]**\nThis task is currently IN PROGRESS and awaiting completion.\n\n"
         else:
-            title_header = f"🚀 [IN PROGRESS] {task_code}: {task_title}"
-            banner = f"{interrupt_header}{role_manifesto}🚀 **TaskManager Task Marked as 'In Progress'!**\n\n"
+            title_header = f"🚀 [IN PROGRESS] {task_code}: {clean_title}"
+            banner = f"{interrupt_header}🚀 **TaskManager Task Marked as 'In Progress'!**\n\n"
 
         desc = data.get('description', '').strip() or '*(No description provided)*'
         desc = re.sub(r'---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$', '', desc, flags=re.DOTALL).strip()
@@ -867,15 +587,14 @@ def process_webhook_async(payload, header_conv_id):
                 ftype = att.get('file_type', '').lower()
                 is_img = ftype.startswith('image/') or any(fname.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'])
                 icon = "🖼️" if is_img else "📄"
-                hint = "*(Reference Image: inspect using `view_file` or visual tools to match design pixel-perfect)*" if is_img else "*(Attached Document: view using `view_file`)*"
+                hint = "*(Reference Image: inspect using `view_file`)*" if is_img else "*(Attached Document: view using `view_file`)*"
                 attachments_md += f"- {icon} [{fname}]({furi}) {hint}\n"
 
         message_text = (
-            f"{shift_handoff_brief}"
             f"{banner}"
             f"📌 **Project:** [{project_code}] {project_title} (`{project_dir}`)\n"
             f"📋 **Task Code:** `{task_code}`\n"
-            f"🏷️ **Title:** {task_title}\n"
+            f"🏷️ **Title:** {clean_title}\n"
             f"⚡ **Priority:** {priority}\n\n"
             f"### 📝 Task Description & Requirements:\n{desc}"
             f"{checklist_md}"
@@ -885,35 +604,20 @@ def process_webhook_async(payload, header_conv_id):
             f"🛑 **STRICT OPERATIONAL GUARDRAILS:**\n"
             f"1. **SINGLE ACTIVE TASK FOCUS:** Work EXCLUSIVELY on `{task_code}` in project `[{project_code}]`. NEVER jump to older or other tasks!\n"
             f"2. **ZERO ABANDONMENT & AUTONOMOUS QA:** Complete 100% of implementation and live automated verification before responding to the user. The user is NOT a QA tester.\n"
-            f"3. **SUBMIT AND STOP (USE OFFICIAL REST API - NEVER SEARCH FOR TASKMANAGER FILES OR DB):** When completed and verified, execute the following REST API request in your terminal to move `{task_code}` to `submitted` (REVIEW), then **END YOUR TURN** (The next queued task will be automatically dispatched in 4 seconds):\n\n"
+            f"3. **SUBMIT AND STOP (USE OFFICIAL REST API):** When completed and verified, execute the following REST API request in your terminal to move `{task_code}` to `submitted` (REVIEW), then **END YOUR TURN**:\n\n"
             f"```powershell\n"
             f"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8;\n"
             f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
-            f"$body = @{{ notes = '1. What Was Done (Neler Yapıldı): ... 2. Where to Test (Nereden Test Edilir): ... 3. How to Test (Nasıl Test Edilir): ... 4. Test Evidence (Test Kanıtı): ...' }} | ConvertTo-Json -Compress\n"
+            f"$body = @{{ notes = '1. What Was Done: ... 2. Where to Test: ... 3. How to Test: ... 4. Test Evidence: ...' }} | ConvertTo-Json -Compress\n"
             f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow/submit' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"
             f"```"
         )
     elif event == 'task.submitted':
         submission_notes = data.get('submission_notes', '').strip() or '*(No submission notes provided)*'
-        title_header = f"🔍 [QA AUDIT REQUIRED] {task_code}: {task_title}"
+        title_header = f"🔍 [QA AUDIT REQUIRED] {task_code}: {clean_title}"
 
         task_desc = (data.get('description') or '').strip()
-        task_desc_clean = re.sub(r'---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$', '', task_desc, flags=re.DOTALL).strip()
-        if not task_desc_clean:
-            task_desc_clean = '*(No description provided)*'
-
-        attachments = data.get('attachments', [])
-        attachments_md = ""
-        if attachments:
-            attachments_md = "\n- **Task Attachments & Designs:**\n"
-            for att in attachments:
-                fname = att.get('file_name') or os.path.basename(att.get('file_path', 'attachment'))
-                abs_p = (att.get('abs_path') or att.get('file_path', '')).replace('\\', '/')
-                furi = att.get('file_uri') or f"file:///{abs_p.lstrip('/')}"
-                ftype = att.get('file_type', '').lower()
-                is_img = ftype.startswith('image/') or any(fname.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'])
-                icon = "🖼️" if is_img else "📄"
-                attachments_md += f"  - {icon} [{fname}]({furi})\n"
+        task_desc_clean = re.sub(r'---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$', '', task_desc, flags=re.DOTALL).strip() or '*(No description provided)*'
 
         custom_qa_section = ""
         if qa_test_instructions:
@@ -922,34 +626,21 @@ def process_webhook_async(payload, header_conv_id):
             custom_qa_section += f"\n\n### 🌐 GLOBAL QA TEST PROTOCOL:\n{qa_global_instructions}\n"
 
         message_text = (
-            f"{shift_handoff_brief}"
             f"🚨 **[MANDATORY QA VERIFICATION DIRECTIVE — NO CODE MODIFICATION ALLOWED!]**\n"
             f"> **ROLE:** You are the Lead QA & Autonomous Testing Inspector. You CANNOT write feature code. Your ONLY objective is to rigorously test, verify, and audit task **{task_code}** delivered by the Developer Agent.\n\n"
-            f"🚨 **STRICT ANTI-RUBBERSTAMPING PROTOCOL:**\n"
-            f"> NEVER trust the Developer's submission notes. What the developer wrote, claims to have done, or how the code was implemented is COMPLETELY IRRELEVANT.\n"
-            f"> Your sole responsibility is the USER'S ORIGINAL REQUIREMENT. Görevin Coder tarafından nasıl çözüldüğü değil, kullanıcının talep ettiği asıl amacın ekranda %100 çalıştığı doğrulanmalıdır.\n"
-            f"> You MUST independently and autonomously execute the exact end-to-end user scenario in the live browser (e.g., clicking buttons, submitting forms, logging in, verifying result view).\n"
-            f"> If the user's primary intended outcome does NOT work or cannot be proven in the live UI, you are STRICTLY FORBIDDEN to approve. REJECT the task immediately with OPTION B!\n\n"
             f"### 📋 DELIVERED TASK CONTEXT:\n"
             f"- **Project:** [{project_code}] {project_title} (`{project_dir}`)\n"
-            f"- **Task Code:** `{task_code}` | **Title:** {task_title}\n"
+            f"- **Task Code:** `{task_code}` | **Title:** {clean_title}\n"
             f"- **Original Task Requirements:**\n{task_desc_clean}\n"
-            f"{attachments_md}"
             f"- **Developer Submission Notes:**\n{submission_notes}\n\n"
             f"### 🔍 MANDATORY STEP-BY-STEP TESTING PROTOCOL:\n"
-            f"1. **LIVE BROWSER FUNCTIONAL TEST:**\n"
-            f"   - Open target URL in the live browser.\n"
-            f"   - Verify forms submit properly, buttons work, UI layout is intact, and no dead elements exist.\n"
-            f"2. **NETWORK & CONSOLE AUDIT (ZERO TOLERANCE):**\n"
-            f"   - Check Developer Console: Must contain **0 JS errors** and **0 404 assets**.\n"
-            f"   - Check Network Response: Inspect payload body. Even if HTTP 200, ensure NO PHP Fatals, Xdebug errors, PDOExceptions, Warnings, or HTTP 500s.\n"
-            f"3. **PROJECT-SPECIFIC TEST EXECUTION:**\n"
-            f"   - If this project defines specific CLI test/audit commands or rules below, execute only what is defined in the project instructions.\n"
+            f"1. **LIVE BROWSER FUNCTIONAL TEST:** Open target URL in the live browser. Verify forms, buttons, and UI layout.\n"
+            f"2. **NETWORK & CONSOLE AUDIT:** Check Developer Console (0 JS errors, 0 404s) and Network payload (NO Xdebug/Fatal errors even on HTTP 200).\n"
+            f"3. **CLI GATEKEEPER AUDIT:** Execute `php taskmanager-audit/audit.php ALL` (if TaskManager project) and verify 0 Violations.\n"
             f"{custom_qa_section}\n"
             f"---\n\n"
             f"### ⚖️ FINAL VERDICT COMMANDS (CHOOSE EXACTLY ONE):\n\n"
             f"**OPTION A — IF ALL TESTS PASS WITHOUT ANY FLAW (APPROVE & CLOSE):**\n"
-            f"Execute in PowerShell:\n"
             f"```powershell\n"
             f"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8;\n"
             f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
@@ -957,23 +648,18 @@ def process_webhook_async(payload, header_conv_id):
             f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"
             f"```\n\n"
             f"**OPTION B — IF ANY BUG, CSS GLITCH, JS ERROR OR AUDIT FAIL IS FOUND (REJECT & REQUEST REVISION):**\n"
-            f"Execute in PowerShell (Clearly document the defect with reproduction steps):\n"
             f"```powershell\n"
             f"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8;\n"
             f"$headers = @{{ 'Authorization' = 'Bearer {api_token}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
-            f"$body = @{{ action = 'review'; decision = 'rejected'; feedback = '[QA DEFECT REPORT]\n1. Visual/CSS Bug: ...\n2. Console/Network Bug: ...\n3. Audit Failure: ...\nPlease fix and re-submit.' }} | ConvertTo-Json -Compress\n"
+            f"$body = @{{ action = 'review'; decision = 'rejected'; feedback = '[QA DEFECT REPORT]\n1. Defect: ...\nPlease fix and re-submit.' }} | ConvertTo-Json -Compress\n"
             f"Invoke-RestMethod -Uri '{api_base_url}/api/tasks/{task_code}/workflow' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body))\n"
             f"```"
         )
     elif event == 'project.webhook_test':
         title_header = f"Webhook Test Ping: [{project_code}]"
-        message_text = f"{shift_handoff_brief}✅ **TaskManager Webhook Test Ping Successful (Port 4005)!**\n- **Project:** [{project_code}] {project_title}\n- **Target Conversation:** {target_conv_id or 'New Conversation'}"
+        message_text = f"✅ **TaskManager Webhook Test Ping Successful!**\n- **Project:** [{project_code}] {project_title}\n- **Target Conversation ({current_role.upper()}):** {target_conv_id}"
     else:
         return
-
-    # Gönderim öncesi güncel oturumu kaydet
-    if target_conv_id:
-        save_last_session(project_code, target_conv_id, current_role)
 
     env = os.environ.copy()
     if ls_address:
@@ -981,12 +667,7 @@ def process_webhook_async(payload, header_conv_id):
     if csrf_token:
         env["ANTIGRAVITY_CSRF_TOKEN"] = csrf_token
 
-    if target_conv_id:
-        cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", target_conv_id, message_text]
-    else:
-        cmd = [AGENTAPI_EXE, "agentapi", "new-conversation", f"--title={title_header}", message_text]
-
-    print(f"\n--- [GENERATED PROMPT BEGIN ({target_conv_id})] ---\n{message_text}\n--- [GENERATED PROMPT END] ---\n")
+    cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", target_conv_id, message_text]
 
     try:
         result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
@@ -999,46 +680,8 @@ def process_webhook_async(payload, header_conv_id):
                     env["ANTIGRAVITY_CSRF_TOKEN"] = fresh_token
                 result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
 
-        # HATA 3 DÜZELTMESİ: send-message başarısız olduğunda TÜM durumlarda genişletilmiş kurtarma
-        if result.returncode != 0:
-            err_msg = ((result.stdout or '') + ' ' + (result.stderr or '')).strip()
-            print(f"⚠️ [- GÖNDERİM BAŞARISIZ] Hata: '{err_msg}'. Otomatik kurtarma devreye giriyor...")
-            
-            # 1. Adım: O workspace için son saniyelerde açılmış yeni bir pencere var mı tekrar tara
-            re_cid, re_uri, re_addr, re_tok = discover_latest_conversation(project_code, project_title, workspace_path)
-            if re_cid and re_cid != target_conv_id:
-                print(f"🔄 [- YENİ PENCERE YAKALANDI] {target_conv_id} yerine {re_cid} deneniyor...")
-                if re_addr:
-                    env["ANTIGRAVITY_LS_ADDRESS"] = re_addr
-                if re_tok:
-                    env["ANTIGRAVITY_CSRF_TOKEN"] = re_tok
-                retry_cmd = [AGENTAPI_EXE, "agentapi", "send-message", f"--title={title_header}", re_cid, message_text]
-                result = run_silent(retry_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
-                if result.returncode == 0:
-                    target_conv_id = re_cid
-                    save_last_session(project_code, re_cid, current_role)
-                    sync_conversation_id_to_db(project_code, re_cid, role=current_role)
-
-            # 2. Adım: Eğer hala gönderilemediyse koşulsuz olarak new-conversation fallback komutunu çalıştır
-            if result.returncode != 0:
-                print(f"🚀 [- KOŞULSUZ FALLBACK] 'new-conversation' komutu ile taze oturum başlatılıyor...")
-                fallback_cmd = [AGENTAPI_EXE, "agentapi", "new-conversation", f"--title={title_header}", message_text]
-                result = run_silent(fallback_cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
-
-        if result.returncode == 0 and result.stdout:
-            try:
-                out_json = json.loads(result.stdout)
-                new_cid = out_json.get('response', {}).get('newConversation', {}).get('conversationId')
-                if new_cid:
-                    target_conv_id = new_cid
-                    save_last_session(project_code, new_cid, current_role)
-                    sync_conversation_id_to_db(project_code, new_cid, role=current_role)
-                    print(f"✨ [- YENİ SOHBET OLUŞTURULDU VE VERİTABANINA YAZILDI] Conversation ID: {new_cid}")
-            except Exception:
-                pass
-
-        print(f"✅ Gönderim Sonucu ({target_conv_id}): ExitCode {result.returncode}")
-        if result.returncode == 0 and task_code:
+        print(f"✅ Gönderim Sonucu ({target_conv_id} - {current_role.upper()}): ExitCode {result.returncode}")
+        if result.returncode == 0 and task_code and current_role == 'dev':
             with state_lock:
                 project_active_state[project_code] = {
                     'task_code': task_code,
@@ -1055,7 +698,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({"status": "shutting_down_demo"}).encode())
+            self.wfile.write(json.dumps({"status": "shutting_down"}).encode())
             def _exit_later():
                 time.sleep(0.5)
                 os._exit(0)
@@ -1065,14 +708,14 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
         self.end_headers()
-        self.wfile.write(b"TaskManager Dispatcher (Port 4005) OK")
+        self.wfile.write(b"TaskManager Dispatcher OK")
 
     def do_POST(self):
         if self.path in ('/restart', '/shutdown'):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({"status": "shutting_down_demo"}).encode())
+            self.wfile.write(json.dumps({"status": "shutting_down"}).encode())
             def _exit_later():
                 time.sleep(0.5)
                 os._exit(0)
@@ -1100,7 +743,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
-        self.wfile.write(json.dumps({"status": "queued_demo"}).encode())
+        self.wfile.write(json.dumps({"status": "queued"}).encode())
 
         t = threading.Thread(target=process_webhook_async, args=(payload, header_conv_id), daemon=True)
         t.start()
@@ -1114,18 +757,19 @@ def run_server():
         print(json.dumps({"address": addr, "csrf_token": tok or ""}))
         return
 
+    watchdog_thread = threading.Thread(target=watchdog_loop, daemon=True)
+    watchdog_thread.start()
+
     server_address = ('', PORT)
     httpd = http.server.HTTPServer(server_address, WebhookHandler)
     print("=======================================================")
-    print("🤖 Antigravity Multi-Agent Dispatcher (Port 4005)")
+    print("🤖 Antigravity 3-Agent Dispatcher v4.5 (Coder / QA / Advisor) Başlatıldı!")
     print(f"📡 Dinleme Adresi : http://localhost:{PORT}/webhook")
-    print(f"📁 Log Dosyası    : {LOG_FILE}")
-    print(f"💾 Oturum Hafızası: {LAST_SESSIONS_FILE}")
     print("=======================================================")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\n[DEMO] Servis durduruldu.")
+        print("\nServis durduruldu.")
 
 if __name__ == '__main__':
     run_server()

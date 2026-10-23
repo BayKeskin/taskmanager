@@ -16,11 +16,11 @@ class DispatcherService
     }
 
     /**
-     * Dispatcher Port 4005 aktif mi kontrol eder
+     * Dispatcher Port 4000 aktif mi kontrol eder
      */
     public function isRunning(): bool
     {
-        $fp = @fsockopen('127.0.0.1', 4005, $errno, $errstr, 0.15);
+        $fp = @fsockopen('127.0.0.1', 4000, $errno, $errstr, 0.15);
         if ($fp) {
             fclose($fp);
             return true;
@@ -47,16 +47,52 @@ class DispatcherService
         }
     }
 
+    private function getUserHome(): string
+    {
+        return $_SERVER['USERPROFILE'] ?? getenv('USERPROFILE') ?? (($_SERVER['HOMEDRIVE'] ?? 'C:') . ($_SERVER['HOMEPATH'] ?? '/Users/DELL'));
+    }
+
+    private function getLocalAppData(): string
+    {
+        return $_SERVER['LOCALAPPDATA'] ?? getenv('LOCALAPPDATA') ?? ($this->getUserHome() . '/AppData/Local');
+    }
+
+    private function getAppData(): string
+    {
+        return $_SERVER['APPDATA'] ?? getenv('APPDATA') ?? ($this->getUserHome() . '/AppData/Roaming');
+    }
+
+    private function getPythonExecutable(): string
+    {
+        $localApp = $this->getLocalAppData();
+        $sysDrive = getenv('SystemDrive') ?: 'C:';
+        $candidates = [
+            $localApp . '/Programs/Python/Python311/python.exe',
+            $localApp . '/Programs/Python/Python312/python.exe',
+            $localApp . '/Programs/Python/Python310/python.exe',
+            $localApp . '/Programs/Python/Python313/python.exe',
+            $sysDrive . '/Python311/python.exe',
+            $sysDrive . '/Python312/python.exe',
+        ];
+        foreach ($candidates as $cand) {
+            if (file_exists($cand)) {
+                return $cand;
+            }
+        }
+        return 'python';
+    }
+
+    private function getAntigravityExe(): string
+    {
+        return $this->getLocalAppData() . '/Programs/Antigravity IDE/resources/app/extensions/antigravity/bin/language_server_windows_x64.exe';
+    }
+
     /**
      * Antigravity Language Server portunu ve CSRF token'ını tespit eder
      */
     public function getAntigravityLsEnv(?string $workspacePath = null): array
     {
-        $localAppData = getenv('LOCALAPPDATA') ?: (getenv('USERPROFILE') . '/AppData/Local');
-        $python = $localAppData . '/Programs/Python/Python311/python.exe';
-        if (!file_exists($python)) {
-            $python = 'python';
-        }
+        $python = $this->getPythonExecutable();
         $script = $this->dispatcherDir . '/dispatcher.py';
         if (file_exists($script)) {
             $wsArg = $workspacePath ? ' "' . addslashes($workspacePath) . '"' : '';
@@ -72,8 +108,7 @@ class DispatcherService
             }
         }
 
-        $appData = getenv('APPDATA') ?: (getenv('USERPROFILE') . '/AppData/Roaming');
-        $probeFile = $appData . '/Antigravity IDE/User/globalStorage/antigravity-ls-probe.json';
+        $probeFile = $this->getAppData() . '/Antigravity IDE/User/globalStorage/antigravity-ls-probe.json';
         if (file_exists($probeFile)) {
             $probeData = json_decode((string)file_get_contents($probeFile), true);
             if (!empty($probeData['address'])) {
@@ -96,8 +131,23 @@ class DispatcherService
      */
     public function getAntigravityLsAddress(): ?string
     {
-        $appData = getenv('APPDATA') ?: (getenv('USERPROFILE') . '/AppData/Roaming');
-        $probeFile = $appData . '/Antigravity IDE/User/globalStorage/antigravity-ls-probe.json';
+        $vscdb = $this->getAppData() . '/Antigravity IDE/User/globalStorage/state.vscdb';
+        if (file_exists($vscdb)) {
+            try {
+                $sdb = new \SQLite3($vscdb, SQLITE3_OPEN_READONLY);
+                $val = $this->model->querySqliteSingleValue($sdb, 'ItemTable', 'value', 'key', 'erennyuksell.ag-multi-account-switchboard');
+                $sdb->close();
+                if ($val) {
+                    $swData = json_decode((string)$val, true);
+                    $port = $swData['ag.lastContextWindow']['port'] ?? null;
+                    if ($port) {
+                        return '127.0.0.1:' . $port;
+                    }
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        $probeFile = $this->getAppData() . '/Antigravity IDE/User/globalStorage/antigravity-ls-probe.json';
         if (file_exists($probeFile)) {
             $probeData = json_decode((string)file_get_contents($probeFile), true);
             if (!empty($probeData['address'])) {
@@ -158,8 +208,7 @@ class DispatcherService
      */
     public function discoverLatestConversation(?string $workspacePath, ?string $projectCode = null): ?string
     {
-        $userHome = getenv('USERPROFILE') ?: (getenv('HOME') ?: '');
-        $convDir = $userHome . '/.gemini/antigravity-ide/conversations';
+        $convDir = $this->getUserHome() . '/.gemini/antigravity-ide/conversations';
         if (!is_dir($convDir)) {
             return null;
         }
@@ -176,7 +225,8 @@ class DispatcherService
         }
 
         if (empty($targets) && $projectCode) {
-            $targets[] = 'c:/wamp64/www/' . strtolower($projectCode);
+            $parentRoot = dirname(__DIR__, 4);
+            $targets[] = strtolower(str_replace('\\', '/', $parentRoot)) . '/' . strtolower($projectCode);
         }
 
         $targets = array_values(array_unique(array_filter($targets)));
@@ -184,6 +234,36 @@ class DispatcherService
 
         if (empty($targets)) {
             return null;
+        }
+
+        $vscdb = $this->getAppData() . '/Antigravity IDE/User/globalStorage/state.vscdb';
+        if (file_exists($vscdb)) {
+            try {
+                $sdb = new \SQLite3($vscdb, SQLITE3_OPEN_READONLY);
+                $val = $this->model->querySqliteSingleValue($sdb, 'ItemTable', 'value', 'key', 'erennyuksell.ag-multi-account-switchboard');
+                $sdb->close();
+                if ($val) {
+                    $swData = json_decode((string)$val, true);
+                    $activeCid = $swData['ag.lastContextWindow']['conversationId'] ?? null;
+                    if ($activeCid) {
+                        $activeDb = $convDir . '/' . $activeCid . '.db';
+                        if (file_exists($activeDb)) {
+                            $adb = new \SQLite3($activeDb, SQLITE3_OPEN_READONLY);
+                            $blob = $this->model->querySqliteSingleValue($adb, 'trajectory_metadata_blob', 'data', 'id', 'main');
+                            $adb->close();
+                            if ($blob) {
+                                $decoded = strtolower(str_replace('\\', '/', rawurldecode((string)$blob)));
+                                foreach ($targets as $target) {
+                                    $pattern = '~(?:^|[^\w\-\.])' . preg_quote($target, '~') . '(?:[/?#\"\'\s,\x00-\x1f\\\\]|$)~i';
+                                    if (preg_match($pattern, $decoded)) {
+                                        return $activeCid;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {}
         }
 
         $files = glob($convDir . '/*.db') ?: [];
@@ -280,7 +360,6 @@ class DispatcherService
             $triggeredBy  = $data['triggered_by'] ?? 'User';
 
             $bannerText = "🚨 **[MANDATORY TASK INTERRUPT — STOP ALL PREVIOUS TOPICS!]**\n"
-                . "🚨 **[EXECUTE IMMEDIATELY - DO NOT RE-ANSWER PREVIOUS CHAT MESSAGES OR INTRODUCTIONS]**\n"
                 . "> **DIRECTIVE:** Drop any previous conversation in this window immediately. Your ONLY active objective now is to execute and deliver task **{$taskCode}** below:\n\n";
 
             $messageText = "{$bannerText}"
@@ -314,7 +393,6 @@ class DispatcherService
             $desc = !empty($data['description']) ? trim((string)$data['description']) : '';
 
             $messageText = "🚨 **[MANDATORY TASK INTERRUPT — STOP ALL PREVIOUS TOPICS!]**\n"
-                . "🚨 **[EXECUTE IMMEDIATELY - DO NOT RE-ANSWER PREVIOUS CHAT MESSAGES OR INTRODUCTIONS]**\n"
                 . "> **DIRECTIVE:** Drop any previous conversation in this window immediately. Your ONLY active objective now is to execute and deliver task **{$taskCode}** below:\n\n"
                 . "⚠️ **TaskManager Revision Request!**\n\n"
                 . "📌 **Project:** [{$projectCode}] {$projectTitle}\n"
@@ -325,85 +403,6 @@ class DispatcherService
                 . "{$projectRulesBlock}\n\n"
                 . "⚡ **AUTONOMOUS COMPLETION INSTRUCTION:**\n"
                 . self::getAgentSubmitCommandBlock($taskCode);
-        } elseif ($event === 'task.submitted') {
-            $titleHeader = "🔍 [QA AUDIT REQUIRED] {$taskCode}: {$taskTitle}";
-            $submissionNotes = !empty($data['submission_notes']) ? trim((string)$data['submission_notes']) : '*(No submission notes provided)*';
-            $apiCfg = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
-            $apiBaseUrl = rtrim($apiCfg['base_url'], '/');
-            $apiToken = !empty($apiCfg['api_token']) ? $apiCfg['api_token'] : 'tm_admin_talha_keskin_token_2026';
-
-            $taskDesc = !empty($data['description']) ? trim((string)$data['description']) : '*(No description provided)*';
-            $taskDescClean = preg_replace('/---\s*⚡\s*\*\*AUTONOMOUS COMPLETION INSTRUCTION:.*$/s', '', $taskDesc);
-            $taskDescClean = trim($taskDescClean) ?: '*(No description provided)*';
-
-            $attachments = $data['attachments'] ?? [];
-            $attachmentsMd = '';
-            if (!empty($attachments) && is_array($attachments)) {
-                $attachmentsMd = "\n- **Task Attachments & Designs:**\n";
-                foreach ($attachments as $att) {
-                    $fname = $att['file_name'] ?? basename($att['file_path'] ?? 'attachment');
-                    $absP = str_replace('\\', '/', $att['abs_path'] ?? ($att['file_path'] ?? ''));
-                    $furi = $att['file_uri'] ?? ('file:///' . ltrim($absP, '/'));
-                    $ftype = strtolower($att['file_type'] ?? '');
-                    $isImg = str_starts_with($ftype, 'image/') || (bool)preg_match('/\.(png|jpe?g|webp|gif|svg)$/i', $fname);
-                    $icon = $isImg ? '🖼️' : '📄';
-                    $attachmentsMd .= "  - {$icon} [{$fname}]({$furi})\n";
-                }
-            }
-
-            $qaModel = new \Modules\AgentRules\Models\AgentRulesModel();
-            $qaGlobal = $qaModel->getQaGlobalInstructions();
-            $qaProjectInstructions = trim((string)($project->qa_test_instructions ?? ''));
-
-            $customQaSection = "";
-            if (!empty($qaProjectInstructions)) {
-                $customQaSection .= "\n\n### 🛠️ PROJECT-SPECIFIC QA TEST INSTRUCTIONS:\n{$qaProjectInstructions}\n";
-            }
-            if (!empty($qaGlobal)) {
-                $customQaSection .= "\n\n### 🌐 GLOBAL QA TEST PROTOCOL:\n{$qaGlobal}\n";
-            }
-
-            $messageText = "🚨 **[MANDATORY QA VERIFICATION DIRECTIVE — NO CODE MODIFICATION ALLOWED!]**\n"
-                . "> **ROLE:** You are the Lead QA & Autonomous Testing Inspector. You CANNOT write feature code. Your ONLY objective is to rigorously test, verify, and audit task **{$taskCode}** delivered by the Developer Agent.\n\n"
-                . "🚨 **STRICT ANTI-RUBBERSTAMPING PROTOCOL:**\n"
-                . "> NEVER trust the Developer's submission notes. What the developer wrote, claims to have done, or how the code was implemented is COMPLETELY IRRELEVANT.\n"
-                . "> Your sole responsibility is the USER'S ORIGINAL REQUIREMENT. You must verify that the user's intended primary goal works 100% on the screen, regardless of how the Coder claimed to implement it.\n"
-                . "> You MUST independently and autonomously execute the exact end-to-end user scenario in the live browser (e.g., clicking buttons, submitting forms, logging in, verifying result view).\n"
-                . "> If the user's primary intended outcome does NOT work or cannot be proven in the live UI, you are STRICTLY FORBIDDEN to approve. REJECT the task immediately with OPTION B!\n\n"
-                . "### 📋 DELIVERED TASK CONTEXT:\n"
-                . "- **Project:** [{$projectCode}] {$projectTitle} (`{$project->workspace_path}`)\n"
-                . "- **Task Code:** `{$taskCode}` | **Title:** {$taskTitle}\n"
-                . "- **Original Task Requirements:**\n{$taskDescClean}\n"
-                . "{$attachmentsMd}"
-                . "- **Developer Submission Notes:**\n{$submissionNotes}\n\n"
-                . "### 🔍 MANDATORY STEP-BY-STEP TESTING PROTOCOL:\n"
-                . "1. **LIVE BROWSER FUNCTIONAL TEST:**\n"
-                . "   - Open target URL in the live browser.\n"
-                . "   - Verify forms submit properly, buttons work, UI layout is intact, and no dead elements exist.\n"
-                . "2. **NETWORK & CONSOLE AUDIT (ZERO TOLERANCE):**\n"
-                . "   - Check Developer Console: Must contain **0 JS errors** and **0 404 assets**.\n"
-                . "   - Check Network Response: Inspect payload body. Even if HTTP 200, ensure NO PHP Fatals, Xdebug errors, PDOExceptions, Warnings, or HTTP 500s.\n"
-                . "3. **PROJECT-SPECIFIC TEST EXECUTION:**\n"
-                . "   - If this project defines specific CLI test/audit commands or rules below, execute only what is defined in the project instructions.\n"
-                . "{$customQaSection}\n"
-                . "---\n\n"
-                . "### ⚖️ FINAL VERDICT COMMANDS (CHOOSE EXACTLY ONE):\n\n"
-                . "**OPTION A — IF ALL TESTS PASS WITHOUT ANY FLAW (APPROVE & CLOSE):**\n"
-                . "Execute in PowerShell:\n"
-                . "```powershell\n"
-                . "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \$OutputEncoding = [System.Text.Encoding]::UTF8;\n"
-                . "\$headers = @{{ 'Authorization' = 'Bearer {$apiToken}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
-                . "\$body = @{{ action = 'review'; decision = 'approved'; feedback = 'All live browser UI, Console, Network, and Audit tests passed with zero defects.' }} | ConvertTo-Json -Compress\n"
-                . "Invoke-RestMethod -Uri '{$apiBaseUrl}/api/tasks/{$taskCode}/workflow' -Method Post -Headers \$headers -Body ([System.Text.Encoding]::UTF8.GetBytes(\$body))\n"
-                . "```\n\n"
-                . "**OPTION B — IF ANY BUG, CSS GLITCH, JS ERROR OR AUDIT FAIL IS FOUND (REJECT & REQUEST REVISION):**\n"
-                . "Execute in PowerShell (Clearly document the defect with reproduction steps):\n"
-                . "```powershell\n"
-                . "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \$OutputEncoding = [System.Text.Encoding]::UTF8;\n"
-                . "\$headers = @{{ 'Authorization' = 'Bearer {$apiToken}'; 'Content-Type' = 'application/json; charset=utf-8' }}\n"
-                . "\$body = @{{ action = 'review'; decision = 'rejected'; feedback = '[QA DEFECT REPORT]\n1. Visual/CSS Bug: ...\n2. Console/Network Bug: ...\n3. Audit Failure: ...\nPlease fix and re-submit.' }} | ConvertTo-Json -Compress\n"
-                . "Invoke-RestMethod -Uri '{$apiBaseUrl}/api/tasks/{$taskCode}/workflow' -Method Post -Headers \$headers -Body ([System.Text.Encoding]::UTF8.GetBytes(\$body))\n"
-                . "```";
         } else {
             $titleHeader = "ℹ️ Task Update: {$event}";
             $messageText = "ℹ️ **TaskManager Event: {$event}**\n\n"
@@ -435,30 +434,18 @@ class DispatcherService
      */
     public function dispatchDirect(object $project, string $event, array $data = []): array
     {
-        $discoveredCid = null;
-        $localAppData = getenv('LOCALAPPDATA') ?: (getenv('USERPROFILE') . '/AppData/Local');
-        $agentExe = $localAppData . '/Programs/Antigravity IDE/resources/app/extensions/antigravity/bin/language_server_windows_x64.exe';
+        $agentExe = $this->getAntigravityExe();
         if (!file_exists($agentExe)) {
-            return ['sent' => false, 'error' => 'Antigravity language_server binary not found at ' . $agentExe];
+            return ['sent' => false, 'error' => 'Antigravity language_server binary not found.'];
         }
 
         $workspacePath = $project->workspace_path ?? '';
         $projectCode   = $project->project_code ?? '';
+        $discoveredCid = $this->discoverLatestConversation($workspacePath, $projectCode);
+        $targetCid     = trim($discoveredCid ?: ($project->agent_conversation_id ?? ''));
 
-        if ($event === 'task.submitted') {
-            $targetCid = trim($project->qa_conversation_id ?? '');
-            if (empty($targetCid)) {
-                // QA ajanı tanımlı değilse tek ajan modu
-                return ['sent' => false, 'single_agent' => true];
-            }
-        } else {
-            $devCid = trim($project->dev_conversation_id ?? ($project->agent_conversation_id ?? ''));
-            $discoveredCid = $this->discoverLatestConversation($workspacePath, $projectCode);
-            $targetCid     = $devCid ?: trim($discoveredCid ?? '');
-
-            if (!empty($discoveredCid) && empty($devCid)) {
-                $this->model->updateAgentConversationId((int)$project->id, $discoveredCid);
-            }
+        if (!empty($discoveredCid) && $discoveredCid !== trim((string)($project->agent_conversation_id ?? ''))) {
+            $this->model->updateAgentConversationId((int)$project->id, $discoveredCid);
         }
 
         [$titleHeader, $messageText] = self::formatAgentMessage($event, $project, $data);

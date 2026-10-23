@@ -92,38 +92,13 @@
                         <label class="cu-proj-label-sm"><?= __('Projects::modal_webhook_url') ?></label>
                         <input type="url" name="webhook_url" id="editProjWebhookUrl" class="cu-form-control" placeholder="<?= htmlspecialchars(__('Projects::modal_webhook_url_ph')) ?>">
                     </div>
-                    <input type="hidden" name="agent_conversation_id" id="editProjConvId" value="">
-                    
-                    <!-- ÇİFT AJAN (DEV + QA) PENCERE KİMLİKLERİ -->
-                    <div class="cu-proj-dual-agents-box">
-                        <div class="cu-form-group cu-proj-form-group-sm">
-                            <label class="cu-proj-label-sm">
-                                <?= __('Projects::modal_dev_conv_id') ?>
-                            </label>
-                            <input type="text" name="dev_conversation_id" id="editProjDevConvId" class="cu-form-control cu-proj-monospace-input" placeholder="<?= htmlspecialchars(__('Projects::modal_dev_conv_id_ph')) ?>">
-                            <small class="cu-proj-hint">
-                                💡 <?= __('Projects::modal_dev_conv_id_hint') ?>
-                            </small>
-                        </div>
-
-                        <div class="cu-form-group cu-proj-form-group-sm">
-                            <label class="cu-proj-label-sm">
-                                <?= __('Projects::modal_qa_conv_id') ?>
-                            </label>
-                            <input type="text" name="qa_conversation_id" id="editProjQaConvId" class="cu-form-control cu-proj-monospace-input" placeholder="<?= htmlspecialchars(__('Projects::modal_qa_conv_id_ph')) ?>">
-                            <small class="cu-proj-hint">
-                                🧪 <?= __('Projects::modal_qa_conv_id_hint') ?>
-                            </small>
-                        </div>
-
-                        <div class="cu-form-group cu-proj-form-group-sm">
-                            <label class="cu-proj-label-sm">
-                                <?= __('Projects::modal_qa_instructions') ?>
-                            </label>
-                            <textarea name="qa_test_instructions" id="editProjQaInstructions" class="cu-form-control cu-proj-monospace-area-sm" rows="3" placeholder="<?= htmlspecialchars(__('Projects::modal_qa_instructions_ph')) ?>"></textarea>
-                            <small class="cu-proj-hint">
-                                📋 <?= __('Projects::modal_qa_instructions_hint') ?>
-                            </small>
+                    <div class="cu-form-group">
+                        <input type="hidden" name="agent_conversation_id" id="editProjConvId" value="">
+                        <div class="cu-proj-zero-config-box">
+                            <span class="cu-proj-zero-icon">⚡</span>
+                            <div>
+                                <b class="cu-proj-zero-bold"><?= __('Projects::modal_zero_config') ?>:</b> <?= __('Projects::modal_conv_id_hint') ?>
+                            </div>
                         </div>
                     </div>
                 </div>

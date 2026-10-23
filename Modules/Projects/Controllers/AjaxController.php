@@ -118,9 +118,6 @@ class AjaxController extends BaseController
         $agentRules = trim($_POST['agent_rules'] ?? '') ?: null;
         $webhookUrl = trim($_POST['webhook_url'] ?? '') ?: null;
         $conversationId = trim($_POST['agent_conversation_id'] ?? '') ?: null;
-        $devConvId = trim($_POST['dev_conversation_id'] ?? '') ?: ($conversationId ?: null);
-        $qaConvId = trim($_POST['qa_conversation_id'] ?? '') ?: null;
-        $qaInstructions = trim($_POST['qa_test_instructions'] ?? '') ?: null;
 
         if ($projectId <= 0 || empty($title)) {
             $this->respond(false, __('Projects::invalid_project_info'));
@@ -134,10 +131,7 @@ class AjaxController extends BaseController
             'workspace_path'        => $workspacePath,
             'agent_rules'           => $agentRules,
             'webhook_url'           => $webhookUrl,
-            'agent_conversation_id' => $devConvId ?: $conversationId,
-            'dev_conversation_id'   => $devConvId,
-            'qa_conversation_id'    => $qaConvId,
-            'qa_test_instructions'  => $qaInstructions
+            'agent_conversation_id' => $conversationId
         ]);
 
         if ($updated) {

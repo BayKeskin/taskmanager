@@ -45,9 +45,8 @@ class AgentRulesController extends BaseController
         }
 
         View::render('AgentRules::index', [
-            'globalRules'          => $globalRules,
-            'qaGlobalInstructions' => $this->model->getQaGlobalInstructions(),
-            'projectStatuses'      => $projectStatuses
+            'globalRules'     => $globalRules,
+            'projectStatuses' => $projectStatuses
         ]);
     }
 
@@ -73,27 +72,6 @@ class AgentRulesController extends BaseController
         echo json_encode([
             'success' => $res,
             'message' => $res ? __('AgentRules::save_success') : __('AgentRules::save_error')
-        ]);
-        exit;
-    }
-
-    /**
-     * Genel QA Test Protokolü Kaydetme AJAX Uç Noktası
-     */
-    public function saveQaGlobal(): void
-    {
-        header('Content-Type: application/json; charset=utf-8');
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => __('AgentRules::unauthorized')]);
-            exit;
-        }
-
-        $content = trim($_POST['qa_global_instructions'] ?? ($_POST['qa_global_rules'] ?? ''));
-        $res = $this->model->saveQaGlobalInstructions($content);
-        echo json_encode([
-            'success' => $res,
-            'message' => $res ? __('AgentRules::qa_save_success') : __('AgentRules::qa_save_error')
         ]);
         exit;
     }
@@ -207,26 +185,15 @@ class AgentRulesController extends BaseController
             ];
         }
 
-        // Projenin agent_rules alanındaki mükerrer şablon başlıklarını ve etiketleri temizle
-        $cleanRules = preg_replace('/<!--\s*PROJECT_RULES_START\s*-->/i', '', $rules);
-        $cleanRules = preg_replace('/<!--\s*PROJECT_RULES_END\s*-->/i', '', $cleanRules);
-        $cleanRules = preg_replace('/^#+\s*\d*\.?\s*PROJECT-SPECIFIC\s*(?:AGENT\s*)?RULES:?.*$/mi', '', $cleanRules);
-        $cleanRules = preg_replace('/^>\s*###\s*📌\s*MANDATORY\s*PROJECT-SPECIFIC\s*CONSTRAINTS:?.*$/mi', '', $cleanRules);
-        $cleanRules = preg_replace('/^>\s*The following project-specific technical rules.*?:\s*$/mi', '', $cleanRules);
-        $cleanRules = trim($cleanRules);
-
-        if (empty($cleanRules)) {
-            $cleanRules = "- No project-specific rules defined yet.";
+        $combinedContent = rtrim($globalRules) . "\n\n";
+        $combinedContent .= "<!-- PROJECT_RULES_START -->\n";
+        $combinedContent .= "## 6. PROJECT-SPECIFIC RULES: [{$projectCode}] {$title}\n\n";
+        if (!empty($rules)) {
+            $combinedContent .= $rules . "\n";
+        } else {
+            $combinedContent .= "- No project-specific rules defined yet.\n";
         }
-
-        $cleanGlobal = preg_replace('/(?:\r?\n\s*---\s*)+\Z/m', '', rtrim($globalRules));
-
-        $combinedContent = rtrim($cleanGlobal) . "\n\n"
-            . "---\n\n"
-            . "<!-- PROJECT_RULES_START -->\n"
-            . "## PROJECT-SPECIFIC RULES: [{$projectCode}] {$title}\n\n"
-            . $cleanRules . "\n"
-            . "<!-- PROJECT_RULES_END -->\n";
+        $combinedContent .= "<!-- PROJECT_RULES_END -->\n";
 
         $targetFile = rtrim($wsPath, '/\\') . '/AGENTS.md';
 
