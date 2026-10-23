@@ -91,11 +91,7 @@ class AjaxController extends BaseController
         }
 
         $res = GitService::getProjectTimeline($projectId);
-        if (!empty($res['success'])) {
-            $this->respond(true, '', $res);
-        } else {
-            $this->respond(false, $res['error'] ?? __('GithubDevops::err_timeline_fetch_failed'), $res);
-        }
+        $this->json($res);
     }
 
     /**

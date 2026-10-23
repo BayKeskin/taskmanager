@@ -638,10 +638,11 @@ class GitService
 
         if (empty($logOutput)) {
             return [
-                'success'   => true,
-                'timeline'  => [],
-                'is_clean'  => true,
-                'current_branch' => self::detectActiveBranch($ws)
+                'success'        => true,
+                'timeline'       => [],
+                'is_clean'       => true,
+                'current_branch' => self::detectActiveBranch($ws),
+                'project_title'  => $project->title ?? ''
             ];
         }
 
@@ -666,13 +667,8 @@ class GitService
                 $matchedTask = $model->getTaskByCode($taskCode);
             }
 
-            // Değişen dosya sayısını hesapla
+            // Hızlı değişen dosya sayısı
             $changedFilesCount = 0;
-            $diffTreeCmd = "git -C {$escapedWs} diff-tree --no-commit-id --name-only -r " . escapeshellarg($fullHash) . " 2>nul";
-            $filesOutput = trim((string)@shell_exec($diffTreeCmd));
-            if (!empty($filesOutput)) {
-                $changedFilesCount = count(array_filter(explode("\n", $filesOutput)));
-            }
 
             // Görevi yapan veya atanan kullanıcı bilgisi
             $assignedUser = null;

@@ -240,7 +240,10 @@ window.openProjectTimelineModal = async function(projectId) {
 
         if (loadingEl) loadingEl.classList.add('cu-hide');
 
-        const timeline = (data && data.timeline) || (data && data.data && data.data.timeline) || [];
+        const isSuccess = data && (data.success === true || data.data?.success === true);
+        const timeline = (data && Array.isArray(data.timeline) ? data.timeline : null) || 
+                         (data && data.data && Array.isArray(data.data.timeline) ? data.data.timeline : []) || [];
+
         const subtitleEl = document.getElementById('tmProjectSubtitle');
         const projTitle = data.project_title || data.data?.project_title || '';
         const curBranch = data.current_branch || data.data?.current_branch || '';
@@ -248,10 +251,12 @@ window.openProjectTimelineModal = async function(projectId) {
             subtitleEl.textContent = `${projTitle ? projTitle + ' • ' : ''}Branch: ${curBranch || 'main'}`;
         }
 
-        if (data && data.success && timeline.length > 0) {
+        if (isSuccess && timeline.length > 0) {
             renderProjectTimeline(timeline, pId);
+            if (emptyEl) emptyEl.classList.add('cu-hide');
             if (listEl) listEl.classList.remove('cu-hide');
         } else {
+            if (listEl) listEl.classList.add('cu-hide');
             if (emptyEl) emptyEl.classList.remove('cu-hide');
         }
     } catch (err) {
