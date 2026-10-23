@@ -172,10 +172,15 @@ class GitService
                     'auto_init'   => false
                 ]),
                 CURLOPT_TIMEOUT        => 15,
-                CURLOPT_SSL_VERIFYPEER => false
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0
             ]);
             $resp = curl_exec($ch);
             $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr = curl_error($ch);
+            if ($curlErr) {
+                error_log("GitHub API cURL Error: " . $curlErr);
+            }
             curl_close($ch);
             return ['code' => $httpCode, 'response' => $resp];
         };
@@ -224,7 +229,7 @@ class GitService
         }
 
         $runGit = function(string $cmd) use ($escapedWs): string {
-            return (string)@shell_exec("cd /d {$escapedWs} && {$cmd} 2>&1");
+            return (string)@shell_exec("cd /d {$escapedWs} && git -c safe.directory=* " . substr($cmd, 4) . " 2>&1");
         };
 
         $runGit("git config user.name " . escapeshellarg($creds['username']));
@@ -250,7 +255,8 @@ class GitService
                 ],
                 CURLOPT_POSTFIELDS     => json_encode(['default_branch' => $branch]),
                 CURLOPT_TIMEOUT        => 8,
-                CURLOPT_SSL_VERIFYPEER => false
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0
             ]);
             curl_exec($chBranch);
             curl_close($chBranch);
@@ -285,10 +291,10 @@ class GitService
 
         $commitMsg = "feat({$task->task_code}): " . str_replace(['"', '`', '$'], '', $task->title);
 
-        $commitCmd = "cd /d {$escapedWs} && git add -A && git commit -m " . escapeshellarg($commitMsg) . " 2>&1";
+        $commitCmd = "cd /d {$escapedWs} && git -c safe.directory=* add -A && git -c safe.directory=* commit -m " . escapeshellarg($commitMsg) . " 2>&1";
         @shell_exec($commitCmd);
 
-        $hash = trim((string)@shell_exec("cd /d {$escapedWs} && git rev-parse HEAD 2>nul"));
+        $hash = trim((string)@shell_exec("cd /d {$escapedWs} && git -c safe.directory=* rev-parse HEAD 2>nul"));
         if (empty($hash) || strlen($hash) < 7) {
             return ['success' => false, 'error' => __('GithubDevops::err_commit_failed')];
         }
@@ -297,7 +303,7 @@ class GitService
 
         $repoSlug = trim((string)($project->github_repo ?? ''));
         if (empty($repoSlug)) {
-            $existingRemote = trim((string)@shell_exec("cd /d {$escapedWs} && git remote get-url origin 2>nul"));
+            $existingRemote = trim((string)@shell_exec("cd /d {$escapedWs} && git -c safe.directory=* remote get-url origin 2>nul"));
             if (!empty($existingRemote) && preg_match('#github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$#i', $existingRemote, $m)) {
                 $repoSlug = trim($m[1]) . '/' . trim($m[2]);
             }
@@ -311,10 +317,10 @@ class GitService
 
             if (!empty($creds['token']) && !empty($creds['username'])) {
                 $authHeader = base64_encode("{$creds['username']}:{$creds['token']}");
-                $pushCmd = "cd /d {$escapedWs} && git -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1";
+                $pushCmd = "cd /d {$escapedWs} && git -c safe.directory=* -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1";
                 @shell_exec($pushCmd);
             } else {
-                @shell_exec("cd /d {$escapedWs} && git push origin {$branch} 2>&1");
+                @shell_exec("cd /d {$escapedWs} && git -c safe.directory=* push origin {$branch} 2>&1");
             }
         }
 
@@ -538,11 +544,11 @@ class GitService
             ];
         }
 
-        $testRevert = (string)@shell_exec("cd /d {$escapedWs} && git revert --no-commit " . escapeshellarg($hash) . " 2>&1");
-        $statusCheck = (string)@shell_exec("cd /d {$escapedWs} && git status --porcelain 2>&1");
+        $testRevert = (string)@shell_exec("cd /d {$escapedWs} && git -c safe.directory=* revert --no-commit " . escapeshellarg($hash) . " 2>&1");
+        $statusCheck = (string)@shell_exec("cd /d {$escapedWs} && git -c safe.directory=* status --porcelain 2>&1");
 
         if (preg_match('/^(UU|AA|DD|DU|UD)\s/m', $statusCheck) || stripos($testRevert, 'conflict') !== false || stripos($testRevert, 'error:') !== false) {
-            @shell_exec("cd /d {$escapedWs} && git revert --abort 2>nul || git reset --hard HEAD 2>nul");
+            @shell_exec("cd /d {$escapedWs} && git -c safe.directory=* revert --abort 2>nul || git -c safe.directory=* reset --hard HEAD 2>nul");
 
             return [
                 'success'      => false,
@@ -554,15 +560,15 @@ class GitService
         }
 
         $revertMsg = "Revert \"{$task->task_code}: {$task->title}\" (Commit {$hash})";
-        @shell_exec("cd /d {$escapedWs} && git commit -m " . escapeshellarg($revertMsg) . " 2>&1");
+        @shell_exec("cd /d {$escapedWs} && git -c safe.directory=* commit -m " . escapeshellarg($revertMsg) . " 2>&1");
 
         $branch = self::detectActiveBranch($ws);
         $creds = $model->getGithubCredentials();
         if (!empty($creds['username']) && !empty($creds['token'])) {
             $authHeader = base64_encode("{$creds['username']}:{$creds['token']}");
-            @shell_exec("cd /d {$escapedWs} && git -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1");
+            @shell_exec("cd /d {$escapedWs} && git -c safe.directory=* -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1");
         } else {
-            @shell_exec("cd /d {$escapedWs} && git push origin {$branch} 2>&1");
+            @shell_exec("cd /d {$escapedWs} && git -c safe.directory=* push origin {$branch} 2>&1");
         }
 
         $dbRolledBack = false;
@@ -785,7 +791,7 @@ class GitService
         }
 
         // 1. Hedef commit'in varlığını doğrula
-        $commitExists = trim((string)@shell_exec("git -C {$escapedWs} cat-file -t " . escapeshellarg($targetHashClean) . " 2>nul"));
+        $commitExists = trim((string)@shell_exec("git -c safe.directory=* -C {$escapedWs} cat-file -t " . escapeshellarg($targetHashClean) . " 2>nul"));
         if ($commitExists !== 'commit') {
             return [
                 'success' => false,
@@ -796,11 +802,11 @@ class GitService
         // 2. Güvenlik Ağı (Safety Net): Geri almadan önce mevcut HEAD durumunu yedek branch'e al
         $timestamp = date('Ymd_His');
         $backupBranch = "backup_before_rollback_{$timestamp}";
-        @shell_exec("git -C {$escapedWs} branch " . escapeshellarg($backupBranch) . " HEAD 2>nul");
+        @shell_exec("git -c safe.directory=* -C {$escapedWs} branch " . escapeshellarg($backupBranch) . " HEAD 2>nul");
 
         // 3. Aradaki ters SQL (.migrations/{task_code}_down.sql) scriptlerini tespit et ve çalıştır
         $dbRolledBackCount = 0;
-        $revListCmd = "git -C {$escapedWs} rev-list " . escapeshellarg($targetHashClean) . "..HEAD 2>nul";
+        $revListCmd = "git -c safe.directory=* -C {$escapedWs} rev-list " . escapeshellarg($targetHashClean) . "..HEAD 2>nul";
         $revOutput = trim((string)@shell_exec($revListCmd));
 
         if (!empty($revOutput)) {
@@ -810,7 +816,7 @@ class GitService
                 if (empty($revHash)) continue;
 
                 // Commit mesajından görev kodunu yakala
-                $msgCmd = "git -C {$escapedWs} log -1 --pretty=format:%s " . escapeshellarg($revHash) . " 2>nul";
+                $msgCmd = "git -c safe.directory=* -C {$escapedWs} log -1 --pretty=format:%s " . escapeshellarg($revHash) . " 2>nul";
                 $cMsg = trim((string)@shell_exec($msgCmd));
 
                 if (preg_match('/\b([A-Za-z0-9]+-\d+)\b/', $cMsg, $m)) {
@@ -839,32 +845,32 @@ class GitService
 
         // 4. Hedef commit durumunu çalışma dizinine uygula
         // git revert --no-commit target..HEAD veya temiz checkout
-        $revertCmd = "git -C {$escapedWs} revert --no-commit " . escapeshellarg($targetHashClean) . "..HEAD 2>&1";
+        $revertCmd = "git -c safe.directory=* -C {$escapedWs} revert --no-commit " . escapeshellarg($targetHashClean) . "..HEAD 2>&1";
         $revertOutput = (string)@shell_exec($revertCmd);
 
-        $statusCheck = (string)@shell_exec("git -C {$escapedWs} status --porcelain 2>&1");
+        $statusCheck = (string)@shell_exec("git -c safe.directory=* -C {$escapedWs} status --porcelain 2>&1");
         $hasConflict = preg_match('/^(UU|AA|DD|DU|UD)\s/m', $statusCheck) || stripos($revertOutput, 'conflict') !== false;
 
         if ($hasConflict) {
             // Çakışma durumunda hedef commit'in tam dosya ağacını checkout edip temizleyelim
-            @shell_exec("git -C {$escapedWs} revert --abort 2>nul");
-            @shell_exec("git -C {$escapedWs} checkout " . escapeshellarg($targetHashClean) . " -- . 2>nul");
+            @shell_exec("git -c safe.directory=* -C {$escapedWs} revert --abort 2>nul");
+            @shell_exec("git -c safe.directory=* -C {$escapedWs} checkout " . escapeshellarg($targetHashClean) . " -- . 2>nul");
         }
 
         // Commit oluştur: Geri alma işlemi
         $shortTarget = substr($targetHashClean, 0, 7);
         $revertCommitMsg = "TimeMachine: Rollback project to commit {$shortTarget} (Backup: {$backupBranch})";
-        @shell_exec("git -C {$escapedWs} add -A 2>&1");
-        @shell_exec("git -C {$escapedWs} commit -m " . escapeshellarg($revertCommitMsg) . " 2>&1");
+        @shell_exec("git -c safe.directory=* -C {$escapedWs} add -A 2>&1");
+        @shell_exec("git -c safe.directory=* -C {$escapedWs} commit -m " . escapeshellarg($revertCommitMsg) . " 2>&1");
 
         // Remote push
         $branch = self::detectActiveBranch($ws);
         $creds = $model->getGithubCredentials();
         if (!empty($creds['username']) && !empty($creds['token'])) {
             $authHeader = base64_encode("{$creds['username']}:{$creds['token']}");
-            @shell_exec("git -C {$escapedWs} -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1");
+            @shell_exec("git -c safe.directory=* -C {$escapedWs} -c http.extraheader=\"AUTHORIZATION: basic {$authHeader}\" push origin {$branch} 2>&1");
         } else {
-            @shell_exec("git -C {$escapedWs} push origin {$branch} 2>&1");
+            @shell_exec("git -c safe.directory=* -C {$escapedWs} push origin {$branch} 2>&1");
         }
 
         // Log aktivitesi
