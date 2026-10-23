@@ -44,7 +44,7 @@ class GitService
             return 'main';
         }
         $escapedWs = escapeshellarg($ws);
-        $branch = trim((string)@shell_exec("cd /d {$escapedWs} && git rev-parse --abbrev-ref HEAD 2>nul"));
+        $branch = trim((string)@shell_exec("cd /d {$escapedWs} && git -c safe.directory=* rev-parse --abbrev-ref HEAD 2>nul"));
         if (empty($branch) || $branch === 'HEAD') {
             return 'main';
         }
@@ -633,10 +633,16 @@ class GitService
         $limit = max(1, min(100, $limit));
 
         // Format: %H@@@%h@@@%an@@@%ae@@@%ad@@@%s
-        $cmd = "git -C {$escapedWs} log -n {$limit} --pretty=format:\"%H@@@%h@@@%an@@@%ae@@@%ad@@@%s\" --date=iso 2>nul";
+        $cmd = "cd /d {$escapedWs} && git -c safe.directory=* -c i18n.logOutputEncoding=UTF-8 log -n {$limit} --encoding=UTF-8 --pretty=format:\"%H@@@%h@@@%an@@@%ae@@@%ad@@@%s\" --date=iso 2>&1";
         $logOutput = @shell_exec($cmd);
 
-        if (empty($logOutput)) {
+        // Dubious ownership veya fatal durumunda global safe.directory ekleyip bir kez daha dene
+        if ($logOutput && str_contains($logOutput, 'fatal:')) {
+            @shell_exec('git config --global --add safe.directory "*" 2>nul');
+            $logOutput = @shell_exec($cmd);
+        }
+
+        if (empty($logOutput) || str_contains((string)$logOutput, 'fatal:')) {
             return [
                 'success'        => true,
                 'timeline'       => [],
@@ -659,6 +665,10 @@ class GitService
 
             [$fullHash, $shortHash, $authorName, $authorEmail, $dateStr, $subject] = $parts;
 
+            // UTF-8 temizliği (json_encode çökmesini önler)
+            $authorName = mb_convert_encoding($authorName, 'UTF-8', 'UTF-8');
+            $subject    = mb_convert_encoding($subject, 'UTF-8', 'UTF-8');
+
             // Commit mesajından görev kodunu yakala (Örn: TSK-1293, 01-105, TASK-12 vb.)
             $taskCode = null;
             $matchedTask = null;
@@ -676,7 +686,7 @@ class GitService
                 $u = $model->getUserById((int)$matchedTask->assigned_to);
                 if ($u) {
                     $assignedUser = [
-                        'name'   => $u->name,
+                        'name'   => mb_convert_encoding($u->name, 'UTF-8', 'UTF-8'),
                         'email'  => $u->email,
                         'avatar' => $u->avatar_color ?? null
                     ];
@@ -692,7 +702,7 @@ class GitService
                 'subject'             => $subject,
                 'is_current'          => $isFirst,
                 'task_code'           => $taskCode,
-                'task_title'          => $matchedTask ? $matchedTask->title : null,
+                'task_title'          => $matchedTask ? mb_convert_encoding($matchedTask->title, 'UTF-8', 'UTF-8') : null,
                 'task_id'             => $matchedTask ? (int)$matchedTask->id : null,
                 'assigned_user'       => $assignedUser,
                 'changed_files_count' => $changedFilesCount
@@ -702,7 +712,7 @@ class GitService
         }
 
         // Git repo temiz mi kontrol et
-        $statusCheck = trim((string)@shell_exec("git -C {$escapedWs} status --porcelain 2>nul"));
+        $statusCheck = trim((string)@shell_exec("cd /d {$escapedWs} && git -c safe.directory=* status --porcelain 2>nul"));
         $isClean = empty($statusCheck);
 
         return [

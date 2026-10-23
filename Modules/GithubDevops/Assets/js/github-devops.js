@@ -168,4 +168,240 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Modal Arka Plan Güvenli Kapatma (Time Machine)
+    const modalTm = document.getElementById('modalProjectTimeline');
+    if (modalTm) {
+        modalTm.addEventListener('click', function(e) {
+            const isSafe = (typeof window.isSafeBackdropClick === 'function')
+                ? window.isSafeBackdropClick(e, this)
+                : (e.target === this);
+            if (isSafe && typeof closeModal === 'function') {
+                closeModal('modalProjectTimeline');
+            }
+        });
+    }
+
+    const btnTmCloseTop = document.getElementById('btnTmCloseTop');
+    if (btnTmCloseTop) {
+        btnTmCloseTop.addEventListener('click', function() {
+            if (typeof closeModal === 'function') closeModal('modalProjectTimeline');
+        });
+    }
+
+    const btnTmCloseBottom = document.getElementById('btnTmCloseBottom');
+    if (btnTmCloseBottom) {
+        btnTmCloseBottom.addEventListener('click', function() {
+            if (typeof closeModal === 'function') closeModal('modalProjectTimeline');
+        });
+    }
+
+    // Pano üzerindeki Zaman Tüneli Açma Butonları
+    const btnTimelineTrigger = document.getElementById('btnOpenProjectTimeline');
+    if (btnTimelineTrigger) {
+        btnTimelineTrigger.addEventListener('click', function() {
+            const pId = this.dataset.projectId || window.ACTIVE_PROJECT_ID || 0;
+            window.openProjectTimelineModal(pId);
+        });
+    }
 });
+
+/**
+ * Proje Zaman Tüneli & Sürüm Geçmişi (Time Machine) Modalı
+ */
+window.activeTimelineProjectId = null;
+
+window.openProjectTimelineModal = async function(projectId) {
+    // 3. Argon Kuralı: pId Çözümleme Güvencesi
+    let pId = parseInt(projectId || window.ACTIVE_PROJECT_ID || 0, 10);
+    if (!pId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        pId = parseInt(urlParams.get('project_id') || 0, 10);
+    }
+    if (!pId) {
+        const projEl = document.querySelector('[data-project-id]');
+        if (projEl) {
+            pId = parseInt(projEl.getAttribute('data-project-id') || 0, 10);
+        }
+    }
+    if (!pId) {
+        pId = 1;
+    }
+
+    window.activeTimelineProjectId = pId;
+
+    if (typeof openModal === 'function') {
+        openModal('modalProjectTimeline');
+    }
+
+    const loadingEl = document.getElementById('tmTimelineLoading');
+    const emptyEl = document.getElementById('tmTimelineEmpty');
+    const listEl = document.getElementById('tmTimelineList');
+
+    if (loadingEl) loadingEl.classList.remove('cu-hide');
+    if (emptyEl) emptyEl.classList.add('cu-hide');
+    if (listEl) {
+        listEl.classList.add('cu-hide');
+        listEl.innerHTML = '';
+    }
+
+    try {
+        const res = await fetch(`${ghBaseUrl}/ajax?action=get_project_timeline&project_id=${pId}`);
+        const data = await res.json();
+
+        if (loadingEl) loadingEl.classList.add('cu-hide');
+
+        // Hem data.timeline hem de data.data.timeline yapılarını destekle
+        const timeline = (data && data.timeline) ? data.timeline : ((data && data.data && data.data.timeline) ? data.data.timeline : []);
+
+        if (data && data.success && timeline && timeline.length > 0) {
+            renderProjectTimeline(timeline, pId);
+            if (listEl) listEl.classList.remove('cu-hide');
+        } else {
+            if (emptyEl) emptyEl.classList.remove('cu-hide');
+        }
+    } catch (err) {
+        console.error('Error fetching project timeline:', err);
+        if (loadingEl) loadingEl.classList.add('cu-hide');
+        if (emptyEl) emptyEl.classList.remove('cu-hide');
+    }
+};
+
+function renderProjectTimeline(timeline, projectId) {
+    const listEl = document.getElementById('tmTimelineList');
+    if (!listEl) return;
+
+    const dI18n = window.DEVOPS_I18N || {};
+    listEl.innerHTML = '';
+
+    timeline.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'tm-card' + (item.is_current ? ' tm-current' : '');
+
+        // Header: Badge veya Canlı Durum
+        const header = document.createElement('div');
+        header.className = 'tm-card-header';
+
+        if (item.is_current) {
+            const liveBadge = document.createElement('span');
+            liveBadge.className = 'tm-live-badge';
+            liveBadge.textContent = '🟢 ' + (dI18n.current_live_version || '');
+            header.appendChild(liveBadge);
+        } else {
+            const hashBadge = document.createElement('span');
+            hashBadge.className = 'tm-hash-badge';
+            hashBadge.textContent = item.short_hash || '';
+            header.appendChild(hashBadge);
+        }
+
+        if (item.changed_files_count > 0) {
+            const filesBadge = document.createElement('span');
+            filesBadge.className = 'tm-hash-badge';
+            const tmFilesTpl = dI18n.timeline_changed_files || '';
+            filesBadge.textContent = tmFilesTpl.replace('{count}', item.changed_files_count);
+            header.appendChild(filesBadge);
+        }
+
+        card.appendChild(header);
+
+        // Title: Görev Başlığı veya Commit Mesajı
+        const titleEl = document.createElement('h4');
+        titleEl.className = 'tm-card-title';
+
+        if (item.task_code) {
+            const codeBadge = document.createElement('span');
+            codeBadge.className = 'tm-task-code-badge';
+            codeBadge.textContent = item.task_code;
+            titleEl.appendChild(codeBadge);
+        }
+
+        const titleText = item.task_title ? item.task_title : item.subject;
+        const textNode = document.createTextNode(titleText || '');
+        titleEl.appendChild(textNode);
+        card.appendChild(titleEl);
+
+        // Meta: Yapan kişi, tarih ve Geri Dön butonu
+        const meta = document.createElement('div');
+        meta.className = 'tm-card-meta';
+
+        const metaLeft = document.createElement('div');
+        metaLeft.className = 'tm-meta-left';
+
+        // Author
+        const authorBox = document.createElement('div');
+        authorBox.className = 'tm-author-info';
+        const authorName = item.assigned_user ? item.assigned_user.name : (item.author_name || dI18n.robot_coder || dI18n.author_unknown || '');
+        authorBox.textContent = '👤 ' + authorName;
+        metaLeft.appendChild(authorBox);
+
+        // Date
+        const dateBox = document.createElement('div');
+        dateBox.textContent = '📅 ' + (item.committed_at ? item.committed_at.substring(0, 16) : '');
+        metaLeft.appendChild(dateBox);
+
+        meta.appendChild(metaLeft);
+
+        // Geri Dön butonu (Sadece geçmiş sürümler için)
+        if (!item.is_current) {
+            const revertBtn = document.createElement('button');
+            revertBtn.type = 'button';
+            revertBtn.className = 'tm-revert-btn';
+            revertBtn.textContent = dI18n.btn_revert_to_this || '';
+            revertBtn.addEventListener('click', function() {
+                window.revertProjectToCommit(projectId, item.commit_hash);
+            });
+            meta.appendChild(revertBtn);
+        }
+
+        card.appendChild(meta);
+        listEl.appendChild(card);
+    });
+}
+
+window.revertProjectToCommit = async function(projectId, commitHash) {
+    if (!projectId || !commitHash) return;
+
+    const dI18n = window.DEVOPS_I18N || {};
+    const confirmMsg = dI18n.revert_confirm_text || '';
+
+    if (confirmMsg && !confirm(confirmMsg)) {
+        return;
+    }
+
+    if (typeof showToast === 'function') {
+        showToast(dI18n.reverting_in_progress || '', 'info');
+    }
+
+    try {
+        const fd = new FormData();
+        fd.append('project_id', projectId);
+        fd.append('commit_hash', commitHash);
+
+        const res = await fetch(`${ghBaseUrl}/ajax?action=revert_to_version`, {
+            method: 'POST',
+            body: fd
+        });
+        const data = await res.json();
+
+        if (data && data.success) {
+            if (typeof showToast === 'function') {
+                showToast(data.message || dI18n.rollback_success || '', 'success');
+            }
+            if (typeof closeModal === 'function') {
+                closeModal('modalProjectTimeline');
+            }
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
+        } else {
+            if (typeof showToast === 'function') {
+                showToast((data && data.message) ? data.message : (dI18n.err_general || ''), 'error');
+            }
+        }
+    } catch (err) {
+        console.error('revertProjectToCommit error:', err);
+        if (typeof showToast === 'function') {
+            showToast(dI18n.err_server || '', 'error');
+        }
+    }
+};
