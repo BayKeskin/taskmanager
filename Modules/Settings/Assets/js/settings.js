@@ -414,10 +414,45 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // AI Accounts tablosu içindeki dinamik butonlar (Silme)
+    // AI Accounts tablosu içindeki dinamik butonlar (Aktif Yap & Silme)
     const tableBody = document.getElementById('aiAccountsTableBody');
     if (tableBody) {
         tableBody.addEventListener('click', async (e) => {
+            const btnActivate = e.target.closest('.btn-activate-ai-account');
+            if (btnActivate) {
+                const email = btnActivate.getAttribute('data-email');
+                if (!email) return;
+                btnActivate.disabled = true;
+                const origText = btnActivate.innerHTML;
+                btnActivate.innerHTML = '<span>⏳</span> ' + (window.SettingsI18n?.test_testing || '...');
+                try {
+                    const fd = new FormData();
+                    fd.append('email', email);
+                    const res = await fetch(`${settingsBaseUrl}/ajax?action=activate_ai_account`, {
+                        method: 'POST',
+                        body: fd
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        if (typeof showToast === 'function') {
+                            showToast(data.message, 'success');
+                        } else {
+                            alert(data.message);
+                        }
+                        renderAiAccountsTable(data.accounts || []);
+                    } else {
+                        alert(data.message || window.SettingsI18n?.ai_generic_error || '');
+                        btnActivate.disabled = false;
+                        btnActivate.innerHTML = origText;
+                    }
+                } catch (err) {
+                    alert((window.SettingsI18n?.server_error || '') + err.message);
+                    btnActivate.disabled = false;
+                    btnActivate.innerHTML = origText;
+                }
+                return;
+            }
+
             const btnDelete = e.target.closest('.btn-delete-ai-account');
             if (btnDelete) {
                 const id = btnDelete.getAttribute('data-id');
@@ -505,7 +540,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td class="cu-text-right cu-actions-cell">
                         ${isActive ? 
-                            `<span class="cu-badge cu-badge-active-tag">${i18n.ai_active_tag || ''}</span>` : ''
+                            `<span class="cu-badge cu-badge-active-tag">${i18n.ai_active_tag || ''}</span>` : 
+                            `<button type="button" class="cu-btn-xs cu-btn-secondary btn-activate-ai-account" data-email="${acc.email}" title="${i18n.ai_activate_btn || ''}">⚡ ${i18n.ai_activate_btn || ''}</button>`
                         }
                         <button type="button" class="cu-btn-xs cu-btn-danger btn-delete-ai-account" data-id="${acc.id}">✕</button>
                     </td>

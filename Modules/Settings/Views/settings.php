@@ -349,6 +349,10 @@ $allowedFileTypes = $s->allowed_file_types ?? 'jpg,png,pdf,zip,docx,xlsx,txt';
                                                     <span class="cu-badge cu-badge-active-tag">
                                                         <?= __('Settings::settings_ai_vault_active') ?>
                                                     </span>
+                                                <?php else: ?>
+                                                    <button type="button" class="cu-btn-xs cu-btn-secondary btn-activate-ai-account" data-email="<?= htmlspecialchars($acc['email']) ?>" title="<?= __('Settings::settings_ai_vault_btn_activate') ?>">
+                                                        ⚡ <?= __('Settings::settings_ai_vault_btn_activate') ?>
+                                                    </button>
                                                 <?php endif; ?>
                                                 <button type="button" class="cu-btn-xs cu-btn-danger btn-delete-ai-account" data-id="<?= (int)$acc['id'] ?>" title="<?= __('Settings::settings_ai_vault_col_actions') ?>">
                                                     ✕
