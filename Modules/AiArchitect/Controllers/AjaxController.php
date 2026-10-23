@@ -228,4 +228,10 @@ class AjaxController extends BaseController
     {
         $this->decomposeBrief();
     }
+
+    public function refineTaskSpecification(): void
+    {
+        $controller = new AiArchitectController();
+        $controller->refineSpecification();
+    }
 }
