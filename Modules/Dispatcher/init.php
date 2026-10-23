@@ -3,8 +3,12 @@ use Core\EventManager;
 use Core\AssetManager;
 
 EventManager::listen('app.init', function() {
-    AssetManager::enqueueCss('/Modules/Dispatcher/Assets/css/dispatcher.css');
-    AssetManager::enqueueJs('/Modules/Dispatcher/Assets/js/dispatcher.js');
+    AssetManager::enqueueCss('dispatcher-css', '/Modules/Dispatcher/Assets/css/dispatcher.css');
+    AssetManager::enqueueJs('dispatcher-js', '/Modules/Dispatcher/Assets/js/dispatcher.js');
+    AssetManager::localizeScript('dispatcher-js', 'dispatcherTranslations', [
+        'confirmDispatch' => __('Dispatcher::confirm_dispatch'),
+        'confirmAbort'    => __('Dispatcher::confirm_abort')
+    ]);
 });
 
 // 2. Otonom AI Görev Tetikleme Kancaları

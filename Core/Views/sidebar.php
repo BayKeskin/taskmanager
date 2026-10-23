@@ -69,7 +69,11 @@ if ($relPath === '/tasks') {
 } elseif ($relPath === '/agent-rules') {
     $activeViewIcon = '🛡️';
     $activeViewTitle = __('AgentRules::nav_menu_title');
+} elseif ($relPath === '/dispatcher') {
+    $activeViewIcon = '⚡';
+    $activeViewTitle = __('Dispatcher::nav_menu_title');
 }
+
 
 // unreadDmCount is provided by LayoutController
 ?>
@@ -176,6 +180,15 @@ if ($relPath === '/tasks') {
                             <span>🛡️</span>
                             <span><?= __('AgentRules::nav_menu_title') ?></span>
                         </div>
+                    </a>
+                    <?php endif; ?>
+                    <?php if (\Core\ModuleLoader::isModuleActive('dispatcher')): ?>
+                    <a href="<?= baseUrl('dispatcher') ?>" class="cu-nav-item <?= ($relPath === '/dispatcher') ? 'active' : '' ?>">
+                        <div class="cu-nav-item-left">
+                            <span>⚡</span>
+                            <span><?= __('Dispatcher::nav_menu_title') ?></span>
+                        </div>
+                        <span class="cu-nav-badge" style="background:rgba(16,185,129,0.2); color:#10b981; font-size:10px; font-weight:700;">Live</span>
                     </a>
                     <?php endif; ?>
                 <?php endif; ?>

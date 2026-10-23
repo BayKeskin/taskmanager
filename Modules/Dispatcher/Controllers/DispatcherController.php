@@ -2,16 +2,40 @@
 namespace Modules\Dispatcher\Controllers;
 
 use Core\BaseController;
+use Core\View;
+use Modules\Dispatcher\Models\DispatcherModel;
 use Modules\Dispatcher\Services\DispatcherService;
 
 class DispatcherController extends BaseController
 {
     private DispatcherService $dispatcherService;
+    private DispatcherModel $model;
 
     public function __construct()
     {
         parent::__construct();
         $this->dispatcherService = new DispatcherService();
+        $this->model = new DispatcherModel();
+    }
+
+    /**
+     * Dispatcher Dashboard Main View
+     */
+    public function index(): void
+    {
+        $isRunning = $this->dispatcherService->isRunning();
+        $queuedTasks = $this->model->getQueuedAiTasks();
+        $activeTasks = $this->model->getActiveAiTasks();
+        $projects = $this->model->getProjectsWithWorkspace();
+        $recentLogs = $this->model->getRecentLogs(100);
+
+        View::render('Dispatcher::index', [
+            'isRunning'   => $isRunning,
+            'queuedTasks' => $queuedTasks,
+            'activeTasks' => $activeTasks,
+            'projects'    => $projects,
+            'recentLogs'  => $recentLogs
+        ]);
     }
 
     /**
@@ -24,8 +48,8 @@ class DispatcherController extends BaseController
             'status'  => 'success',
             'running' => $running,
             'message' => $running
-                ? __('Dispatcher::dispatcher_running', 'Dispatcher Aktif (Port 4000)')
-                : __('Dispatcher::dispatcher_stopped', 'Dispatcher Durduruldu')
+                ? __('Dispatcher::dispatcher_running')
+                : __('Dispatcher::dispatcher_stopped')
         ]);
     }
 

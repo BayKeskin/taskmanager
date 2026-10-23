@@ -39,6 +39,7 @@ $pageModuleMap = [
     'api-test'       => 'apitester',
     'api-docs'       => 'apitester',
     'agent-rules'    => 'agent-rules',
+    'dispatcher'     => 'dispatcher',
     'modules'        => 'docs'
 ];
 
@@ -78,6 +79,9 @@ switch ($page) {
         break;
     case 'agent-rules':
         (new \Modules\AgentRules\Controllers\AgentRulesController())->index();
+        break;
+    case 'dispatcher':
+        (new \Modules\Dispatcher\Controllers\DispatcherController())->index();
         break;
     case 'modules':
         require_once __DIR__ . '/Modules/Docs/Views/modules_guide.php';

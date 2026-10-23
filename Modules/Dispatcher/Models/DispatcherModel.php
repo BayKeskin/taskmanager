@@ -75,4 +75,72 @@ class DispatcherModel extends BaseModel
         $row = $result->fetchArray(SQLITE3_NUM);
         return isset($row[0]) ? (string)$row[0] : null;
     }
+
+    /**
+     * Şu an yapay zeka veya ekip tarafından çalışılmakta olan (in_progress) AI görevlerini çeker
+     */
+    public function getActiveAiTasks(?int $projectId = null): array
+    {
+        $sql = "SELECT t.id, t.project_id, t.task_code, t.title, t.tags, t.status, t.priority, t.updated_at,
+                       p.project_code, p.title as project_title, p.workspace_path, p.dev_conversation_id, p.agent_conversation_id
+                FROM tasks t
+                JOIN projects p ON t.project_id = p.id
+                WHERE t.status = 'in_progress'
+                  AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = t.id)
+                  AND (
+                      LOWER(t.tags) LIKE '%ai%' 
+                      OR LOWER(t.tags) LIKE '%otonom%' 
+                      OR LOWER(t.tags) LIKE '%agent%'
+                      OR LOWER(t.tags) LIKE '%yapay zeka%'
+                      OR LOWER(t.tags) LIKE '%antigravity%'
+                  )";
+        $params = [];
+        if ($projectId) {
+            $sql .= " AND t.project_id = ?";
+            $params[] = $projectId;
+        }
+        $sql .= " ORDER BY t.updated_at DESC";
+        return $this->query($sql, $params);
+    }
+
+    /**
+     * Görev durumunu günceller (Örn: iptal etme, todo'ya geri alma)
+     */
+    public function updateTaskStatus(int $taskId, string $newStatus): bool
+    {
+        $stmt = $this->getPdo()->prepare("UPDATE tasks SET status = ?, updated_at = NOW() WHERE id = ?");
+        return $stmt->execute([$newStatus, $taskId]);
+    }
+
+    /**
+     * Görev ID'sine göre tekil görevi çeker
+     */
+    public function getTaskById(int $taskId): ?array
+    {
+        $rows = $this->query("SELECT t.*, p.project_code, p.title as project_title, p.workspace_path 
+                              FROM tasks t 
+                              JOIN projects p ON t.project_id = p.id 
+                              WHERE t.id = ? LIMIT 1", [$taskId]);
+        return !empty($rows[0]) ? $rows[0] : null;
+    }
+
+    /**
+     * Son dispatcher log satırlarını güvenli okur
+     */
+    public function getRecentLogs(int $maxLines = 150): array
+    {
+        $logPath = dirname(__DIR__) . '/Bin/dispatcher.log';
+        if (!file_exists($logPath)) {
+            return [];
+        }
+
+        $lines = @file($logPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (!$lines) {
+            return [];
+        }
+
+        $slice = array_slice($lines, -$maxLines);
+        return array_values($slice);
+    }
 }
+

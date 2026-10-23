@@ -1,0 +1,15 @@
+{
+  "email": "iletisimtktalha@gmail.com",
+  "uss_user_status": true,
+  "uss_oauth_token": true,
+  "auth_refresh_command": true,
+  "ls_endpoints_count": 1,
+  "ls_responses": [
+    {
+      "port": 51282,
+      "status": 200
+    }
+  ],
+  "success": true,
+  "timestamp": 1792773423
+}

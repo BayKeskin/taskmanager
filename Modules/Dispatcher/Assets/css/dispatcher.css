@@ -1,18 +1,381 @@
-/* Dispatcher Module Styles */
-.dispatcher-indicator {
-    display: inline-flex;
+/* Dispatcher Module Modern Dark Stylesheet */
+
+.cu-dispatcher-header-wrap {
+    display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
+}
+
+.cu-dispatcher-header-icon {
+    font-size: 20px;
+}
+
+.cu-dispatcher-header-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-white, #fff);
+}
+
+.cu-dispatcher-badge {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.btn-dispatcher-primary {
+    background: #7B68EE;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.btn-dispatcher-primary:hover {
+    background: #6a57e3;
+    transform: translateY(-1px);
+}
+
+.btn-dispatcher-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-white, #fff);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-dispatcher-secondary:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.btn-dispatcher-secondary.btn-sm {
+    padding: 4px 10px;
+    font-size: 11px;
+}
+
+.dispatcher-dashboard-wrapper {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Stat Metrics Grid */
+.dispatcher-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.dispatcher-metric-card {
+    background: var(--bg-card, #1e1e24);
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dispatcher-metric-icon {
+    font-size: 26px;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.dispatcher-metric-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.dispatcher-metric-label {
     font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted, #8e8e93);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
-.dispatcher-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #10b981;
-    box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+
+.dispatcher-metric-value-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
-.dispatcher-dot.offline {
-    background-color: #ef4444;
-    box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+
+.dispatcher-metric-number {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-white, #fff);
+}
+
+.dispatcher-metric-number.active-accent {
+    color: #3b82f6;
+}
+
+.dispatcher-badge-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.dispatcher-badge-status.online {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.dispatcher-badge-status.offline {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.dispatcher-metric-hint {
+    font-size: 11px;
+    color: var(--text-muted, #8e8e93);
+    line-height: 1.3;
+}
+
+/* Tabs Navigation */
+.dispatcher-tabs-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+    padding-bottom: 8px;
+}
+
+.dispatcher-tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted, #8e8e93);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.dispatcher-tab-btn:hover {
+    color: var(--text-white, #fff);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dispatcher-tab-btn.active {
+    color: #fff;
+    background: #7B68EE;
+}
+
+.tab-badge {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+/* Tab Contents */
+.dispatcher-tab-content {
+    display: none;
+}
+
+.dispatcher-tab-content.active {
+    display: block;
+}
+
+.dispatcher-card {
+    background: var(--bg-card, #1e1e24);
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dispatcher-table-responsive {
+    overflow-x: auto;
+}
+
+.dispatcher-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.dispatcher-table th {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted, #8e8e93);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.dispatcher-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: var(--text-white, #fff);
+    vertical-align: middle;
+}
+
+.dispatcher-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.dispatcher-table tr.empty-row td {
+    text-align: center;
+    color: var(--text-muted, #8e8e93);
+    padding: 32px 16px;
+}
+
+.project-tag {
+    color: #7B68EE;
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+.priority-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.priority-high, .priority-urgent {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.priority-normal {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.priority-low {
+    background: rgba(142, 142, 147, 0.15);
+    color: #8e8e93;
+}
+
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-assigned {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.status-in_progress {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-action-trigger {
+    background: rgba(123, 104, 238, 0.15);
+    border: 1px solid rgba(123, 104, 238, 0.3);
+    color: #7B68EE;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-action-trigger:hover {
+    background: #7B68EE;
+    color: #fff;
+}
+
+.btn-action-abort {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-action-abort:hover {
+    background: #ef4444;
+    color: #fff;
+}
+
+/* Terminal Console View */
+.dispatcher-log-card {
+    background: #0d1117;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dispatcher-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #161b22;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #8b949e;
+    font-size: 12px;
+    font-family: Consolas, "Courier New", monospace;
+}
+
+.dispatcher-terminal {
+    max-height: 480px;
+    overflow-y: auto;
+    padding: 14px 16px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #c9d1d9;
+    background: #0d1117;
+}
+
+.log-line {
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+.log-muted {
+    color: #8b949e;
+    font-style: italic;
 }
