@@ -178,16 +178,25 @@ async function runAiArchitect() {
         });
         const d = await res.json();
 
-        if (d.success && d.data && d.data.specification) {
+        const specText = (d && d.specification) 
+            ? d.specification 
+            : ((d && d.data && d.data.specification) 
+                ? d.data.specification 
+                : ((d && typeof d.data === 'string') ? d.data : null));
+
+        if (d && (d.success || d.status === 'success') && specText) {
             const descArea = document.getElementById('modalNewTaskDescription');
             if (descArea) {
-                descArea.value = d.data.specification;
+                descArea.value = specText;
+                descArea.dispatchEvent(new Event('input', { bubbles: true }));
+                descArea.dispatchEvent(new Event('change', { bubbles: true }));
                 descArea.style.borderColor = 'var(--brand-primary)';
                 descArea.style.boxShadow = '0 0 0 3px rgba(123, 104, 238, 0.2)';
+                descArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 setTimeout(() => {
                     descArea.style.borderColor = '';
                     descArea.style.boxShadow = '';
-                }, 2000);
+                }, 2500);
             }
 
             // Görev başlığı henüz boşsa veya varsayılansa, kısa nottan anlamlı bir başlık ata
