@@ -36,6 +36,18 @@ class AjaxController extends BaseController
         $this->respond(true, '', ['accounts' => $accounts]);
     }
 
+    private function getPythonPath(): string
+    {
+        $localAppData = getenv('LOCALAPPDATA') ?: (getenv('USERPROFILE') ? getenv('USERPROFILE') . '/AppData/Local' : '');
+        if ($localAppData) {
+            $candidate = $localAppData . '/Programs/Python/Python311/python.exe';
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+        return 'python';
+    }
+
     public function syncLocalVaultAccounts(): void
     {
         if ($this->user->role !== 'admin') {
@@ -44,10 +56,7 @@ class AjaxController extends BaseController
         }
 
         // Python account_manager üzerinden canlı kotaları çek ve veritabanına aktar
-        $pythonPath = 'C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
-        if (!file_exists($pythonPath)) {
-            $pythonPath = 'python';
-        }
+        $pythonPath = $this->getPythonPath();
         $scriptPath = dirname(__DIR__, 2) . '/Dispatcher/Bin/account_manager.py';
 
         $output = [];
@@ -104,11 +113,7 @@ class AjaxController extends BaseController
         $this->aiAccountsModel->setActiveAccount($email);
 
         // Python üzerinden Antigravity'ye de anında bildir (--switch CLI)
-        $localAppData = getenv('LOCALAPPDATA') ?: (getenv('USERPROFILE') . '/AppData/Local');
-        $pythonPath = $localAppData . '/Programs/Python/Python311/python.exe';
-        if (!file_exists($pythonPath)) {
-            $pythonPath = 'python';
-        }
+        $pythonPath = $this->getPythonPath();
         $scriptPath = dirname(__DIR__, 2) . '/Dispatcher/Bin/account_manager.py';
         $safeEmail = escapeshellarg($email);
         $cmd = "\"$pythonPath\" \"$scriptPath\" --switch $safeEmail";
@@ -144,10 +149,7 @@ class AjaxController extends BaseController
             return;
         }
 
-        $pythonPath = 'C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
-        if (!file_exists($pythonPath)) {
-            $pythonPath = 'python';
-        }
+        $pythonPath = $this->getPythonPath();
 
         // 1. Client için doğrudan çalışan Proxy (Port 4006) üzerinden Google OAuth yetkilendirme linkini üret
         $clientId = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com";
@@ -207,10 +209,7 @@ class AjaxController extends BaseController
         }
 
         // Başlangıç kotasını sorgula
-        $pythonPath = 'C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
-        if (!file_exists($pythonPath)) {
-            $pythonPath = 'python';
-        }
+        $pythonPath = $this->getPythonPath();
         $quotaCmd = "\"$pythonPath\" -c \"import json, sys; sys.path.append(r'" . dirname(__DIR__, 2) . "/Dispatcher/Bin'); from account_manager import query_user_quota; print(json.dumps(query_user_quota('" . addslashes($tokens['access_token']) . "')))\"";
         $quotaOutput = [];
         exec($quotaCmd, $quotaOutput);

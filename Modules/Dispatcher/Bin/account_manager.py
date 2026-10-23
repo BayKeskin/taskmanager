@@ -432,12 +432,80 @@ class AccountManager:
             return reports[0]
         return None
 
+    def install_bridge(self) -> bool:
+        """Installs the invisible internal taskmanager-bridge extension into Antigravity IDE's extensions folder"""
+        try:
+            import shutil
+            bridge_src = os.path.abspath(os.path.join(CURRENT_DIR, "..", "BridgeExtension"))
+            if not os.path.exists(bridge_src):
+                print(f"[!] BridgeExtension source directory not found at: {bridge_src}")
+                return False
+
+            ext_dirs = [
+                os.path.expanduser(r"~/.antigravity-ide/extensions"),
+                os.path.expanduser(r"~/.antigravity/extensions")
+            ]
+
+            installed_any = False
+            for base_dir in ext_dirs:
+                if not os.path.exists(base_dir):
+                    continue
+
+                target_dir = os.path.join(base_dir, "taskmanager.taskmanager-bridge-1.0.0")
+                os.makedirs(target_dir, exist_ok=True)
+                for fn in ["package.json", "extension.js"]:
+                    src_f = os.path.join(bridge_src, fn)
+                    dst_f = os.path.join(target_dir, fn)
+                    if os.path.exists(src_f):
+                        shutil.copy2(src_f, dst_f)
+
+                # Update extensions.json in the directory
+                ext_json_path = os.path.join(base_dir, "extensions.json")
+                try:
+                    entries = []
+                    if os.path.exists(ext_json_path):
+                        with open(ext_json_path, "r", encoding="utf-8") as f:
+                            entries = json.load(f)
+                    
+                    # Check if already present
+                    exists = any(x.get("identifier", {}).get("id") == "taskmanager.taskmanager-bridge" for x in entries)
+                    if not exists:
+                        entries.append({
+                            "identifier": {
+                                "id": "taskmanager.taskmanager-bridge"
+                            },
+                            "version": "1.0.0",
+                            "location": {
+                                "$mid": 1,
+                                "fsPath": target_dir,
+                                "_sep": 1,
+                                "path": "/" + target_dir.replace("\\", "/").lstrip("/"),
+                                "scheme": "file"
+                            },
+                            "relativeLocation": "taskmanager.taskmanager-bridge-1.0.0"
+                        })
+                        with open(ext_json_path, "w", encoding="utf-8") as f:
+                            json.dump(entries, f, indent=2)
+                except Exception as e_json:
+                    print(f"[!] Warning updating extensions.json in {base_dir}: {e_json}")
+
+                installed_any = True
+
+            if installed_any:
+                print("[+] taskmanager-bridge installed successfully into Antigravity extensions.")
+            return installed_any
+        except Exception as e:
+            print(f"[!] install_bridge error: {e}")
+            return False
+
     def switch_active_account(self, target_account) -> bool:
         """
         Atomically switches Antigravity's active account:
         1. Encodes USS token state.
         2. Updates antigravityUnifiedStateSync.oauthToken in state.vscdb.
-        3. Calls RegisterGdmUser on running Language Server processes via HTTPS.
+        3. Signals taskmanager-bridge for RAM USS IPC update.
+        4. Calls RegisterGdmUser on running Language Server processes via HTTPS.
+        5. Updates MySQL ai_accounts (is_active = 1).
         """
         if isinstance(target_account, str):
             email = target_account
@@ -455,6 +523,9 @@ class AccountManager:
         name = creds.get("name") or stored_creds.get("name") or email.split("@")[0]
 
         print(f"[*] Switching active account to: {email} (Quota: %{target_account.get('flash_quota_pct', 'N/A')})...")
+
+        # Ensure taskmanager-bridge is installed
+        self.install_bridge()
 
         # 1. Update state.vscdb SQLite database with 100% valid Protobuf structures
         try:
@@ -497,6 +568,36 @@ class AccountManager:
         except Exception as e_db:
             print(f"[!] Warning updating state.vscdb: {e_db}")
 
+        # 1c. Signal taskmanager-bridge via bridge_switch_request.json for in-memory USS refresh
+        try:
+            bridge_req_file = os.path.join(CURRENT_DIR, "bridge_switch_request.json")
+            bridge_ack_file = os.path.join(CURRENT_DIR, "bridge_switch_ack.json")
+            if os.path.exists(bridge_ack_file):
+                try:
+                    os.unlink(bridge_ack_file)
+                except Exception:
+                    pass
+
+            req_payload = {
+                "email": email,
+                "name": name,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "expiry_timestamp": int(expiry_timestamp)
+            }
+            with open(bridge_req_file, "w", encoding="utf-8") as f_req:
+                json.dump(req_payload, f_req, indent=2)
+            print("[+] Signaled taskmanager-bridge for RAM USS & Language Server update.")
+
+            # Short wait for ACK if bridge is already active in IDE
+            for _ in range(5):
+                if os.path.exists(bridge_ack_file):
+                    print("[+] Received ACK from taskmanager-bridge!")
+                    break
+                time.sleep(0.4)
+        except Exception as e_bridge:
+            print(f"[!] Bridge signal error: {e_bridge}")
+
         # 1d. Update TaskManager MySQL ai_accounts (set is_active = 1 for target, 0 for others)
         try:
             app_root = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", ".."))
@@ -511,7 +612,7 @@ class AccountManager:
         except Exception as e_sync:
             print(f"[!] Warning updating MySQL ai_accounts: {e_sync}")
         
-        # 2. Discover running Language Servers
+        # 2. Discover running Language Servers (Direct Python backup call)
         endpoints = self.discover_ls_endpoints()
         print(f"[*] Found {len(endpoints)} active Language Server(s).")
 

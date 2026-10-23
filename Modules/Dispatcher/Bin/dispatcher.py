@@ -661,6 +661,30 @@ def process_webhook_async(payload, header_conv_id):
     else:
         return
 
+    # ── ADIM 3: Pre-Flight Akıllı Kota Kontrolü (<= %10 ise otomatik geçiş) ──
+    try:
+        from account_manager import AccountManager
+        acct_mgr = AccountManager()
+        active_email = acct_mgr.get_active_email()
+        reports = acct_mgr.inspect_accounts_health(target_model_family='gemini-3.8')
+        curr_report = next((r for r in reports if r['email'].lower() == (active_email or '').lower()), None)
+        curr_pct = curr_report['target_model_pct'] if curr_report else 100
+        print(f"📊 [PRE-FLIGHT KOTA KONTROLÜ] Aktif: {active_email} (Kota: %{curr_pct})")
+
+        if curr_pct <= 10:
+            best_next = acct_mgr.find_best_next_account(exclude_email=active_email, target_model='gemini-3.8')
+            if best_next and best_next['target_model_pct'] > curr_pct:
+                print(f"⚡ [PRE-FLIGHT OTO-GEÇİŞ] Kota düşük (%{curr_pct} <= 10). {best_next['email']} (%{best_next['target_model_pct']}) hesabına geçiliyor...")
+                acct_mgr.switch_active_account(best_next)
+                time.sleep(1.0)
+                # Adresleri tazele
+                fresh_addr, fresh_token = get_antigravity_ls_env(force_refresh=True)
+                if fresh_addr:
+                    ls_address = fresh_addr
+                    csrf_token = fresh_token
+    except Exception as e_pre:
+        print(f"[!] Pre-flight kota kontrolü hatası: {e_pre}")
+
     env = os.environ.copy()
     if ls_address:
         env["ANTIGRAVITY_LS_ADDRESS"] = ls_address
@@ -671,6 +695,28 @@ def process_webhook_async(payload, header_conv_id):
 
     try:
         result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
+
+        # ── 429 / Quota Exhaustion Failover Kontrolü ──
+        out_err = ((result.stdout or '') + ' ' + (result.stderr or '')).lower()
+        if result.returncode != 0 and any(k in out_err for k in ['429', 'quota', 'resourceexhausted', 'rate_limit', 'exceeded']):
+            print(f"⚠️ [KOTA AŞIMI TESPİT EDİLDİ - 429] Çıktı: {out_err[:200]}")
+            try:
+                from account_manager import AccountManager
+                acct_mgr = AccountManager()
+                active_email = acct_mgr.get_active_email()
+                best_next = acct_mgr.find_best_next_account(exclude_email=active_email, target_model='gemini-3.8')
+                if best_next:
+                    print(f"🔄 [429 OTO-FAILOVER] Yedek hesaba geçiliyor: {best_next['email']} (%{best_next['target_model_pct']})")
+                    acct_mgr.switch_active_account(best_next)
+                    time.sleep(1.0)
+                    fresh_addr, fresh_token = get_antigravity_ls_env(force_refresh=True)
+                    if fresh_addr:
+                        env["ANTIGRAVITY_LS_ADDRESS"] = fresh_addr
+                        if fresh_token:
+                            env["ANTIGRAVITY_CSRF_TOKEN"] = fresh_token
+                    result = run_silent(cmd, env=env, cwd=project_dir, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=12)
+            except Exception as e_failover:
+                print(f"[!] 429 failover switch hatası: {e_failover}")
 
         if result.returncode != 0:
             fresh_addr, fresh_token = get_antigravity_ls_env(force_refresh=True)

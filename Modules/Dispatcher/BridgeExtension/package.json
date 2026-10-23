@@ -1,0 +1,14 @@
+{
+  "name": "taskmanager-bridge",
+  "displayName": "TaskManager Invisible Internal Bridge",
+  "description": "Zero-UI native internal bridge between TaskManager and Antigravity IDE for in-memory account switching.",
+  "version": "1.0.0",
+  "publisher": "taskmanager",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "*"
+  ]
+}
