@@ -2,14 +2,13 @@
 use Core\EventManager;
 use Core\AssetManager;
 
-EventManager::listen('app.init', function() {
-    AssetManager::enqueueCss('dispatcher-css', '/Modules/Dispatcher/Assets/css/dispatcher.css');
-    AssetManager::enqueueJs('dispatcher-js', '/Modules/Dispatcher/Assets/js/dispatcher.js');
-    AssetManager::localizeScript('dispatcher-js', 'dispatcherTranslations', [
-        'confirmDispatch' => __('Dispatcher::confirm_dispatch'),
-        'confirmAbort'    => __('Dispatcher::confirm_abort')
-    ]);
-});
+// 1. Varlık Yükleme (Assets & Çeviriler)
+AssetManager::enqueueCss('dispatcher-css', '/Modules/Dispatcher/Assets/css/dispatcher.css');
+AssetManager::enqueueJs('dispatcher-js', '/Modules/Dispatcher/Assets/js/dispatcher.js');
+AssetManager::localizeScript('dispatcher-js', 'dispatcherTranslations', [
+    'confirmDispatch' => __('Dispatcher::confirm_dispatch'),
+    'confirmAbort'    => __('Dispatcher::confirm_abort')
+]);
 
 // 2. Otonom AI Görev Tetikleme Kancaları
 EventManager::listen('task.created', function($payload) {
