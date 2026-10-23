@@ -919,13 +919,13 @@ async function handleAddChecklistItem(e) {
 // ==========================================================================
 // 10. INLINE EDITING (TaskManager SATIR İÇİ BAŞLIK DÜZENLEME)
 // ==========================================================================
-async function handleInlineTitleSave(el) {
-    if (!currentDrawerTaskId) return;
-    const newTitle = el.innerText.trim();
-    if (!newTitle) return;
+async function updateTaskTitleById(taskId, newTitle, sourceEl = null) {
+    if (!taskId) return false;
+    newTitle = (newTitle || '').trim();
+    if (!newTitle) return false;
 
     const formData = new FormData();
-    formData.append('task_id', currentDrawerTaskId);
+    formData.append('task_id', taskId);
     formData.append('field', 'title');
     formData.append('value', newTitle);
 
@@ -937,21 +937,56 @@ async function handleInlineTitleSave(el) {
         const result = await res.json();
         if (result.success) {
             showToast(_bI18n.title_updated || 'Task title updated', 'success');
-            // Sayfadaki liste satırını veya kartı anında canlı güncelle
-            const card = document.querySelector(`.cu-board-card[data-task-id="${currentDrawerTaskId}"] .cu-board-card-title`);
-            if (card) card.innerText = newTitle;
-            const rowTitle = document.querySelector(`.cu-task-row[onclick*="${currentDrawerTaskId}"] .cu-task-title`);
-            if (rowTitle) {
-                // Proje rozetini koru
-                const badge = rowTitle.querySelector('span');
-                rowTitle.innerHTML = '';
-                if (badge) rowTitle.appendChild(badge);
-                rowTitle.appendChild(document.createTextNode(' ' + newTitle));
+
+            // 1. Kanban Kartı Başlığını Güncelle
+            const cardTitleEl = document.querySelector(`.cu-board-card[data-task-id="${taskId}"] .cu-board-card-title`);
+            if (cardTitleEl && cardTitleEl !== sourceEl) {
+                cardTitleEl.innerText = newTitle;
             }
+
+            // 2. Liste Görünümü Başlığını Güncelle
+            const rowTitleEl = document.querySelector(`.cu-task-row[data-task-id="${taskId}"] .cu-task-title-text`);
+            if (rowTitleEl && rowTitleEl !== sourceEl) {
+                rowTitleEl.innerText = newTitle;
+            } else if (!rowTitleEl) {
+                const legacyRowTitle = document.querySelector(`.cu-task-row[data-task-id="${taskId}"] .cu-task-title, .cu-task-row[onclick*="${taskId}"] .cu-task-title`);
+                if (legacyRowTitle) {
+                    const badge = legacyRowTitle.querySelector('span');
+                    legacyRowTitle.innerHTML = '';
+                    if (badge) legacyRowTitle.appendChild(badge);
+                    legacyRowTitle.appendChild(document.createTextNode(' ' + newTitle));
+                }
+            }
+
+            // 3. Task Row data-title Attribute'unu Güncelle (Arama/Filtre için)
+            const taskRow = document.querySelector(`.cu-task-row[data-task-id="${taskId}"]`);
+            if (taskRow) {
+                taskRow.setAttribute('data-title', newTitle.toLowerCase());
+            }
+
+            // 4. Açık Çekmecedeki (Drawer) Başlığı Güncelle
+            if (typeof currentDrawerTaskId !== 'undefined' && currentDrawerTaskId == taskId) {
+                const drawerTitleEl = document.getElementById('drawerTaskTitle');
+                if (drawerTitleEl && drawerTitleEl !== sourceEl) {
+                    drawerTitleEl.innerText = newTitle;
+                }
+            }
+            return true;
+        } else {
+            showToast(result.message || 'Error updating title', 'error');
+            return false;
         }
     } catch (err) {
         console.error(err);
+        return false;
     }
+}
+
+async function handleInlineTitleSave(el) {
+    if (!currentDrawerTaskId) return;
+    const newTitle = el.innerText.trim();
+    if (!newTitle) return;
+    await updateTaskTitleById(currentDrawerTaskId, newTitle, el);
 }
 
 // ==========================================================================
@@ -3187,7 +3222,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         card.addEventListener('click', function(e) {
-            if (e.target.closest('.cu-client-actions-bar') || e.target.closest('button')) {
+            if (e.target.closest('.cu-client-actions-bar') || e.target.closest('button') || e.target.closest('.cu-board-card-title')) {
                 return;
             }
             if (typeof openTaskDrawer === 'function') {
@@ -3210,7 +3245,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Modal Arkaplanına Tıklayınca Kapatma (Overlay Click)
     document.querySelectorAll('.cu-modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', function(e) {
-            if (e.target === overlay && typeof closeModal === 'function') {
+            const isSafe = (typeof window.isSafeBackdropClick === 'function')
+                ? window.isSafeBackdropClick(e, overlay)
+                : (e.target === overlay);
+            if (isSafe && typeof closeModal === 'function') {
                 closeModal(overlay.id);
             }
         });
@@ -3585,7 +3623,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const taskRow = e.target.closest('.cu-task-row');
-        if (taskRow && !e.target.closest('button') && !e.target.closest('input')) {
+        if (taskRow && !e.target.closest('button') && !e.target.closest('input') && !e.target.closest('.cu-task-title-text')) {
             const taskId = taskRow.getAttribute('data-task-id');
             if (taskId && typeof openTaskDrawer === 'function') {
                 openTaskDrawer(taskId);
@@ -3594,8 +3632,59 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // 5. Kart ve Liste Başlığı Satır İçi Düzenleme Delegasyonu (TSK-1290)
+    document.addEventListener('focusout', function(e) {
+        const cardTitle = e.target.closest('.cu-board-card-title');
+        if (cardTitle && cardTitle.isContentEditable) {
+            const card = cardTitle.closest('.cu-board-card');
+            const taskId = card ? card.getAttribute('data-task-id') : null;
+            if (taskId) {
+                const currentVal = cardTitle.innerText.trim();
+                const originalVal = cardTitle.getAttribute('data-original-title') || '';
+                if (currentVal && currentVal !== originalVal) {
+                    cardTitle.setAttribute('data-original-title', currentVal);
+                    updateTaskTitleById(taskId, currentVal, cardTitle);
+                }
+            }
+            return;
+        }
+
+        const listTitle = e.target.closest('.cu-task-title-text');
+        if (listTitle && listTitle.isContentEditable) {
+            const row = listTitle.closest('.cu-task-row');
+            const taskId = row ? row.getAttribute('data-task-id') : null;
+            if (taskId) {
+                const currentVal = listTitle.innerText.trim();
+                const originalVal = listTitle.getAttribute('data-original-title') || '';
+                if (currentVal && currentVal !== originalVal) {
+                    listTitle.setAttribute('data-original-title', currentVal);
+                    updateTaskTitleById(taskId, currentVal, listTitle);
+                }
+            }
+            return;
+        }
+    });
+
+    // Başlık alanlarına focus olunduğunda ilk değeri hafızaya al
+    document.addEventListener('focusin', function(e) {
+        const editableTitle = e.target.closest('.cu-board-card-title, .cu-task-title-text');
+        if (editableTitle && editableTitle.isContentEditable) {
+            if (!editableTitle.hasAttribute('data-original-title')) {
+                editableTitle.setAttribute('data-original-title', editableTitle.innerText.trim());
+            }
+        }
+    });
+
     document.addEventListener('keydown', function(e) {
+        // Enter tuşuna basıldığında başlığı kaydet ve odaktan çık (blur)
         if (e.key === 'Enter') {
+            const editableTitle = e.target.closest('.cu-board-card-title, .cu-task-title-text, #drawerTaskTitle');
+            if (editableTitle && editableTitle.isContentEditable) {
+                e.preventDefault();
+                editableTitle.blur();
+                return;
+            }
+
             const input = e.target.closest('.cu-quick-subtask-input');
             if (input) {
                 e.preventDefault();
@@ -3604,8 +3693,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     handleQuickAddSubtask(parentId);
                 }
             }
+        } else if (e.key === 'Escape') {
+            const editableTitle = e.target.closest('.cu-board-card-title, .cu-task-title-text');
+            if (editableTitle && editableTitle.isContentEditable) {
+                const originalVal = editableTitle.getAttribute('data-original-title');
+                if (originalVal !== null) {
+                    editableTitle.innerText = originalVal;
+                }
+                editableTitle.blur();
+            }
         }
     });
 });
+
 
 

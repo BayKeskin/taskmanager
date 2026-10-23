@@ -676,7 +676,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('modalAiArchitect');
     if (modal) {
         modal.addEventListener('click', function(e) {
-            if (e.target === this) {
+            const isSafe = (typeof window.isSafeBackdropClick === 'function')
+                ? window.isSafeBackdropClick(e, this)
+                : (e.target === this);
+            if (isSafe && typeof closeModal === 'function') {
                 closeModal('modalAiArchitect');
             }
         });

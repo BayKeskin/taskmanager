@@ -118,7 +118,7 @@ switch ($action) {
                 </span>
             </div>
 
-            <div class="cu-board-card-title">
+            <div class="cu-board-card-title" contenteditable="true" spellcheck="false" title="<?= htmlspecialchars(__('Board::click_to_edit')) ?>">
                 <?= htmlspecialchars($task->title) ?>
             </div>
 
@@ -182,7 +182,7 @@ switch ($action) {
                     <span class="cu-badge-project cu-project-badge-color cu-project-badge-spacing" data-color="<?= htmlspecialchars($task->project_color ?? '#7B68EE') ?>">
                         <?= htmlspecialchars($task->project_title ?? __('Board::drawer_project_fallback')) ?>
                     </span>
-                    <?= htmlspecialchars($task->title) ?>
+                    <span class="cu-task-title-text" contenteditable="true" spellcheck="false" title="<?= htmlspecialchars(__('Board::click_to_edit')) ?>"><?= htmlspecialchars($task->title) ?></span>
                     <?php if ($isAiTask): ?>
                         <span class="cu-ai-pill-badge">
                             🤖 AI
@@ -459,7 +459,37 @@ switch ($action) {
                     'user_name'      => $currentUser->name
                 ]);
 
-                \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
+                $attRows = $taskModel->getTaskAttachments($taskId);
+                $bDir = dirname(__DIR__, 3);
+                $apiConf = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
+                $bUrl = rtrim($apiConf['base_url'], '/');
+                $atts = [];
+                foreach ($attRows as $ar) {
+                    $rPath = str_replace('\\', '/', (string)$ar->file_path);
+                    $rlPath = ltrim(preg_replace('#^/?(?:[a-zA-Z0-9_-]+/)?(Public/.*)$#i', '$1', $rPath), '/');
+                    $cAbsPath = str_replace('\\', '/', $bDir . '/' . $rlPath);
+                    $atts[] = [
+                        'id'        => (int)$ar->id,
+                        'file_name' => $ar->file_name,
+                        'file_type' => $ar->file_type,
+                        'file_size' => (int)$ar->file_size,
+                        'file_path' => $ar->file_path,
+                        'abs_path'  => $cAbsPath,
+                        'file_uri'  => 'file:///' . ltrim($cAbsPath, '/'),
+                        'url'       => $bUrl . '/' . $rlPath,
+                        'exists'    => file_exists($cAbsPath),
+                    ];
+                }
+
+                \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.submitted', [
+                    'task_id'          => $taskId,
+                    'task_code'        => $task->task_code,
+                    'title'            => $task->title,
+                    'description'      => (string)($task->description ?? ''),
+                    'attachments'      => $atts,
+                    'project_id'       => (int)$task->project_id,
+                    'submission_notes' => $notes
+                ]);
 
                 jsonResponse(true, __('Board::task_submitted_success'), [
                     'attachment_url' => $attachmentUrl
@@ -731,7 +761,43 @@ switch ($action) {
                     \Modules\Board\Services\TaskLifecycleService::triggerTaskStartedWebhook($taskId, $oldStatus, ['triggered_by' => $currentUser->name]);
                 }
             }
-        } elseif ($newStatus === 'submitted' || $newStatus === 'completed') {
+        } elseif ($newStatus === 'submitted') {
+            if ($isCurrentTaskAi) {
+                $attRows2 = $taskModel->getTaskAttachments($taskId);
+                $bDir2 = dirname(__DIR__, 3);
+                $apiConf2 = \Modules\RestApi\Services\RestApiService::getDynamicApiConfig();
+                $bUrl2 = rtrim($apiConf2['base_url'], '/');
+                $atts2 = [];
+                foreach ($attRows2 as $ar2) {
+                    $rPath2 = str_replace('\\', '/', (string)$ar2->file_path);
+                    $rlPath2 = ltrim(preg_replace('#^/?(?:[a-zA-Z0-9_-]+/)?(Public/.*)$#i', '$1', $rPath2), '/');
+                    $cAbsPath2 = str_replace('\\', '/', $bDir2 . '/' . $rlPath2);
+                    $atts2[] = [
+                        'id'        => (int)$ar2->id,
+                        'file_name' => $ar2->file_name,
+                        'file_type' => $ar2->file_type,
+                        'file_size' => (int)$ar2->file_size,
+                        'file_path' => $ar2->file_path,
+                        'abs_path'  => $cAbsPath2,
+                        'file_uri'  => 'file:///' . ltrim($cAbsPath2, '/'),
+                        'url'       => $bUrl2 . '/' . $rlPath2,
+                        'exists'    => file_exists($cAbsPath2),
+                    ];
+                }
+
+                \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.submitted', [
+                    'task_id'          => $taskId,
+                    'task_code'        => $task->task_code,
+                    'title'            => $task->title,
+                    'description'      => (string)($task->description ?? ''),
+                    'attachments'      => $atts2,
+                    'project_id'       => (int)$task->project_id,
+                    'submission_notes' => 'Moved to submitted via Board'
+                ]);
+            } else {
+                \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
+            }
+        } elseif ($newStatus === 'completed') {
             \Modules\Board\Services\TaskLifecycleService::dispatchNextAiTaskIfAvailable((int)$task->project_id, (int)$taskId);
         } elseif ($oldStatus === 'in_progress' && $newStatus === 'assigned' && $isCurrentTaskAi) {
             \Modules\RestApi\Services\WebhookService::triggerProjectWebhook((int)$task->project_id, 'task.requeued', [

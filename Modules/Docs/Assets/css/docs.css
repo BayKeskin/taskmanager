@@ -118,52 +118,14 @@
 .ql-editor p {
     margin-bottom: 10px !important;
 }
-/* Boş paragrafları (boş veya yalnızca <br> içeren) kompakt hale getir */
+/* Boş paragrafların (Enter ile oluşturulan boş satırlar) görünür ve doğal yükseklikte kalmasını sağla */
 .ql-editor p:empty,
 .ql-editor p:has(> br:only-child) {
-    margin: 2px 0 !important;
-    min-height: 6px !important;
-    line-height: 6px !important;
+    min-height: 1.5em !important;
+    line-height: 1.8 !important;
+    margin-bottom: 10px !important;
 }
-/* Peş peşe gelen boş paragrafları TAMAMEN gizle */
-.ql-editor p:empty + p:empty,
-.ql-editor p:empty + p:has(> br:only-child),
-.ql-editor p:has(> br:only-child) + p:empty,
-.ql-editor p:has(> br:only-child) + p:has(> br:only-child) {
-    display: none !important;
-}
-/* Başlıkların öncesi ve sonrasındaki boş paragrafları gizle */
-.ql-editor h1 + p:has(> br:only-child),
-.ql-editor h2 + p:has(> br:only-child),
-.ql-editor h3 + p:has(> br:only-child),
-.ql-editor h4 + p:has(> br:only-child),
-.ql-editor h1 + p:empty,
-.ql-editor h2 + p:empty,
-.ql-editor h3 + p:empty,
-.ql-editor h4 + p:empty {
-    display: none !important;
-}
-.ql-editor p:has(> br:only-child) + h1,
-.ql-editor p:has(> br:only-child) + h2,
-.ql-editor p:has(> br:only-child) + h3,
-.ql-editor p:has(> br:only-child) + h4,
-.ql-editor p:empty + h1,
-.ql-editor p:empty + h2,
-.ql-editor p:empty + h3,
-.ql-editor p:empty + h4 {
-    display: none !important;
-}
-/* Kod blokları ve Tabloların bitişiğindeki boş paragrafları gizle */
-.ql-editor .ql-code-block-container + p:has(> br:only-child),
-.ql-editor .ql-code-block-container + p:empty,
-.ql-editor p:has(> br:only-child) + .ql-code-block-container,
-.ql-editor p:empty + .ql-code-block-container,
-.ql-editor table + p:has(> br:only-child),
-.ql-editor table + p:empty,
-.ql-editor p:has(> br:only-child) + table,
-.ql-editor p:empty + table {
-    display: none !important;
-}
+
 /* Kod bloğu içindeki boş satırları yok say */
 .ql-editor .ql-code-block:empty {
     display: none !important;

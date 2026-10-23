@@ -521,7 +521,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeModal(modalId);
             }
         } else if (e.target.classList.contains('cu-modal-overlay') && e.target.id) {
-            if (typeof closeModal === 'function') {
+            const isSafe = (typeof window.isSafeBackdropClick === 'function')
+                ? window.isSafeBackdropClick(e, e.target)
+                : true;
+            if (isSafe && typeof closeModal === 'function') {
                 closeModal(e.target.id);
             }
         }
