@@ -154,28 +154,55 @@ class GitService
 
         [$owner, $repoName] = explode('/', $repoSlug, 2);
 
-        $ch = curl_init('https://api.github.com/user/repos');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_HTTPHEADER     => [
-                'Authorization: Bearer ' . $creds['token'],
-                'User-Agent: TaskManager-DevOps-Engine',
-                'Accept: application/vnd.github+json',
-                'Content-Type: application/json'
-            ],
-            CURLOPT_POSTFIELDS     => json_encode([
-                'name'        => $repoName,
-                'description' => $project->title . ' - Managed by TaskManager AI DevOps',
-                'private'     => true,
-                'auto_init'   => false
-            ]),
-            CURLOPT_TIMEOUT        => 15,
-            CURLOPT_SSL_VERIFYPEER => false
-        ]);
-        $resp = curl_exec($ch);
-        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $createRepo = function(string $nameCandidate) use ($creds, $project): array {
+            $ch = curl_init('https://api.github.com/user/repos');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: Bearer ' . $creds['token'],
+                    'User-Agent: TaskManager-DevOps-Engine',
+                    'Accept: application/vnd.github+json',
+                    'Content-Type: application/json'
+                ],
+                CURLOPT_POSTFIELDS     => json_encode([
+                    'name'        => $nameCandidate,
+                    'description' => $project->title . ' - Managed by TaskManager AI DevOps',
+                    'private'     => true,
+                    'auto_init'   => false
+                ]),
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_SSL_VERIFYPEER => false
+            ]);
+            $resp = curl_exec($ch);
+            $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            return ['code' => $httpCode, 'response' => $resp];
+        };
+
+        $res = $createRepo($repoName);
+        $httpCode = $res['code'];
+        $resp = $res['response'];
+
+        // Eğer repo adı GitHub'da zaten varsa (HTTP 422 - already exists), çakışmayı önlemek için projeye özel benzersiz yeni bir repo adı üret
+        if ($httpCode === 422) {
+            $projCodeSuffix = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$project->project_code));
+            $candidates = [
+                $repoName . '-' . $projCodeSuffix,
+                $repoName . '-' . $project->id,
+                $repoName . '-' . substr(md5(uniqid((string)$project->id, true)), 0, 6)
+            ];
+
+            foreach ($candidates as $candidate) {
+                $candidateRes = $createRepo($candidate);
+                if ($candidateRes['code'] === 201) {
+                    $repoName = $candidate;
+                    $httpCode = 201;
+                    $resp = $candidateRes['response'];
+                    break;
+                }
+            }
+        }
 
         if ($httpCode !== 201 && $httpCode !== 422 && $httpCode !== 200) {
             $errJson = json_decode((string)$resp, true);
