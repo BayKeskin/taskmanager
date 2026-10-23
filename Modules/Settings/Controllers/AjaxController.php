@@ -45,6 +45,12 @@ class AjaxController extends BaseController
                 return $candidate;
             }
         }
+        // Apache altında servis kullanıcısı çalıştığında kullanıcı dizinlerindeki Python'ı tara
+        $sysDrive = getenv('SystemDrive') ?: 'C:';
+        $userProfiles = glob($sysDrive . '/Users/*/AppData/Local/Programs/Python/Python*/python.exe');
+        if (!empty($userProfiles) && file_exists($userProfiles[0])) {
+            return $userProfiles[0];
+        }
         return 'python';
     }
 
