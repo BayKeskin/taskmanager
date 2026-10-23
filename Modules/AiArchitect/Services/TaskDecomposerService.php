@@ -177,6 +177,13 @@ class TaskDecomposerService
         $systemPrompt = "You are a Senior Technical Project Architect and Software Engineering Lead.
 Your task is to analyze the user's project brief, contract specifications, or uploaded document and decompose it into modular Parent Tasks (Functional Epics/Modules) and concrete, single-purpose Subtasks.
 
+CRITICAL NATURAL LANGUAGE MATCHING MANDATE:
+- You MUST detect and STRICTLY MATCH the language of the provided 'User Brief & Document Content'!
+- If the brief or uploaded document is written in TURKISH: All output, all module titles ('title'), module descriptions ('description'), subtask titles ('title'), and implementation guides ('description') MUST be 100% in TURKISH! Never switch to English!
+- If the brief or uploaded document is written in ENGLISH: All output MUST be 100% in ENGLISH!
+- If the brief or uploaded document is written in GERMAN: All output MUST be 100% in GERMAN!
+- Whatever language the user or uploaded document speaks, respond in that EXACT SAME language with 0% language pollution!
+
 CRITICAL PROJECT ARCHITECTURE & AGENT_RULES MANDATE:
 You are provided with the target project's official `PROJECT RULES & TECH STACK (agent_rules)` from the database.
 1. You MUST strictly obey every single architectural rule, framework constraint, directory structure, and coding standard stated in `PROJECT RULES & TECH STACK`!
@@ -192,8 +199,7 @@ CRITICAL ARCHITECTURAL RULES:
 2. Break features into distinct functional modules.
 3. Subtask category MUST be one of: 'coding', 'design', 'seo', 'marketing', 'legal', 'content'. NEVER assign the 'ai' tag!
 4. 'execution_mode': If automated software infrastructure, mark as 'auto'; if gated, mark as 'gated'.
-5. MULTILINGUAL OUTPUT MANDATE: Match the user input language completely.
-6. Return ONLY valid JSON matching this schema:
+5. Return ONLY valid JSON matching this schema:
 {
   \"epics\": [
     {
@@ -221,7 +227,7 @@ CRITICAL ARCHITECTURAL RULES:
             . "====================================================\n\n"
             . ($imgCount > 0 ? "Note: {$imgCount} reference screenshots/diagrams were attached. Carefully inspect them.\n" : "")
             . "\nUser Brief & Document Content:\n" . mb_substr($combinedBrief, 0, 18000) . "\n\n"
-            . "Please analyze the requirements strictly obeying the project's mandatory architecture rules and generate the JSON task tree:";
+            . "Analyze the requirements strictly obeying the project's architecture rules and generate the JSON task tree in the EXACT SAME LANGUAGE as the User Brief & Document Content above:";
 
         $apiKey = trim($settings->gemini_api_key ?? '');
         if (!empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
