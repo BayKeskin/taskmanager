@@ -30,8 +30,20 @@ class GeminiClient
         $projDesc  = $projectRow->description ?? '';
         $projRules = $projectRow->agent_rules ?? '';
 
+        // Katı mimari sınırları enjekte et (asla Laravel veya farklı framework önermemeli)
+        $enforcedStackRule = "TECHNICAL STACK & ARCHITECTURAL MANDATES FOR THIS PROJECT:\n";
+        if (!empty($projRules)) {
+            $enforcedStackRule .= $projRules . "\n\n";
+        }
+        if ((int)$projectId === 1 || stripos($projTitle, 'Task Manager') !== false || stripos($projRules, 'HMVC') !== false) {
+            $enforcedStackRule .= "CRITICAL PROJECT CONSTRAINTS: This is a Custom Vanilla PHP 8.2+ HMVC Application (Core\\BaseModel, Core\\BaseController, Modules/{Module}/). IT IS NOT LARAVEL OR SYMFONY! NEVER suggest composer packages like `laravel/socialite` or framework utilities. All controllers must reside in `Modules/{Module}/Controllers/`, models in `Modules/{Module}/Models/`, views in `Modules/{Module}/Views/`, and translations in `Modules/{Module}/Lang/{tr,en,de}.php`. Use native PHP cURL or standard PHP features.\n";
+        }
+
         $systemPrompt = "You are a Principal Software Architect and elite AI Agent Prompt Engineer.
 Your mission is to examine the provided UI/UX mockup images (wireframes, designs, screenshots), source code files, and user notes, and transform them into an EXTREMELY DETAILED, PIXEL-PERFECT, DEEPLY ANALYZED TECHNICAL SPECIFICATION PROMPT for autonomous coding agents (like Antigravity, Cursor, or Claude Code).
+
+STRICT STACK COMPLIANCE:
+Adhere strictly to the project's technical stack defined in the prompt. If the project is a Custom PHP HMVC app, NEVER recommend Laravel, Symfony, or external packages that belong to other frameworks!
 
 CRITICAL VISUAL ANALYSIS DIRECTIVE (WHEN IMAGES ARE PROVIDED):
 You MUST visually analyze the image in extreme detail and explicitly describe every single section you see:
@@ -49,9 +61,9 @@ MANDATORY RULES:
 2. TONE & STRUCTURE: Authoritative, structured, and unambiguous. Use clean Markdown with headers, bold points, and code snippets where appropriate:
    - 🎯 **1. SCOPE & OBJECTIVES** (Purpose & High-level Scope)
    - 🎨 **2. UI/UX VISUAL ANALYSIS** (Exhaustive visual breakdown of EVERY SECTION seen in the image: texts, cards, colors, icons, layout)
-   - 📁 **3. TARGET FILES & ARCHITECTURE** (Target Files, classes, methods, or DB tables)
-   - 🛠️ **4. STEP-BY-STEP IMPLEMENTATION** (Concrete step-by-step technical instructions: HTML structure, CSS classes, JS interactions, Mock Data)
-   - 🚫 **5. STRICT PROHIBITIONS & BOUNDARIES** (No breaking changes, strict project standards, no spaghetti code)
+   - 📁 **3. TARGET FILES & ARCHITECTURE** (Target Files, classes, methods, or DB tables matching the exact project stack)
+   - 🛠️ **4. STEP-BY-STEP IMPLEMENTATION** (Concrete step-by-step technical instructions: HTML structure, CSS classes, JS interactions, Controller/Model methods)
+   - 🚫 **5. STRICT PROHIBITIONS & BOUNDARIES** (No Laravel/external framework dependencies, no breaking changes, strict project standards)
    - ✅ **6. DEFINITION OF DONE (DoD)** (Checklist of verified behaviors: live tests, zero console/PHP errors, responsiveness)
 3. INCORPORATE ATTACHMENTS: If code files are provided, refer to their actual variables/functions. If images/mockups are provided, describe their visual layout, colors, alignment, and interactive behaviors.
 4. OUTPUT FORMAT: Output ONLY the specification markdown. Do NOT wrap in outer ```markdown code blocks. No conversational greeting or chitchat.";
@@ -60,9 +72,7 @@ MANDATORY RULES:
         if ($projDesc) {
             $combinedUserPrompt .= "PROJECT OVERVIEW: {$projDesc}\n";
         }
-        if ($projRules) {
-            $combinedUserPrompt .= "PROJECT RULES & TECH STACK:\n{$projRules}\n";
-        }
+        $combinedUserPrompt .= "{$enforcedStackRule}\n";
         $combinedUserPrompt .= "\n--- USER INSTRUCTION / REQUIREMENT ---\n{$userInstruction}\n";
 
         if (!empty($referenceFiles)) {
@@ -84,7 +94,7 @@ MANDATORY RULES:
         // 1. Google Gemini API Call
         $apiKey = trim($settings->gemini_api_key ?? '');
         if (!$skipLiveApi && !empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
-            $candidateModels = ['gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+            $candidateModels = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3-flash-preview'];
             $configuredModel = $settings->default_ai_model ?? '';
             if (!empty($configuredModel) && !in_array($configuredModel, $candidateModels, true)) {
                 array_unshift($candidateModels, $configuredModel);
@@ -94,74 +104,89 @@ MANDATORY RULES:
                 if (str_contains($tryModel, '1.5') || str_contains($tryModel, '2.5')) {
                     continue;
                 }
-                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$tryModel}:generateContent?key=" . urlencode($apiKey);
 
-                $parts = [];
-                $parts[] = ['text' => $combinedUserPrompt];
+                for ($attempt = 1; $attempt <= 2; $attempt++) {
+                    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$tryModel}:generateContent?key=" . urlencode($apiKey);
 
-                // Append reference images as inlineData
-                foreach ($referenceImages as $img) {
-                    if (!empty($img['base64'])) {
-                        $parts[] = [
-                            'inlineData' => [
-                                'mimeType' => $img['mime'] ?? 'image/jpeg',
-                                'data'     => $img['base64']
-                            ]
-                        ];
+                    $parts = [];
+                    $parts[] = ['text' => $combinedUserPrompt];
+
+                    // Append reference images as inlineData
+                    foreach ($referenceImages as $img) {
+                        if (!empty($img['base64'])) {
+                            $parts[] = [
+                                'inlineData' => [
+                                    'mimeType' => $img['mime'] ?? 'image/jpeg',
+                                    'data'     => $img['base64']
+                                ]
+                            ];
+                        }
                     }
-                }
 
-                $payload = [
-                    'systemInstruction' => [
-                        'parts' => [['text' => $systemPrompt]]
-                    ],
-                    'contents' => [
-                        [
-                            'role'  => 'user',
-                            'parts' => $parts
+                    $payload = [
+                        'systemInstruction' => [
+                            'parts' => [['text' => $systemPrompt]]
+                        ],
+                        'contents' => [
+                            [
+                                'role'  => 'user',
+                                'parts' => $parts
+                            ]
+                        ],
+                        'generationConfig' => [
+                            'temperature'     => 0.25,
+                            'maxOutputTokens' => 8192
                         ]
-                    ],
-                    'generationConfig' => [
-                        'temperature'     => 0.25,
-                        'maxOutputTokens' => 8192
-                    ]
-                ];
+                    ];
 
-                $ch = curl_init($url);
-                curl_setopt_array($ch, [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST           => true,
-                    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-                    CURLOPT_POSTFIELDS     => json_encode($payload),
-                    CURLOPT_TIMEOUT        => 90,
-                    CURLOPT_SSL_VERIFYPEER => false
-                ]);
+                    $ch = curl_init($url);
+                    curl_setopt_array($ch, [
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST           => true,
+                        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                        CURLOPT_POSTFIELDS     => json_encode($payload),
+                        CURLOPT_TIMEOUT        => 45,
+                        CURLOPT_CONNECTTIMEOUT => 10,
+                        CURLOPT_SSL_VERIFYPEER => false
+                    ]);
 
-                $response = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
+                    $response = curl_exec($ch);
+                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
 
-                if ($httpCode === 200 && $response) {
-                    $jsonRes = json_decode($response, true);
-                    $text = $jsonRes['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                    if (!empty($text)) {
-                        $cleaned = trim(preg_replace('/^```(?:markdown)?\s*|\s*```$/i', '', trim($text)));
-                        return [
-                            'success'       => true,
-                            'specification' => $cleaned,
-                            'engine'        => 'gemini (' . $tryModel . ')'
-                        ];
+                    if ($httpCode === 200 && $response) {
+                        $jsonRes = json_decode($response, true);
+                        $text = $jsonRes['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                        if (!empty($text)) {
+                            $cleaned = trim(preg_replace('/^```(?:markdown)?\s*|\s*```$/i', '', trim($text)));
+                            return [
+                                'success'       => true,
+                                'specification' => $cleaned,
+                                'engine'        => 'gemini (' . $tryModel . ')'
+                            ];
+                        }
+                    }
+
+                    if ($httpCode === 503 || $httpCode === 429) {
+                        usleep(1200000); // 1.2 sn bekle
+                        continue;
+                    }
+
+                    if ($httpCode === 404) {
+                        break;
                     }
                 }
             }
+
+            return [
+                'success' => false,
+                'error'   => __('AiArchitect::err_ai_busy')
+            ];
         }
 
-        // 2. Fallback Heuristic Generator
-        $fallbackSpec = $this->generateHeuristicSpecification($projCode, $projTitle, $userInstruction, $referenceFiles, !empty($referenceImages));
         return [
-            'success'       => true,
-            'specification' => $fallbackSpec,
-            'engine'        => 'heuristic_architect'
+            'success' => false,
+            'error'   => __('AiArchitect::err_missing_api_key')
         ];
     }
 

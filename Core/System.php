@@ -5,6 +5,15 @@ ini_set("display_errors", 1);
 
 // Oturum ve Güvenli Çerez Ayarları
 if (session_status() === PHP_SESSION_NONE) {
+    // Sistem geçici dizin izin kilitlenmelerini önlemek için izole proje session dizini
+    $sessionSavePath = dirname(__DIR__) . '/storage/sessions';
+    if (!is_dir($sessionSavePath)) {
+        @mkdir($sessionSavePath, 0777, true);
+    }
+    if (is_dir($sessionSavePath) && is_writable($sessionSavePath)) {
+        @session_save_path($sessionSavePath);
+    }
+
     $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? 80) == 443;
     session_set_cookie_params([
         'lifetime' => 0,
@@ -14,7 +23,7 @@ if (session_status() === PHP_SESSION_NONE) {
         'httponly' => true,
         'samesite' => $isSecure ? 'None' : 'Lax'
     ]);
-    session_start();
+    @session_start();
 }
 
 // 1. Dil Motorunun ve DataLayer'ın Yüklenmesi

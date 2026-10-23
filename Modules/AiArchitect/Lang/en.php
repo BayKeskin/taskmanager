@@ -108,4 +108,6 @@ return array (
   'no_module_to_save' => 'No modules found to save.',
   'processing_btn' => '⏳ Processing to Project...',
   'empty_rules_error' => 'Rules cannot be empty.',
+  'err_missing_api_key' => 'AI API key is missing! Please configure a valid Gemini API key in Settings.',
+  'err_ai_busy' => 'The AI service is currently busy or unresponsive. Please try again in a few moments.',
 );

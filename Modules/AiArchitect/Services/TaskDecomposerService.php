@@ -174,19 +174,29 @@ class TaskDecomposerService
         $projRules = $project->agent_rules ?? '';
         $imgCount  = count($docInfo['extracted_imgs'] ?? []);
 
+        // Eğer proje kuralları boşsa veya TaskManager projesiyse katı HMVC mimari kuralını enjekte et
+        $enforcedStackRule = "TECHNICAL STACK & ARCHITECTURAL MANDATES FOR THIS PROJECT:\n";
+        if (!empty($projRules)) {
+            $enforcedStackRule .= $projRules . "\n\n";
+        }
+        if ((int)$projectId === 1 || stripos($projTitle, 'Task Manager') !== false || stripos($projRules, 'HMVC') !== false) {
+            $enforcedStackRule .= "CRITICAL PROJECT CONSTRAINTS: This is a Custom Vanilla PHP 8.2+ HMVC Application (Core\\BaseModel, Core\\BaseController, Modules/{Module}/). IT IS NOT LARAVEL OR SYMFONY! NEVER suggest composer packages like `laravel/socialite` or framework utilities. All controllers must reside in `Modules/{Module}/Controllers/`, models in `Modules/{Module}/Models/`, views in `Modules/{Module}/Views/`, and translations in `Modules/{Module}/Lang/{tr,en,de}.php`. Use native PHP cURL or standard PHP features.\n";
+        }
+
         $systemPrompt = "You are a Senior Technical Project Architect and Software Engineering Lead.
 Your task is to analyze the user's project brief, contract specifications, or uploaded document and decompose it into modular Parent Tasks (Functional Epics/Modules) and concrete, single-purpose Subtasks.
 
 CRITICAL ARCHITECTURAL RULES:
-1. NEVER output mere titles with empty or generic descriptions! For EVERY Parent Task ('description') and EVERY Subtask ('description'), you MUST provide a detailed, actionable breakdown containing:
+1. STRICT STACK COMPLIANCE: Adhere strictly to the project's technical stack defined in the prompt. If the project is a Custom PHP HMVC app, NEVER recommend Laravel, Symfony, or external packages that belong to other frameworks!
+2. NEVER output mere titles with empty or generic descriptions! For EVERY Parent Task ('description') and EVERY Subtask ('description'), you MUST provide a detailed, actionable breakdown containing:
    - Purpose & Functional Scope
-   - Step-by-Step Implementation Guide
+   - Step-by-Step Implementation Guide (referencing specific target files, methods, database changes)
    - Acceptance & Test Criteria / Definition of Done
-2. Break features into distinct functional modules.
-3. Subtask category MUST be one of: 'coding', 'design', 'seo', 'marketing', 'legal', 'content'. NEVER assign the 'ai' tag!
-4. 'execution_mode': If automated software infrastructure, mark as 'auto'; if gated, mark as 'gated'.
-5. MULTILINGUAL OUTPUT MANDATE: Match the user input language.
-6. Return ONLY valid JSON matching this schema:
+3. Break features into distinct functional modules.
+4. Subtask category MUST be one of: 'coding', 'design', 'seo', 'marketing', 'legal', 'content'. NEVER assign the 'ai' tag!
+5. 'execution_mode': If automated software infrastructure, mark as 'auto'; if gated, mark as 'gated'.
+6. MULTILINGUAL OUTPUT MANDATE: Match the user input language completely.
+7. Return ONLY valid JSON matching this schema:
 {
   \"epics\": [
     {
@@ -207,16 +217,16 @@ CRITICAL ARCHITECTURAL RULES:
   ]
 }";
 
-        $userPrompt = "Project: [{$projCode}] {$projTitle}\n"
+        $userPrompt = "Target Project: [{$projCode}] {$projTitle}\n"
             . ($projDesc ? "Project Overview: {$projDesc}\n" : "")
-            . ($projRules ? "Technical Rules & Stack: {$projRules}\n" : "")
+            . "{$enforcedStackRule}"
             . ($imgCount > 0 ? "Note: {$imgCount} reference screenshots/diagrams were extracted.\n" : "")
             . "\nUser Brief & Document Content:\n" . mb_substr($combinedBrief, 0, 18000) . "\n\n"
-            . "Please analyze the requirements and generate the JSON task tree:";
+            . "Please analyze the requirements according to the project's exact technical stack and generate the JSON task tree:";
 
         $apiKey = trim($settings->gemini_api_key ?? '');
         if (!empty($apiKey) && !str_contains($apiKey, 'test_') && strlen($apiKey) >= 20) {
-            $candidateModels = ['gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+            $candidateModels = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3-flash-preview'];
             $configuredModel = $settings->default_ai_model ?? '';
             if (!empty($configuredModel) && !in_array($configuredModel, $candidateModels, true)) {
                 array_unshift($candidateModels, $configuredModel);
@@ -226,104 +236,75 @@ CRITICAL ARCHITECTURAL RULES:
                 if (str_contains($tryModel, '1.5') || str_contains($tryModel, '2.5')) {
                     continue;
                 }
-                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$tryModel}:generateContent?key=" . urlencode($apiKey);
-                $payload = [
-                    'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
-                    'contents'          => [['role' => 'user', 'parts' => [['text' => $userPrompt]]]],
-                    'generationConfig'  => [
-                        'temperature'      => 0.2,
-                        'maxOutputTokens'  => 8192,
-                        'responseMimeType' => 'application/json'
-                    ]
-                ];
+                
+                // Transient 503 veya 429 kota durumlarında model başına 2 deneme hakkı
+                for ($attempt = 1; $attempt <= 2; $attempt++) {
+                    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$tryModel}:generateContent?key=" . urlencode($apiKey);
+                    $payload = [
+                        'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
+                        'contents'          => [['role' => 'user', 'parts' => [['text' => $userPrompt]]]],
+                        'generationConfig'  => [
+                            'temperature'      => 0.2,
+                            'maxOutputTokens'  => 8192,
+                            'responseMimeType' => 'application/json'
+                        ]
+                    ];
 
-                $ch = curl_init($url);
-                curl_setopt_array($ch, [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST           => true,
-                    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-                    CURLOPT_POSTFIELDS     => json_encode($payload),
-                    CURLOPT_TIMEOUT        => 90,
-                    CURLOPT_SSL_VERIFYPEER => false
-                ]);
+                    $ch = curl_init($url);
+                    curl_setopt_array($ch, [
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST           => true,
+                        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                        CURLOPT_POSTFIELDS     => json_encode($payload),
+                        CURLOPT_TIMEOUT        => 45,
+                        CURLOPT_CONNECTTIMEOUT => 10,
+                        CURLOPT_SSL_VERIFYPEER => false
+                    ]);
 
-                $response = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
+                    $response = curl_exec($ch);
+                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
 
-                if ($httpCode === 200 && $response) {
-                    $jsonRes = json_decode($response, true);
-                    $text = $jsonRes['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                    if ($text) {
-                        $parsed = json_decode($text, true);
-                        if (!empty($parsed['epics']) && is_array($parsed['epics'])) {
-                            return [
-                                'success'        => true,
-                                'epics'          => $parsed['epics'],
-                                'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],
-                                'original_doc'   => $docInfo['original_doc'] ?? null,
-                                'engine'         => 'gemini (' . $tryModel . ')'
-                            ];
+                    if ($httpCode === 200 && $response) {
+                        $jsonRes = json_decode($response, true);
+                        $text = $jsonRes['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                        if ($text) {
+                            $parsed = json_decode($text, true);
+                            if (!empty($parsed['epics']) && is_array($parsed['epics'])) {
+                                return [
+                                    'success'        => true,
+                                    'epics'          => $parsed['epics'],
+                                    'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],
+                                    'original_doc'   => $docInfo['original_doc'] ?? null,
+                                    'engine'         => 'gemini (' . $tryModel . ')'
+                                ];
+                            }
                         }
+                    }
+
+                    // 503 Service Unavailable veya 429 Too Many Requests durumunda kısa bekleme ve retry/fallback
+                    if ($httpCode === 503 || $httpCode === 429) {
+                        usleep(1200000); // 1.2 sn bekle
+                        continue;
+                    }
+
+                    // Model bulunamadıysa (404) hemen sonraki modele geç
+                    if ($httpCode === 404) {
+                        break;
                     }
                 }
             }
+
+            return [
+                'success' => false,
+                'error'   => __('AiArchitect::err_ai_busy')
+            ];
         }
 
-        // 2. Yedek Dinamik Heuristic Ayrıştırıcı
-        $fallbackEpics = self::decomposeBriefDynamicParser($combinedBrief, $projTitle, $projRules);
+        // API anahtarı boşsa kullanıcıyı dürüstçe uyar
         return [
-            'success'        => true,
-            'epics'          => $fallbackEpics,
-            'extracted_imgs' => $docInfo['extracted_imgs'] ?? [],
-            'original_doc'   => $docInfo['original_doc'] ?? null,
-            'engine'         => 'heuristic_fallback'
+            'success' => false,
+            'error'   => __('AiArchitect::err_missing_api_key')
         ];
-    }
-
-    /**
-     * API Anahtarı olmadığında veya çevrimdışı modda çalışan uzman motor
-     */
-    public static function decomposeBriefDynamicParser(string $brief, string $projTitle = 'Project', string $projRules = ''): array
-    {
-        $epics = [];
-        $cleanBrief = str_replace("--- UPLOADED DOCUMENT CONTENT ---", "\n", $brief);
-        $cleanBrief = str_replace("--- DOCUMENT CONTENT ---", "\n", $cleanBrief);
-
-        $buildDetailedHowTo = function(string $title, string $context, string $category) use ($projTitle): string {
-            return "### 🛠️ IMPLEMENTATION GUIDE:\n"
-                 . "1. Analyze module dependencies and define corresponding Model, Controller, and View files for `{$title}`.\n"
-                 . "2. Write core business logic adhering to clean, modular, and secure architectural standards.\n"
-                 . "3. Complete data validation, error handling, and UI integration.\n\n"
-                 . "### ✅ DEFINITION OF DONE:\n"
-                 . "- Verify all endpoints and live interface components.\n"
-                 . "- Zero JavaScript console errors and zero PHP notices.\n"
-                 . "- Responsive layout verified across all breakpoints.";
-        };
-
-        $epics[] = [
-            'title'          => 'Core Infrastructure & Architecture',
-            'description'    => "Establishes core domain backbone and foundational data flow for {$projTitle}.",
-            'priority'       => 'high',
-            'execution_mode' => 'auto',
-            'subtasks'       => [
-                [
-                    'title'         => 'Data Architecture & Models',
-                    'description'   => $buildDetailedHowTo('Data Architecture', 'Database schema migration and Model encapsulation methods.', 'coding'),
-                    'category'      => 'coding',
-                    'priority'      => 'high',
-                    'time_estimate' => '2h'
-                ],
-                [
-                    'title'         => 'User Interface & Workflow Integration',
-                    'description'   => $buildDetailedHowTo('Interface Integration', 'Frontend components and controller workflow integration.', 'coding'),
-                    'category'      => 'coding',
-                    'priority'      => 'normal',
-                    'time_estimate' => '3h'
-                ]
-            ]
-        ];
-
-        return $epics;
     }
 }

@@ -108,4 +108,6 @@ return array (
   'no_module_to_save' => 'Keine Module zum Speichern gefunden.',
   'processing_btn' => '⏳ Wird in Projekt verarbeitet...',
   'empty_rules_error' => 'Regeln dürfen nicht leer sein.',
+  'err_missing_api_key' => 'KI-API-Schlüssel fehlt! Bitte konfigurieren Sie einen gültigen Gemini-API-Schlüssel in den Einstellungen.',
+  'err_ai_busy' => 'Der KI-Dienst ist derzeit ausgelastet oder antwortet nicht. Bitte versuchen Sie es in wenigen Augenblicken erneut.',
 );

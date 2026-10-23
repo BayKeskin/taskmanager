@@ -36,6 +36,40 @@ class SettingsModel extends BaseModel
                 session_timeout_minutes = ?, max_file_upload_mb = ?, allowed_file_types = ?
             WHERE id = 1";
 
+        $current = $this->db->row_query("SELECT * FROM settings WHERE id = 1");
+        
+        $githubToken = !empty(trim((string)($data['github_token'] ?? ''))) 
+            ? trim((string)$data['github_token']) 
+            : trim((string)($current->github_token ?? ''));
+
+        $githubRepo = !empty(trim((string)($data['github_repo'] ?? ''))) 
+            ? trim((string)$data['github_repo']) 
+            : trim((string)($current->github_repo ?? ''));
+
+        $smtpPass = !empty(trim((string)($data['smtp_pass'] ?? ''))) 
+            ? trim((string)$data['smtp_pass']) 
+            : trim((string)($current->smtp_pass ?? ''));
+
+        $telegramToken = !empty(trim((string)($data['telegram_bot_token'] ?? ''))) 
+            ? trim((string)$data['telegram_bot_token']) 
+            : trim((string)($current->telegram_bot_token ?? ''));
+
+        $openaiKey = !empty(trim((string)($data['openai_api_key'] ?? ''))) 
+            ? trim((string)$data['openai_api_key']) 
+            : trim((string)($current->openai_api_key ?? ''));
+
+        $anthropicKey = !empty(trim((string)($data['anthropic_api_key'] ?? ''))) 
+            ? trim((string)$data['anthropic_api_key']) 
+            : trim((string)($current->anthropic_api_key ?? ''));
+
+        $geminiKey = !empty(trim((string)($data['gemini_api_key'] ?? ''))) 
+            ? trim((string)$data['gemini_api_key']) 
+            : trim((string)($current->gemini_api_key ?? ''));
+
+        $deepseekKey = !empty(trim((string)($data['deepseek_api_key'] ?? ''))) 
+            ? trim((string)$data['deepseek_api_key']) 
+            : trim((string)($current->deepseek_api_key ?? ''));
+
         $defaultSiteUrl = function_exists('siteUrl') ? siteUrl() : 'http://localhost';
         return $this->db->exec_query($sql, [
             $data['title'] ?? 'TaskManager Pro',
@@ -45,12 +79,12 @@ class SettingsModel extends BaseModel
             $data['default_language'] ?? 'tr',
             $data['active_ai_provider'] ?? 'gemini',
             $data['default_ai_model'] ?? 'gemini-1.5-pro',
-            $data['openai_api_key'] ?? '',
-            $data['anthropic_api_key'] ?? '',
-            $data['gemini_api_key'] ?? '',
-            $data['deepseek_api_key'] ?? '',
+            $openaiKey,
+            $anthropicKey,
+            $geminiKey,
+            $deepseekKey,
             $data['ai_system_prompt_prefix'] ?? '',
-            $data['telegram_bot_token'] ?? '',
+            $telegramToken,
             $data['telegram_chat_id'] ?? '',
             $data['telegram_notifications_enabled'] ?? 1,
             $data['slack_webhook_url'] ?? '',
@@ -59,13 +93,13 @@ class SettingsModel extends BaseModel
             $data['smtp_port'] ?? 587,
             $data['smtp_secure'] ?? 'tls',
             $data['smtp_user'] ?? '',
-            $data['smtp_pass'] ?? '',
+            $smtpPass,
             $data['smtp_from_email'] ?? '',
             $data['smtp_from_name'] ?? 'TaskManager',
             $data['bugherd_api_key'] ?? '',
             $data['bugherd_project_id'] ?? '',
-            $data['github_token'] ?? '',
-            $data['github_repo'] ?? '',
+            $githubToken,
+            $githubRepo,
             $data['session_timeout_minutes'] ?? 120,
             $data['max_file_upload_mb'] ?? 25,
             $data['allowed_file_types'] ?? 'jpg,png,pdf,zip,docx,xlsx,txt'

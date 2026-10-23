@@ -108,4 +108,6 @@ return array (
   'no_module_to_save' => 'Kaydedilecek modül bulunamadı.',
   'processing_btn' => '⏳ Projeye İşleniyor...',
   'empty_rules_error' => 'Kurallar boş olamaz.',
+  'err_missing_api_key' => 'Yapay zeka API anahtarı tanımlı değil! Lütfen Ayarlar sayfasından geçerli bir Gemini API anahtarı girin.',
+  'err_ai_busy' => 'Yapay zeka servisi şu anda aşırı yoğun veya yanıt vermiyor. Lütfen birkaç saniye sonra tekrar deneyin.',
 );
