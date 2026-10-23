@@ -252,6 +252,19 @@ class TaskLifecycleService extends BaseModel
         $taskModel = new \Modules\Board\Models\TaskModel();
 
         try {
+            // Çift ajanlı (Dev + QA) projelerde, QA incelemesi bekleyen (submitted / under_review)
+            // bir görev varsa, QA onaylamadan (completed olmadan) yeni görev çekilemez!
+            $projectModel = new \Modules\Projects\Models\ProjectModel();
+            $project = $projectModel->getProjectById($projectId);
+            if ($project && !empty(trim($project->qa_conversation_id ?? ''))) {
+                if ($taskModel->hasPendingQaReviewTasks($projectId)) {
+                    return [
+                        'status'  => 'waiting_for_qa_approval',
+                        'message' => 'Waiting for QA specialist review decision before starting next task'
+                    ];
+                }
+            }
+
             $currentInProgress = $taskModel->getInProgressAiTask($projectId);
 
             if ($currentInProgress && (int)$currentInProgress->id !== $justFinishedTaskId) {
@@ -518,5 +531,108 @@ class TaskLifecycleService extends BaseModel
             error_log("triggerTaskRevisionWebhook error: " . $e->getMessage());
             return ['sent' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * QA Ajanının onay veya ret kararını işler (Dev + QA Döngüsü & Circuit Breaker)
+     *
+     * @param int $taskId
+     * @param string $decision 'approved' veya 'rejected'
+     * @param string $feedback İnceleme notu / hata raporu
+     * @param int $userId İncelemeyi yapan kullanıcı ID
+     * @param string $userName İncelemeyi yapan kullanıcı adı
+     * @return array Sonuç durumu
+     */
+    public static function handleQaReviewDecision(int $taskId, string $decision, string $feedback, int $userId = 1, string $userName = 'QA Inspector'): array
+    {
+        $taskModel = new \Modules\Board\Models\TaskModel();
+        $task = $taskModel->getTaskRowById($taskId);
+        if (!$task) {
+            return ['success' => false, 'message' => 'Task not found'];
+        }
+
+        if ($decision === 'approved') {
+            // Görev onaylandı: Sayacı sıfırla, görevi tamamla, sıradaki görevi tetikle
+            $taskModel->resetQaRevisionCount($taskId);
+            $taskModel->updateTaskStatus($taskId, 'completed');
+            $taskModel->logTaskActivity($taskId, $userId, 'approved', "QA Approved: {$feedback}");
+
+            // Anlık SSE yayını fırlat (Ekran yenilemeye gerek kalmadan panoda güncellensin)
+            SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, $userId, [
+                'task_id'    => $taskId,
+                'task_code'  => $task->task_code,
+                'title'      => $task->title,
+                'old_status' => $task->status,
+                'new_status' => 'completed',
+                'user_name'  => $userName
+            ]);
+
+            // Sıradaki AI görevini tetikle
+            self::dispatchNextAiTaskIfAvailable((int)$task->project_id, $taskId);
+
+            return [
+                'success' => true,
+                'status'  => 'completed',
+                'action'  => 'approved',
+                'message' => 'Task approved and completed successfully'
+            ];
+        }
+
+        // Karar 'rejected' ise sayacı kontrol et (Circuit Breaker)
+        $currentCount = $taskModel->incrementQaRevisionCount($taskId);
+
+        if ($currentCount > 3) {
+            // Maksimum revizyon limiti aşıldı! Sonsuz döngüyü kır:
+            // Durumu 'in_review' olarak kilitle ve insan müdahalesine devret
+            $taskModel->updateTaskStatus($taskId, 'in_review');
+            $circuitBreakerMsg = "🚨 [CIRCUIT BREAKER TRIGGERED] Maximum QA revision limit (3/3) exceeded. Locked in review for human intervention. Last QA feedback: {$feedback}";
+            $taskModel->logTaskActivity($taskId, $userId, 'circuit_breaker', $circuitBreakerMsg);
+
+            // Anlık SSE yayını fırlat
+            SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, $userId, [
+                'task_id'    => $taskId,
+                'task_code'  => $task->task_code,
+                'title'      => $task->title,
+                'old_status' => $task->status,
+                'new_status' => 'in_review',
+                'user_name'  => $userName
+            ]);
+
+            return [
+                'success'         => true,
+                'status'          => 'in_review',
+                'action'          => 'circuit_breaker_locked',
+                'revision_count'  => $currentCount,
+                'message'         => 'Maximum revision limit reached. Task locked for human review.'
+            ];
+        }
+
+        // Limit aşılmadı: Durumu modification_requested yap ve Dev Ajanına revizyon webhooku fırlat
+        $taskModel->updateTaskStatus($taskId, 'modification_requested');
+        $taskModel->logTaskActivity($taskId, $userId, 'rejected', "QA Rejected (#{$currentCount}/3): {$feedback}");
+
+        // Anlık SSE yayını fırlat
+        SseBroadcaster::broadcast('task_status_changed', (int)$task->project_id, $taskId, $userId, [
+            'task_id'    => $taskId,
+            'task_code'  => $task->task_code,
+            'title'      => $task->title,
+            'old_status' => $task->status,
+            'new_status' => 'modification_requested',
+            'user_name'  => $userName
+        ]);
+
+        $revResult = self::triggerTaskRevisionWebhook($taskId, $feedback, [
+            'qa_revision_count' => $currentCount,
+            'max_revisions'     => 3
+        ]);
+
+        return [
+            'success'         => true,
+            'status'          => 'modification_requested',
+            'action'          => 'revision_dispatched',
+            'revision_count'  => $currentCount,
+            'webhook_result'  => $revResult,
+            'message'         => "Revision #{$currentCount}/3 requested and sent to Dev Agent."
+        ];
     }
 }

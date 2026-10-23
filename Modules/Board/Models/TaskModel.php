@@ -967,6 +967,44 @@ class TaskModel extends BaseModel
             ORDER BY id ASC
         ", [$taskId]);
     }
+
+    /**
+     * Projede QA incelemesi bekleyen (submitted veya under_review) görev olup olmadığını kontrol eder
+     */
+    public function hasPendingQaReviewTasks(int $projectId): bool
+    {
+        $rows = $this->query(
+            "SELECT id FROM tasks WHERE project_id = ? AND status IN ('submitted', 'under_review') LIMIT 1",
+            [$projectId]
+        );
+        return !empty($rows);
+    }
+
+    /**
+     * Görevin QA revizyon sayacını artırır
+     */
+    public function incrementQaRevisionCount(int $taskId): int
+    {
+        $this->execute("UPDATE tasks SET qa_revision_count = COALESCE(qa_revision_count, 0) + 1, updated_at = NOW() WHERE id = ?", [$taskId]);
+        $row = $this->first("SELECT qa_revision_count FROM tasks WHERE id = ? LIMIT 1", [$taskId]);
+        return (int)($row->qa_revision_count ?? 1);
+    }
+
+    /**
+     * Görevin QA revizyon sayacını sıfırlar
+     */
+    public function resetQaRevisionCount(int $taskId): void
+    {
+        $this->execute("UPDATE tasks SET qa_revision_count = 0, updated_at = NOW() WHERE id = ?", [$taskId]);
+    }
+
+    /**
+     * logActivity için kısayol
+     */
+    public function logTaskActivity(int $taskId, int $userId, string $actionType, ?string $comment = null): int
+    {
+        return $this->logActivity($taskId, $userId, $actionType, null, null, $comment);
+    }
 }
 
 
