@@ -1,0 +1,18 @@
+{
+  "ASKERLIK": {
+    "dev": {
+      "conversation_id": "71c01882-b75f-43dc-8ad7-98564407367b",
+      "updated_at": 1792619035
+    }
+  },
+  "SBX": {
+    "dev": {
+      "conversation_id": "586101dc-dd07-42d3-bbe2-cbd006c29f46",
+      "updated_at": 1792669057
+    },
+    "qa": {
+      "conversation_id": "832d4968-700c-4edb-9a4c-2c12d49e1174",
+      "updated_at": 1792669100
+    }
+  }
+}

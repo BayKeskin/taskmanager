@@ -31,6 +31,7 @@ class AjaxController extends BaseController
             $this->respond(false, __('Settings::ajax_unauthorized_admin'));
             return;
         }
+        $this->aiAccountsModel->syncActiveAccountFromIde();
         $accounts = $this->aiAccountsModel->getAllAccounts();
         $this->respond(true, '', ['accounts' => $accounts]);
     }
@@ -77,6 +78,7 @@ class AjaxController extends BaseController
                 'gemini_quota_pct'  => (int)($acc['target_model_pct'] ?? 100),
                 'claude_quota_pct'  => (int)($acc['claude_quota_pct'] ?? 100),
                 'status'            => $acc['status'] ?? 'HEALTHY',
+                'is_active'         => !empty($acc['is_active']) ? 1 : 0,
                 'reset_time'        => $acc['reset_time'] ?? null
             ]);
             $importedCount++;
@@ -101,25 +103,16 @@ class AjaxController extends BaseController
 
         $this->aiAccountsModel->setActiveAccount($email);
 
-        // Python üzerinden Antigravity'ye de anında bildir
-        $pythonPath = 'C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
+        // Python üzerinden Antigravity'ye de anında bildir (--switch CLI)
+        $localAppData = getenv('LOCALAPPDATA') ?: (getenv('USERPROFILE') . '/AppData/Local');
+        $pythonPath = $localAppData . '/Programs/Python/Python311/python.exe';
         if (!file_exists($pythonPath)) {
             $pythonPath = 'python';
         }
-        $acc = $this->aiAccountsModel->getAccountByEmail($email);
-        if ($acc) {
-            $payloadJson = escapeshellarg(json_encode([
-                'email' => $email,
-                'creds' => [
-                    'access_token' => $acc['access_token'],
-                    'refresh_token' => $acc['refresh_token'],
-                    'expiry_timestamp' => $acc['expiry_timestamp'],
-                    'name' => $acc['name']
-                ]
-            ]));
-            $cmd = "\"$pythonPath\" -c \"import json, sys; sys.path.append(r'" . dirname(__DIR__, 2) . "/Dispatcher/Bin'); from account_manager import AccountManager; mgr = AccountManager(); mgr.switch_active_account(json.loads($payloadJson))\"";
-            @exec($cmd);
-        }
+        $scriptPath = dirname(__DIR__, 2) . '/Dispatcher/Bin/account_manager.py';
+        $safeEmail = escapeshellarg($email);
+        $cmd = "\"$pythonPath\" \"$scriptPath\" --switch $safeEmail";
+        @exec($cmd);
 
         $this->respond(true, __('Settings::ai_account_activated_success'), [
             'accounts' => $this->aiAccountsModel->getAllAccounts()

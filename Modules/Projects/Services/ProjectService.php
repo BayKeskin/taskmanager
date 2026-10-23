@@ -119,7 +119,9 @@ Under NO circumstances shall the user ever encounter:
 > ### MODE B: TASKMANAGER AUTONOMOUS DISPATCH (Prompt Contains Task Code)
 > * When triggered by TaskManager background queue with an assigned `task_code`:
 > * Focus EXCLUSIVELY on that single task. Never jump to older tasks.
-> * When complete and autonomously verified, execute the official REST API submit command provided in the dispatch prompt, then **END YOUR TURN**. Do not search TaskManager internal files or database.
+> * 🛑 **STRICT REST API MANDATE (NO DATABASE / NO DIRECT FILE ACCESS):** It is STRICTLY FORBIDDEN to search for, inspect, read, or directly write to TaskManager core files (`c:\wamp64\www\taskmanager\*`), PHP services, or databases (`taskmanager_db`). Never run custom PHP/SQL scripts to inspect or submit tasks.
+> * 🚀 **OFFICIAL DELIVERY COMMAND:** Task completion MUST be submitted EXCLUSIVELY via the official HTTP REST API command (`Invoke-RestMethod` / `curl`) provided in your active prompt.
+> * 🛑 **END TURN IMMEDIATELY:** Once the REST API call succeeds, **END YOUR TURN IMMEDIATELY**. Never pull or start the next task manually; the autonomous queue will handle it.
 
 ---
 

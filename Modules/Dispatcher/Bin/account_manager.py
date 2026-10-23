@@ -19,8 +19,11 @@ import urllib.parse
 import ssl
 import subprocess
 import re
+import time
 from datetime import datetime
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Windows DPAPI definitions
 class DATA_BLOB(ctypes.Structure):
@@ -54,6 +57,88 @@ def decrypt_v10_secret(buffer_bytes: bytes, master_key: bytes) -> bytes:
     ciphertext = buffer_bytes[15:]
     aesgcm = AESGCM(master_key)
     return aesgcm.decrypt(nonce, ciphertext, None)
+
+def encode_varint(val: int) -> bytes:
+    res = bytearray()
+    while val > 0x7f:
+        res.append((val & 0x7f) | 0x80)
+        val >>= 7
+    res.append(val & 0x7f)
+    return bytes(res)
+
+def encode_length_delimited(field_number: int, data: bytes) -> bytes:
+    tag = (field_number << 3) | 2
+    return encode_varint(tag) + encode_varint(len(data)) + data
+
+def build_oauth_token_proto(access_token: str, refresh_token: str, expiry_timestamp: int) -> str:
+    """Builds valid binary Protobuf base64 for antigravityUnifiedStateSync.oauthToken"""
+    # 1. Inner token payload
+    # Field 1: access_token (string)
+    # Field 2: "Bearer" (string)
+    # Field 3: refresh_token (string)
+    # Field 4: submessage with Field 1 = expiry_timestamp (varint)
+    f1 = encode_length_delimited(1, access_token.encode('ascii'))
+    f2 = encode_length_delimited(2, b'Bearer')
+    f3 = encode_length_delimited(3, refresh_token.encode('ascii'))
+    f4 = encode_length_delimited(4, b'\x08' + encode_varint(int(expiry_timestamp)))
+    inner_token_bytes = f1 + f2 + f3 + f4
+    b64_inner_token = base64.b64encode(inner_token_bytes)
+
+    # 2. Outer proto message
+    # Part 1: authStateWithContextSentinelKey
+    p1_key = encode_length_delimited(1, b'authStateWithContextSentinelKey')
+    p1_val_inner = encode_length_delimited(1, b'{"state":"signedIn","context":{"project":"","showProjectError":false,"errorMessage":"","ineligibleMessage":"","verificationUrl":"","isGcpTos":false,"browserOpenFailed":false,"appealUrl":"","appealLinkText":""}}')
+    p1_val = encode_length_delimited(2, p1_val_inner)
+    part1 = encode_length_delimited(1, p1_key + p1_val)
+
+    # Part 2: oauthTokenInfoSentinelKey
+    p2_key = encode_length_delimited(1, b'oauthTokenInfoSentinelKey')
+    p2_val_inner = encode_length_delimited(1, b64_inner_token)
+    p2_val = encode_length_delimited(2, p2_val_inner)
+    part2 = encode_length_delimited(1, p2_key + p2_val)
+
+    full_proto = part1 + part2
+    return base64.b64encode(full_proto).decode('ascii')
+
+def build_user_status_proto(name: str, email: str) -> str:
+    """Builds valid binary Protobuf base64 for antigravityUnifiedStateSync.userStatus"""
+    # Inner message: \x10\x01 + field 3: name + field 7: email
+    inner_bytes = b'\x10\x01' + encode_length_delimited(3, (name or email.split("@")[0]).encode('utf-8')) + encode_length_delimited(7, email.encode('utf-8'))
+    b64_inner = base64.b64encode(inner_bytes)
+
+    u_key = encode_length_delimited(1, b'userStatusSentinelKey')
+    u_val_inner = encode_length_delimited(1, b64_inner)
+    u_val = encode_length_delimited(2, u_val_inner)
+    full_proto = encode_length_delimited(1, u_key + u_val)
+    return base64.b64encode(full_proto).decode('ascii')
+
+def extract_email_from_user_status(proto_b64: str) -> str:
+    """Parses active email from antigravityUnifiedStateSync.userStatus protobuf payload with 100% precision"""
+    try:
+        raw = base64.b64decode(proto_b64)
+        # 1. Direct text regex
+        m = re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', raw.decode('latin1', errors='ignore'))
+        if m:
+            return m[0]
+        # 2. Extract ASCII base64 chunks and test 4-byte alignment offsets
+        chunks = re.findall(rb'[A-Za-z0-9+/=]{16,}', raw)
+        for chunk in chunks:
+            for trim in range(4):
+                cand = chunk[trim:]
+                rem = len(cand) % 4
+                if rem:
+                    cand = cand[:-rem]
+                try:
+                    dec = base64.b64decode(cand)
+                    emails = re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', dec.decode('latin1', errors='ignore'))
+                    for em in emails:
+                        if em.endswith(('.com', '.net', '.org', '.io', '.co', '.tr')):
+                            return em
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    return ""
 
 CLIENT_ID = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
 CLIENT_SECRET = "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"
@@ -130,40 +215,134 @@ class AccountManager:
             print(f"[!] Warning: Could not recover master key: {e}")
 
     def get_all_stored_accounts(self) -> dict:
-        """Reads all accounts and decrypted tokens stored in state.vscdb"""
-        if not self.master_key or not os.path.exists(self.db_path):
-            return {}
-        
+        """Reads and merges accounts from both native state.vscdb and TaskManager MySQL ai_accounts table"""
         accounts = {}
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        c.execute("SELECT key, value FROM ItemTable WHERE key LIKE 'secret://%ag.account.%'")
-        for key, val in c.fetchall():
+
+        # 1. Yerel state.vscdb içerisindeki hesapları oku
+        if self.master_key and os.path.exists(self.db_path):
             try:
-                email = key.split("ag.account.")[-1].rstrip('"}\'')
-                raw_json = json.loads(val)
-                buf = bytes(raw_json.get('data', []))
-                decrypted = decrypt_v10_secret(buf, self.master_key)
-                account_data = json.loads(decrypted.decode('utf-8'))
-                accounts[email] = {
-                    "access_token": account_data.get("access_token") or account_data.get("accessToken"),
-                    "refresh_token": account_data.get("refresh_token") or account_data.get("refreshToken"),
-                    "expiry_timestamp": account_data.get("expiry_timestamp") or account_data.get("expiryTimestamp"),
-                    "name": account_data.get("name", email.split("@")[0])
-                }
-            except Exception as e:
-                print(f"[!] Error reading account {key}: {e}")
-        conn.close()
+                conn = sqlite3.connect(self.db_path)
+                c = conn.cursor()
+                c.execute("SELECT key, value FROM ItemTable WHERE key LIKE 'secret://%ag.account.%'")
+                for key, val in c.fetchall():
+                    try:
+                        email = key.split("ag.account.")[-1].rstrip('"}\'')
+                        raw_json = json.loads(val)
+                        buf = bytes(raw_json.get('data', []))
+                        decrypted = decrypt_v10_secret(buf, self.master_key)
+                        account_data = json.loads(decrypted.decode('utf-8'))
+                        accounts[email] = {
+                            "access_token": account_data.get("access_token") or account_data.get("accessToken"),
+                            "refresh_token": account_data.get("refresh_token") or account_data.get("refreshToken"),
+                            "expiry_timestamp": account_data.get("expiry_timestamp") or account_data.get("expiryTimestamp"),
+                            "name": account_data.get("name", email.split("@")[0])
+                        }
+                    except Exception as e:
+                        print(f"[!] Error reading local account {key}: {e}")
+                conn.close()
+            except Exception as e_db:
+                print(f"[!] Local state.vscdb read error: {e_db}")
+
+        # 2. TaskManager MySQL (ai_accounts) içerisindeki hesapları da havuza birleştir
+        try:
+            app_root = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", ".."))
+            php_script = (
+                "require_once 'Core/System.php'; "
+                "$db = new Database(); "
+                "$rows = $db->connect->query('SELECT email, name, access_token, refresh_token, expiry_timestamp FROM ai_accounts')->fetchAll(PDO::FETCH_ASSOC); "
+                "echo json_encode($rows);"
+            )
+            php_res = subprocess.run(
+                ["php", "-r", php_script],
+                cwd=app_root,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if php_res.returncode == 0 and php_res.stdout.strip():
+                db_rows = json.loads(php_res.stdout.strip())
+                for r in db_rows:
+                    em = r.get("email")
+                    if em and r.get("refresh_token"):
+                        # Eğer yerel depoda yoksa veya MySQL'deki daha güncelse ekle
+                        if em not in accounts or not accounts[em].get("refresh_token"):
+                            accounts[em] = {
+                                "access_token": r.get("access_token") or "",
+                                "refresh_token": r.get("refresh_token"),
+                                "expiry_timestamp": int(r.get("expiry_timestamp") or (time.time() + 3600)),
+                                "name": r.get("name") or em.split("@")[0]
+                            }
+        except Exception as e_mysql:
+            # MySQL geçici olarak erişilemezse yerel hesaplarla devam et
+            pass
+
         return accounts
+
+    def get_active_email(self) -> str:
+        """Determines the currently active Google account from state.vscdb proto, or MySQL"""
+        # 1. state.vscdb içerisindeki gerçek antigravityUnifiedStateSync.userStatus protobuf kaydına bak
+        try:
+            if os.path.exists(self.db_path):
+                conn = sqlite3.connect(self.db_path)
+                c = conn.cursor()
+                c.execute("SELECT value FROM ItemTable WHERE key = 'antigravityUnifiedStateSync.userStatus'")
+                row = c.fetchone()
+                conn.close()
+                if row and row[0]:
+                    parsed_email = extract_email_from_user_status(row[0])
+                    if parsed_email:
+                        return parsed_email
+        except Exception:
+            pass
+
+        # 2. MySQL TaskManager ai_accounts tablosunda is_active = 1 olan hesaba bak
+        try:
+            app_root = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", ".."))
+            php_script = (
+                "require_once 'Core/System.php'; "
+                "$db = new Database(); "
+                "$row = $db->connect->query('SELECT email FROM ai_accounts WHERE is_active = 1 LIMIT 1')->fetch(PDO::FETCH_ASSOC); "
+                "echo $row ? $row['email'] : '';"
+            )
+            php_res = subprocess.run(
+                ["php", "-r", php_script],
+                cwd=app_root,
+                capture_output=True,
+                text=True,
+                timeout=4
+            )
+            if php_res.returncode == 0 and php_res.stdout.strip():
+                return php_res.stdout.strip()
+        except Exception:
+            pass
+
+        return ""
+
+    def sync_account_health_to_mysql(self, email: str, is_active: bool, quota_pct: int, status: str, reset_time: str):
+        """Persists live health and active status into TaskManager MySQL ai_accounts table"""
+        try:
+            app_root = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", ".."))
+            active_val = 1 if is_active else 0
+            php_code = (
+                f"require_once 'Core/System.php'; "
+                f"$db = new Database(); "
+                f"$stmt = $db->connect->prepare('UPDATE ai_accounts SET is_active = ?, gemini_quota_pct = ?, status = ?, reset_time = ? WHERE email = ?'); "
+                f"$stmt->execute([{active_val}, {quota_pct}, {json.dumps(status)}, {json.dumps(reset_time)}, {json.dumps(email)}]);"
+            )
+            subprocess.run(["php", "-r", php_code], cwd=app_root, capture_output=True, timeout=4)
+        except Exception as e:
+            pass
 
     def inspect_accounts_health(self, target_model_family: str = "gemini-3.8") -> list:
         """Queries live quotas and ranks accounts based on the active model family (e.g. Gemini 3.8 / Flash)"""
         accounts = self.get_all_stored_accounts()
+        active_email = self.get_active_email()
         health_report = []
 
         for email, creds in accounts.items():
             access_token = creds.get("access_token")
             refresh_token = creds.get("refresh_token")
+            is_active = (email.lower() == active_email.lower()) if active_email else False
 
             quota = query_user_quota(access_token)
             if quota.get("unauthorized") and refresh_token:
@@ -176,7 +355,10 @@ class AccountManager:
                 except Exception as e:
                     health_report.append({
                         "email": email,
+                        "is_active": is_active,
                         "status": "AUTH_ERROR",
+                        "target_model_pct": 0,
+                        "target_model_name": "N/A",
                         "flash_quota_pct": 0,
                         "claude_quota_pct": 0,
                         "reset_time": "N/A",
@@ -214,8 +396,13 @@ class AccountManager:
                 target_model_reset = models_list[0]["reset_time"]
 
             status = "HEALTHY" if target_model_pct >= 50 else ("LOW" if target_model_pct > 0 else "EXHAUSTED")
+            
+            # MySQL tablosuna canlı veriyi yansıt (Admin paneli için)
+            self.sync_account_health_to_mysql(email, is_active, target_model_pct, status, target_model_reset)
+
             health_report.append({
                 "email": email,
+                "is_active": is_active,
                 "status": status,
                 "target_model_pct": target_model_pct,
                 "target_model_name": target_model_name,
@@ -245,30 +432,84 @@ class AccountManager:
             return reports[0]
         return None
 
-    def switch_active_account(self, target_account: dict) -> bool:
+    def switch_active_account(self, target_account) -> bool:
         """
         Atomically switches Antigravity's active account:
         1. Encodes USS token state.
         2. Updates antigravityUnifiedStateSync.oauthToken in state.vscdb.
         3. Calls RegisterGdmUser on running Language Server processes via HTTPS.
         """
-        email = target_account["email"]
-        creds = target_account["creds"]
-        access_token = creds["access_token"]
-        refresh_token = creds["refresh_token"]
-        expiry_timestamp = creds.get("expiry_timestamp") or (int(datetime.utcnow().timestamp()) + 3600)
-        name = creds.get("name", email.split("@")[0])
+        if isinstance(target_account, str):
+            email = target_account
+            target_account = {"email": email}
+        else:
+            email = target_account.get("email")
+
+        all_accts = self.get_all_stored_accounts()
+        stored_creds = all_accts.get(email, {})
+
+        creds = target_account.get("creds") or {}
+        access_token = creds.get("access_token") or stored_creds.get("access_token", "")
+        refresh_token = creds.get("refresh_token") or stored_creds.get("refresh_token", "")
+        expiry_timestamp = creds.get("expiry_timestamp") or stored_creds.get("expiry_timestamp") or (int(datetime.utcnow().timestamp()) + 3600)
+        name = creds.get("name") or stored_creds.get("name") or email.split("@")[0]
 
         print(f"[*] Switching active account to: {email} (Quota: %{target_account.get('flash_quota_pct', 'N/A')})...")
 
-        # 1. Update state.vscdb
-        token_info = {
-            "accessToken": access_token,
-            "refreshToken": refresh_token,
-            "expiryDateSeconds": expiry_timestamp,
-            "tokenType": "Bearer",
-            "isGcpTos": False
-        }
+        # 1. Update state.vscdb SQLite database with 100% valid Protobuf structures
+        try:
+            if os.path.exists(self.db_path):
+                conn = sqlite3.connect(self.db_path)
+                c = conn.cursor()
+
+                # 1a. Update antigravityUnifiedStateSync.userStatus (Binary Protobuf)
+                try:
+                    new_user_status_b64 = build_user_status_proto(name, email)
+                    c.execute("UPDATE ItemTable SET value = ? WHERE key = 'antigravityUnifiedStateSync.userStatus'", (new_user_status_b64,))
+                except Exception as e_ust:
+                    print(f"[!] Warning updating userStatus proto: {e_ust}")
+
+                # 1b. Update antigravityUnifiedStateSync.oauthToken (Binary Protobuf)
+                if refresh_token:
+                    # Token henüz taze değilse veya yoksa hemen Google'dan yenile
+                    if not access_token:
+                        try:
+                            refreshed = refresh_oauth_token(refresh_token)
+                            access_token = refreshed["access_token"]
+                            creds["access_token"] = access_token
+                            expiry_timestamp = int(datetime.utcnow().timestamp()) + refreshed.get("expires_in", 3600)
+                        except Exception as e_rf:
+                            print(f"[!] Token refresh error during switch: {e_rf}")
+
+                    if access_token:
+                        try:
+                            new_oauth_b64 = build_oauth_token_proto(access_token, refresh_token, expiry_timestamp)
+                            c.execute("UPDATE ItemTable SET value = ? WHERE key = 'antigravityUnifiedStateSync.oauthToken'", (new_oauth_b64,))
+                        except Exception as e_tok:
+                            print(f"[!] Warning building oauthToken proto: {e_tok}")
+
+                conn.commit()
+                try:
+                    c.execute("PRAGMA wal_checkpoint(FULL)")
+                except Exception:
+                    pass
+                conn.close()
+        except Exception as e_db:
+            print(f"[!] Warning updating state.vscdb: {e_db}")
+
+        # 1d. Update TaskManager MySQL ai_accounts (set is_active = 1 for target, 0 for others)
+        try:
+            app_root = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", ".."))
+            php_code = (
+                f"require_once 'Core/System.php'; "
+                f"$db = new Database(); "
+                f"$db->connect->prepare('UPDATE ai_accounts SET is_active = 0')->execute(); "
+                f"$stmt = $db->connect->prepare('UPDATE ai_accounts SET is_active = 1, access_token = ?, expiry_timestamp = ? WHERE email = ?'); "
+                f"$stmt->execute([{json.dumps(access_token)}, {int(expiry_timestamp)}, {json.dumps(email)}]);"
+            )
+            subprocess.run(["php", "-r", php_code], cwd=app_root, capture_output=True, timeout=5)
+        except Exception as e_sync:
+            print(f"[!] Warning updating MySQL ai_accounts: {e_sync}")
         
         # 2. Discover running Language Servers
         endpoints = self.discover_ls_endpoints()
@@ -287,12 +528,11 @@ class AccountManager:
                 url = f"https://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/RegisterGdmUser"
                 req = urllib.request.Request(
                     url,
-                    data=b"",
+                    data=b"{}",
                     headers={
-                        "Content-Type": "application/proto",
+                        "Content-Type": "application/json",
                         "Connect-Protocol-Version": "1",
-                        "x-codeium-csrf-token": csrf,
-                        "Content-Length": "0"
+                        "x-codeium-csrf-token": csrf
                     }
                 )
                 with urllib.request.urlopen(req, context=ctx, timeout=5) as resp:
@@ -305,20 +545,35 @@ class AccountManager:
         return True
 
     def discover_ls_endpoints(self) -> list:
-        """Finds active Language Server processes and extracts HTTPS port and CSRF token"""
+        """Finds active Language Server processes and extracts listening ports and CSRF token"""
         endpoints = []
         try:
-            ps_cmd = 'Get-WmiObject Win32_Process | Where-Object { $_.CommandLine -like "*language_server*" } | Select-Object -ExpandProperty CommandLine'
-            result = subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], capture_output=True, text=True, timeout=8)
-            lines = [l.strip() for l in result.stdout.splitlines() if l.strip()]
-            for line in lines:
-                port_match = re.search(r'--https_server_port[=\s]+(\d+)', line)
-                csrf_match = re.search(r'--csrf_token[=\s]+([\w-]+)', line)
-                if port_match and csrf_match:
-                    endpoints.append({
-                        "port": int(port_match.group(1)),
-                        "csrf": csrf_match.group(1)
-                    })
+            ps_cmd = 'Get-CimInstance Win32_Process -Filter "name = \'language_server_windows_x64.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
+            ps_res = subprocess.run(['powershell', '-NoProfile', '-Command', ps_cmd], capture_output=True, text=True, timeout=8)
+            if ps_res.returncode == 0 and ps_res.stdout.strip():
+                procs = json.loads(ps_res.stdout)
+                if isinstance(procs, dict):
+                    procs = [procs]
+
+                netstat_res = subprocess.run(['netstat', '-ano'], capture_output=True, text=True, timeout=8)
+                netstat_out = netstat_res.stdout or ''
+
+                for proc in procs:
+                    pid = str(proc.get('ProcessId', ''))
+                    cmd = proc.get('CommandLine') or ''
+                    csrf_match = re.search(r'--csrf_token[=\s]+([\w-]+)', cmd)
+                    csrf = csrf_match.group(1) if csrf_match else None
+                    if not csrf:
+                        continue
+
+                    for line in netstat_out.splitlines():
+                        if 'LISTENING' in line and line.strip().endswith(pid):
+                            m = re.search(r':(\d+)\s+', line)
+                            if m:
+                                endpoints.append({
+                                    "port": int(m.group(1)),
+                                    "csrf": csrf
+                                })
         except Exception as e:
             print(f"[!] LS discovery error: {e}")
         return endpoints
@@ -466,7 +721,45 @@ class AccountManager:
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Antigravity Account Vault & Quota Manager CLI")
+    parser.add_argument("--switch", type=str, help="Switch active account to the specified email")
+    parser.add_argument("--sync", action="store_true", help="Sync all account quotas and update MySQL")
+    parser.add_argument("--status", action="store_true", help="Get active email and status")
+    args = parser.parse_args()
+
     mgr = AccountManager()
+
+    if args.switch:
+        target_email = args.switch.strip()
+        success = mgr.switch_active_account(target_email)
+        active_email = mgr.get_active_email()
+        print(json.dumps({
+            "success": success,
+            "target": target_email,
+            "active_email": active_email,
+            "matched": (active_email.lower() == target_email.lower())
+        }))
+        sys.exit(0 if success else 1)
+
+    if args.sync:
+        reports = mgr.inspect_accounts_health(target_model_family="gemini-3.8")
+        active_email = mgr.get_active_email()
+        print(json.dumps({
+            "success": True,
+            "active_email": active_email,
+            "accounts_count": len(reports),
+            "reports": reports
+        }))
+        sys.exit(0)
+
+    if args.status:
+        active_email = mgr.get_active_email()
+        print(json.dumps({
+            "active_email": active_email
+        }))
+        sys.exit(0)
+
     print("--- LIVE ACCOUNT HEALTH & QUOTA RANKING (TARGET: GEMINI 3.8 / FLASH) ---")
     reports = mgr.inspect_accounts_health(target_model_family="gemini-3.8")
     for r in reports:

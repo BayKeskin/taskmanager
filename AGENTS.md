@@ -7,11 +7,14 @@
 
 ## 2. DUAL-MODE OPERATION (IDE CHAT vs. TASKMANAGER QUEUE)
 - **MODE A - Direct IDE Chat:** When the user writes directly in chat without a `task_code`, fulfill the request immediately, verify in the live browser, and reply directly in the user's language. Do NOT call TaskManager submit APIs.
-- **MODE B - TaskManager Queue (`task_code` Assigned):** Focus ONLY on the assigned `task_code`. When finished and verified, submit the task via the official TaskManager API/Service, then **END YOUR TURN IMMEDIATELY**. Never pull the next task manually.
+- **MODE B - TaskManager Queue (`task_code` Assigned):** Focus ONLY on the assigned `task_code`. 
+  - 🛑 **STRICT REST API MANDATE (NO DATABASE / NO DIRECT FILE ACCESS):** It is STRICTLY FORBIDDEN to search for, inspect, read, or directly write to TaskManager core files (`c:/wamp64/www/taskmanager/*`), services, or databases (`taskmanager_db`). Never run custom PHP/SQL scripts to submit tasks.
+  - 🚀 **OFFICIAL DELIVERY COMMAND:** Task completion MUST be submitted EXCLUSIVELY via the official HTTP REST API command (`Invoke-RestMethod` / `curl`) provided in your active prompt.
+  - 🛑 **END TURN IMMEDIATELY:** Once the REST API call succeeds, **END YOUR TURN IMMEDIATELY**. Never pull or start the next task manually; the autonomous queue will handle it.
 
 ## 3. STRICT WORKSPACE ISOLATION (DIRECTORY BOUNDARY)
 - You are strictly responsible ONLY for the current project workspace directory.
-- **FORBIDDEN:** Never list, read, grep, or modify any file outside the active project root (e.g., neighbor directories under `c:\wamp64\www\*`).
+- **FORBIDDEN:** Never list, read, grep, or modify any file outside the active project root (e.g., neighbor directories under `c:/wamp64/www/*`, and especially `c:/wamp64/www/taskmanager/*`).
 - If the user's prompt references another project/directory, **STOP** and ask the user for explicit confirmation before touching anything outside.
 
 ## 4. TASK DELIVERY FORMAT (DEFINITION OF DONE)
@@ -26,8 +29,8 @@ Always reply in the **user's/task's language** (e.g., Turkish) using this exact 
 - **Surgical Rollback:** For every DB schema/data change (`CREATE`, `ALTER`, `INSERT`, `UPDATE`, `DELETE`), generate the exact reverse SQL in `.migrations/{task_code}_down.sql` using safe `IF EXISTS` clauses.
 
 ## 6. ANTI-LOOP COMPACTION RULE (CONTEXT COMPACTION MEMORY RESUME)
-- **Zero Redundant Introductions:** The Antigravity IDE automatically performs “Context Compaction” when memory becomes full during prolonged autonomous sessions. Upon waking up after compaction, the system will NEVER RESPOND AGAIN to previous initial setup, greeting, or ID request messages (e.g., *“You are TaskManager Coder, give me your ID...”*).
-- **Immediate Task Execution:** Upon waking from memory compaction, previous greeting/introduction messages must be completely ignored, and work must continue seamlessly by focusing DIRECTLY on the most recently injected active task (`task_code`).
+- **Zero Redundant Introductions:** When waking up from an Antigravity IDE automated context compaction, NEVER re-answer past setup, greeting, or ID request messages (e.g. initial prompts like 'Sen TaskManager Coderisin, bana id ver').
+- **Immediate Task Execution:** Instantly ignore past introductory messages upon compaction wake-up, and proceed directly to execute the latest injected active task (task_code) without unnecessary conversational turns.
 
 ---
 

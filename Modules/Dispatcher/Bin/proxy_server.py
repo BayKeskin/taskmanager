@@ -156,7 +156,13 @@ class InFlightProxyHandler(http.server.BaseHTTPRequestHandler):
                 pass
 
     def _handle_http_request(self):
-        """Intercepts, buffers, forwards, and replays HTTP requests on 429, plus handles /callback for OAuth"""
+        if self.path in ("/health", "/ping"):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"TaskManager Proxy (Port 4006) OK")
+            return
+
         # 1. GOOGLE OAUTH CALLBACK ENTEGRASYONU
         if self.path.startswith("/callback"):
             parsed = urllib.parse.urlparse(self.path)

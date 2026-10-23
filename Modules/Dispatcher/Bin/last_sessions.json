@@ -1,0 +1,22 @@
+{
+  "ASKERLIK": {
+    "dev": {
+      "conversation_id": "4ee548a4-2c6b-4242-852a-cd009fd74bc1",
+      "updated_at": 1792683269
+    },
+    "qa": {
+      "conversation_id": "682746f2-9993-4376-bfa1-a6b6343dbc44",
+      "updated_at": 1792683058
+    }
+  },
+  "01": {
+    "dev": {
+      "conversation_id": "8871c641-b050-4bb0-9fa1-e7049b60ae17",
+      "updated_at": 1792742992
+    },
+    "qa": {
+      "conversation_id": "a6ee9647-8962-43bb-b330-96083f262002",
+      "updated_at": 1792709482
+    }
+  }
+}

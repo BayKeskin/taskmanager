@@ -48,7 +48,7 @@
                 </div>
             </div>
             <div class="cu-modal-footer cu-modal-footer-clean">
-                <button type="button" class="cu-btn-sm" data-close-modal="modalSubmitTask"><?= __('Board::modal_cancel') ?></button>
+                <button type="button" class="cu-btn-sm" data-close-modal="modalSubmitTask"><?= __('app.modal_cancel') ?></button>
                 <button type="submit" class="cu-btn-submit"><?= __('Board::modal_submit_task_submit') ?></button>
             </div>
         </form>

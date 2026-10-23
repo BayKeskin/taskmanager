@@ -2,16 +2,17 @@
   "AgentRules": {
     "icon": "🛡️",
     "capabilities": [
-      "Çalışma alanındaki tüm projelerin AGENTS.md ve .cursorrules kurallarını merkezi olarak senkronize eder.",
-      "Kural ihlallerini, eksik doktrinleri ve otonom ajan güvenlik yönergelerini denetler.",
-      "Çoklu proje ortamında kural bütünlüğünü ve standart mimari sınırları korur."
+      "Çalışma alanındaki tüm projelerin AGENTS.md dosyalarını merkezi olarak senkronize eder.",
+      "Global evrensel kuralları (Anti-Rubberstamping, QA Supremacy, Test Protokolü) projelerin özel kurallarıyla otomatik harmanlar.",
+      "Tek tıkla tüm çalışma alanlarındaki AGENTS.md dosyalarını günceller ve senkronizasyon durumunu raporlar."
     ],
     "how_to_use": [
-      "Modules/AgentRules altındaki senkronizasyon scripti veya REST API üzerinden tetiklenir.",
-      "Yeni bir kural eklendiğinde tüm projelerin kök dizinindeki AGENTS.md dosyalarına otomatik yansıtılır."
+      "Sol menüden 'AGENTS.md Kuralları' (/agent-rules) sayfasına gidin.",
+      "Sol taraftaki editörden Evrensel Kuralları, sağ taraftaki editörden QA Test Protokolünü düzenleyip kaydedin.",
+      "Tablodan ilgili projenin yanındaki '🔄 Senkronize Et' veya üstteki '🚀 Tüm Projeleri Senkronize Et' butonuna tıklayın."
     ],
-    "tech_info": "Core\\EventManager ve CLI senkronizasyon servisleri üzerinden çalışır.",
-    "key_files": ["module.json", "init.php", "Services/AgentRulesService.php"]
+    "tech_info": "AgentRulesController, AgentRulesModel ve AJAX senkronizasyon uç noktaları üzerinden doğrudan diskteki AGENTS.md dosyalarını yönetir.",
+    "key_files": ["Controllers/AgentRulesController.php", "Models/AgentRulesModel.php", "Views/index.php", "Assets/js/agent-rules.js"]
   },
   "AiArchitect": {
     "icon": "🧠",
@@ -106,16 +107,16 @@
   "Dispatcher": {
     "icon": "⚡",
     "capabilities": [
-      "Kuyruktaki görevleri otonom olarak algılayıp Antigravity AI Agent CLI motoruna fırlatan köprüdür.",
-      "Görev açıklamalarını, kabul kriterlerini ve guardrail kurallarını prompt şablonuna dönüştürür.",
-      "Geliştirici veya ajanın görev başlangıç/bitiş bildirimlerini yönetir."
+      "Çift Ajan (Coder & QA) mimarisi ile otonom görev sevkini yönetir.",
+      "Coder görevi teslim ettiğinde (task.submitted) otomatik olarak QA Test Ajanını tetikler; QA onaylamadan (completed yapmadan) sıradaki görevi bekletir.",
+      "Kilitlenen veya askıda kalan görevleri takip eder, Anti-Rubberstamping direktifini QA penceresine enjekte eder."
     ],
     "how_to_use": [
-      "Bir görevin atananını 'Antigravity AI' olarak seçip durumunu 'To Do' veya 'In Progress' yapın.",
-      "Arka planda çalışan python dispatcher.py servisi görevi anında algılayıp kodlamayı başlatır."
+      "Proje ayarlarından 'dev_conversation_id' (Coder) ve 'qa_conversation_id' (QA) pencerelerini tanımlayın.",
+      "Otonom kuyruk arka planda çalışır; Coder işi teslim edince görev QA'ya yönlenir, QA onaylayınca sıradaki görev Coder'a verilir."
     ],
     "tech_info": "Python tabanlı mikroservis (Bin/dispatcher.py), TaskLifecycleService ve Webhook köprüsü.",
-    "key_files": ["Services/DispatcherService.php", "Services/TaskLifecycleService.php", "Bin/dispatcher.py"]
+    "key_files": ["Services/DispatcherService.php", "Services/TaskLifecycleService.php", "Bin/dispatcher.py", "init.php"]
   },
   "Docs": {
     "icon": "📄",
@@ -135,16 +136,22 @@
   "ErrorRadar": {
     "icon": "📡",
     "capabilities": [
-      "Sayfalardaki JavaScript konsol hatalarını, 404 statik varlıkları ve kırık çeviri anahtarlarını anında yakalar.",
-      "PHP/Xdebug hatalarını ve ağ çökmelerini algılar.",
-      "Otomatik hata parmak izi (fingerprint) üreterek aynı hatayı tekilleştirir ve doğrudan panoda [AUTO-BUG] görevi açar."
+      "Sayfalardaki JavaScript konsol hatalarını, işlenmemiş Promise reddetmelerini (unhandledrejection) ve 404 statik varlık yükleme hatalarını anında yakalar.",
+      "AJAX/Fetch isteklerindeki PHP/Xdebug fatal hatalarını, PDOException çökmelerini ve HTTP 4xx/5xx ağ başarısızlıklarını yakalar.",
+      "Kırık dil anahtarlarını (Untranslated i18n keys) ekranda tarar ve raporlar.",
+      "Otomatik hata parmak izi (SHA-256 fingerprint) üreterek aynı hatanın defalarca açılmasını engeller (In-Memory Set + DB tekilleştirme).",
+      "Hata oluştuğunda doğrudan panonun 'assigned' sütununa [AUTO-BUG] etiketiyle otonom görev açar.",
+      "Hem dahili TaskManager panelinde hem de harici web sitelerinde (Askerlik, Çarşımpark vb.) tek satır script ile çalışır."
     ],
     "how_to_use": [
-      "Sistemde otomatik olarak arka planda çalışır; herhangi bir kurulum gerektirmez.",
-      "Bir sayfada JS veya ağ hatası meydana geldiğinde panonun ilk sütununda otomatik hata kartı oluşur."
+      "TaskManager Paneli İçinde: Sistemde varsayılan olarak aktiftir; arka planda otonom çalışır, ek bir kurulum gerektirmez.",
+      "Harici Projelerde Kullanım: Dış projelerin (Laravel, CodeIgniter, Vue, React, PHP veya statik HTML) şablonunun <head> veya <body> sonuna şu tek satırlık scripti ekleyin:",
+      "<script src=\"http://localhost/taskmanager/Modules/ErrorRadar/Assets/js/error-radar.js\" data-project=\"PROJE_KODU\" data-api=\"http://localhost/taskmanager/api/v1/error-radar\" async></script>",
+      "Örnek (Askerlik Projesi): <script src=\"http://localhost/taskmanager/Modules/ErrorRadar/Assets/js/error-radar.js\" data-project=\"ASKERLIK\" async></script>",
+      "Dış sitede oluşan JS/konsol hatası veya 500 API hatası anında TaskManager panosuna ilgili projenin bug kartı olarak düşer."
     ],
-    "tech_info": "İstemci tarafı error-radar.js sniffer ve ErrorRadarController otonom görev üretim hattı.",
-    "key_files": ["Controllers/ErrorRadarController.php", "Models/ErrorRadarModel.php", "Assets/js/error-radar.js"]
+    "tech_info": "İstemci tarafı error-radar.js sniffer (XHR & Fetch monkey-patching, Error Event Listener, MutationObserver), REST API /api/v1/error-radar uç noktası ve ErrorRadarController otonom görev üretim hattı.",
+    "key_files": ["Controllers/ErrorRadarController.php", "Models/ErrorRadarModel.php", "Assets/js/error-radar.js", "init.php"]
   },
   "ExcelExport": {
     "icon": "📊",
@@ -248,16 +255,18 @@
   "RestApi": {
     "icon": "🌐",
     "capabilities": [
-      "TaskManager'ın tüm yeteneklerini dış dünyaya ve mobil uygulamalara açan stateless RESTful API katmanıdır.",
-      "Bearer Token kimlik doğrulaması ve RFC 7807 uyumlu hata yanıtları.",
-      "Projeler, görevler, belgeler ve pinler için CRUD uç noktaları."
+      "TaskManager'ın tüm yeteneklerini dış dünyaya, web sitelerine ve mobil uygulamalara açan stateless RESTful API katmanıdır.",
+      "Bearer Token kimlik doğrulaması ve RFC 7807 uyumlu JSON API yanıtları.",
+      "Projeler, görevler, belgeler, visual feedback (pinleme) ve ErrorRadar otonom hata yakalama uç noktaları.",
+      "Ajanlar için /api/tasks/{task_code}/workflow/submit ve /api/tasks/{task_code}/workflow (review/approve/reject) uç noktaları."
     ],
     "how_to_use": [
-      "HTTP Authorization başlığında 'Bearer {token}' göndererek istek yapın.",
-      "Örnek: GET /api/projects veya POST /api/tasks/{task_code}/submit"
+      "HTTP Authorization başlığında 'Bearer {token}' göndererek istek yapın (Örn: Authorization: Bearer tm_admin_talha_keskin_token_2026).",
+      "Hata Radarı Uç Noktası: POST /api/v1/error-radar (Harici projelerden JS/PHP hatalarını gönderir).",
+      "Görsel Pin Uç Noktası: POST /api/v1/visual-feedback (Ekran görüntülü hata bildirimi açar)."
     ],
-    "tech_info": "Modules/RestApi/Controllers/ApiController.php ve merkezi rota yönlendiricisi.",
-    "key_files": ["Controllers/ApiController.php", "Routes/api.php"]
+    "tech_info": "RestApiController, RestApiModel ve WebhookService üzerinden çalışır; AjaxRouter ve Core/System ile izole rota yönlendirmesi yapar.",
+    "key_files": ["Controllers/RestApiController.php", "Models/RestApiModel.php", "Services/WebhookService.php"]
   },
   "Settings": {
     "icon": "⚙️",
@@ -346,16 +355,20 @@
   "VisualPins": {
     "icon": "📍",
     "capabilities": [
-      "Web sayfası üzerinde herhangi bir noktaya tıklayarak koordinatlı görsel hata pinleme (BugHerd alternatifi) sağlar.",
-      "Ekran koordinatları (X, Y), tarayıcı bilgisi ve ekran görüntüsü ile anında görsel hata kaydı oluşturur.",
-      "Doğrudan panoya bağlı pin yorumları ve durum takibi."
+      "Web sayfası üzerinde herhangi bir noktaya veya UI bileşenine tıklayarak koordinatlı görsel hata pinleme (BugHerd dengi yerli motor) sağlar.",
+      "Tıklanan DOM elementinin CSS seçicisini (Selector), sayfa URL'ini, ekran çözünürlüğünü (Viewport), X/Y koordinatlarını ve html2canvas ile otomatik ekran görüntüsünü (Screenshot) yakalar.",
+      "Modal-safe mimarisi sayesinde Bootstrap veya özel pencerelerde kilitlenme yapmaz; doğrudan ilgili projenin panosuna görsel hata görevi açar.",
+      "Tek satırlık script etiketi ile TaskManager dışındaki tüm projelere (Askerlik, Çarşımpark vb.) sıfır konfigürasyonla entegre edilebilir."
     ],
     "how_to_use": [
-      "Sayfanın sağ altındaki kırmızı iğne (Pin) butonuna tıklayın.",
-      "Hatalı olduğunu düşündüğünüz buton veya metin üzerine tıklayıp notunuzu yazarak kaydedin."
+      "Sayfanın sağ alt köşesinde beliren '📍 Hata Bildir' butonuna tıklayın.",
+      "İmleç artı şekline döner ve fareyle üzerine geldiğiniz öğeler mor kesik çizgilerle vurgulanır.",
+      "Hatalı elemente tıklayın; pin yerleşir ve ekran görüntüsü otomatik çekilir.",
+      "Açılan modalda hata başlığını, açıklamasını ve önceliğini girip 'Görevi Oluştur' butonuna basın.",
+      "Dış projelerde kullanmak için: <script src=\"http://localhost/taskmanager/Modules/VisualPins/Assets/js/taskmanager-pin.js\" data-project=\"PROJE_KODU\" data-api=\"http://localhost/taskmanager/api/v1/visual-feedback\" async></script>"
     ],
-    "tech_info": "PinController, PinModel ve visual-pins.js istemci kütüphanesi.",
-    "key_files": ["Controllers/VisualPinsController.php", "Models/VisualPinsModel.php", "Assets/js/visual-pins.js"]
+    "tech_info": "PinController, PinModel, taskmanager-pin.js ve html2canvas.js ile REST API (/api/v1/visual-feedback) üzerinden çalışır.",
+    "key_files": ["Controllers/PinController.php", "Models/PinModel.php", "Assets/js/taskmanager-pin.js", "Assets/css/visual-pins.css"]
   },
   "Watchdog": {
     "icon": "🐕",

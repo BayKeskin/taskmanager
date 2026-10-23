@@ -178,10 +178,11 @@ async function runAiArchitect() {
         });
         const d = await res.json();
 
-        if (d.success && d.data && d.data.specification) {
+        const specText = d.specification || (d.data && d.data.specification);
+        if (d.success && specText) {
             const descArea = document.getElementById('modalNewTaskDescription');
             if (descArea) {
-                descArea.value = d.data.specification;
+                descArea.value = specText;
                 descArea.style.borderColor = 'var(--brand-primary)';
                 descArea.style.boxShadow = '0 0 0 3px rgba(123, 104, 238, 0.2)';
                 setTimeout(() => {

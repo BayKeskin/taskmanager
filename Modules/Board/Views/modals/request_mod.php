@@ -19,7 +19,7 @@
                 </div>
             </div>
             <div class="cu-modal-footer cu-modal-footer-clean">
-                <button type="button" class="cu-btn-sm" data-close-modal="modalRequestMod"><?= __('Board::modal_cancel') ?></button>
+                <button type="button" class="cu-btn-sm" data-close-modal="modalRequestMod"><?= __('app.modal_cancel') ?></button>
                 <button type="submit" class="cu-btn-modify"><?= __('Board::modal_request_mod_submit') ?></button>
             </div>
         </form>

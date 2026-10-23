@@ -27,6 +27,9 @@ class SettingsController extends BaseController
 
         $settings = $isAuthorized ? $this->settingsModel->getSettings() : (object)[];
         $modules  = $isAuthorized ? \Core\ModuleLoader::getAllAvailableModules() : [];
+        if ($isAuthorized) {
+            $this->aiAccountsModel->syncActiveAccountFromIde();
+        }
         $aiAccounts = $isAuthorized ? $this->aiAccountsModel->getAllAccounts() : [];
 
         return [

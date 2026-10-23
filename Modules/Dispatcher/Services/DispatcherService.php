@@ -52,9 +52,13 @@ class DispatcherService
      */
     public function getAntigravityLsEnv(?string $workspacePath = null): array
     {
-        $python = 'C:/Users/DELL/AppData/Local/Programs/Python/Python311/python.exe';
+        $localAppData = getenv('LOCALAPPDATA') ?: (getenv('USERPROFILE') . '/AppData/Local');
+        $python = $localAppData . '/Programs/Python/Python311/python.exe';
+        if (!file_exists($python)) {
+            $python = 'python';
+        }
         $script = $this->dispatcherDir . '/dispatcher.py';
-        if (file_exists($python) && file_exists($script)) {
+        if (file_exists($script)) {
             $wsArg = $workspacePath ? ' "' . addslashes($workspacePath) . '"' : '';
             $probeJson = @shell_exec("\"{$python}\" \"{$script}\" --probe{$wsArg}");
             if ($probeJson) {
@@ -68,7 +72,8 @@ class DispatcherService
             }
         }
 
-        $probeFile = 'C:/Users/DELL/AppData/Roaming/Antigravity IDE/User/globalStorage/antigravity-ls-probe.json';
+        $appData = getenv('APPDATA') ?: (getenv('USERPROFILE') . '/AppData/Roaming');
+        $probeFile = $appData . '/Antigravity IDE/User/globalStorage/antigravity-ls-probe.json';
         if (file_exists($probeFile)) {
             $probeData = json_decode((string)file_get_contents($probeFile), true);
             if (!empty($probeData['address'])) {
@@ -91,23 +96,8 @@ class DispatcherService
      */
     public function getAntigravityLsAddress(): ?string
     {
-        $vscdb = 'C:/Users/DELL/AppData/Roaming/Antigravity IDE/User/globalStorage/state.vscdb';
-        if (file_exists($vscdb)) {
-            try {
-                $sdb = new \SQLite3($vscdb, SQLITE3_OPEN_READONLY);
-                $val = $this->model->querySqliteSingleValue($sdb, 'ItemTable', 'value', 'key', 'erennyuksell.ag-multi-account-switchboard');
-                $sdb->close();
-                if ($val) {
-                    $swData = json_decode((string)$val, true);
-                    $port = $swData['ag.lastContextWindow']['port'] ?? null;
-                    if ($port) {
-                        return '127.0.0.1:' . $port;
-                    }
-                }
-            } catch (\Throwable $e) {}
-        }
-
-        $probeFile = 'C:/Users/DELL/AppData/Roaming/Antigravity IDE/User/globalStorage/antigravity-ls-probe.json';
+        $appData = getenv('APPDATA') ?: (getenv('USERPROFILE') . '/AppData/Roaming');
+        $probeFile = $appData . '/Antigravity IDE/User/globalStorage/antigravity-ls-probe.json';
         if (file_exists($probeFile)) {
             $probeData = json_decode((string)file_get_contents($probeFile), true);
             if (!empty($probeData['address'])) {
@@ -168,7 +158,8 @@ class DispatcherService
      */
     public function discoverLatestConversation(?string $workspacePath, ?string $projectCode = null): ?string
     {
-        $convDir = 'C:/Users/DELL/.gemini/antigravity-ide/conversations';
+        $userHome = getenv('USERPROFILE') ?: (getenv('HOME') ?: '');
+        $convDir = $userHome . '/.gemini/antigravity-ide/conversations';
         if (!is_dir($convDir)) {
             return null;
         }
@@ -193,36 +184,6 @@ class DispatcherService
 
         if (empty($targets)) {
             return null;
-        }
-
-        $vscdb = 'C:/Users/DELL/AppData/Roaming/Antigravity IDE/User/globalStorage/state.vscdb';
-        if (file_exists($vscdb)) {
-            try {
-                $sdb = new \SQLite3($vscdb, SQLITE3_OPEN_READONLY);
-                $val = $this->model->querySqliteSingleValue($sdb, 'ItemTable', 'value', 'key', 'erennyuksell.ag-multi-account-switchboard');
-                $sdb->close();
-                if ($val) {
-                    $swData = json_decode((string)$val, true);
-                    $activeCid = $swData['ag.lastContextWindow']['conversationId'] ?? null;
-                    if ($activeCid) {
-                        $activeDb = $convDir . '/' . $activeCid . '.db';
-                        if (file_exists($activeDb)) {
-                            $adb = new \SQLite3($activeDb, SQLITE3_OPEN_READONLY);
-                            $blob = $this->model->querySqliteSingleValue($adb, 'trajectory_metadata_blob', 'data', 'id', 'main');
-                            $adb->close();
-                            if ($blob) {
-                                $decoded = strtolower(str_replace('\\', '/', rawurldecode((string)$blob)));
-                                foreach ($targets as $target) {
-                                    $pattern = '~(?:^|[^\w\-\.])' . preg_quote($target, '~') . '(?:[/?#\"\'\s,\x00-\x1f\\\\]|$)~i';
-                                    if (preg_match($pattern, $decoded)) {
-                                        return $activeCid;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (\Throwable $e) {}
         }
 
         $files = glob($convDir . '/*.db') ?: [];
@@ -474,9 +435,11 @@ class DispatcherService
      */
     public function dispatchDirect(object $project, string $event, array $data = []): array
     {
-        $agentExe = 'c:\Users\DELL\AppData\Local\Programs\Antigravity IDE\resources\app\extensions\antigravity\bin\language_server_windows_x64.exe';
+        $discoveredCid = null;
+        $localAppData = getenv('LOCALAPPDATA') ?: (getenv('USERPROFILE') . '/AppData/Local');
+        $agentExe = $localAppData . '/Programs/Antigravity IDE/resources/app/extensions/antigravity/bin/language_server_windows_x64.exe';
         if (!file_exists($agentExe)) {
-            return ['sent' => false, 'error' => 'Antigravity language_server binary not found.'];
+            return ['sent' => false, 'error' => 'Antigravity language_server binary not found at ' . $agentExe];
         }
 
         $workspacePath = $project->workspace_path ?? '';

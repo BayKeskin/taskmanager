@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div class="cu-modal-footer cu-modal-footer-clean">
-                <button type="button" class="cu-btn-sm" data-close-modal="modalNewTask"><?= __('Board::modal_cancel') ?></button>
+                <button type="button" class="cu-btn-sm" data-close-modal="modalNewTask"><?= __('app.modal_cancel') ?></button>
                 <button type="submit" class="cu-btn-quick-task"><?= __('Board::modal_create_task') ?></button>
             </div>
         </form>

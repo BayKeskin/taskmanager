@@ -298,7 +298,11 @@ class TaskLifecycleService extends BaseModel
 
             if ($currentInProgress && (int)$currentInProgress->id !== $justFinishedTaskId) {
                 if (self::isAiTask($currentInProgress)) {
-                    $dispatched = self::triggerTaskStartedWebhook((int)$currentInProgress->id, 'in_progress', ['resumed' => true]);
+                    if ($currentInProgress->status === 'modification_requested') {
+                        $dispatched = self::triggerTaskRevisionWebhook((int)$currentInProgress->id, 'Resumed modification requested task', ['resumed' => true]);
+                    } else {
+                        $dispatched = self::triggerTaskStartedWebhook((int)$currentInProgress->id, 'in_progress', ['resumed' => true]);
+                    }
                     return [
                         'status'     => 'resumed_existing_in_progress',
                         'task_id'    => (int)$currentInProgress->id,

@@ -819,7 +819,7 @@ class TaskModel extends BaseModel
             SELECT t.* FROM tasks t
             LEFT JOIN tasks p ON t.parent_task_id = p.id
             WHERE t.project_id = ? 
-              AND t.status = 'in_progress'
+              AND t.status IN ('in_progress', 'modification_requested')
               AND NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_task_id = t.id)
               AND (
                   (
@@ -1004,14 +1004,28 @@ class TaskModel extends BaseModel
     }
 
     /**
-     * Projede QA incelemesi bekleyen (submitted veya under_review) görev olup olmadığını kontrol eder
+     * Projede QA incelemesi bekleyen (submitted veya under_review) AI görev olup olmadığını kontrol eder.
+     * Güvenlik: 
+     * 1) Yalnızca AI etiketli görevleri dikkate alır (insan görevleri otonom kuyruğu tıkamaz).
+     * 2) 45 dakikadan uzun süredir QA'de bekleyen görevleri zaman aşımına uğramış sayar (QA ajanı kapalıysa kuyruk kilitlenmez).
      */
-    public function hasPendingQaReviewTasks(int $projectId): bool
+    public function hasPendingQaReviewTasks(int $projectId, int $timeoutMinutes = 45): bool
     {
-        $rows = $this->query(
-            "SELECT id FROM tasks WHERE project_id = ? AND status IN ('submitted', 'under_review') LIMIT 1",
-            [$projectId]
-        );
+        $sql = "
+            SELECT id FROM tasks 
+            WHERE project_id = ? 
+              AND status IN ('submitted', 'under_review')
+              AND (
+                  LOWER(tags) LIKE '%ai%' 
+                  OR LOWER(tags) LIKE '%otonom%' 
+                  OR LOWER(tags) LIKE '%agent%'
+                  OR LOWER(tags) LIKE '%yapay zeka%'
+                  OR LOWER(tags) LIKE '%antigravity%'
+              )
+              AND updated_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+            LIMIT 1
+        ";
+        $rows = $this->query($sql, [$projectId, $timeoutMinutes]);
         return !empty($rows);
     }
 }
